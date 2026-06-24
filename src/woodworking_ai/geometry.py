@@ -73,10 +73,10 @@ def panel_layout(spec) -> list[PanelBox]:
         return _diagonal_layout(spec)
 
     m = spec.material
-    toe_h = spec.toe_kick.height if spec.toe_kick else 0.0
-    box_h = spec.height - toe_h
-    interior_w = spec.width - 2 * m.carcass
-    interior_d = spec.depth - m.back
+    toe_h = spec.toe_kick_height
+    box_h = spec.box_height
+    interior_w = spec.interior_width
+    interior_d = spec.interior_depth
     # A captured back sits inside the carcass, so the rear rail is set forward of
     # it; an applied back lays on the outside rear face and needs no inset.
     back_inset = 0.0 if spec.back == BackStyle.APPLIED else m.back
@@ -228,8 +228,8 @@ def _diagonal_layout(spec: CabinetSpec) -> list[PanelBox]:
     W, D = spec.width, spec.depth
     t = m.carcass
     c = spec.corner_cut
-    toe_h = spec.toe_kick.height if spec.toe_kick else 0.0
-    box_h = spec.height - toe_h
+    toe_h = spec.toe_kick_height
+    box_h = spec.box_height
     z_box = toe_h + box_h / 2
 
     panels: list[PanelBox] = []

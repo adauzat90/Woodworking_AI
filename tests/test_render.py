@@ -4,7 +4,6 @@ Rendering needs matplotlib; the LLM visual review must degrade gracefully when
 the Anthropic SDK / API key are unavailable (the common case in CI).
 """
 
-import os
 
 import pytest
 

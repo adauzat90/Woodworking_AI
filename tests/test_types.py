@@ -1,9 +1,8 @@
 """Tests for wall and tall cabinet types (no CAD / API key)."""
 
-import pytest
 
 from woodworking_ai import (
-    CabinetSpec, CabinetType, Material, ToeKick, Drawer,
+    CabinetSpec, CabinetType, ToeKick, Drawer,
     validate, generate_cutlist,
 )
 from woodworking_ai.geometry import panel_layout

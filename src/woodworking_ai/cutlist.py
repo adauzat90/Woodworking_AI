@@ -12,6 +12,7 @@ is the convention a cut list / nesting tool expects.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 
 from .dsl import CabinetSpec, TableSpec, BackStyle, Construction, CabinetType
@@ -113,12 +114,11 @@ def _add_drawer_box(cl: "CutList", spec: CabinetSpec, index: int,
 
 def _diagonal_cutlist(spec: CabinetSpec) -> CutList:
     """Parts + hardware for a diagonal (angled-front) corner cabinet."""
-    import math
     m = spec.material
     cl = CutList(spec_name=spec.name)
     W, D, t, c = spec.width, spec.depth, m.carcass, spec.corner_cut
-    toe_h = spec.toe_kick.height if spec.toe_kick else 0.0
-    box_h = spec.height - toe_h
+    toe_h = spec.toe_kick_height
+    box_h = spec.box_height
     front_w = (W / 2 - c) - (-W / 2 + t)
 
     cl.parts.append(Part("Side L", 1, length=box_h, width=D, thickness=t,
@@ -180,10 +180,10 @@ def generate_cutlist(spec) -> CutList:
     m = spec.material
     cl = CutList(spec_name=spec.name)
 
-    toe_h = spec.toe_kick.height if spec.toe_kick else 0.0
-    box_height = spec.height - toe_h
-    interior_width = spec.width - 2 * m.carcass
-    interior_depth = spec.depth - m.back  # back recessed by its thickness
+    toe_h = spec.toe_kick_height
+    box_height = spec.box_height
+    interior_width = spec.interior_width
+    interior_depth = spec.interior_depth  # back recessed by its thickness
 
     # ---- carcass --------------------------------------------------------
     cl.parts.append(Part(
@@ -211,9 +211,8 @@ def generate_cutlist(spec) -> CutList:
     if spec.back == BackStyle.APPLIED:
         back_l, back_w = box_height, spec.width
         back_note = "applied to rear edges"
-    else:  # rabbeted / grooved: captured inside the box
-        back_l, back_w = box_height - m.carcass, interior_width + 2 * m.carcass
-        back_w = interior_width  # sits between sides
+    else:  # rabbeted / grooved: captured between the sides
+        back_l, back_w = box_height - m.carcass, interior_width
         back_note = f"{spec.back.value} back"
     cl.parts.append(Part(
         "Back", 1, length=max(back_l, back_w), width=min(back_l, back_w),

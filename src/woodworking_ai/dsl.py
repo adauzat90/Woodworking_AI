@@ -107,6 +107,28 @@ class CabinetSpec:
         return self.cabinet_type in (
             CabinetType.CORNER_BLIND, CabinetType.CORNER_DIAGONAL)
 
+    # ---- derived dimensions (shared by builder/cutlist/estimator/critic) --
+
+    @property
+    def toe_kick_height(self) -> float:
+        """Toe-kick height, or 0 when the cabinet has none."""
+        return self.toe_kick.height if self.toe_kick else 0.0
+
+    @property
+    def box_height(self) -> float:
+        """Carcass box height, i.e. overall height above the toe kick."""
+        return self.height - self.toe_kick_height
+
+    @property
+    def interior_width(self) -> float:
+        """Clear width between the two side panels."""
+        return self.width - 2 * self.material.carcass
+
+    @property
+    def interior_depth(self) -> float:
+        """Interior depth, with a captured back recessed by its thickness."""
+        return self.depth - self.material.back
+
     # ---- serialization ---------------------------------------------------
 
     def to_dict(self) -> dict[str, Any]:
@@ -207,21 +229,26 @@ DSL_SCHEMA_HINT = """\
 A cabinet is described by this JSON object (units default to "mm"):
 
 {
-  "cabinet_type": "base" | "wall" | "tall",
+  "cabinet_type": "base" | "wall" | "tall" | "corner_blind" |
+                  "corner_diagonal" | "bookcase" | "dresser",
   "name": "Sink Base",
   "units": "mm",
   "width": <overall width>,
   "height": <overall height, including toe kick>,
   "depth": <overall depth>,
-  "material": {"carcass": 18, "back": 6, "door": 18, "shelf": 18},
+  "material": {"carcass": 18, "back": 6, "door": 18, "shelf": 18,
+               "drawer_box": 12},
   "construction": "frameless" | "face_frame",
   "back": "rabbeted" | "applied" | "grooved",
   "joinery": "dado" | "dowel" | "domino" | "screw",
   "toe_kick": {"height": 100, "setback": 50}  | null,
   "shelves": <integer count of adjustable shelves>,
   "doors": <integer count of doors, 0, 1 or 2>,
-  "drawers": [{"front_height": 140}, ...],
+  "drawers": [{"front_height": 140, "false_front": false}, ...],
   "reveal": <gap in mm around overlay doors/drawers, e.g. 3>,
+  "center_mullion": <true to add a vertical post between a pair of doors>,
+  "blind_width": <corner_blind only: width of the blind/filler return>,
+  "corner_cut": <corner_diagonal only: leg length of the 45 degree chamfer>,
   "edge_banding": true | false
 }
 
@@ -232,5 +259,11 @@ Rules of thumb by cabinet_type:
   600-900mm tall, enclosed top. Usually doors only, no drawers.
 - tall: pantry/utility, floor to near ceiling (1900-2400mm), has a toe kick,
   enclosed top, many shelves.
+- corner_blind: a base cabinet with one open door bay; set "blind_width" to the
+  filler return that tucks behind the adjacent run (leave a usable opening).
+- corner_diagonal: an angled-front corner cabinet; set "corner_cut" to the 45
+  degree chamfer leg (smaller than width and depth).
+- bookcase: open shelving, enclosed top, "doors": 0 and several "shelves".
+- dresser: a drawer bank / chest, enclosed top; populate "drawers".
 Convert any imperial dimensions to mm (1 in = 25.4 mm).
 """

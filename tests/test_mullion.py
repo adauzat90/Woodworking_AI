@@ -1,6 +1,5 @@
 """Tests for the center mullion (frameless post / face-frame center stile)."""
 
-import pytest
 
 from woodworking_ai import (
     CabinetSpec, Construction, Material, ToeKick, generate_cutlist, validate,
