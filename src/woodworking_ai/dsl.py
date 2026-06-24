@@ -73,6 +73,8 @@ class Drawer:
     false_front: bool = False    # a fixed panel (e.g. sink tip-out), no box
     # --- box joinery + slide hardware (optional; defaults = good practice) ----
     corner_joint: str = "dovetail"   # dovetail | box | rabbet | dowel | butt
+    dovetail_tails: str = "sides"    # tails on "sides" (correct) so the front
+                                     # can't pull off; "front" is wrong
     slide_type: str = "side_mount"   # side_mount | undermount
     slide_clearance: float = 12.7    # per-side gap for side-mount slides (½in)
     slide_length: float = 0.0        # nominal slide length; 0 = derive from depth
@@ -259,7 +261,10 @@ Drawer corners should be "dovetail", "box", or "rabbet" (a "butt" corner is
 weak); side-mount slides need ~12.7mm clearance per side. Sheet thicknesses
 should be real stock (6/9/12/15/18/21/25mm) and panels should fit a
 2440×1220mm sheet. Doors take 35mm concealed hinges, so door stock should be
-≥16mm thick and each door wide enough (>50mm) to host the cup.
+≥16mm thick and each door wide enough (>50mm) to host the cup. Dovetailed
+drawers keep their tails on the sides so the front can't pull off. Cabinets
+with adjustable shelves need a box tall and deep enough for the 32mm drilling
+system.
 
 Rules of thumb by cabinet_type:
 - base: floor cabinet, ~720mm box + ~100mm toe kick, 560-600mm deep. Has a toe

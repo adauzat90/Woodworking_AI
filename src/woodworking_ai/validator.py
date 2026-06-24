@@ -38,6 +38,12 @@ HINGE_MIN_DOOR_BACKING = 3.0  # material left behind the cup
 # Drawer-corner joints that properly resist the pull-apart load of opening.
 STRONG_DRAWER_JOINTS = {"dovetail", "box", "rabbet", "locking_rabbet"}
 
+# 32mm System constants (match drilling.py) for the grid feasibility check.
+SYSTEM_PITCH = 32.0
+PIN_END_MARGIN = 64.0        # first/last system hole in from the panel ends
+ROW_SETBACK = 37.0           # each pin row in from the front / back edge
+MIN_PIN_POSITIONS = 3        # fewer than this is not meaningfully adjustable
+
 # Practical bounds that also guard against pathological inputs (huge loops, NaN).
 MAX_DIMENSION = 6000.0   # mm — larger than any real cabinet/pantry
 MAX_SHELVES = 50
@@ -358,6 +364,16 @@ def validate(spec) -> ValidationResult:
                      f"drawer corner '{cj}' is weak for the pull-open load; "
                      "prefer dovetail, box joint, or a locking rabbet")
 
+        # STRUCT-012: a front dovetail must have its tails on the drawer SIDES
+        # so the interlock resists the front being pulled off when opened.
+        for tails in {str(d.dovetail_tails).strip().lower() for d in boxed
+                      if str(d.corner_joint).strip().lower() == "dovetail"}:
+            if tails not in ("sides", "side"):
+                err("drawers",
+                    f"dovetail tails are on the '{tails}'; put the tails on the "
+                    "drawer sides (pins on the front) so the front can't pull "
+                    "off when the drawer is opened")
+
         # Side-mount slide clearance (HW-001) + resulting box width.
         for clr in {round(d.slide_clearance, 2) for d in boxed
                     if str(d.slide_type).strip().lower() == "side_mount"}:
@@ -430,6 +446,20 @@ def validate(spec) -> ValidationResult:
         warn("width",
              f"a {box_h:.0f}×{max(spec.depth, interior_w):.0f}mm panel exceeds a "
              "standard 2440×1220 sheet; seam, use an oversize sheet, or resize")
+
+    # --- 32mm system shelf-pin drilling feasibility (DIM-009) ------------
+    if spec.shelves > 0:
+        column = box_h - 2 * PIN_END_MARGIN
+        positions = int(column // SYSTEM_PITCH) + 1 if column >= 0 else 0
+        if positions < MIN_PIN_POSITIONS:
+            warn("shelves",
+                 f"interior is too short to drill a 32mm-system shelf-pin column "
+                 f"({positions} pin position(s)); adjustable shelves need a taller "
+                 "box or a tighter end margin")
+        if spec.depth < 2 * ROW_SETBACK + 10.0:
+            warn("depth",
+                 "too shallow for two 32mm-system shelf-pin rows "
+                 f"(need >~{2 * ROW_SETBACK:.0f}mm of depth); the rows would collide")
 
     # --- proportion advisories (PROP-001/003, INFO) ----------------------
     # Front face: how the piece reads head-on. Corner cabinets have an

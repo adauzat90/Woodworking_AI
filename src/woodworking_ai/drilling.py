@@ -79,6 +79,38 @@ class DrillingSchedule:
         return "\n".join(lines)
 
 
+GRID_TOL = 0.5  # mm slack when checking a hole pattern against the 32mm grid
+
+
+def grid_violations(sched: "DrillingSchedule") -> list[str]:
+    """Verify a drilling schedule conforms to the 32mm System (DIM-009).
+
+    Checks every shelf-pin operation: holes within a row must step at the 32mm
+    pitch and use the 5mm pin diameter. Returns a list of human-readable
+    nonconformities (empty == grid-clean). A guard the compiler's own output
+    should always pass, and a check for any externally supplied schedule.
+    """
+    out: list[str] = []
+    for op in sched.ops:
+        if "shelf-pin" not in op.operation:
+            continue
+        rows: dict[str, list[float]] = {}
+        for h in op.holes:
+            rows.setdefault(h.face, []).append(h.v)
+            if abs(h.dia - PIN_DIA) > GRID_TOL:
+                out.append(f"{op.part}: pin dia {h.dia:.1f}mm is not {PIN_DIA:.0f}mm")
+        for row, vs in rows.items():
+            vs = sorted(vs)
+            for a, b in zip(vs, vs[1:]):
+                if abs((b - a) - SYSTEM_PITCH) > GRID_TOL:
+                    out.append(
+                        f"{op.part}/{row}: {b - a:.1f}mm gap is off the "
+                        f"{SYSTEM_PITCH:.0f}mm grid"
+                    )
+                    break
+    return out
+
+
 def hinge_count(door_height: float) -> int:
     """Number of concealed hinges for a door of this height."""
     if door_height <= 900:

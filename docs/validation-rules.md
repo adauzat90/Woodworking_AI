@@ -182,16 +182,18 @@ backed by the calculators in `src/woodworking_ai/engineering.py`):
 | PROP-001 | cabinet face / table top | INFO when the primary rectangle is far from any pleasing ratio; suggests golden-ratio dimensions (`proportion.py`). |
 | PROP-002 | table `leg` | INFO when the leg is spindly or chunky for the table height. |
 | PROP-003 | drawer bank | INFO when 3+ drawer heights are neither uniform nor graduated. |
+| STRUCT-012 | drawer `dovetail_tails` | Errors when a front dovetail's tails aren't on the drawer sides (the front could pull off). |
+| DIM-009 | shelves vs. 32mm system | Warns when the box is too short to drill a 32mm-system pin column, or too shallow for two pin rows; `grid_violations()` verifies a schedule against the 32mm grid. |
 | DIM/STRUCT (existing) | `validate` | Dimensional bounds, opening fit, door/drawer fit, per-type sanity were already present pre-audit. |
 
 `info`-severity advisories never affect `ValidationResult.ok` (so they never
 trigger the designer's repair loop) and are surfaced separately via
 `ValidationResult.infos` and the API's `advisories` field.
 
-Backed by the `stock.py` and `proportion.py` helpers. Still catalog-only:
-STRUCT-012 (dovetail orientation — needs per-joint geometry) and DIM-009
-(32 mm hole grid — needs the bored hole pattern). These need richer
-geometric metadata than the spec carries.
+Backed by the `stock.py`, `proportion.py`, and `drilling.grid_violations`
+helpers. **Every rule in this catalog is now implemented** — see the test
+suite (`tests/test_engineering.py`, `test_joinery_hardware.py`,
+`test_proportion.py`, `test_hinges.py`, `test_grid_dovetail.py`) for coverage.
 
 ## Implementation notes for the compiler
 
