@@ -11,13 +11,23 @@ code until the design is buildable. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTU
 for the full design, prior-art comparison, and engine rationale.
 
 ```
-Natural language ──▶ Designer agent (Claude) ──▶ DSL spec ──▶ Validator
-                                                      │            │ valid
-                              repair ◀────────────────┘            ▼
-                                                            Compiler (build123d)
-                                                                   │
-                            STEP · STL · GLB · cut list · hardware ◀┘
+Natural language ─▶ Designer agent (Claude) ─▶ DSL spec ─▶ Validator
+                                                   │            │ valid
+                         repair ◀─────────────────┤            ▼
+                                                   │      Compiler (build123d)
+                                                   │            │
+                                                   └─ Critic ◀──┘  measure &
+                                                      verify        check
+                                                        │ pass
+                                                        ▼
+                          STEP · STL · GLB · cut list · hardware
 ```
+
+The **Critic** closes the loop: it rebuilds the geometry, measures it, and
+checks the overall envelope, part interferences, and front coverage against the
+spec — feeding any problem back to the Designer for repair (it caught a real
+rail-vs-back collision during development). It runs analytically with no CAD
+dependency.
 
 ## Why this approach
 
@@ -90,9 +100,11 @@ Pick the model with `WOODAI_MODEL` (default `claude-opus-4-8`; e.g.
 | `src/woodworking_ai/dsl.py` | The furniture language (typed spec + JSON) |
 | `src/woodworking_ai/validator.py` | Type/range + woodworking sanity rules |
 | `src/woodworking_ai/cutlist.py` | Spec → parts + hardware (pure math) |
+| `src/woodworking_ai/geometry.py` | `panel_layout()` — single source of panel placement |
 | `src/woodworking_ai/builder.py` | Spec → build123d B-Rep geometry |
 | `src/woodworking_ai/exporters.py` | STEP / STL / GLB / CSV export |
-| `src/woodworking_ai/agents/` | Claude designer agent + validate-repair loop |
+| `src/woodworking_ai/agents/designer.py` | Claude designer + validate/critic-repair loop |
+| `src/woodworking_ai/agents/critic.py` | Computational verifier (envelope, interference) |
 | `examples/base_cabinet.py` | End-to-end example, no LLM required |
 | `tests/` | Pure-math tests (no CAD / API key needed) |
 
@@ -105,7 +117,7 @@ pytest
 
 ## Status & roadmap
 
-MVP: frameless **base cabinets** end to end. Next: wall/tall cabinets,
-face-frame construction, a Critic agent with interference checks, sheet nesting
-+ cost, and a web UI with live GLB preview. Full roadmap in
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+MVP: frameless **base cabinets** end to end, including the **Critic** verify
+loop. Next: wall/tall cabinets, face-frame construction, render-based critic
+review, sheet nesting + cost, and a web UI with live GLB preview. Full roadmap
+in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).

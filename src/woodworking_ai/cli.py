@@ -38,6 +38,16 @@ def _emit(spec: CabinetSpec, args) -> int:
             print(f"  {e}", file=sys.stderr)
         return 1
 
+    # Critic: verify the geometry the spec produces (analytical, no CAD needed).
+    from .agents.critic import critique
+    crit = critique(spec)
+    print("\n" + crit.report_text())
+    if not crit.ok:
+        print("\nCritic found geometry errors:", file=sys.stderr)
+        for e in crit.errors:
+            print(f"  {e}", file=sys.stderr)
+        return 1
+
     cutlist = generate_cutlist(spec)
     print("\nCut list:")
     print(cutlist.to_csv())

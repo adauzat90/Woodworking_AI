@@ -144,9 +144,21 @@ is what separates a buildable design from a plausible hallucination.
 - **Validator** — *Not* an LLM. Deterministic schema + woodworking sanity rules
   (e.g. shelf depth ≤ carcass depth − back, door reveal ≥ 0, drawer box clears
   slides). Cheap, fast, catches most errors before geometry.
-- **Critic** — Measures the built model (overall dims, part interferences) and
-  confirms it matches the spec; on mismatch, emits a structured repair note.
+- **Critic** *(implemented)* — A computational verifier (like Zookeeper's mass/
+  volume/bounding-box tools, not an LLM). It reconstructs every panel from the
+  shared layout and checks the overall envelope against the spec, detects
+  part-to-part interferences (positive-volume collisions), and reports the clear
+  opening, front coverage, and sheet area. On any error it emits a structured
+  repair note the Designer loop feeds back. It runs **analytically with no CAD
+  dependency**, and optionally cross-checks the real build123d B-Rep. During
+  development it already caught a genuine bug — the rear top rail intersecting
+  the back panel — before any geometry was exported.
 - *(future)* **Estimator** — sheet-goods nesting, board-feet, cost.
+
+> **Single source of truth for geometry.** Panel placement lives in one place,
+> `geometry.py::panel_layout`, consumed by *both* the compiler (`builder.py`)
+> and the Critic. The model the Critic measures is therefore always the model
+> the compiler builds — they cannot drift apart.
 
 ---
 
@@ -157,11 +169,13 @@ src/woodworking_ai/
   dsl.py          # The furniture language: typed spec dataclasses + JSON (de)serialize
   validator.py    # Schema + woodworking sanity rules (pure Python, no CAD dep)
   cutlist.py      # Spec → parts list + hardware schedule (pure math, no CAD dep)
+  geometry.py     # panel_layout(): the single source of truth for panel placement
   builder.py      # Spec → build123d B-Rep geometry (the compiler)
   exporters.py    # Geometry → STEP / STL / GLB ; cut list → CSV
   agents/
     llm.py        # Anthropic client wrapper (Claude)
-    designer.py   # NL → DSL with validate-and-repair loop
+    designer.py   # NL → DSL with validate-and-repair (+ critic) loop
+    critic.py     # Computational verifier: envelope, interference, coverage
   cli.py          # `woodai design "..."` entry point
 examples/
   base_cabinet.py # Build a cabinet straight from a DSL spec (no LLM needed)
@@ -179,9 +193,10 @@ needed only to render and export 3D geometry.
 ## 6. Roadmap
 
 1. **MVP (this prototype):** frameless base cabinet — DSL, validator, cut list,
-   build123d geometry, STEP/STL export, and an LLM designer agent.
+   build123d geometry, STEP/STL export, an LLM designer agent, and the Critic.
 2. Wall cabinets, tall/pantry units, face-frame construction.
-3. Critic agent with real interference checks + render-based self-review.
+3. ✅ Critic agent with interference + envelope checks (done). Next: render-based
+   self-review and real B-Rep boolean interference (beyond AABB).
 4. Sheet nesting + cost estimation (Estimator agent).
 5. Casegoods beyond cabinets: tables, dressers, built-ins.
 6. Web UI (Next.js) with live 3D (GLB) preview and slider overrides à la
