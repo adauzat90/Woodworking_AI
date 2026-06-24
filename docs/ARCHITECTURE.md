@@ -179,7 +179,9 @@ src/woodworking_ai/
   builder.py      # Spec → build123d B-Rep geometry (the compiler)
   render.py       # Headless front/side/iso snapshots (matplotlib, no GPU)
   estimator.py    # Sheet nesting + cost estimate (pure math, no CAD dep)
-  exporters.py    # Geometry → STEP / STL / GLB ; cut list → CSV
+  drilling.py     # 32mm drilling schedule: shelf pins, hinge bores, slide lines
+  dxf.py          # DXF cut-layout nest diagram (pure text, no CAD dep)
+  exporters.py    # Geometry → STEP / STL / GLB / DXF ; cut list → CSV
   agents/
     llm.py        # Anthropic client wrapper (Claude), incl. vision
     designer.py   # NL → DSL with validate-and-repair (+ critic) loop
@@ -208,9 +210,12 @@ needed only to render and export 3D geometry.
    opt-in true B-Rep boolean interference. Next: multi-angle / textured renders.
 4. ✅ **Estimator:** guillotine sheet nesting → sheet count + utilization, and a
    material/hardware/edge-banding/labour cost breakdown.
-5. **Casegoods beyond cabinets** *(next)*: tables, dressers, built-ins — new DSL
-   spec types and compiler rules.
-6. **Web UI** *(needs decisions)*: e.g. Next.js with live 3D (GLB) preview and
+5. ✅ **Hardened engine:** real drawer boxes + false fronts, center mullions, a
+   32 mm-system drilling schedule (pins/hinges/slides), a DXF cut-layout, and a
+   verified STEP/STL/GLB B-Rep path. Next: corner cabinets.
+6. **Casegoods beyond cabinets** *(needs decisions)*: tables, dressers, built-ins
+   — new DSL spec types and compiler rules.
+7. **Web UI** *(needs decisions)*: e.g. Next.js with live 3D (GLB) preview and
    slider overrides à la Prompt2CAD; optional KCL export for Zoo interop.
 
 ---

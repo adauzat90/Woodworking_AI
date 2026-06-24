@@ -86,10 +86,17 @@ woodai build out/spec.json --out ./out --render          # PNG snapshots
 woodai design "30 inch drawer base, 3 drawers" --out ./out --visual-review
 ```
 
-**Cost estimate (sheet nesting + material/hardware/labour):**
+**Cost estimate, drilling schedule, and DXF cut-layout:**
 
 ```bash
-woodai build out/spec.json --estimate
+woodai build out/spec.json --estimate --drill
+woodai build out/spec.json --out ./out --dxf       # writes cutlayout.dxf
+```
+
+**Everything at once:**
+
+```bash
+woodai build out/spec.json --out ./out --step --stl --glb --dxf --drill --estimate
 ```
 
 Pick the model with `WOODAI_MODEL` (default `claude-opus-4-8`; e.g.
@@ -101,11 +108,13 @@ Pick the model with `WOODAI_MODEL` (default `claude-opus-4-8`; e.g.
   no toe kick), `tall` (pantry, floor-to-ceiling).
 - **Construction:** `frameless` (Euro, overlay doors) and `face_frame`
   (hardwood stiles/rails + inset doors).
-- **Fronts:** any mix of doors (0–2) and a stack of drawers, with configurable
-  reveal, back style, joinery, shelves, and toe kick.
+- **Fronts:** any mix of doors (0–2), a center mullion, and a stack of drawers
+  (with real drawer **boxes**, or false fronts for sink tip-outs), plus
+  configurable reveal, back style, joinery, shelves, and toe kick.
 - **Outputs:** validated spec, geometry critique, headless render + optional
-  visual review, cut list + hardware schedule (CSV), a sheet-nesting **cost
-  estimate**, and STEP/STL/GLB when build123d is installed.
+  visual review, cut list + hardware schedule (CSV), a **drilling schedule**
+  (32 mm system shelf pins, hinge bores, slide lines), a sheet-nesting **cost
+  estimate**, a **DXF cut-layout**, and STEP/STL/GLB when build123d is installed.
 
 ## The design language (example)
 
@@ -136,7 +145,9 @@ Pick the model with `WOODAI_MODEL` (default `claude-opus-4-8`; e.g.
 | `src/woodworking_ai/builder.py` | Spec → build123d B-Rep geometry |
 | `src/woodworking_ai/render.py` | Headless front/side/iso snapshots (matplotlib) |
 | `src/woodworking_ai/estimator.py` | Sheet nesting + cost estimate (pure math) |
-| `src/woodworking_ai/exporters.py` | STEP / STL / GLB / CSV export |
+| `src/woodworking_ai/drilling.py` | 32 mm drilling schedule: pins, hinges, slides |
+| `src/woodworking_ai/dxf.py` | DXF cut-layout nest diagram (pure text) |
+| `src/woodworking_ai/exporters.py` | STEP / STL / GLB / DXF / CSV export |
 | `src/woodworking_ai/agents/designer.py` | Claude designer + validate/critic-repair loop |
 | `src/woodworking_ai/agents/critic.py` | Computational + render-based (visual) verification |
 | `examples/base_cabinet.py` | End-to-end example, no LLM required |
