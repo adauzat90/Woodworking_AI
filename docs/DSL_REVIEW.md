@@ -107,7 +107,11 @@ Seek-CAD) is sound and documented in `docs/ARCHITECTURE.md`.
 5. **Assembly/project layer — done.** `Component` + `Project` hold placed specs;
    `validate`, `generate_cutlist`, and `estimate` accept a `Project` and
    aggregate across components (combined cut list tagged per cabinet, summed
-   quote, placement-overlap check). Tests: `tests/test_project.py`.
+   quote, placement-overlap check). It also assembles into **one 3D model**:
+   `geometry.project_layout` places every component's panels in the run frame,
+   so the Critic detects cabinet-to-cabinet collisions and `builder.build_project`
+   exports the whole run as a single GLB/STEP (and `--dxf` nests every part into
+   one cut-layout). Tests: `tests/test_project.py`.
 
 A note on enum strictness: the *structural* enums (`cabinet_type`,
 `construction`, `back`, `joinery` on a cabinet) stay strict — an unknown value

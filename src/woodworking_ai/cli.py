@@ -40,6 +40,19 @@ def _emit_project(project: Project, args) -> int:
             print(f"  {e}", file=sys.stderr)
         return 1
 
+    # Critic: verify the assembled run — cabinets must not collide.
+    from .agents.critic import critique
+    crit = critique(project)
+    r = crit.report
+    print(f"\nAssembled run: {r.get('component_count', 0)} components, "
+          f"{r.get('panel_count', 0)} panels, "
+          f"{r.get('interference_count', 0)} interference(s)")
+    if not crit.ok:
+        print("\nCritic found assembly errors:", file=sys.stderr)
+        for e in crit.errors:
+            print(f"  {e}", file=sys.stderr)
+        return 1
+
     cutlist = generate_cutlist(project)
     print("\nCombined cut list:")
     print(cutlist.to_csv(unit))
@@ -58,6 +71,23 @@ def _emit_project(project: Project, args) -> int:
         exporters.write_hardware_csv(cutlist, out / "hardware.csv")
         (out / "project.json").write_text(project.to_json() + "\n", encoding="utf-8")
         print(f"\nWrote project.json, cutlist.csv, hardware.csv to {out}/")
+        if args.dxf:
+            exporters.export_cutlayout_dxf(project, out / "cutlayout.dxf",
+                                           cutlist=cutlist)
+            print("Wrote cutlayout.dxf")
+        if args.step or args.stl or args.glb:
+            from .builder import build_project, measure
+            model = build_project(project)
+            print(f"Assembled geometry: {measure(model)}")
+            if args.step:
+                exporters.export_step(model, out / "project.step")
+                print("Wrote project.step")
+            if args.stl:
+                exporters.export_stl(model, out / "project.stl")
+                print("Wrote project.stl")
+            if args.glb:
+                exporters.export_glb(model, out / "project.glb")
+                print("Wrote project.glb")
     return 0
 
 

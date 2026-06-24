@@ -15,7 +15,9 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-from .dsl import CabinetSpec, TableSpec, BackStyle, Construction, CabinetType
+from .dsl import (
+    CabinetSpec, TableSpec, Project, BackStyle, Construction, CabinetType,
+)
 
 # Construction constants shared with the cut list (neutral module, no cycle).
 from .constants import (
@@ -189,8 +191,42 @@ def front_plan(spec: CabinetSpec) -> FrontPlan:
     return FrontPlan(opening_w, region_bottom, region_h, is_ff, items)
 
 
+def project_layout(project: Project) -> list[PanelBox]:
+    """Every panel of a whole run, placed in the shared (global) frame.
+
+    Each component's local panels (X centred on the box, Y=0 at its front,
+    Z=0 on the floor) are transformed into the run frame:
+
+    * ``component.x`` is the run-X of the component's *left* edge, ``component.y``
+      the run-Y of its front — so a straight run is just side-by-side offsets;
+    * ``component.rotation`` (degrees, CCW about vertical) spins the component
+      about the centre of its front edge, for an end return.
+
+    Built from :func:`panel_layout`, so the assembled model the compiler builds
+    and the Critic measures is exactly the sum of the per-component layouts.
+    """
+    out: list[PanelBox] = []
+    for i, comp in enumerate(project.components, start=1):
+        tag = comp.label or getattr(comp.spec, "name", "") or f"C{i}"
+        w = float(getattr(comp.spec, "width", 0.0) or 0.0)
+        dx = comp.x + w / 2.0          # left-edge anchor -> component centre
+        ca = math.cos(math.radians(comp.rotation))
+        sa = math.sin(math.radians(comp.rotation))
+        for p in panel_layout(comp.spec):
+            cx, cy, cz = p.center
+            wx = cx * ca - cy * sa + dx
+            wy = cx * sa + cy * ca + comp.y
+            out.append(PanelBox(
+                label=f"{tag} · {p.label}", size=p.size, center=(wx, wy, cz),
+                category=p.category, rot_z=p.rot_z + comp.rotation,
+                oversized=p.oversized))
+    return out
+
+
 def panel_layout(spec) -> list[PanelBox]:
     """Return every panel of *spec* placed in the shared coordinate frame."""
+    if isinstance(spec, Project):
+        return project_layout(spec)
     if isinstance(spec, TableSpec):
         return _table_layout(spec)
     if spec.cabinet_type == CabinetType.CORNER_DIAGONAL:

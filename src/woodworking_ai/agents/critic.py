@@ -27,8 +27,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from ..dsl import CabinetSpec
-from ..geometry import PanelBox, panel_layout
+from ..dsl import CabinetSpec, Project
+from ..geometry import PanelBox, panel_layout, project_layout
 from ..cutlist import generate_cutlist
 from . import llm
 
@@ -150,14 +150,75 @@ def _brep_interferences(model: Any, eps_volume: float = 1.0,
     return hits
 
 
-def critique(spec: CabinetSpec, *, use_cad: bool = False,
+def _span(group: list[PanelBox], axis: int) -> float:
+    if not group:
+        return 0.0
+    lo = min(p.bounds()[axis][0] for p in group)
+    hi = max(p.bounds()[axis][1] for p in group)
+    return hi - lo
+
+
+def _critique_project(project: Project, *, use_cad: bool = False,
+                      brep: bool = False, model: Any = None) -> CritiqueResult:
+    """Verify an assembled run: envelope, and component-to-component collisions.
+
+    The decisive check is interference *between* cabinets — a class of error
+    that only exists once components are placed in one frame.
+    """
+    panels = project_layout(project)
+    result = CritiqueResult()
+    shell = [p for p in panels if p.category in ("carcass", "toe")]
+    full_w, full_h, full_d = (_span(panels, 0), _span(panels, 2), _span(panels, 1))
+    result.report.update(
+        width=_span(shell, 0), height=_span(shell, 2), depth=_span(shell, 1),
+        depth_with_fronts=full_d, panel_count=len(panels),
+        component_count=len(project.components),
+        sheet_area_m2=generate_cutlist(project).sheet_area_m2,
+    )
+
+    hits = _interferences(panels)
+    result.report["interference_count"] = len(hits)
+    for a, b, vol in hits:
+        result.issues.append(CritiqueIssue(
+            "error", "interference",
+            f"'{a}' and '{b}' overlap (~{vol/1000:.1f} cm³) — components collide"))
+
+    if use_cad or brep or model is not None:
+        try:
+            from ..builder import build_model, measure
+            if model is None:
+                model = build_model(project)
+            dims = measure(model)
+            result.report["measured"] = dims
+            for label, got, want in (("width", dims["width"], full_w),
+                                     ("height", dims["height"], full_h),
+                                     ("depth", dims["depth"], full_d)):
+                if abs(got - want) > DIM_TOL:
+                    result.issues.append(CritiqueIssue(
+                        "error", "geometry",
+                        f"built {label} {got:.1f}mm != expected {want:.1f}mm"))
+            if brep:
+                skip = {p.label for p in panels if getattr(p, "oversized", False)}
+                for a, b, vol in _brep_interferences(model, skip=skip):
+                    result.issues.append(CritiqueIssue(
+                        "error", "interference",
+                        f"B-Rep: '{a}' and '{b}' intersect (~{vol/1000:.1f} cm³)"))
+        except RuntimeError as exc:
+            result.issues.append(CritiqueIssue(
+                "warning", "geometry", f"could not build B-Rep for cross-check: {exc}"))
+    return result
+
+
+def critique(spec, *, use_cad: bool = False,
              brep: bool = False, model: Any = None) -> CritiqueResult:
-    """Verify the geometry implied by *spec*.
+    """Verify the geometry implied by *spec* (cabinet, table, or project).
 
     Set ``use_cad=True`` (or pass a pre-built ``model``) to additionally measure
     the real build123d B-Rep and cross-check it. Set ``brep=True`` to also run
     exact solid-boolean interference (needs build123d).
     """
+    if isinstance(spec, Project):
+        return _critique_project(spec, use_cad=use_cad, brep=brep, model=model)
     panels = panel_layout(spec)
     result = CritiqueResult()
     is_cabinet = isinstance(spec, CabinetSpec)

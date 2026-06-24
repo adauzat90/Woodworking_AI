@@ -107,12 +107,15 @@ woodai build out/spec.json --estimate --imperial
 ```
 
 **Projects (multi-cabinet runs):** a spec with `"kind": "project"` holds several
-placed components (a kitchen run, a built-in). `validate`, the cut list, and the
-cost estimate aggregate across the whole run — one combined cut list (parts
-tagged per cabinet), one quote, plus a placement-overlap check.
+placed components (a kitchen run, a built-in). The whole pipeline aggregates
+across the run — one combined cut list (parts tagged per cabinet), one quote, a
+placement-overlap check, and a **single assembled 3D model**: the Critic checks
+the placed cabinets don't collide, `--step/--stl/--glb` export the whole run as
+one file, and `--dxf` nests every part into one cut-layout.
 
 ```bash
-woodai build my_kitchen.json --estimate --imperial   # combined run cut list
+woodai build my_kitchen.json --estimate --imperial          # combined cut list + quote
+woodai build my_kitchen.json --out ./run --glb --dxf        # assembled GLB + nest
 ```
 
 **Everything at once:**

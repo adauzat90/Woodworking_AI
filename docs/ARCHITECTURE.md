@@ -234,8 +234,12 @@ needed only to render and export 3D geometry.
    emits cabinets **or** tables (routed by `spec_from_dict`); the LLM schema hint
    is **generated from the enums** so it can't drift; drawer/table string fields
    are promoted to `StrEnum`s; and a **Project/assembly** layer aggregates a run
-   of placed components into one validation, cut list, and quote. See
-   `docs/DSL_REVIEW.md` for the review that drove this.
+   of placed components into one validation, cut list, quote, **and one
+   assembled 3D model** — `geometry.project_layout` places every component's
+   panels in the run frame (the same single-source-of-truth pattern), so the
+   Critic checks cabinet-to-cabinet collisions and `build_project` exports the
+   whole run as one GLB/STEP/DXF. See `docs/DSL_REVIEW.md` for the review that
+   drove this.
 
 ---
 
