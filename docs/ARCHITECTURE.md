@@ -252,7 +252,11 @@ needed only to render and export 3D geometry.
    `definitions` declares named sub-assemblies and a component places an
    independent copy by `ref` (define-once, drop-in-many), with cyclic/unknown
    references rejected on load. The designer agent can emit projects and
-   assemblies — `DSL_SCHEMA_HINT` documents the form. Tests: `tests/test_assembly.py`.
+   assemblies — `DSL_SCHEMA_HINT` documents the form. The web UI's "Project /
+   assembly" mode exposes it: a sample picker seeds reuse (definitions + `ref`)
+   and inline-nesting examples, and the results note summarises the group's
+   components and sub-assemblies. Tests: `tests/test_assembly.py`, the
+   sub-assembly cases in `tests/test_web.py`.
 
 ---
 
