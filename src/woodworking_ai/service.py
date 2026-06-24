@@ -9,9 +9,25 @@ interactive GLB. Heavy/optional steps (render, GLB) degrade gracefully.
 from __future__ import annotations
 
 import base64
+import math
 import tempfile
 from pathlib import Path
 from typing import Any
+
+
+def _clean(obj: Any) -> Any:
+    """Recursively replace non-finite floats (NaN/inf) with None.
+
+    Guarantees the bundle is strict-JSON serialisable even when an invalid spec
+    (e.g. a NaN dimension) is echoed back in an error response.
+    """
+    if isinstance(obj, float):
+        return obj if math.isfinite(obj) else None
+    if isinstance(obj, dict):
+        return {k: _clean(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_clean(v) for v in obj]
+    return obj
 
 from .dsl import CabinetSpec
 from .validator import validate
@@ -100,7 +116,7 @@ def build_result(spec: CabinetSpec, *, want_png: bool = True,
     }
     if not v.ok:
         # A broken spec: report the errors, skip the expensive downstream work.
-        return result
+        return _clean(result)
 
     crit = critique(spec)
     result["critique"] = {
@@ -149,4 +165,4 @@ def build_result(spec: CabinetSpec, *, want_png: bool = True,
 
     result["render_png"] = _render_png(spec) if want_png else None
     result["glb"] = _glb(spec) if want_glb else None
-    return result
+    return _clean(result)

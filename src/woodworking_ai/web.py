@@ -25,6 +25,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 from .dsl import CabinetSpec
+from .validator import validate
 from .service import build_result, export_bytes
 
 STATIC = Path(__file__).parent / "static"
@@ -61,16 +62,25 @@ def health() -> dict[str, Any]:
     return {"status": "ok", "capabilities": _capabilities()}
 
 
+def _parse_spec(payload: dict[str, Any]) -> CabinetSpec:
+    """Build a CabinetSpec from a request payload or raise HTTP 400."""
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="expected a JSON object")
+    spec_data = payload.get("spec", payload)
+    try:
+        return CabinetSpec.from_dict(spec_data)
+    except (TypeError, ValueError, AttributeError) as exc:
+        raise HTTPException(status_code=400, detail=f"bad spec: {exc}")
+
+
 @app.post("/api/build")
 def api_build(payload: dict[str, Any]) -> JSONResponse:
     """Build a full design bundle from a spec dict."""
-    spec_data = payload.get("spec", payload)
+    spec = _parse_spec(payload)
     try:
-        spec = CabinetSpec.from_dict(spec_data)
-    except (TypeError, ValueError) as exc:
-        raise HTTPException(status_code=400, detail=f"bad spec: {exc}")
-    want_glb = payload.get("glb", True)
-    return JSONResponse(build_result(spec, want_glb=want_glb))
+        return JSONResponse(build_result(spec, want_glb=payload.get("glb", True)))
+    except Exception as exc:  # defensive: never 500 with a stack trace
+        raise HTTPException(status_code=500, detail=f"build failed: {exc}")
 
 
 @app.post("/api/design")
@@ -97,16 +107,18 @@ def api_design(payload: dict[str, Any]) -> JSONResponse:
 @app.post("/api/export/{fmt}")
 def api_export(fmt: str, payload: dict[str, Any]) -> Response:
     """Return a downloadable file (STEP/STL/GLB/DXF/cut list/drilling) for a spec."""
-    try:
-        spec = CabinetSpec.from_dict(payload.get("spec", payload))
-    except (TypeError, ValueError) as exc:
-        raise HTTPException(status_code=400, detail=f"bad spec: {exc}")
+    spec = _parse_spec(payload)
+    v = validate(spec)
+    if not v.ok:
+        raise HTTPException(status_code=422, detail=v.as_feedback())
     try:
         data, mime, filename = export_bytes(spec, fmt)
     except ValueError as exc:
         raise HTTPException(status_code=415, detail=str(exc))
     except RuntimeError as exc:  # e.g. build123d missing for STEP/STL/GLB
         raise HTTPException(status_code=503, detail=str(exc))
+    except Exception as exc:  # never leak a stack trace to the client
+        raise HTTPException(status_code=500, detail=f"export failed: {exc}")
     return Response(content=data, media_type=mime, headers={
         "Content-Disposition": f'attachment; filename="{filename}"'})
 

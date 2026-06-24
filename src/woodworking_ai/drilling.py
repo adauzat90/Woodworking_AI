@@ -90,10 +90,13 @@ def hinge_count(door_height: float) -> int:
     return 5
 
 
-def _pin_heights(panel_h: float) -> list[float]:
+def _pin_heights(panel_h: float, max_holes: int = 400) -> list[float]:
+    import math
+    if not math.isfinite(panel_h) or panel_h <= 0:
+        return []
     v = PIN_END_MARGIN
     out = []
-    while v <= panel_h - PIN_END_MARGIN + 1e-6:
+    while v <= panel_h - PIN_END_MARGIN + 1e-6 and len(out) < max_holes:
         out.append(round(v, 1))
         v += SYSTEM_PITCH
     return out

@@ -9,9 +9,15 @@ No CAD dependency — runs anywhere, instantly.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 from .dsl import CabinetSpec, CabinetType
+
+# Practical bounds that also guard against pathological inputs (huge loops, NaN).
+MAX_DIMENSION = 6000.0   # mm — larger than any real cabinet/pantry
+MAX_SHELVES = 50
+MAX_DRAWERS = 20
 
 
 @dataclass
@@ -56,17 +62,30 @@ def validate(spec: CabinetSpec) -> ValidationResult:
     def warn(fieldname: str, msg: str) -> None:
         issues.append(Issue("warning", fieldname, msg))
 
-    # --- basic positive dimensions ---------------------------------------
+    # --- basic positive, finite, sane dimensions -------------------------
+    def finite_positive(val: object) -> bool:
+        return isinstance(val, (int, float)) and math.isfinite(val) and val > 0
+
     for name in ("width", "height", "depth"):
         val = getattr(spec, name)
-        if val is None or val <= 0:
-            err(name, f"must be a positive number, got {val!r}")
+        if not finite_positive(val):
+            err(name, f"must be a positive, finite number, got {val!r}")
+        elif val > MAX_DIMENSION:
+            err(name, f"exceeds the practical maximum of {MAX_DIMENSION:.0f}mm")
 
     m = spec.material
-    for name in ("carcass", "back", "door", "shelf"):
-        val = getattr(m, name)
-        if val is None or val <= 0:
-            err(f"material.{name}", f"thickness must be positive, got {val!r}")
+    for name in ("carcass", "back", "door", "shelf", "drawer_box"):
+        val = getattr(m, name, 18.0)
+        if not finite_positive(val):
+            err(f"material.{name}", f"thickness must be positive & finite, got {val!r}")
+
+    # Counts must be sane and bounded (range() over a huge count would hang).
+    if not isinstance(spec.shelves, int) or not (0 <= spec.shelves <= MAX_SHELVES):
+        err("shelves", f"must be an integer 0–{MAX_SHELVES}, got {spec.shelves!r}")
+    if not isinstance(spec.reveal, (int, float)) or not math.isfinite(spec.reveal):
+        err("reveal", f"must be a finite number, got {spec.reveal!r}")
+    if len(spec.drawers) > MAX_DRAWERS:
+        err("drawers", f"too many drawers (max {MAX_DRAWERS})")
 
     # Stop here if fundamentals are broken — later checks would divide nonsense.
     if any(i.severity == "error" for i in issues):
