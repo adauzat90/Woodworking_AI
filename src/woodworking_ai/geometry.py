@@ -68,12 +68,16 @@ def panel_layout(spec: CabinetSpec) -> list[PanelBox]:
     add("Bottom", (interior_w, interior_d, m.carcass),
         (0, interior_d / 2, toe_h + m.carcass / 2))
 
-    # --- top stretchers (front + back) -----------------------------------
+    # --- top: a full panel (wall/tall) or two rails (base) ---------------
     z_top = toe_h + box_h - m.carcass / 2
-    add("Stretcher front", (interior_w, STRETCHER_WIDTH, m.carcass),
-        (0, STRETCHER_WIDTH / 2, z_top))
-    add("Stretcher back", (interior_w, STRETCHER_WIDTH, m.carcass),
-        (0, spec.depth - back_inset - STRETCHER_WIDTH / 2, z_top))
+    if spec.has_full_top:
+        add("Top", (interior_w, interior_d, m.carcass),
+            (0, interior_d / 2, z_top))
+    else:
+        add("Stretcher front", (interior_w, STRETCHER_WIDTH, m.carcass),
+            (0, STRETCHER_WIDTH / 2, z_top))
+        add("Stretcher back", (interior_w, STRETCHER_WIDTH, m.carcass),
+            (0, spec.depth - back_inset - STRETCHER_WIDTH / 2, z_top))
 
     # --- back ------------------------------------------------------------
     if spec.back == BackStyle.APPLIED:

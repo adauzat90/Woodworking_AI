@@ -102,12 +102,18 @@ def generate_cutlist(spec: CabinetSpec) -> CutList:
         "Bottom", 1, length=interior_width, width=interior_depth,
         thickness=m.carcass, notes="between sides",
     ))
-    # Base cabinets use top stretchers (front + back) rather than a full top,
-    # leaving room for a sink/drawers and a place to fasten the countertop.
-    cl.parts.append(Part(
-        "Top stretcher", 2, length=interior_width, width=STRETCHER_WIDTH,
-        thickness=m.carcass, notes="front & back top rail",
-    ))
+    # Wall/tall cabinets are enclosed with a full top panel; base cabinets use
+    # two top rails, leaving room for a sink/drawers and to fasten the counter.
+    if spec.has_full_top:
+        cl.parts.append(Part(
+            "Top", 1, length=interior_width, width=interior_depth,
+            thickness=m.carcass, notes="enclosed top",
+        ))
+    else:
+        cl.parts.append(Part(
+            "Top stretcher", 2, length=interior_width, width=STRETCHER_WIDTH,
+            thickness=m.carcass, notes="front & back top rail",
+        ))
 
     # ---- back -----------------------------------------------------------
     if spec.back == BackStyle.APPLIED:

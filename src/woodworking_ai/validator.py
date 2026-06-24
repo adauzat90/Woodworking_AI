@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .dsl import CabinetSpec
+from .dsl import CabinetSpec, CabinetType
 
 
 @dataclass
@@ -105,7 +105,22 @@ def validate(spec: CabinetSpec) -> ValidationResult:
         warn("doors", "a single door wider than 600mm tends to sag; consider two")
     if spec.shelves > 0 and spec.drawers:
         warn("shelves", "shelves above a drawer bank may be obstructed by the box")
-    if spec.depth > 700:
-        warn("depth", "unusually deep for a base cabinet")
+
+    # --- per cabinet type ------------------------------------------------
+    if spec.cabinet_type == CabinetType.WALL:
+        if spec.toe_kick is not None:
+            warn("toe_kick", "wall cabinets hang on the wall and have no toe kick")
+        if spec.drawers:
+            warn("drawers", "drawers are unusual in a wall cabinet")
+        if spec.depth > 450:
+            warn("depth", "wall cabinets are typically 300-400mm deep")
+    elif spec.cabinet_type == CabinetType.TALL:
+        if spec.toe_kick is None:
+            warn("toe_kick", "tall/pantry cabinets usually sit on a toe kick")
+        if spec.height < 1500:
+            warn("height", "unusually short for a tall/pantry cabinet")
+    else:  # BASE
+        if spec.depth > 700:
+            warn("depth", "unusually deep for a base cabinet")
 
     return ValidationResult(issues)

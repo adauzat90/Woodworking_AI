@@ -17,9 +17,15 @@ from typing import Any
 import json
 
 
+class CabinetType(str, Enum):
+    BASE = "base"        # sits on the floor, toe kick, top stretchers
+    WALL = "wall"        # hangs on the wall, no toe kick, full top
+    TALL = "tall"        # floor-to-ceiling pantry/utility, toe kick, full top
+
+
 class Construction(str, Enum):
     FRAMELESS = "frameless"      # Euro / frameless box
-    FACE_FRAME = "face_frame"    # traditional face-frame (not yet compiled)
+    FACE_FRAME = "face_frame"    # traditional face-frame
 
 
 class BackStyle(str, Enum):
@@ -57,9 +63,9 @@ class Drawer:
 
 @dataclass
 class CabinetSpec:
-    """A parametric base cabinet. All dimensions are *overall*, in `units`."""
+    """A parametric cabinet. All dimensions are *overall*, in `units`."""
 
-    type: str = "base_cabinet"
+    cabinet_type: CabinetType = CabinetType.BASE
     units: str = "mm"
 
     width: float = 600.0
@@ -80,11 +86,17 @@ class CabinetSpec:
     edge_banding: bool = True
     name: str = "Cabinet"
 
+    @property
+    def has_full_top(self) -> bool:
+        """Wall and tall cabinets get an enclosed top panel; base uses rails."""
+        return self.cabinet_type in (CabinetType.WALL, CabinetType.TALL)
+
     # ---- serialization ---------------------------------------------------
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
         # Enums -> their string values for clean JSON.
+        d["cabinet_type"] = self.cabinet_type.value
         d["construction"] = self.construction.value
         d["back"] = self.back.value
         d["joinery"] = self.joinery.value
@@ -104,7 +116,17 @@ class CabinetSpec:
             data["drawers"] = [
                 Drawer(**d) if isinstance(d, dict) else d for d in data["drawers"]
             ]
+        # Accept a legacy/loose "type" string (e.g. "wall_cabinet") and map it.
+        if "cabinet_type" not in data and "type" in data:
+            t = str(data["type"]).lower()
+            if "wall" in t:
+                data["cabinet_type"] = CabinetType.WALL
+            elif "tall" in t or "pantry" in t:
+                data["cabinet_type"] = CabinetType.TALL
+            else:
+                data["cabinet_type"] = CabinetType.BASE
         for key, enum_cls in (
+            ("cabinet_type", CabinetType),
             ("construction", Construction),
             ("back", BackStyle),
             ("joinery", Joinery),
@@ -126,7 +148,7 @@ DSL_SCHEMA_HINT = """\
 A cabinet is described by this JSON object (units default to "mm"):
 
 {
-  "type": "base_cabinet",
+  "cabinet_type": "base" | "wall" | "tall",
   "name": "Sink Base",
   "units": "mm",
   "width": <overall width>,
@@ -144,6 +166,12 @@ A cabinet is described by this JSON object (units default to "mm"):
   "edge_banding": true | false
 }
 
-Rules of thumb: kitchen base cabinets are ~720mm tall box + ~100mm toe kick,
-560-600mm deep. Convert any imperial dimensions to mm (1 in = 25.4 mm).
+Rules of thumb by cabinet_type:
+- base: floor cabinet, ~720mm box + ~100mm toe kick, 560-600mm deep. Has a toe
+  kick; the top is open (rails), so a counter can sit on it.
+- wall: hangs on the wall, NO toe kick (set "toe_kick": null), 300-400mm deep,
+  600-900mm tall, enclosed top. Usually doors only, no drawers.
+- tall: pantry/utility, floor to near ceiling (1900-2400mm), has a toe kick,
+  enclosed top, many shelves.
+Convert any imperial dimensions to mm (1 in = 25.4 mm).
 """
