@@ -121,6 +121,16 @@ def validate(spec: CabinetSpec) -> ValidationResult:
             warn("toe_kick", "tall/pantry cabinets usually sit on a toe kick")
         if spec.height < 1500:
             warn("height", "unusually short for a tall/pantry cabinet")
+    elif spec.cabinet_type == CabinetType.CORNER_BLIND:
+        if spec.blind_width <= 0:
+            err("blind_width", "a blind corner needs a positive blind_width")
+        elif spec.blind_width >= spec.width - 100:
+            err("blind_width", "blind_width leaves no usable door opening")
+    elif spec.cabinet_type == CabinetType.CORNER_DIAGONAL:
+        if spec.corner_cut <= 0:
+            err("corner_cut", "a diagonal corner needs a positive corner_cut")
+        elif spec.corner_cut >= min(spec.width, spec.depth):
+            err("corner_cut", "corner_cut cannot exceed the cabinet footprint")
     else:  # BASE
         if spec.depth > 700:
             warn("depth", "unusually deep for a base cabinet")

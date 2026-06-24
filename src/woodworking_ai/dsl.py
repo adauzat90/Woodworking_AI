@@ -21,6 +21,8 @@ class CabinetType(str, Enum):
     BASE = "base"        # sits on the floor, toe kick, top stretchers
     WALL = "wall"        # hangs on the wall, no toe kick, full top
     TALL = "tall"        # floor-to-ceiling pantry/utility, toe kick, full top
+    CORNER_BLIND = "corner_blind"        # door opening + a blind filler return
+    CORNER_DIAGONAL = "corner_diagonal"  # 45° angled face with an angled door
 
 
 class Construction(str, Enum):
@@ -86,6 +88,8 @@ class CabinetSpec:
 
     reveal: float = 3.0          # gap around overlay doors/drawers
     center_mullion: bool = False # vertical post/stile between a pair of doors
+    blind_width: float = 0.0     # corner_blind: width of the blind/filler return
+    corner_cut: float = 0.0      # corner_diagonal: leg length of the 45° chamfer
     edge_banding: bool = True
     name: str = "Cabinet"
 
@@ -93,6 +97,11 @@ class CabinetSpec:
     def has_full_top(self) -> bool:
         """Wall and tall cabinets get an enclosed top panel; base uses rails."""
         return self.cabinet_type in (CabinetType.WALL, CabinetType.TALL)
+
+    @property
+    def is_corner(self) -> bool:
+        return self.cabinet_type in (
+            CabinetType.CORNER_BLIND, CabinetType.CORNER_DIAGONAL)
 
     # ---- serialization ---------------------------------------------------
 

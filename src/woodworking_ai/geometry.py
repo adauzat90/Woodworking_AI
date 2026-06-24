@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .dsl import CabinetSpec, BackStyle, Construction
+from .dsl import CabinetSpec, BackStyle, Construction, CabinetType
 
 # Construction constants shared with the cut list.
 from .cutlist import (
@@ -137,13 +137,25 @@ def panel_layout(spec: CabinetSpec) -> list[PanelBox]:
         region_h = box_h
         y_front = -m.door / 2                      # overlay, proud of the carcass
 
+    # Blind corner: the access opening occupies one side; a fixed filler panel
+    # covers the blind return that tucks behind the adjacent cabinet.
+    front_cx = 0.0
+    if spec.cabinet_type == CabinetType.CORNER_BLIND and spec.blind_width > 0:
+        bw = spec.blind_width
+        opening_w -= bw
+        front_cx = bw / 2                          # shift opening to the right
+        filler_w = bw - spec.reveal
+        add("Blind filler", (filler_w, m.door, region_h - 2 * spec.reveal),
+            (-spec.width / 2 + spec.reveal + filler_w / 2, y_front,
+             region_bottom + region_h / 2), category="front")
+
     drawer_band = 0.0
     z_cursor = region_bottom + region_h
     for i, dr in enumerate(spec.drawers, start=1):
         fw = opening_w - 2 * spec.reveal
         z = z_cursor - spec.reveal - dr.front_height / 2
         add(f"Drawer front {i}", (fw, m.door, dr.front_height),
-            (0, y_front, z), category="front")
+            (front_cx, y_front, z), category="front")
         z_cursor -= dr.front_height + spec.reveal
         drawer_band += dr.front_height + spec.reveal
 
@@ -159,19 +171,19 @@ def panel_layout(spec: CabinetSpec) -> list[PanelBox]:
             m_y = -m_th / 2 if is_ff else -m.door / 2
             add("Center stile" if is_ff else "Mullion",
                 (mullion_w, m_th, door_region),
-                (0, m_y, z), category="frame")
+                (front_cx, m_y, z), category="frame")
         if spec.doors == 1:
             dw = opening_w - 2 * spec.reveal
-            add("Door", (dw, m.door, door_h), (0, y_front, z), category="front")
+            add("Door", (dw, m.door, door_h), (front_cx, y_front, z), category="front")
         elif mullion_w:
             dw = (opening_w - mullion_w) / 2 - 2 * spec.reveal
             offset = mullion_w / 2 + spec.reveal + dw / 2
-            add("Door L", (dw, m.door, door_h), (-offset, y_front, z), category="front")
-            add("Door R", (dw, m.door, door_h), (offset, y_front, z), category="front")
+            add("Door L", (dw, m.door, door_h), (front_cx - offset, y_front, z), category="front")
+            add("Door R", (dw, m.door, door_h), (front_cx + offset, y_front, z), category="front")
         else:
             dw = (opening_w - 3 * spec.reveal) / 2
             offset = spec.reveal / 2 + dw / 2
-            add("Door L", (dw, m.door, door_h), (-offset, y_front, z), category="front")
-            add("Door R", (dw, m.door, door_h), (offset, y_front, z), category="front")
+            add("Door L", (dw, m.door, door_h), (front_cx - offset, y_front, z), category="front")
+            add("Door R", (dw, m.door, door_h), (front_cx + offset, y_front, z), category="front")
 
     return panels

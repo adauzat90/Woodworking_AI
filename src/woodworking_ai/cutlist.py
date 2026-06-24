@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .dsl import CabinetSpec, BackStyle, Construction
+from .dsl import CabinetSpec, BackStyle, Construction, CabinetType
 
 # Small construction constants (mm). Centralised so they are easy to tune.
 SHELF_SIDE_CLEARANCE = 2.0     # gap each side so an adjustable shelf drops in
@@ -193,6 +193,15 @@ def generate_cutlist(spec: CabinetSpec) -> CutList:
     opening_w = (spec.width - 2 * FRAME_WIDTH) if is_ff else spec.width
     region_h = (box_height - 2 * FRAME_WIDTH) if is_ff else box_height
     front_note = "inset" if is_ff else "overlay"
+
+    # Blind corner: a fixed filler covers the blind return; opening shrinks.
+    if spec.cabinet_type == CabinetType.CORNER_BLIND and spec.blind_width > 0:
+        opening_w -= spec.blind_width
+        cl.parts.append(Part(
+            "Blind filler", 1, length=region_h - 2 * spec.reveal,
+            width=spec.blind_width - spec.reveal, thickness=m.door,
+            material="door/front", notes="covers blind return",
+        ))
 
     drawer_band = 0.0
     for i, dr in enumerate(spec.drawers, start=1):
