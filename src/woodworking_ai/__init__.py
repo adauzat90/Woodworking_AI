@@ -5,9 +5,11 @@ parametric design language and compile it to machinable geometry + cut lists.
 from .dsl import (
     CabinetSpec, CabinetType, TableSpec, spec_from_dict, Material, ToeKick,
     Drawer, Construction, BackStyle, Joinery,
+    CornerJoint, DovetailTails, SlideType, Grain, TopFixing,
+    Component, Project, place_run,
 )
 from .validator import validate, ValidationResult
-from . import engineering, stock, proportion
+from . import engineering, stock, proportion, units
 from .cutlist import generate_cutlist, CutList, Part, Hardware
 from .estimator import estimate, Estimate, PriceBook, SheetSize, pack_sheets
 from .drilling import (
@@ -24,9 +26,18 @@ __all__ = [
     "Construction",
     "BackStyle",
     "Joinery",
+    "CornerJoint",
+    "DovetailTails",
+    "SlideType",
+    "Grain",
+    "TopFixing",
+    "Component",
+    "Project",
+    "place_run",
     "Material",
     "ToeKick",
     "Drawer",
+    "units",
     "validate",
     "ValidationResult",
     "engineering",

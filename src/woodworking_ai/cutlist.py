@@ -13,10 +13,10 @@ is the convention a cut list / nesting tool expects.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
-from .dsl import CabinetSpec, TableSpec, BackStyle, Construction, CabinetType
-from .geometry import front_plan
+from .dsl import CabinetSpec, TableSpec, Project, BackStyle, Construction, CabinetType
+from .geometry import front_plan, component_tag
 # Construction constants now live in one neutral module shared with geometry.
 from .constants import (
     SHELF_SIDE_CLEARANCE, SHELF_SETBACK, STRETCHER_WIDTH,
@@ -60,12 +60,20 @@ class CutList:
         """Total face area of all panels (gross, before nesting waste)."""
         return sum(p.area_m2 * p.qty for p in self.parts)
 
-    def to_csv(self) -> str:
-        lines = ["part,qty,length_mm,width_mm,thickness_mm,material,grain,notes"]
+    def to_csv(self, unit: str = "metric") -> str:
+        """Cut list as CSV. ``unit="imperial"`` renders fractional inches."""
+        from .units import format_length, length_unit_label
+        lbl = length_unit_label(unit)
+
+        def f(v: float) -> str:
+            return format_length(v, unit, mark=False)
+
+        lines = [f"part,qty,length_{lbl},width_{lbl},thickness_{lbl},"
+                 "material,grain,notes"]
         for p in self.parts:
             lines.append(
-                f"{p.name},{p.qty},{p.length:.1f},{p.width:.1f},"
-                f"{p.thickness:.1f},{p.material},{p.grain},{p.notes}"
+                f"{p.name},{p.qty},{f(p.length)},{f(p.width)},"
+                f"{f(p.thickness)},{p.material},{p.grain},{p.notes}"
             )
         return "\n".join(lines)
 
@@ -75,13 +83,14 @@ class CutList:
             lines.append(f"{h.name},{h.qty},{h.notes}")
         return "\n".join(lines)
 
-    def summary(self) -> str:
+    def summary(self, unit: str = "metric") -> str:
+        from .units import format_area
         n_panels = sum(p.qty for p in self.parts)
         n_hw = sum(h.qty for h in self.hardware)
         return (
             f"{self.spec_name}: {n_panels} panels "
             f"({len(self.parts)} unique), {n_hw} hardware items, "
-            f"~{self.sheet_area_m2:.2f} m² sheet goods"
+            f"~{format_area(self.sheet_area_m2, unit)} sheet goods"
         )
 
 
@@ -141,7 +150,7 @@ def _diagonal_cutlist(spec: CabinetSpec) -> CutList:
     cl.hardware.append(Hardware("Concealed hinge", 2, "soft-close"))
     cl.hardware.append(Hardware("Door pull", 1))
     if spec.edge_banding:
-        cl.hardware.append(Hardware("Edge banding", 1, f"~{2 * box_h / 1000:.1f} m"))
+        cl.hardware.append(Hardware("Edge banding", 1, "match carcass front edges"))
     return cl
 
 
@@ -166,8 +175,27 @@ def _table_cutlist(spec: TableSpec) -> CutList:
     return cl
 
 
+def _project_cutlist(project: Project) -> CutList:
+    """One combined cut list for a whole run, parts tagged by component.
+
+    Each component's parts and hardware are merged under a short label so a shop
+    sees one list but can still tell which cabinet a panel belongs to.
+    """
+    cl = CutList(spec_name=project.name)
+    for i, comp in enumerate(project.components, start=1):
+        tag = component_tag(comp, i)
+        sub = generate_cutlist(comp.spec)
+        for p in sub.parts:
+            cl.parts.append(replace(p, name=f"{tag} · {p.name}"))
+        for h in sub.hardware:
+            cl.hardware.append(replace(h, name=f"{tag} · {h.name}"))
+    return cl
+
+
 def generate_cutlist(spec) -> CutList:
-    """Derive the full parts + hardware list for a cabinet or table."""
+    """Derive the full parts + hardware list for a cabinet, table, or project."""
+    if isinstance(spec, Project):
+        return _project_cutlist(spec)
     if isinstance(spec, TableSpec):
         return _table_cutlist(spec)
     if spec.cabinet_type == CabinetType.CORNER_DIAGONAL:
@@ -305,9 +333,8 @@ def generate_cutlist(spec) -> CutList:
     # ---- edge banding (rough running length on exposed front edges) -----
     if spec.edge_banding:
         # Front edges of the two sides + bottom + stretcher front.
-        banding_mm = 2 * box_height + interior_width
         cl.hardware.append(Hardware(
-            "Edge banding", 1, f"~{banding_mm/1000:.1f} m to match carcass",
+            "Edge banding", 1, "match carcass front edges (see estimate for run)",
         ))
 
     return cl

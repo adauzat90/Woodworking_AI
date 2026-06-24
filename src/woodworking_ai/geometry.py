@@ -15,7 +15,10 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-from .dsl import CabinetSpec, TableSpec, BackStyle, Construction, CabinetType
+from .dsl import (
+    CabinetSpec, TableSpec, Project, Component, BackStyle, Construction,
+    CabinetType,
+)
 
 # Construction constants shared with the cut list (neutral module, no cycle).
 from .constants import (
@@ -189,8 +192,96 @@ def front_plan(spec: CabinetSpec) -> FrontPlan:
     return FrontPlan(opening_w, region_bottom, region_h, is_ff, items)
 
 
+def component_tag(comp: Component, index: int = 1) -> str:
+    """Short label for a component: its explicit label, else its name, else Cn."""
+    return comp.label or getattr(comp.spec, "name", "") or f"C{index}"
+
+
+def _placement(comp: Component):
+    """Transform fn local (x, y) -> world (x, y) for a placed component.
+
+    A component is anchored by its **front-left corner** (local (-width/2, 0)):
+    ``component.x``/``component.y`` are where that corner sits in the run, and
+    ``component.rotation`` (degrees, CCW about vertical) turns the component
+    about it. So a straight run is side-by-side offsets, and turning a run 90°
+    at a corner just rotates each piece about the corner it butts to.
+    """
+    w = float(getattr(comp.spec, "width", 0.0) or 0.0)
+    a = math.radians(comp.rotation)
+    ca, sa = math.cos(a), math.sin(a)
+
+    def place(lx: float, ly: float) -> tuple[float, float]:
+        # Re-anchor from the box centre (local X=0) to the front-left corner.
+        rx, ry = lx + w / 2.0, ly
+        return (rx * ca - ry * sa + comp.x, rx * sa + ry * ca + comp.y)
+
+    return place
+
+
+def footprint_corners(comp: Component) -> list[tuple[float, float]]:
+    """The component's plan rectangle in the run frame (4 world (x, y) points)."""
+    place = _placement(comp)
+    w = float(getattr(comp.spec, "width", 0.0) or 0.0)
+    d = float(getattr(comp.spec, "depth", 0.0) or 0.0)
+    # Local plan corners about the box-centre/front origin.
+    return [place(-w / 2, 0.0), place(w / 2, 0.0),
+            place(w / 2, d), place(-w / 2, d)]
+
+
+def _project_poly(poly, ax: float, ay: float) -> tuple[float, float]:
+    ds = [x * ax + y * ay for (x, y) in poly]
+    return min(ds), max(ds)
+
+
+def footprints_overlap(a: Component, b: Component, slack: float = 1.0) -> bool:
+    """True if two components' plan footprints overlap (oriented, SAT).
+
+    Works for any rotation, so it catches the inner-corner collision where two
+    perpendicular runs meet. ``slack`` (mm) lets neighbours that merely butt
+    pass; only real interpenetration counts.
+    """
+    pa, pb = footprint_corners(a), footprint_corners(b)
+    for poly in (pa, pb):                       # each rectangle's two edge axes
+        for i in (1, 3):
+            ex, ey = poly[i][0] - poly[0][0], poly[i][1] - poly[0][1]
+            n = math.hypot(ex, ey)
+            if n == 0:
+                continue
+            ax, ay = ex / n, ey / n
+            amin, amax = _project_poly(pa, ax, ay)
+            bmin, bmax = _project_poly(pb, ax, ay)
+            if amin > bmax - slack or bmin > amax - slack:
+                return False                    # a separating axis -> disjoint
+    return True
+
+
+def project_layout(project: Project) -> list[PanelBox]:
+    """Every panel of a whole run, placed in the shared (global) frame.
+
+    Each component's local panels (X centred on the box, Y=0 at its front,
+    Z=0 on the floor) are transformed into the run frame by :func:`_placement`
+    (front-left-corner anchor + rotation), so L- and U-shaped runs assemble
+    correctly. Built from :func:`panel_layout`, so the model the compiler builds
+    and the Critic measures is exactly the sum of the per-component layouts.
+    """
+    out: list[PanelBox] = []
+    for i, comp in enumerate(project.components, start=1):
+        tag = component_tag(comp, i)
+        place = _placement(comp)
+        for p in panel_layout(comp.spec):
+            cx, cy, cz = p.center
+            wx, wy = place(cx, cy)
+            out.append(PanelBox(
+                label=f"{tag} · {p.label}", size=p.size, center=(wx, wy, cz),
+                category=p.category, rot_z=p.rot_z + comp.rotation,
+                oversized=p.oversized))
+    return out
+
+
 def panel_layout(spec) -> list[PanelBox]:
     """Return every panel of *spec* placed in the shared coordinate frame."""
+    if isinstance(spec, Project):
+        return project_layout(spec)
     if isinstance(spec, TableSpec):
         return _table_layout(spec)
     if spec.cabinet_type == CabinetType.CORNER_DIAGONAL:

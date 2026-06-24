@@ -228,6 +228,21 @@ needed only to render and export 3D geometry.
    list / cost / drilling, **live update**, **downloads** (STEP/STL/GLB/DXF/CSV),
    **share links**, and a **saved-design library** (Convex or localStorage).
    Next: KCL export for Zoo interop.
+8. ✅ **Imperial I/O + language hardening:** a millimetre-native engine with an
+   imperial **display layer** (fractional inches to 1/16″) *and* imperial
+   **input** (`"units": "in"` converts to mm in `from_dict`); the designer now
+   emits cabinets **or** tables (routed by `spec_from_dict`); the LLM schema hint
+   is **generated from the enums** so it can't drift; drawer/table string fields
+   are promoted to `StrEnum`s; and a **Project/assembly** layer aggregates a run
+   of placed components into one validation, cut list, quote, **and one
+   assembled 3D model** — `geometry.project_layout` places every component's
+   panels in the run frame (the same single-source-of-truth pattern), so the
+   Critic checks cabinet-to-cabinet collisions and `build_project` exports the
+   whole run as one GLB/STEP/DXF. **L-/U-shaped runs** are supported: components
+   are anchored by a front-left corner + wall angle (`place_run` lays a run
+   along a wall), and overlaps use oriented 2D footprints (SAT), so the inner
+   corner where two perpendicular runs meet is verified. See `docs/DSL_REVIEW.md`
+   for the review that drove this.
 
 ---
 

@@ -12,9 +12,9 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-from .dsl import TableSpec, CabinetType, Joinery
+from .dsl import TableSpec, Project, CabinetType, Joinery
 from . import engineering, stock, proportion
-from .geometry import front_plan
+from .geometry import front_plan, footprints_overlap, component_tag
 
 # ASTM F2057 scope: clothing storage units >= 27in (686mm) tall fall under the
 # CPSC tip-over standard. Toe-kick minimums per ANSI/KCMA A161.1 (2in x 3in).
@@ -176,7 +176,33 @@ def _validate_table(spec: TableSpec) -> ValidationResult:
     return ValidationResult(issues)
 
 
+def _validate_project(project: Project) -> ValidationResult:
+    """Validate every component and check the run for placement overlaps."""
+    issues: list[Issue] = []
+    comps = project.components
+    if not comps:
+        issues.append(Issue("warning", "components", "project has no components"))
+    for i, comp in enumerate(comps, start=1):
+        tag = component_tag(comp, i)
+        for issue in validate(comp.spec).issues:
+            issues.append(Issue(issue.severity, f"{tag}.{issue.field}", issue.message))
+    # Oriented 2D footprint overlap — components that share floor space would
+    # collide. Works for any rotation, so it catches the inner-corner collision
+    # where two perpendicular runs of an L/U layout meet.
+    for i in range(len(comps)):
+        for j in range(i + 1, len(comps)):
+            if footprints_overlap(comps[i], comps[j]):
+                issues.append(Issue(
+                    "error", "placement",
+                    f"'{component_tag(comps[i], i + 1)}' and "
+                    f"'{component_tag(comps[j], j + 1)}' overlap in plan; space "
+                    "them or fit a corner unit / filler between the runs"))
+    return ValidationResult(issues)
+
+
 def validate(spec) -> ValidationResult:
+    if isinstance(spec, Project):
+        return _validate_project(spec)
     if isinstance(spec, TableSpec):
         return _validate_table(spec)
     issues: list[Issue] = []

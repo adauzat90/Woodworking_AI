@@ -52,10 +52,13 @@
   .downloads button { width:auto; margin:0; padding:4px 10px; font-size:12px;
     background:#3a352f; font-weight:500; }
   .downloads button.share { background:var(--accent); margin-left:auto; }
-  .tabs { display:flex; gap:2px; padding:8px 12px 0; }
+  .tabs { display:flex; gap:2px; padding:8px 12px 0; align-items:center; }
   .tabs button { width:auto; margin:0; padding:6px 12px; background:transparent;
     color:var(--muted); border-bottom:2px solid transparent; border-radius:0; font-weight:500; }
   .tabs button.active { color:var(--text); border-color:var(--accent); }
+  .units-toggle { display:flex; align-items:center; gap:6px; margin-left:auto;
+    font-size:11px; }
+  .units-toggle select { width:auto; margin:0; padding:3px 6px; font-size:11px; }
   .tabpane { flex:1; overflow:auto; padding:6px 16px 16px; }
   table { width:100%; border-collapse:collapse; font-size:12.5px; }
   th, td { text-align:left; padding:5px 8px; border-bottom:1px solid var(--line); }
@@ -83,6 +86,7 @@
     <select id="furniture">
       <option value="cabinet">Cabinet</option>
       <option value="table">Table</option>
+      <option value="project">Project (run)</option>
     </select>
     <div id="cabinetFields">
     <fieldset>
@@ -146,6 +150,18 @@
       </div>
     </fieldset>
     </div><!-- /tableFields -->
+    <div id="projectFields" style="display:none">
+    <fieldset>
+      <legend>Project — multi-cabinet run</legend>
+      <p class="muted" style="font-size:11px;margin:0 0 6px">
+        A run of placed components. <code>x</code>/<code>y</code> locate each
+        piece's front-left corner (mm); <code>rotation</code> turns a run 90° at a
+        corner. Edit the JSON, then Build — you get one combined cut list, quote,
+        drilling schedule, and assembled view.</p>
+      <textarea id="projectJson"
+        style="height:200px;font-family:ui-monospace,Menlo,monospace;font-size:11px"></textarea>
+    </fieldset>
+    </div><!-- /projectFields -->
     <button id="buildBtn">🔨 Build design</button>
     <div class="check"><input id="auto" type="checkbox" /><label style="margin:0">Live update as I change values</label></div>
     <fieldset style="margin-top:14px">
@@ -177,6 +193,13 @@
         <button data-t="hardware">Hardware</button>
         <button data-t="cost">Cost</button>
         <button data-t="drilling">Drilling</button>
+        <label class="units-toggle" title="Display units for the cut list and reports (the engine is millimetre-native)">
+          <span class="muted">Units</span>
+          <select id="units">
+            <option value="imperial">Inches (fractional)</option>
+            <option value="metric">Millimetres</option>
+          </select>
+        </label>
       </div>
       <div class="tabpane" id="pane"></div>
     </div>
@@ -185,6 +208,64 @@
 <script>
 const $ = id => document.getElementById(id);
 let last = null, tab = "cutlist";
+
+// --- display units (engine is millimetre-native; this is display only) ------
+const MM_PER_IN = 25.4;
+function unit() { return $("units").value; }
+function unitLabel() { return unit() === "imperial" ? "in" : "mm"; }
+// Render a mm length as fractional inches (to 1/16") or mm, for the UI tables.
+function fmtLen(mm, mark = false) {
+  if (mm == null || !isFinite(mm)) return "";
+  if (unit() !== "imperial") return (+mm).toFixed(1) + (mark ? " mm" : "");
+  const sign = mm < 0 ? "-" : "";
+  let sixteenths = Math.round(Math.abs(mm) / MM_PER_IN * 16);
+  let whole = Math.floor(sixteenths / 16), frac = sixteenths % 16;
+  const suf = mark ? '"' : "";
+  if (frac === 0) return sign + whole + suf;
+  const g = (a, b) => b ? g(b, a % b) : a;
+  const d = g(frac, 16); frac /= d; const den = 16 / d;
+  return sign + (whole ? whole + "-" : "") + frac + "/" + den + suf;
+}
+function fmtArea(m2) {
+  if (unit() === "imperial") return (m2 / 0.09290304).toFixed(1) + " ft²";
+  return (+m2).toFixed(2) + " m²";
+}
+
+// --- form inputs honour the same toggle (length fields only) ----------------
+const LEN_IDS = ["width","height","depth","reveal","toe","blind_width","corner_cut",
+  "t_width","t_depth","t_height","t_top","t_leg","t_inset","t_apronh","t_apront"];
+let formUnit = "metric";   // tracks the unit the form values are currently in
+const mmFromDisp = v => formUnit === "imperial" ? v * MM_PER_IN : v;
+const dispFromMM = mm => formUnit === "imperial" ? mm / MM_PER_IN : mm;
+const roundDisp  = v => formUnit === "imperial" ? Math.round(v*100)/100 : Math.round(v*10)/10;
+
+function setUnitLabels() {
+  const u = unitLabel();
+  for (const id of LEN_IDS) {
+    const el = $(id), lab = el && el.previousElementSibling;
+    if (!lab || lab.tagName !== "LABEL") continue;
+    if (lab.dataset.base === undefined)
+      lab.dataset.base = lab.textContent.replace(/\s*\(.*?\)\s*$/, "").trim();
+    lab.textContent = `${lab.dataset.base} (${u})`;
+  }
+}
+// Reconcile the form to the toggle: convert every length input in place.
+function applyUnitChange() {
+  const newU = unit();
+  if (newU !== formUnit) {
+    const toImperial = newU === "imperial";
+    for (const id of LEN_IDS) {
+      const el = $(id);
+      if (!el || el.value === "") continue;
+      const mm = formUnit === "imperial" ? (+el.value) * MM_PER_IN : +el.value;
+      const disp = toImperial ? mm / MM_PER_IN : mm;
+      el.value = toImperial ? Math.round(disp*100)/100 : Math.round(disp*10)/10;
+    }
+    formUnit = newU;
+    setUnitLabels();
+  }
+  paint();
+}
 
 async function health() {
   try {
@@ -204,37 +285,56 @@ function toggleCorner() {
 $("cabinet_type").addEventListener("change", toggleCorner);
 
 function toggleFurniture() {
-  const t = $("furniture").value === "table";
-  $("tableFields").style.display = t ? "block" : "none";
-  $("cabinetFields").style.display = t ? "none" : "block";
+  const v = $("furniture").value;
+  $("cabinetFields").style.display = v === "cabinet" ? "block" : "none";
+  $("tableFields").style.display   = v === "table"   ? "block" : "none";
+  $("projectFields").style.display = v === "project" ? "block" : "none";
 }
 $("furniture").addEventListener("change", toggleFurniture);
 
+// A small L-kitchen so "Project" mode builds something immediately.
+const SAMPLE_PROJECT = {
+  kind: "project", name: "L-kitchen",
+  components: [
+    {label: "Sink",    x: 0,    y: 0,   rotation: 0,
+     spec: {cabinet_type: "base", name: "Sink base", width: 900, doors: 2, shelves: 1}},
+    {label: "Drawers", x: 900,  y: 0,   rotation: 0,
+     spec: {cabinet_type: "base", name: "Drawer base", width: 600,
+            drawers: [{front_height: 140}, {front_height: 200}, {front_height: 260}]}},
+    {label: "Return",  x: 1500, y: 560, rotation: 90,
+     spec: {cabinet_type: "base", name: "Return base", width: 600, doors: 1, shelves: 1}}
+  ]
+};
+
 function tableSpecFromForm() {
+  const L = id => mmFromDisp(+$(id).value);   // length inputs -> mm
   return {
     kind: "table", name: $("t_name").value || "Table",
-    width: +$("t_width").value, depth: +$("t_depth").value, height: +$("t_height").value,
-    top_thickness: +$("t_top").value, leg: +$("t_leg").value,
-    leg_inset: +$("t_inset").value, apron_height: +$("t_apronh").value,
-    apron_thickness: +$("t_apront").value,
+    width: L("t_width"), depth: L("t_depth"), height: L("t_height"),
+    top_thickness: L("t_top"), leg: L("t_leg"),
+    leg_inset: L("t_inset"), apron_height: L("t_apronh"),
+    apron_thickness: L("t_apront"),
   };
 }
 
 function specFromForm() {
-  if ($("furniture").value === "table") return tableSpecFromForm();
-  const toe = +$("toe").value;
+  const v = $("furniture").value;
+  if (v === "table") return tableSpecFromForm();
+  if (v === "project") return JSON.parse($("projectJson").value);   // throws -> showError
+  const L = id => mmFromDisp(+$(id).value);   // length inputs -> mm
+  const toe = L("toe");
   const nd = Math.max(0, +$("drawers").value | 0);
   return {
     cabinet_type: $("cabinet_type").value,
     construction: $("construction").value,
     name: $("name").value || "Cabinet",
-    width: +$("width").value, height: +$("height").value, depth: +$("depth").value,
+    width: L("width"), height: L("height"), depth: L("depth"),
     doors: +$("doors").value, shelves: Math.max(0, +$("shelves").value | 0),
     drawers: Array.from({length: nd}, () => ({front_height: 140})),
-    reveal: +$("reveal").value,
+    reveal: L("reveal"),
     center_mullion: $("mullion").checked,
-    blind_width: +($("blind_width").value || 0),
-    corner_cut: +($("corner_cut").value || 0),
+    blind_width: $("blind_width").value ? L("blind_width") : 0,
+    corner_cut: $("corner_cut").value ? L("corner_cut") : 0,
     toe_kick: toe > 0 ? {height: toe, setback: 50} : null,
   };
 }
@@ -265,21 +365,30 @@ $("designBtn").onclick = async () => {
 };
 
 function syncForm(s) {
+  // Specs are always mm; show each length in the form's current unit.
+  const isLen = id => LEN_IDS.includes(id);
+  const put = (id, v) => { if (v !== undefined && $(id))
+    $(id).value = isLen(id) ? roundDisp(dispFromMM(v)) : v; };
+  if (s.kind === "project") {
+    $("furniture").value = "project"; toggleFurniture();
+    $("projectJson").value = JSON.stringify(s, null, 2);
+    return;
+  }
   if (s.kind === "table") {
     $("furniture").value = "table"; toggleFurniture();
     const map = {t_name:"name",t_width:"width",t_depth:"depth",t_height:"height",
       t_top:"top_thickness",t_leg:"leg",t_inset:"leg_inset",t_apronh:"apron_height",
       t_apront:"apron_thickness"};
-    for (const [el,k] of Object.entries(map)) if (s[k] !== undefined) $(el).value = s[k];
+    for (const [el,k] of Object.entries(map)) put(el, s[k]);
     return;
   }
   $("furniture").value = "cabinet"; toggleFurniture();
   for (const k of ["name","cabinet_type","construction","width","height","depth",
                    "doors","shelves","reveal","blind_width","corner_cut"])
-    if (s[k] !== undefined && $(k)) $(k).value = s[k];
+    put(k, s[k]);
   $("drawers").value = (s.drawers || []).length;
   $("mullion").checked = !!s.center_mullion;
-  $("toe").value = s.toe_kick ? s.toe_kick.height : 0;
+  put("toe", s.toe_kick ? s.toe_kick.height : 0);
   toggleCorner();
 }
 function showError(msg) {
@@ -318,7 +427,8 @@ function render(d) {
 async function download(fmt) {
   if (!last) return;
   const r = await fetch("/api/export/" + fmt, {method:"POST",
-    headers:{"Content-Type":"application/json"}, body: JSON.stringify({spec: last.spec})});
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({spec: last.spec, units: unit()})});
   if (!r.ok) { alert((await r.json().catch(()=>({detail:r.statusText}))).detail); return; }
   const blob = await r.blob();
   const cd = r.headers.get("Content-Disposition") || "";
@@ -353,10 +463,16 @@ function loadFromHash() {
 function paint() {
   if (!last) return;
   const d = last; let h = "";
+  const u = unitLabel();
   if (tab === "cutlist") {
-    h = table(["Part","Qty","L","W","Thk","Material","Notes"],
-      d.cutlist.map(p => [p.name,p.qty,p.length,p.width,p.thickness,p.material,p.notes]));
-    h += `<p class="muted">${d.cutlist_summary||""}</p>`;
+    h = table([`Part`,`Qty`,`L (${u})`,`W (${u})`,`Thk (${u})`,`Material`,`Notes`],
+      d.cutlist.map(p => [p.name,p.qty,fmtLen(p.length),fmtLen(p.width),
+                          fmtLen(p.thickness),p.material,p.notes]));
+    const panels = d.cutlist.reduce((n,p)=>n+p.qty,0);
+    const hw = (d.hardware||[]).reduce((n,x)=>n+x.qty,0);
+    const area = d.cutlist.reduce((a,p)=>a+(p.length/1000)*(p.width/1000)*p.qty,0);
+    h += `<p class="muted">${(d.spec&&d.spec.name)||"Design"}: ${panels} panels `
+       + `(${d.cutlist.length} unique), ${hw} hardware items, ~${fmtArea(area)} sheet goods</p>`;
   } else if (tab === "hardware") {
     h = table(["Item","Qty","Notes"], d.hardware.map(x=>[x.name,x.qty,x.notes]));
   } else if (tab === "cost") {
@@ -368,8 +484,8 @@ function paint() {
       <div>Labour (${e.labour_hours}h)</div><div>${e.currency}${e.labour.toFixed(2)}</div>
       <div class="total">Total</div><div class="total">${e.currency}${e.total.toFixed(2)}</div></div>
       <h4>Sheets</h4>` +
-      table(["Material","Thk","Parts","Sheets","Used"],
-        e.groups.map(g=>[g.material,g.thickness,g.parts,g.sheets,Math.round(g.utilization*100)+"%"]));
+      table(["Material",`Thk (${u})`,"Parts","Sheets","Used"],
+        e.groups.map(g=>[g.material,fmtLen(g.thickness),g.parts,g.sheets,Math.round(g.utilization*100)+"%"]));
   } else if (tab === "drilling") {
     h = `<p class="muted">${d.drilling.total_holes} holes total</p>` +
       table(["Part","Operation","Holes","Note"],
@@ -388,6 +504,8 @@ $("tabs").querySelectorAll("button").forEach(b => b.onclick = () => {
   $("tabs").querySelectorAll("button").forEach(x=>x.classList.toggle("active", x===b));
   paint();
 });
+// Switching units converts the form inputs and reformats the loaded bundle.
+$("units").onchange = applyUnitChange;
 
 // --- Library: Convex when CONVEX_URL is configured, else localStorage --------
 const CONVEX_URL = window.__CONVEX_URL__ || "";
@@ -464,6 +582,14 @@ function maybeAuto() {
 document.querySelectorAll(".controls input, .controls select").forEach(el => {
   if (el.id !== "prompt" && el.id !== "auto") el.addEventListener("input", maybeAuto);
 });
+
+// Seed the Project editor with a runnable sample.
+$("projectJson").value = JSON.stringify(SAMPLE_PROJECT, null, 2);
+
+// Initialise the form to the default display unit (inches for US shops): the
+// HTML defaults are authored in mm, so convert them once on load.
+setUnitLabels();
+applyUnitChange();
 
 health();
 refreshSaved();

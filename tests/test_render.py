@@ -46,6 +46,18 @@ def test_render_creates_parent_dirs(tmp_path):
     assert path.exists()
 
 
+def test_render_handles_a_project(tmp_path):
+    pytest.importorskip("matplotlib")
+    from woodworking_ai import Project, place_run
+    from woodworking_ai.render import render_cabinet
+
+    run = place_run([base_spec(name="A"), base_spec(name="B")],
+                    start=(0, 0), angle=0)
+    path = render_cabinet(Project(name="Run", components=run),
+                          tmp_path / "run.png")
+    assert path.exists() and path.read_bytes()[:8] == PNG_MAGIC
+
+
 # --- render_review without the LLM --------------------------------------
 
 def test_render_review_no_llm_merges_report(tmp_path):

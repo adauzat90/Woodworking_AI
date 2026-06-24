@@ -95,6 +95,48 @@ woodai build out/spec.json --estimate --drill
 woodai build out/spec.json --out ./out --dxf       # writes cutlayout.dxf
 ```
 
+**Imperial, in and out** (for US shops): add `--imperial` to render the cut list
+and reports in fractional inches (to 1/16″). The engine stays millimetre-native
+— only the display changes; the 32 mm drilling schedule remains in mm because it
+*is* a metric boring system. You can also *author* in inches: set
+`"units": "in"` in a spec (or use inches in the web form) and dimensions are
+converted to mm on load. The web UI has a single units toggle for both.
+
+```bash
+woodai build out/spec.json --estimate --imperial
+```
+
+**Projects (multi-cabinet runs):** a spec with `"kind": "project"` holds several
+placed components (a kitchen run, a built-in). The whole pipeline aggregates
+across the run — one combined cut list (parts tagged per cabinet), one quote, a
+placement-overlap check, and a **single assembled 3D model**: the Critic checks
+the placed cabinets don't collide, `--step/--stl/--glb` export the whole run as
+one file, and `--dxf` nests every part into one cut-layout.
+
+```bash
+woodai build my_kitchen.json --estimate --imperial          # combined cut list + quote
+woodai build my_kitchen.json --out ./run --glb --dxf        # assembled GLB + nest
+```
+
+**L- and U-shaped runs:** components are placed by a front-left-corner anchor and
+a wall angle, and overlaps are checked with oriented 2D footprints (so the inner
+corner where two perpendicular runs meet is verified, not just a straight row).
+The `place_run` helper lays a run along a wall so you don't hand-compute
+rotations:
+
+```python
+from woodworking_ai import CabinetSpec, Project, place_run
+
+run_a = place_run([CabinetSpec(width=600), CabinetSpec(width=600)], start=(0, 0),    angle=0)
+run_b = place_run([CabinetSpec(width=600), CabinetSpec(width=600)], start=(1200, 560), angle=90)
+kitchen = Project(name="L-kitchen", components=run_a + run_b)   # validate / cut list / GLB
+```
+
+A whole run renders as one assembly — here an L-kitchen of a diagonal corner
+cabinet, a door base, a drawer bank, a perpendicular return, and a table island:
+
+![Assembled L-kitchen — front, side and isometric views](docs/example-kitchen.png)
+
 **Everything at once:**
 
 ```bash
@@ -118,6 +160,10 @@ parameters, and get an interactive GLB model (via `<model-viewer>`), the cut
 list, hardware schedule, cost estimate, and drilling schedule — all in the
 browser. Plus:
 
+- **Furniture / Project modes** — design a single cabinet or table, or switch to
+  **Project (run)** to build a multi-cabinet run from JSON: one combined cut list,
+  quote, drilling schedule, and an assembled view (placement collisions flagged).
+- **Units toggle** — view the cut list and reports in fractional inches or mm.
 - **Live update** — toggle on to rebuild as you change parameters.
 - **Downloads** — STEP, STL, GLB, DXF cut-layout, cut-list & drilling CSV.
 - **Share links** — encodes the design in the URL; open it to restore the design.

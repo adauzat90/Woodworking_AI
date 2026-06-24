@@ -64,8 +64,12 @@ def _glb(spec: CabinetSpec) -> str | None:
         return None
 
 
-def export_bytes(spec: CabinetSpec, fmt: str) -> tuple[bytes, str, str]:
+def export_bytes(spec, fmt: str,
+                 units: str = "metric") -> tuple[bytes, str, str]:
     """Return (data, media_type, filename) for a downloadable export.
+
+    ``units="imperial"`` renders the cut list in fractional inches. The 32mm
+    drilling schedule stays metric — it *is* a metric boring system.
 
     Raises ValueError for an unknown format and RuntimeError if a CAD format is
     requested without build123d installed.
@@ -78,7 +82,7 @@ def export_bytes(spec: CabinetSpec, fmt: str) -> tuple[bytes, str, str]:
             text = drilling_schedule(spec).to_csv()
         else:
             cl = generate_cutlist(spec)
-            text = cl.to_csv() if fmt == "cutlist" else cl.hardware_csv()
+            text = cl.to_csv(units) if fmt == "cutlist" else cl.hardware_csv()
         return text.encode("utf-8"), "text/csv", f"{base}_{fmt}.csv"
 
     if fmt == "dxf":
@@ -102,9 +106,14 @@ def export_bytes(spec: CabinetSpec, fmt: str) -> tuple[bytes, str, str]:
     raise ValueError(f"unknown export format: {fmt}")
 
 
-def build_result(spec: CabinetSpec, *, want_png: bool = True,
+def build_result(spec, *, want_png: bool = True,
                  want_glb: bool = True) -> dict[str, Any]:
-    """Full design bundle for *spec* (always JSON-serialisable)."""
+    """Full design bundle for *spec* — a cabinet, table, or whole project.
+
+    Always JSON-serialisable; aggregate stages (cut list, cost, drilling,
+    critic, render) dispatch on the spec type, so a Project returns the combined
+    run bundle.
+    """
     v = validate(spec)
     result: dict[str, Any] = {
         "spec": spec.to_dict(),

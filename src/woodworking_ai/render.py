@@ -12,7 +12,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from .dsl import CabinetSpec
+from .dsl import CabinetSpec, Project
 from .geometry import PanelBox, panel_layout
 
 # Wood-ish palette by panel role.
@@ -120,8 +120,24 @@ def _isometric(ax, panels: list[PanelBox], spec: CabinetSpec) -> None:
     ax.set_xticks([]); ax.set_yticks([]); ax.set_zticks([])
 
 
-def render_cabinet(spec: CabinetSpec, path: str | Path, *, dpi: int = 110) -> Path:
-    """Render *spec* to a multi-view PNG at *path*; returns the path."""
+def _title(spec, panels: list[PanelBox]) -> str:
+    """A one-line caption that works for a cabinet, a table, or a whole run."""
+    if isinstance(spec, Project):
+        def span(axis):
+            cs = [c for p in panels for c in p.bounds()[axis]]
+            return (max(cs) - min(cs)) if cs else 0.0
+        dims = f"{span(0):.0f} x {span(2):.0f} x {span(1):.0f} mm"
+        return f"{spec.name} — {dims}  ({len(spec.components)} components)"
+    dims = f"{spec.width:.0f} x {spec.height:.0f} x {spec.depth:.0f} mm"
+    if hasattr(spec, "construction"):
+        sub = f"{spec.construction.value}, {spec.doors} door / {len(spec.drawers)} drawer"
+    else:
+        sub = getattr(spec, "kind", "furniture")
+    return f"{spec.name} — {dims}  ({sub})"
+
+
+def render_cabinet(spec, path: str | Path, *, dpi: int = 110) -> Path:
+    """Render *spec* (cabinet, table, or project) to a multi-view PNG."""
     plt = _require_mpl()
     panels = panel_layout(spec)
     path = Path(path)
@@ -138,12 +154,7 @@ def render_cabinet(spec: CabinetSpec, path: str | Path, *, dpi: int = 110) -> Pa
     _elevation(ax_side, panels, haxis=1, vaxis=2, depth_axis=0, title="side")
     _isometric(ax_iso, panels, spec)
 
-    dims = f"{spec.width:.0f} x {spec.height:.0f} x {spec.depth:.0f} mm"
-    if hasattr(spec, "construction"):
-        sub = f"{spec.construction.value}, {spec.doors} door / {len(spec.drawers)} drawer"
-    else:
-        sub = getattr(spec, "kind", "furniture")
-    fig.suptitle(f"{spec.name} — {dims}  ({sub})", fontsize=11)
+    fig.suptitle(_title(spec, panels), fontsize=11)
     fig.tight_layout(rect=(0, 0, 1, 0.95))
     fig.savefig(path, dpi=dpi)
     plt.close(fig)

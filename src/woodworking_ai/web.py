@@ -24,7 +24,7 @@ from typing import Any
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 
-from .dsl import CabinetSpec, TableSpec, spec_from_dict
+from .dsl import CabinetSpec, TableSpec, Project, spec_from_dict
 from .validator import validate
 from .service import build_result, export_bytes
 
@@ -62,8 +62,8 @@ def health() -> dict[str, Any]:
     return {"status": "ok", "capabilities": _capabilities()}
 
 
-def _parse_spec(payload: dict[str, Any]) -> CabinetSpec | TableSpec:
-    """Build a furniture spec from a request payload or raise HTTP 400."""
+def _parse_spec(payload: dict[str, Any]) -> CabinetSpec | TableSpec | Project:
+    """Build a furniture spec (cabinet, table, or project) from a payload."""
     if not isinstance(payload, dict):
         raise HTTPException(status_code=400, detail="expected a JSON object")
     spec_data = payload.get("spec", payload)
@@ -111,8 +111,9 @@ def api_export(fmt: str, payload: dict[str, Any]) -> Response:
     v = validate(spec)
     if not v.ok:
         raise HTTPException(status_code=422, detail=v.as_feedback())
+    units = payload.get("units", "metric")
     try:
-        data, mime, filename = export_bytes(spec, fmt)
+        data, mime, filename = export_bytes(spec, fmt, units=units)
     except ValueError as exc:
         raise HTTPException(status_code=415, detail=str(exc))
     except RuntimeError as exc:  # e.g. build123d missing for STEP/STL/GLB
