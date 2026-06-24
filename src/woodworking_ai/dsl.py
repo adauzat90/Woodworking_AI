@@ -43,6 +43,12 @@ class Joinery(str, Enum):
     DOWEL = "dowel"
     DOMINO = "domino"
     SCREW = "screw"
+    POCKET = "pocket"            # pocket-hole screws — fast, low racking
+    BUTT = "butt"               # glued butt — weak in tension/shear
+    RABBET = "rabbet"
+    MORTISE_TENON = "mortise_tenon"  # strongest frame joint
+    DOVETAIL = "dovetail"       # drawer corners, resists pull-apart
+    BOX = "box"                 # finger joint, strong glue surface
 
 
 @dataclass
@@ -65,6 +71,13 @@ class ToeKick:
 class Drawer:
     front_height: float = 140.0
     false_front: bool = False    # a fixed panel (e.g. sink tip-out), no box
+    # --- box joinery + slide hardware (optional; defaults = good practice) ----
+    corner_joint: str = "dovetail"   # dovetail | box | rabbet | dowel | butt
+    dovetail_tails: str = "sides"    # tails on "sides" (correct) so the front
+                                     # can't pull off; "front" is wrong
+    slide_type: str = "side_mount"   # side_mount | undermount
+    slide_clearance: float = 12.7    # per-side gap for side-mount slides (½in)
+    slide_length: float = 0.0        # nominal slide length; 0 = derive from depth
 
 
 @dataclass
@@ -94,6 +107,11 @@ class CabinetSpec:
     corner_cut: float = 0.0      # corner_diagonal: leg length of the 45° chamfer
     edge_banding: bool = True
     name: str = "Cabinet"
+
+    # --- engineering inputs (optional; sensible defaults keep old specs valid) -
+    shelf_species: str = "plywood"   # drives shelf stiffness for the sag check
+    shelf_load_kg_per_m: float = 25.0  # distributed shelf load; ~books/dishes
+    anti_tip: bool = False           # wall restraint / anti-tip hardware provided
 
     @property
     def has_full_top(self) -> bool:
@@ -200,6 +218,12 @@ class TableSpec:
     apron_thickness: float = 20.0
     leg_inset: float = 40.0      # leg outer face set in from the top edge
 
+    # --- material/movement (optional; defaults describe a well-built top) ------
+    solid_top: bool = True       # solid wood (moves) vs. a stable sheet good
+    top_fixing: str = "floating" # "floating" (movement allowed) | "fixed"
+    grain: str = "flatsawn"      # "flatsawn" | "quartersawn" — affects movement
+    joinery: str = "mortise_tenon"  # leg-to-apron joint; drives racking check
+
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
@@ -244,13 +268,31 @@ A cabinet is described by this JSON object (units default to "mm"):
   "toe_kick": {"height": 100, "setback": 50}  | null,
   "shelves": <integer count of adjustable shelves>,
   "doors": <integer count of doors, 0, 1 or 2>,
-  "drawers": [{"front_height": 140, "false_front": false}, ...],
+  "drawers": [{"front_height": 140, "false_front": false,
+               "corner_joint": "dovetail", "slide_type": "side_mount",
+               "slide_clearance": 12.7}, ...],
   "reveal": <gap in mm around overlay doors/drawers, e.g. 3>,
   "center_mullion": <true to add a vertical post between a pair of doors>,
   "blind_width": <corner_blind only: width of the blind/filler return>,
   "corner_cut": <corner_diagonal only: leg length of the 45 degree chamfer>,
-  "edge_banding": true | false
+  "edge_banding": true | false,
+  "shelf_species": "plywood" | "mdf" | "particleboard" | "oak" | "maple" | ...,
+  "shelf_load_kg_per_m": <expected shelf load, e.g. 25 (books ~20-40)>,
+  "anti_tip": true | false
 }
+
+The validator checks shelf sag (deflection vs span/360) from shelf_species,
+shelf thickness, span and load — prefer thicker/stiffer shelves or shorter
+spans for heavy loads. Tall units and dressers >=686mm should set anti_tip
+true (ASTM F2057 tip-over). Toe kicks should be >=75mm high and >=50mm deep.
+Drawer corners should be "dovetail", "box", or "rabbet" (a "butt" corner is
+weak); side-mount slides need ~12.7mm clearance per side. Sheet thicknesses
+should be real stock (6/9/12/15/18/21/25mm) and panels should fit a
+2440×1220mm sheet. Doors take 35mm concealed hinges, so door stock should be
+≥16mm thick and each door wide enough (>50mm) to host the cup. Dovetailed
+drawers keep their tails on the sides so the front can't pull off. Cabinets
+with adjustable shelves need a box tall and deep enough for the 32mm drilling
+system.
 
 Rules of thumb by cabinet_type:
 - base: floor cabinet, ~720mm box + ~100mm toe kick, 560-600mm deep. Has a toe
