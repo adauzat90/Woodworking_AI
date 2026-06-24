@@ -164,6 +164,8 @@ def build_result(spec, *, want_png: bool = True,
         "currency": est.currency,
         "total": round(est.total, 2),
         "material": round(est.material_cost, 2),
+        "lumber": round(est.lumber_cost, 2),
+        "board_feet": round(est.total_board_feet, 2),
         "hardware": round(est.hardware_cost, 2),
         "edge_banding": round(est.edge_banding_cost, 2),
         "labour": round(est.labour_cost, 2),
@@ -174,6 +176,12 @@ def build_result(spec, *, want_png: bool = True,
              "parts": g.part_count, "sheets": g.sheets,
              "utilization": round(g.utilization, 3), "oversize": g.oversize}
             for g in est.groups
+        ],
+        "lumber_groups": [
+            {"material": g.material, "thickness": g.thickness,
+             "parts": g.part_count, "board_feet": round(g.board_feet, 2),
+             "cost": round(g.cost, 2)}
+            for g in est.lumber_groups
         ],
     }
 
