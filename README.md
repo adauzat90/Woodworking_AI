@@ -1,5 +1,7 @@
 # Woodworking AI
 
+[![CI](https://github.com/adauzat90/woodworking_ai/actions/workflows/ci.yml/badge.svg)](https://github.com/adauzat90/woodworking_ai/actions/workflows/ci.yml)
+
 Design cabinets and furniture with **AI agents that write a parametric design
 language**, then compile that language into real, machinable 3D geometry, cut
 lists, and hardware schedules.
