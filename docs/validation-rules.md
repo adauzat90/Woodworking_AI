@@ -1,0 +1,192 @@
+# Compiler Validation Rule Catalog
+
+The concrete checks the Woodworking AI compiler should run against a design.
+Rationale and sources for every threshold are in
+[`design-principles.md`](./design-principles.md).
+
+Each rule has: a stable **ID**, a **severity** (ERROR / WARN / INFO), the
+**applies-to** scope, the **condition** that triggers a diagnostic, and the
+**message/fix**. IDs are grouped by category prefix so rules can be referenced,
+suppressed (`// noqa: STRUCT-014`), and unit-tested individually.
+
+Severity recap:
+- **ERROR** — physically won't build, will fail structurally, or violates a
+  mandatory safety standard. Blocks compilation.
+- **WARN** — best-practice / longevity / voluntary-standard violation.
+- **INFO** — advisory (proportion, comfort range, efficiency).
+
+A rule's `condition` is written in pseudo-expression form against a design model
+with parts, joints, materials, and a declared `intent` (table, chair, base
+cabinet, dresser, bookshelf, …).
+
+---
+
+## DIM — Dimensional & ergonomic
+
+| ID | Sev | Applies to | Condition (flag when…) | Message / fix |
+|---|---|---|---|---|
+| DIM-001 | WARN | dining table | `top_height ∉ [28,30] in` | Dining table height outside 28–30 in standard. |
+| DIM-002 | WARN | counter/bar table | counter `∉[34,36]`, bar `∉[40,42]` | Surface height off standard counter/bar range. |
+| DIM-003 | WARN | chair/stool | `seat_height ∉ [18,20]` (dining) | Seat height outside comfortable range for class. |
+| DIM-004 | **ERROR** | table + seating set | `top_height − paired_seat_height ∉ [9,13]` | Insufficient/excess thigh clearance; seat & top mismatched (need ~10–12 in). |
+| DIM-005 | WARN | desk | `work_height ∉ [28,30] in` or `depth < 30 in` | Desk height/depth outside ergonomic range. |
+| DIM-006 | INFO | any seating | knee clearance under apron `< 10 in` | Apron too low; legs won't fit. |
+| DIM-007 | WARN | base cabinet | `depth ≠ 24` or `box_height ≠ 34.5` (±tol) | Non-standard base cabinet dimension. |
+| DIM-008 | WARN | wall cabinet | `depth ≠ 12` or height ∉ {12,15,18,21,24,30,36,42} | Non-standard wall cabinet dimension. |
+| DIM-009 | WARN | cabinet | `width mod 3in ≠ 0` (frameless: off 32 mm grid) | Width breaks the manufacturing increment. |
+| DIM-010 | WARN | bookshelf | clear shelf opening height `< 8 in` or `> 14 in` | Shelf spacing outside useful range; consider adjustable. |
+
+---
+
+## PROP — Proportion (advisory)
+
+| ID | Sev | Applies to | Condition | Message |
+|---|---|---|---|---|
+| PROP-001 | INFO | any case/top | primary rectangle ratio far from 1.618 (e.g. `|ratio−1.618| > 0.4` and not a deliberate square) | Consider golden-ratio proportions for visual balance. |
+| PROP-002 | INFO | leg vs. mass | leg cross-section visually too thin/thick for span | Leg proportion looks under/over-scaled. |
+| PROP-003 | INFO | drawer bank | drawer-height progression irregular | Consider graduated (e.g. golden-ratio) drawer heights. |
+
+---
+
+## STRUCT — Structural integrity
+
+### Racking / base stability
+| ID | Sev | Applies to | Condition | Message / fix |
+|---|---|---|---|---|
+| STRUCT-001 | **ERROR** | table/desk/chair base | leg↔rail joint type ∈ {butt, pocket-screw-only} **and** no apron **and** no stretchers | Base has no racking resistance; add apron/stretchers or upgrade to M&T/dowel. |
+| STRUCT-002 | WARN | table/desk | apron present but leg↔apron joint is pocket-screw-only | Pocket screws give poor racking resistance for leg-to-apron; prefer M&T/dowel + corner blocks. |
+| STRUCT-003 | WARN | tall/long base (height>30in or span>48in) | aprons only, no lower stretchers | Add stretchers for racking on tall/long base. |
+| STRUCT-004 | INFO | leg frame | no corner blocks at apron corners | Corner blocks improve rigidity and allow top attachment. |
+
+### Joint selection by load
+| ID | Sev | Applies to | Condition | Message |
+|---|---|---|---|---|
+| STRUCT-010 | **ERROR** | any load-bearing joint | joint in primary load path is `butt` with glue only and load is tension/shear | Butt joint cannot carry tension/shear; choose an interlocking/mechanical joint. |
+| STRUCT-011 | WARN | drawer corners | joint ∉ {dovetail, box, locking rabbet} | Drawer corners should use dovetail/box/locking joint for pull-open loads. |
+| STRUCT-012 | **ERROR** | drawer (dovetailed) | dovetail orientation does not resist the open-pull direction | Tails oriented wrong; reorient so interlock resists drawer being pulled open. |
+| STRUCT-013 | INFO | biscuit used structurally | biscuit relied on for strength (not just alignment) | Biscuits are alignment aids, not structural; don't count on their strength. |
+| STRUCT-014 | WARN | shelf into case side | shelf joint is butt/screw only for a load shelf | Use dado/rabbet (+glue/fastener) so the shelf is captured in shear. |
+
+### Shelf sag / deflection
+| ID | Sev | Applies to | Condition | Message |
+|---|---|---|---|---|
+| STRUCT-020 | **ERROR** | shelf | computed deflection `> span/360` at design load | Shelf exceeds engineering deflection limit; shorten span, thicken, or add support. |
+| STRUCT-021 | WARN | shelf | deflection `> 0.03 in × span_ft` (visible-sag limit) | Sag will be visible; consider stiffer material/shorter span. |
+| STRUCT-022 | WARN | ¾-in plywood shelf | unsupported span `> 30 in` (or `>24 in` at heavy load) | Span too long for ¾ ply; add center support or thicker/stiffer stock. |
+| STRUCT-023 | INFO | shelf | material E low for span (e.g. particleboard over 24 in) | Low-stiffness material over long span; expect sag. |
+
+*Deflection model:* compute from span (∝ length³), load distribution,
+thickness (∝ thickness³), and material Young's modulus E (maple≈1.83M,
+oak≈1.8M, plywood≈1.5M psi). Design load: bookshelf ≈ 20–40 lb/ft (use 35 for
+library). This is the "Sagulator" calculation.
+
+### Stability / tip-over (regulated)
+| ID | Sev | Applies to | Condition | Message |
+|---|---|---|---|---|
+| STRUCT-030 | **ERROR** | clothing storage unit (≥27 in tall, ≥30 lb, >3.2 ft³) | fails ASTM F2057 stability model (tips when top drawer loaded & extended) OR no anti-tip provision | Unit risks tip-over; meet ASTM F2057-23, provide anti-tip restraint + marked wall-attach point. |
+| STRUCT-031 | WARN | tall narrow casework (height/depth ratio high) | center of gravity high / shallow base | Tip-over risk; widen/deepen base, lower CG, or require wall anchor. |
+| STRUCT-032 | INFO | freestanding tall unit | no documented wall-anchor hardware point | Add a marked anti-tip attachment point. |
+
+### Casework enclosure (KCMA)
+| ID | Sev | Applies to | Condition | Message |
+|---|---|---|---|---|
+| STRUCT-040 | WARN | wall cabinet | missing any of back/bottom/sides/top | Cabinet should be fully enclosed (KCMA A161.1). |
+| STRUCT-041 | WARN | base cabinet | missing back/bottom/sides | Base cabinet not fully enclosed. |
+| STRUCT-042 | WARN | floor cabinet | toe space `< 2 in deep` or `< 3 in high` | Toe kick below KCMA minimum. |
+| STRUCT-043 | INFO | wall cabinet | mounting can't carry rated load (KCMA tests to 600 lb) | Verify hanging method/back thickness for load. |
+
+---
+
+## MOVE — Wood movement & grain (solid wood)
+
+These are the highest-value "silent failure" checks.
+
+| ID | Sev | Applies to | Condition | Message / fix |
+|---|---|---|---|---|
+| MOVE-001 | **ERROR** | solid panel locked on all edges | wide solid panel glued/fixed across grain at both ends (e.g. glued breadboard, panel glued into frame) | Cross-grain restraint will split the wood; let the panel float / slot the joint. |
+| MOVE-002 | **ERROR** | tabletop attachment | top fastened to base with a rigid screw grid across the width | Top can't move; use figure-8 / Z-clips / slotted cleats. |
+| MOVE-003 | WARN | frame-and-panel | panel sized with no expansion gap in groove | Leave float gap: ~¼ in/12 in (flatsawn), ⅛ in/12 in (quartersawn). |
+| MOVE-004 | WARN | breadboard end | peg holes not elongated/slotted (center pinned, ends slotted) | Slot outer peg holes so the end can slide. |
+| MOVE-005 | WARN | cross-grain glue | two parts glued with grains running perpendicular over significant length | Differential movement will crack; redesign as floating/mechanical. |
+| MOVE-006 | INFO | movement allowance | allowance computed without accounting for flat vs. quarter sawn | Refine allowance using grain cut (quartersawn ≈ half the movement). |
+
+---
+
+## GRAIN — Grain direction & glue
+
+| ID | Sev | Applies to | Condition | Message |
+|---|---|---|---|---|
+| GRAIN-001 | **ERROR** | glue-only joint | joint is end-grain to end-grain with no mechanical reinforcement | End-grain glue joints are weak; add M&T/dowel/spline or redesign long-grain to long-grain. |
+| GRAIN-002 | WARN | structural part (leg/rail/shelf) | grain runs across the short dimension | Orient grain along the long/structural axis for strength. |
+| GRAIN-003 | WARN | wide solid part | single board wider than available stock implied | Glue up narrower boards (long-grain edges) rather than running cross-grain. |
+| GRAIN-004 | INFO | panel glue-up | mixed flatsawn/quartersawn edges glued together | Keep grain orientation consistent to avoid differential movement/cracking. |
+
+---
+
+## MAT — Material & buildability
+
+| ID | Sev | Applies to | Condition | Message |
+|---|---|---|---|---|
+| MAT-001 | **ERROR** | any sheet part | thickness references nominal but joinery (dado) cut to nominal not actual (¾→23/32) | Cut joinery to *actual* sheet thickness; nominal will be loose. |
+| MAT-002 | WARN | sheet part | required panel exceeds standard sheet (e.g. dimension >96 in on 4×8) | Part won't yield from a standard 4×8 sheet; seam or change material. |
+| MAT-003 | **ERROR** | solid part | finished thickness > rough stock can yield after S2S (lose ~3/16 in/face) | Chosen rough stock too thin for finished dimension; step up (e.g. 4/4→5/4). |
+| MAT-004 | INFO | sheet layout | poor nesting / high waste on 4×8 | Optimize part nesting to reduce sheet waste. |
+| MAT-005 | INFO | material vs. role | low-stiffness/low-durability material in a high-wear/high-load role | Reconsider material for the role (e.g. particleboard shelf, softwood drawer runner). |
+
+---
+
+## HW — Hardware & clearance
+
+| ID | Sev | Applies to | Condition | Message / fix |
+|---|---|---|---|---|
+| HW-001 | **ERROR** | drawer w/ side-mount slides | `(opening_width − drawer_box_width)/2 ≠ 0.5 in` (within +1/32/−0) | Slide clearance wrong; drawer box width must be opening − 1 in. |
+| HW-002 | **ERROR** | drawer | slide length > available case depth, or box deeper than slide travel | Slide/box depth mismatch; drawer won't seat or fully extend. |
+| HW-003 | WARN | drawer | inset drawer depth not reduced for face/frame | Inset reduces usable depth; recompute box length. |
+| HW-004 | WARN | doors | door reveal/gap inconsistent or `< 1/16 in` (doors may bind) | Set consistent reveals; overlay doors must not collide. |
+| HW-005 | WARN | door w/ concealed hinge | stile narrower than 35 mm cup bore needs | Stile too narrow for hinge cup; widen or change hinge. |
+| HW-006 | INFO | drawer | extension type vs. access need (¾ vs full vs over-travel) | Confirm extension class matches required access. |
+
+---
+
+## STD — Standards / class compliance (meta-rules)
+
+| ID | Sev | Applies to | Condition | Message |
+|---|---|---|---|---|
+| STD-001 | WARN | kitchen/vanity cabinet | design not checked against ANSI/KCMA A161.1 set | Run the KCMA enclosure/toe-kick/load checks (STRUCT-040…043). |
+| STD-002 | **ERROR** | clothing storage unit | in-scope for ASTM F2057-23 but no stability/anti-tip provision | Mandatory CPSC standard; see STRUCT-030. |
+| STD-003 | INFO | commercial/office furniture | not checked vs. ANSI/BIFMA durability tests | Consider BIFMA strength/durability validation for commercial use. |
+| STD-004 | INFO | architectural casework | not checked vs. AWI/AWS quality grades | Validate against AWI Architectural Woodwork Standards grade. |
+
+---
+
+## Implementation notes for the compiler
+
+1. **Intent drives the rule set.** Each `intent` (table, chair, base-cabinet,
+   wall-cabinet, dresser, bookshelf, desk…) activates a subset of rules. Resolve
+   intent first; unknown intent → run only universal STRUCT/MOVE/GRAIN/MAT rules.
+
+2. **Coupled-dimension checks need the assembly, not parts.** Rules like
+   DIM-004 (seat↔top) and HW-001 (opening↔box) compare *related* parts —
+   build the reference graph in an early pass.
+
+3. **Numeric thresholds belong in a data table, not code.** Keep all magic
+   numbers (heights, clearances, E values, movement coefficients) in a single
+   versioned config so standards updates don't touch logic. Treat the values
+   here as defaults pending direct confirmation against the cited standards.
+
+4. **Three structural calculators are first-class:**
+   - *Sagulator* (STRUCT-020…023): beam deflection.
+   - *Movement* (MOVE-*): `Δ = width × MC_change% × shrinkage_coeff`, cut-aware.
+   - *Tip-over* (STRUCT-030): CG + drawer-load moment vs. base footprint.
+
+5. **Severity is suppressible but auditable.** Allow per-rule suppression with a
+   reason; ERROR-level safety rules (STD-002 / STRUCT-030) should require an
+   explicit override acknowledgment.
+
+6. **Every diagnostic carries a fix hint.** The "Message / fix" column is the
+   model for actionable output — say what's wrong *and* the standard remedy.
+
+> ⚠️ The numeric thresholds here are engineering rules-of-thumb and summaries of
+> published standards, suitable for design-time linting. They are **not** a
+> substitute for the actual ANSI/KCMA A161.1, ASTM F2057, ANSI/BIFMA, or AWI
+> documents when certification or regulatory compliance is required.
