@@ -22,10 +22,10 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 from .dsl import CabinetSpec
-from .service import build_result
+from .service import build_result, export_bytes
 
 STATIC = Path(__file__).parent / "static"
 
@@ -87,6 +87,23 @@ def api_design(payload: dict[str, Any]) -> JSONResponse:
     bundle = build_result(res.spec, want_glb=payload.get("glb", True))
     bundle["attempts"] = res.attempts
     return JSONResponse(bundle)
+
+
+@app.post("/api/export/{fmt}")
+def api_export(fmt: str, payload: dict[str, Any]) -> Response:
+    """Return a downloadable file (STEP/STL/GLB/DXF/cut list/drilling) for a spec."""
+    try:
+        spec = CabinetSpec.from_dict(payload.get("spec", payload))
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=f"bad spec: {exc}")
+    try:
+        data, mime, filename = export_bytes(spec, fmt)
+    except ValueError as exc:
+        raise HTTPException(status_code=415, detail=str(exc))
+    except RuntimeError as exc:  # e.g. build123d missing for STEP/STL/GLB
+        raise HTTPException(status_code=503, detail=str(exc))
+    return Response(content=data, media_type=mime, headers={
+        "Content-Disposition": f'attachment; filename="{filename}"'})
 
 
 def main() -> None:

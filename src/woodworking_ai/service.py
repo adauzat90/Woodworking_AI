@@ -48,6 +48,46 @@ def _glb(spec: CabinetSpec) -> str | None:
         return None
 
 
+def export_bytes(spec: CabinetSpec, fmt: str) -> tuple[bytes, str, str]:
+    """Return (data, media_type, filename) for a downloadable export.
+
+    Raises ValueError for an unknown format and RuntimeError if a CAD format is
+    requested without build123d installed.
+    """
+    fmt = fmt.lower()
+    base = (spec.name or "cabinet").replace(" ", "_")
+    from .cutlist import generate_cutlist
+
+    if fmt in ("cutlist", "hardware", "drilling"):
+        if fmt == "drilling":
+            from .drilling import drilling_schedule
+            text = drilling_schedule(spec).to_csv()
+        else:
+            cl = generate_cutlist(spec)
+            text = cl.to_csv() if fmt == "cutlist" else cl.hardware_csv()
+        return text.encode("utf-8"), "text/csv", f"{base}_{fmt}.csv"
+
+    if fmt == "dxf":
+        from .dxf import export_cutlayout_dxf
+        with tempfile.TemporaryDirectory() as d:
+            p = export_cutlayout_dxf(spec, Path(d) / "layout.dxf")
+            return p.read_bytes(), "application/dxf", f"{base}_cutlayout.dxf"
+
+    if fmt in ("step", "stl", "glb"):
+        from .builder import build_model
+        from . import exporters
+        fn = {"step": exporters.export_step, "stl": exporters.export_stl,
+              "glb": exporters.export_glb}[fmt]
+        mime = {"step": "application/step", "stl": "model/stl",
+                "glb": "model/gltf-binary"}[fmt]
+        with tempfile.TemporaryDirectory() as d:
+            model = build_model(spec)
+            p = fn(model, Path(d) / f"c.{fmt}")
+            return p.read_bytes(), mime, f"{base}.{fmt}"
+
+    raise ValueError(f"unknown export format: {fmt}")
+
+
 def build_result(spec: CabinetSpec, *, want_png: bool = True,
                  want_glb: bool = True) -> dict[str, Any]:
     """Full design bundle for *spec* (always JSON-serialisable)."""

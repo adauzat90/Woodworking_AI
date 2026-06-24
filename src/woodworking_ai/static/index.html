@@ -46,6 +46,11 @@
   .pill { padding:2px 9px; border-radius:99px; font-size:12px; }
   .ok { background:#244a2c; color:#b6e7c0; } .bad { background:#4a2424; color:#e7b6b6; }
   .warn { background:#4a4124; color:#e7dab6; }
+  .downloads { display:flex; gap:6px; align-items:center; flex-wrap:wrap;
+               padding:8px 16px; border-bottom:1px solid var(--line); }
+  .downloads button { width:auto; margin:0; padding:4px 10px; font-size:12px;
+    background:#3a352f; font-weight:500; }
+  .downloads button.share { background:var(--accent); margin-left:auto; }
   .tabs { display:flex; gap:2px; padding:8px 12px 0; }
   .tabs button { width:auto; margin:0; padding:6px 12px; background:transparent;
     color:var(--muted); border-bottom:2px solid transparent; border-radius:0; font-weight:500; }
@@ -114,12 +119,20 @@
       <div id="diagWrap" style="display:none"><label>Corner cut (mm)</label><input id="corner_cut" type="number" value="450" /></div>
     </fieldset>
     <button id="buildBtn">🔨 Build design</button>
+    <div class="check"><input id="auto" type="checkbox" /><label style="margin:0">Live update as I change values</label></div>
   </div>
 
   <div class="preview">
     <div class="stage" id="stage"><div class="ph">Build a cabinet to see it here</div></div>
     <div class="results">
       <div class="status" id="status"><span class="muted">No design yet.</span></div>
+      <div class="downloads" id="downloads" style="display:none">
+        <span class="muted" style="font-size:12px">Download:</span>
+        <button data-f="step">STEP</button><button data-f="stl">STL</button>
+        <button data-f="glb">GLB</button><button data-f="dxf">DXF</button>
+        <button data-f="cutlist">Cut list</button><button data-f="drilling">Drilling</button>
+        <button id="shareBtn" class="share">🔗 Share</button>
+      </div>
       <div class="tabs" id="tabs">
         <button data-t="cutlist" class="active">Cut list</button>
         <button data-t="hardware">Hardware</button>
@@ -232,7 +245,43 @@ function render(d) {
     bits.push(`<span class="pill warn">${d.warnings.length} warning(s)</span>`);
   if (d.attempts) bits.push(`<span class="muted">AI: ${d.attempts} attempt(s)</span>`);
   $("status").innerHTML = bits.join("");
+  $("downloads").style.display = "flex";
   paint();
+}
+
+async function download(fmt) {
+  if (!last) return;
+  const r = await fetch("/api/export/" + fmt, {method:"POST",
+    headers:{"Content-Type":"application/json"}, body: JSON.stringify({spec: last.spec})});
+  if (!r.ok) { alert((await r.json().catch(()=>({detail:r.statusText}))).detail); return; }
+  const blob = await r.blob();
+  const cd = r.headers.get("Content-Disposition") || "";
+  const m = cd.match(/filename="(.+?)"/);
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = m ? m[1] : ("cabinet." + fmt);
+  a.click(); URL.revokeObjectURL(a.href);
+}
+$("downloads").querySelectorAll("button[data-f]").forEach(b =>
+  b.onclick = () => download(b.dataset.f));
+
+$("shareBtn").onclick = async () => {
+  if (!last) return;
+  const enc = btoa(unescape(encodeURIComponent(JSON.stringify(last.spec))));
+  const url = location.origin + location.pathname + "#spec=" + enc;
+  try { await navigator.clipboard.writeText(url); $("shareBtn").textContent = "✓ Copied"; }
+  catch { prompt("Share link:", url); }
+  setTimeout(() => $("shareBtn").textContent = "🔗 Share", 1500);
+  history.replaceState(null, "", "#spec=" + enc);
+};
+
+function loadFromHash() {
+  const m = location.hash.match(/spec=([^&]+)/);
+  if (!m) return;
+  try {
+    const spec = JSON.parse(decodeURIComponent(escape(atob(m[1]))));
+    syncForm(spec);
+    post("/api/build", {spec}).then(render).catch(e => showError(e.message));
+  } catch (e) {}
 }
 
 function paint() {
@@ -274,7 +323,20 @@ $("tabs").querySelectorAll("button").forEach(b => b.onclick = () => {
   paint();
 });
 
+// Live update: debounced rebuild when a parameter changes.
+let autoTimer = null;
+function maybeAuto() {
+  if (!$("auto").checked) return;
+  clearTimeout(autoTimer);
+  autoTimer = setTimeout(() => $("buildBtn").click(), 450);
+}
+document.querySelectorAll(".controls input, .controls select").forEach(el => {
+  if (el.id !== "prompt" && el.id !== "auto") el.addEventListener("input", maybeAuto);
+});
+
 health();
+loadFromHash();
+window.addEventListener("hashchange", loadFromHash);
 </script>
 </body>
 </html>

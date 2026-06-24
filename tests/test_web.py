@@ -77,3 +77,38 @@ def test_design_without_key_returns_503(monkeypatch):
 
 def test_design_empty_prompt_400():
     assert client.post("/api/design", json={"prompt": "  "}).status_code == 400
+
+
+# --- exports -------------------------------------------------------------
+
+def test_export_cutlist_csv():
+    r = client.post("/api/export/cutlist", json={"spec": VALID_SPEC})
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("text/csv")
+    assert r.text.splitlines()[0].startswith("part,qty")
+    assert "attachment" in r.headers["content-disposition"]
+
+
+def test_export_drilling_csv():
+    r = client.post("/api/export/drilling", json={"spec": VALID_SPEC})
+    assert r.status_code == 200
+    assert r.text.splitlines()[0].startswith("part,operation")
+
+
+def test_export_dxf():
+    r = client.post("/api/export/dxf", json={"spec": VALID_SPEC})
+    assert r.status_code == 200
+    assert r.text.startswith("0\nSECTION")
+
+
+def test_export_step_and_glb_with_build123d():
+    pytest.importorskip("build123d")
+    for fmt in ("step", "stl", "glb"):
+        r = client.post(f"/api/export/{fmt}", json={"spec": VALID_SPEC})
+        assert r.status_code == 200
+        assert len(r.content) > 0
+
+
+def test_export_unknown_format_415():
+    r = client.post("/api/export/foo", json={"spec": VALID_SPEC})
+    assert r.status_code == 415
