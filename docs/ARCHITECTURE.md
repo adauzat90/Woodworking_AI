@@ -182,6 +182,9 @@ src/woodworking_ai/
   drilling.py     # 32mm drilling schedule: shelf pins, hinge bores, slide lines
   dxf.py          # DXF cut-layout nest diagram (pure text, no CAD dep)
   exporters.py    # Geometry → STEP / STL / GLB / DXF ; cut list → CSV
+  service.py      # Assemble a full design bundle (shared by web/CLI)
+  web.py          # FastAPI backend + SPA (live GLB, cut list, cost, drilling)
+  static/         # The single-page front end
   agents/
     llm.py        # Anthropic client wrapper (Claude), incl. vision
     designer.py   # NL → DSL with validate-and-repair (+ critic) loop
@@ -217,8 +220,9 @@ needed only to render and export 3D geometry.
    panels, with trim-to-fit blanks excluded from interference).
 6. **Casegoods beyond cabinets** *(needs decisions)*: tables, dressers, built-ins
    — new DSL spec types and compiler rules.
-7. **Web UI** *(needs decisions)*: e.g. Next.js with live 3D (GLB) preview and
-   slider overrides à la Prompt2CAD; optional KCL export for Zoo interop.
+7. ✅ **Web UI:** FastAPI backend + single-page front end with a live GLB 3D
+   preview (`<model-viewer>`), parametric form, NL design box, and in-browser
+   cut list / cost / drilling. Next: persistence, slider live-update, KCL export.
 
 ---
 

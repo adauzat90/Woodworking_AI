@@ -102,6 +102,36 @@ woodai build out/spec.json --out ./out --step --stl --glb --dxf --drill --estima
 Pick the model with `WOODAI_MODEL` (default `claude-opus-4-8`; e.g.
 `claude-sonnet-4-6` for cheaper runs).
 
+## Web app
+
+A FastAPI backend serves a single-page designer with a live 3D preview:
+
+```bash
+pip install -e ".[web,cad,render]"
+python -m woodworking_ai.web          # http://127.0.0.1:8000
+```
+
+Type a description (uses Claude if `ANTHROPIC_API_KEY` is set) **or** dial in the
+parameters, and get an interactive GLB model (via `<model-viewer>`), the cut
+list, hardware schedule, cost estimate, and drilling schedule — all in the
+browser. The API:
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /api/build` | spec → full bundle (cut list, cost, drilling, render PNG, GLB) |
+| `POST /api/design` | natural language → spec → bundle (needs an API key) |
+| `GET /api/health` | capability flags (render / glb / llm) |
+
+It degrades gracefully: without `build123d` it falls back to the matplotlib
+render image; without an API key the AI box is disabled but parametric build
+still works. The 3D/cost/drilling logic lives in `service.py`, shared by any
+front end.
+
+> **Deploying:** the frontend is static and host-anywhere, but the geometry
+> backend needs a Python host that can run `build123d` (OpenCascade) — a
+> container or VM, not a size-limited serverless function. Run `service.py`
+> without `build123d` for a lighter render-only deployment.
+
 ## What it can model
 
 - **Cabinet types:** `base` (toe kick + open top), `wall` (hung, enclosed top,
