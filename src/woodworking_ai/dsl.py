@@ -159,6 +159,49 @@ class CabinetSpec:
         return cls.from_dict(json.loads(text))
 
 
+@dataclass
+class TableSpec:
+    """A parametric table: a top on four legs joined by aprons.
+
+    Coordinates match the cabinet frame: X = length, Y = depth, Z = height.
+    """
+
+    kind: str = "table"
+    units: str = "mm"
+    name: str = "Table"
+    width: float = 1200.0        # length of the top (X)
+    depth: float = 750.0         # width of the top (Y)
+    height: float = 740.0        # floor to top surface (Z)
+    top_thickness: float = 25.0
+    leg: float = 60.0            # square leg cross-section
+    apron_height: float = 90.0
+    apron_thickness: float = 20.0
+    leg_inset: float = 40.0      # leg outer face set in from the top edge
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    def to_json(self, indent: int = 2) -> str:
+        return json.dumps(self.to_dict(), indent=indent)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "TableSpec":
+        known = {f for f in cls.__dataclass_fields__}
+        return cls(**{k: v for k, v in data.items() if k in known})
+
+    @classmethod
+    def from_json(cls, text: str) -> "TableSpec":
+        return cls.from_dict(json.loads(text))
+
+
+def spec_from_dict(data: dict[str, Any]):
+    """Pick the right furniture spec from a payload (cabinet vs table)."""
+    kind = str(data.get("kind", "")).lower()
+    if kind == "table" or "leg" in data or "top_thickness" in data:
+        return TableSpec.from_dict(data)
+    return CabinetSpec.from_dict(data)
+
+
 # The schema description handed to the LLM designer agent as part of its prompt.
 DSL_SCHEMA_HINT = """\
 A cabinet is described by this JSON object (units default to "mm"):

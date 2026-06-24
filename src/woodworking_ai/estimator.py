@@ -32,6 +32,7 @@ class PriceBook:
     sheet_price: dict[str, float] = field(default_factory=lambda: {
         "sheet": 70.0, "back panel": 30.0, "door/front": 95.0,
         "drawer box": 55.0, "frame": 40.0,
+        "top": 110.0, "leg": 35.0, "apron": 35.0,   # table stock
     })
     sheet_price_default: float = 70.0
     # Per-unit hardware prices keyed by the hardware item name.
@@ -154,7 +155,7 @@ def pack_sheets(rects: list[tuple[float, float]], sheet: SheetSize
 
 
 def _edge_banding_metres(spec: CabinetSpec) -> float:
-    if not spec.edge_banding:
+    if not getattr(spec, "edge_banding", False):
         return 0.0
     m = spec.material
     toe_h = spec.toe_kick.height if spec.toe_kick else 0.0
@@ -201,8 +202,8 @@ def estimate(spec: CabinetSpec, *, cutlist: CutList | None = None,
     # Labour.
     hours = (prices.labour_base_h
              + prices.labour_per_part_h * sum(p.qty for p in cl.parts)
-             + prices.labour_per_door_h * spec.doors
-             + prices.labour_per_drawer_h * len(spec.drawers))
+             + prices.labour_per_door_h * getattr(spec, "doors", 0)
+             + prices.labour_per_drawer_h * len(getattr(spec, "drawers", [])))
     labour_cost = hours * prices.shop_rate_per_hour
 
     est = Estimate(

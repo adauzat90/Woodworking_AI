@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .dsl import CabinetSpec, BackStyle, Construction, CabinetType
+from .dsl import CabinetSpec, TableSpec, BackStyle, Construction, CabinetType
 
 # Small construction constants (mm). Centralised so they are easy to tune.
 SHELF_SIDE_CLEARANCE = 2.0     # gap each side so an adjustable shelf drops in
@@ -149,8 +149,31 @@ def _diagonal_cutlist(spec: CabinetSpec) -> CutList:
     return cl
 
 
-def generate_cutlist(spec: CabinetSpec) -> CutList:
-    """Derive the full parts + hardware list for a cabinet."""
+def _table_cutlist(spec: TableSpec) -> CutList:
+    """Parts + hardware for a four-legged table."""
+    cl = CutList(spec_name=spec.name)
+    leg_h = spec.height - spec.top_thickness
+    li, leg = spec.leg_inset, spec.leg
+    apron_x = (spec.width - 2 * li - leg) - leg
+    apron_y = (spec.depth - 2 * li - leg) - leg
+    cl.parts.append(Part("Top", 1, length=spec.width, width=spec.depth,
+                         thickness=spec.top_thickness, material="top",
+                         notes="glued panel or solid"))
+    cl.parts.append(Part("Leg", 4, length=leg_h, width=leg, thickness=leg,
+                         material="leg", notes="square stock"))
+    cl.parts.append(Part("Apron (long)", 2, length=apron_x, width=spec.apron_height,
+                         thickness=spec.apron_thickness, material="apron"))
+    cl.parts.append(Part("Apron (short)", 2, length=apron_y, width=spec.apron_height,
+                         thickness=spec.apron_thickness, material="apron"))
+    cl.hardware.append(Hardware("Corner bracket", 4, "leg-to-apron"))
+    cl.hardware.append(Hardware("Tabletop fastener", 8, "expansion clip"))
+    return cl
+
+
+def generate_cutlist(spec) -> CutList:
+    """Derive the full parts + hardware list for a cabinet or table."""
+    if isinstance(spec, TableSpec):
+        return _table_cutlist(spec)
     if spec.cabinet_type == CabinetType.CORNER_DIAGONAL:
         return _diagonal_cutlist(spec)
 

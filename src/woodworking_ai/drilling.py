@@ -115,7 +115,7 @@ def drilling_schedule(spec: CabinetSpec) -> DrillingSchedule:
              or p.label.startswith("Door ")]
 
     # --- shelf-pin rows on each side -------------------------------------
-    if spec.shelves > 0:
+    if getattr(spec, "shelves", 0) > 0:
         for side in sides:
             _, depth, panel_h = side.size
             rows = {"front row": ROW_SETBACK, "back row": depth - ROW_SETBACK}

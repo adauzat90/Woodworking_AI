@@ -12,7 +12,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-from .dsl import CabinetSpec, CabinetType
+from .dsl import CabinetSpec, TableSpec, CabinetType
 
 # Practical bounds that also guard against pathological inputs (huge loops, NaN).
 MAX_DIMENSION = 6000.0   # mm — larger than any real cabinet/pantry
@@ -53,7 +53,43 @@ class ValidationResult:
         return "\n".join(str(i) for i in self.issues)
 
 
-def validate(spec: CabinetSpec) -> ValidationResult:
+def _finite_positive(val: object) -> bool:
+    return isinstance(val, (int, float)) and math.isfinite(val) and val > 0
+
+
+def _validate_table(spec: TableSpec) -> ValidationResult:
+    issues: list[Issue] = []
+
+    def err(f, m):
+        issues.append(Issue("error", f, m))
+
+    def warn(f, m):
+        issues.append(Issue("warning", f, m))
+
+    for name in ("width", "depth", "height", "top_thickness", "leg",
+                 "apron_height", "apron_thickness", "leg_inset"):
+        val = getattr(spec, name)
+        if not _finite_positive(val):
+            err(name, f"must be a positive, finite number, got {val!r}")
+        elif name in ("width", "depth", "height") and val > MAX_DIMENSION:
+            err(name, f"exceeds the practical maximum of {MAX_DIMENSION:.0f}mm")
+    if any(i.severity == "error" for i in issues):
+        return ValidationResult(issues)
+
+    if spec.height <= spec.top_thickness + spec.apron_height:
+        err("height", "too short for the top plus an apron")
+    if 2 * spec.leg_inset + spec.leg >= min(spec.width, spec.depth):
+        err("leg_inset", "legs do not fit within the top with this inset")
+    if spec.apron_thickness >= spec.leg:
+        warn("apron_thickness", "apron is as thick as the leg; unusual")
+    if spec.height < 350 or spec.height > 1200:
+        warn("height", "unusual table height (typical 700–760mm)")
+    return ValidationResult(issues)
+
+
+def validate(spec) -> ValidationResult:
+    if isinstance(spec, TableSpec):
+        return _validate_table(spec)
     issues: list[Issue] = []
 
     def err(fieldname: str, msg: str) -> None:

@@ -24,7 +24,7 @@ from typing import Any
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 
-from .dsl import CabinetSpec
+from .dsl import spec_from_dict
 from .validator import validate
 from .service import build_result, export_bytes
 
@@ -68,7 +68,7 @@ def _parse_spec(payload: dict[str, Any]) -> CabinetSpec:
         raise HTTPException(status_code=400, detail="expected a JSON object")
     spec_data = payload.get("spec", payload)
     try:
-        return CabinetSpec.from_dict(spec_data)
+        return spec_from_dict(spec_data)
     except (TypeError, ValueError, AttributeError) as exc:
         raise HTTPException(status_code=400, detail=f"bad spec: {exc}")
 

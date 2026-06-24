@@ -104,11 +104,15 @@ def _isometric(ax, panels: list[PanelBox], spec: CabinetSpec) -> None:
         )
         ax.add_collection3d(coll)
 
-    ax.set_xlim(-spec.width / 2 - 20, spec.width / 2 + 20)
-    ax.set_ylim(-spec.material.door - 20, spec.depth + 20)
-    ax.set_zlim(0, spec.height + 20)
+    # Limits from the actual panel extents, so this works for any furniture.
+    xs = [c for p in panels for c in p.bounds()[0]]
+    ys = [c for p in panels for c in p.bounds()[1]]
+    zs = [c for p in panels for c in p.bounds()[2]]
+    ax.set_xlim(min(xs) - 20, max(xs) + 20)
+    ax.set_ylim(min(ys) - 20, max(ys) + 20)
+    ax.set_zlim(min(zs), max(zs) + 20)
     try:
-        ax.set_box_aspect((spec.width, spec.depth, spec.height))
+        ax.set_box_aspect((max(xs) - min(xs), max(ys) - min(ys), max(zs) - min(zs)))
     except Exception:  # older matplotlib
         pass
     ax.view_init(elev=22, azim=-58)
@@ -134,11 +138,12 @@ def render_cabinet(spec: CabinetSpec, path: str | Path, *, dpi: int = 110) -> Pa
     _elevation(ax_side, panels, haxis=1, vaxis=2, depth_axis=0, title="side")
     _isometric(ax_iso, panels, spec)
 
-    fig.suptitle(
-        f"{spec.name} — {spec.width:.0f} x {spec.height:.0f} x {spec.depth:.0f} mm "
-        f"({spec.construction.value}, {spec.doors} door / {len(spec.drawers)} drawer)",
-        fontsize=11,
-    )
+    dims = f"{spec.width:.0f} x {spec.height:.0f} x {spec.depth:.0f} mm"
+    if hasattr(spec, "construction"):
+        sub = f"{spec.construction.value}, {spec.doors} door / {len(spec.drawers)} drawer"
+    else:
+        sub = getattr(spec, "kind", "furniture")
+    fig.suptitle(f"{spec.name} — {dims}  ({sub})", fontsize=11)
     fig.tight_layout(rect=(0, 0, 1, 0.95))
     fig.savefig(path, dpi=dpi)
     plt.close(fig)

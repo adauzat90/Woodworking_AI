@@ -146,7 +146,10 @@ front end.
 
 - **Cabinet types:** `base` (toe kick + open top), `wall` (hung, enclosed top,
   no toe kick), `tall` (pantry, floor-to-ceiling), `corner_blind` (offset
-  opening + filler), `corner_diagonal` (angled door).
+  opening + filler), `corner_diagonal` (angled door), `bookcase` (open
+  shelving), `dresser` (drawer bank).
+- **Tables:** a `table` furniture type — top, four legs, and aprons, with the
+  same critique / cut list / cost / render / STEP-export pipeline.
 - **Construction:** `frameless` (Euro, overlay doors) and `face_frame`
   (hardwood stiles/rails + inset doors).
 - **Fronts:** any mix of doors (0–2), a center mullion, and a stack of drawers

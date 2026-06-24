@@ -6,7 +6,7 @@ No LLM or API key needed. Renders PNGs into ./out if matplotlib is installed.
 """
 
 from woodworking_ai import (
-    CabinetSpec, CabinetType, Construction, Material, ToeKick, Drawer,
+    CabinetSpec, CabinetType, Construction, Material, ToeKick, Drawer, TableSpec,
     validate, generate_cutlist, estimate,
 )
 
@@ -22,6 +22,14 @@ SPECS = [
     CabinetSpec(name="Tall pantry", cabinet_type=CabinetType.TALL, width=600,
                 height=2100, depth=580, toe_kick=ToeKick(100, 50), shelves=5,
                 doors=2),
+    CabinetSpec(name="Bookcase", cabinet_type=CabinetType.BOOKCASE, width=800,
+                height=1800, depth=300, toe_kick=ToeKick(80, 40), shelves=4,
+                doors=0),
+    CabinetSpec(name="Dresser", cabinet_type=CabinetType.DRESSER, width=900,
+                height=800, depth=500, toe_kick=ToeKick(80, 40), shelves=0,
+                doors=0, drawers=[Drawer(180), Drawer(180), Drawer(180)]),
+    TableSpec(name="Dining table", width=1600, depth=900, height=740, leg=70,
+              apron_height=100),
 ]
 
 for spec in SPECS:

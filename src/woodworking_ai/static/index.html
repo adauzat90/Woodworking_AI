@@ -79,6 +79,12 @@
       <div id="llmNote" class="muted" style="font-size:11px;margin-top:6px"></div>
     </fieldset>
     <div class="or">— or build from parameters —</div>
+    <label>Furniture</label>
+    <select id="furniture">
+      <option value="cabinet">Cabinet</option>
+      <option value="table">Table</option>
+    </select>
+    <div id="cabinetFields">
     <fieldset>
       <legend>Cabinet</legend>
       <label>Name</label><input id="name" value="My Cabinet" />
@@ -119,6 +125,27 @@
       <div id="blindWrap" style="display:none"><label>Blind width (mm)</label><input id="blind_width" type="number" value="350" /></div>
       <div id="diagWrap" style="display:none"><label>Corner cut (mm)</label><input id="corner_cut" type="number" value="450" /></div>
     </fieldset>
+    </div><!-- /cabinetFields -->
+    <div id="tableFields" style="display:none">
+    <fieldset>
+      <legend>Table</legend>
+      <label>Name</label><input id="t_name" value="My Table" />
+      <div class="row">
+        <div><label>Length</label><input id="t_width" type="number" value="1400" /></div>
+        <div><label>Depth</label><input id="t_depth" type="number" value="800" /></div>
+        <div><label>Height</label><input id="t_height" type="number" value="740" /></div>
+      </div>
+      <div class="row">
+        <div><label>Top thickness</label><input id="t_top" type="number" value="25" /></div>
+        <div><label>Leg (sq)</label><input id="t_leg" type="number" value="60" /></div>
+        <div><label>Leg inset</label><input id="t_inset" type="number" value="40" /></div>
+      </div>
+      <div class="row">
+        <div><label>Apron height</label><input id="t_apronh" type="number" value="90" /></div>
+        <div><label>Apron thickness</label><input id="t_apront" type="number" value="20" /></div>
+      </div>
+    </fieldset>
+    </div><!-- /tableFields -->
     <button id="buildBtn">🔨 Build design</button>
     <div class="check"><input id="auto" type="checkbox" /><label style="margin:0">Live update as I change values</label></div>
     <fieldset style="margin-top:14px">
@@ -176,7 +203,25 @@ function toggleCorner() {
 }
 $("cabinet_type").addEventListener("change", toggleCorner);
 
+function toggleFurniture() {
+  const t = $("furniture").value === "table";
+  $("tableFields").style.display = t ? "block" : "none";
+  $("cabinetFields").style.display = t ? "none" : "block";
+}
+$("furniture").addEventListener("change", toggleFurniture);
+
+function tableSpecFromForm() {
+  return {
+    kind: "table", name: $("t_name").value || "Table",
+    width: +$("t_width").value, depth: +$("t_depth").value, height: +$("t_height").value,
+    top_thickness: +$("t_top").value, leg: +$("t_leg").value,
+    leg_inset: +$("t_inset").value, apron_height: +$("t_apronh").value,
+    apron_thickness: +$("t_apront").value,
+  };
+}
+
 function specFromForm() {
+  if ($("furniture").value === "table") return tableSpecFromForm();
   const toe = +$("toe").value;
   const nd = Math.max(0, +$("drawers").value | 0);
   return {
@@ -220,6 +265,15 @@ $("designBtn").onclick = async () => {
 };
 
 function syncForm(s) {
+  if (s.kind === "table") {
+    $("furniture").value = "table"; toggleFurniture();
+    const map = {t_name:"name",t_width:"width",t_depth:"depth",t_height:"height",
+      t_top:"top_thickness",t_leg:"leg",t_inset:"leg_inset",t_apronh:"apron_height",
+      t_apront:"apron_thickness"};
+    for (const [el,k] of Object.entries(map)) if (s[k] !== undefined) $(el).value = s[k];
+    return;
+  }
+  $("furniture").value = "cabinet"; toggleFurniture();
   for (const k of ["name","cabinet_type","construction","width","height","depth",
                    "doors","shelves","reveal","blind_width","corner_cut"])
     if (s[k] !== undefined && $(k)) $(k).value = s[k];

@@ -157,6 +157,7 @@ def critique(spec: CabinetSpec, *, use_cad: bool = False,
     """
     panels = panel_layout(spec)
     result = CritiqueResult()
+    is_cabinet = isinstance(spec, CabinetSpec)
 
     def err(kind, msg):
         result.issues.append(CritiqueIssue("error", kind, msg))
@@ -165,10 +166,13 @@ def critique(spec: CabinetSpec, *, use_cad: bool = False,
         result.issues.append(CritiqueIssue("warning", kind, msg))
 
     # --- overall envelope ------------------------------------------------
-    # Measure the structural shell (sides/bottom/stretchers + toe kick). The
-    # back and fronts are excluded: an applied back protrudes behind and fronts
-    # sit proud, neither of which should distort the carcass dimensions.
-    shell = [p for p in panels if p.category in ("carcass", "toe")]
+    # For a cabinet, measure the structural shell (sides/bottom/stretchers + toe
+    # kick) — the back and fronts protrude/sit proud and shouldn't distort the
+    # carcass dimensions. For other furniture (e.g. a table) every panel counts.
+    if is_cabinet:
+        shell = [p for p in panels if p.category in ("carcass", "toe")]
+    else:
+        shell = panels
     fronts = [p for p in panels if p.is_front]
 
     def span(group, axis):
@@ -206,30 +210,30 @@ def critique(spec: CabinetSpec, *, use_cad: bool = False,
         err("interference",
             f"'{a}' and '{b}' overlap (~{vol/1000:.1f} cm³) — they would not fit")
 
-    # --- clear opening + front coverage ----------------------------------
-    m = spec.material
-    toe_h = spec.toe_kick.height if spec.toe_kick else 0.0
-    opening_w = spec.width - 2 * m.carcass
-    opening_h = (spec.height - toe_h) - 2 * m.carcass
-    result.report.update(opening_width=opening_w, opening_height=opening_h)
-
-    if fronts:
-        front_area = sum(p.size[0] * p.size[2] for p in fronts)
-        face_area = spec.width * (spec.height - toe_h)
-        coverage = 100.0 * front_area / face_area if face_area else 0.0
-        result.report["front_coverage_pct"] = coverage
-        # Fronts must stay within the carcass width (no overhang past the sides).
-        max_x = max(p.bounds()[0][1] for p in fronts)
-        min_x = min(p.bounds()[0][0] for p in fronts)
-        if max_x - min_x > spec.width + DIM_TOL:
-            err("coverage", "door/drawer fronts overhang the cabinet width")
-        if coverage < 60:
-            warn("coverage",
-                 f"fronts cover only {coverage:.0f}% of the face — large gaps")
-    else:
-        result.report["front_coverage_pct"] = 0.0
-        if spec.doors == 0 and not spec.drawers:
-            warn("coverage", "open cabinet: no doors or drawers specified")
+    # --- clear opening + front coverage (cabinets only) ------------------
+    if is_cabinet:
+        m = spec.material
+        toe_h = spec.toe_kick.height if spec.toe_kick else 0.0
+        result.report.update(
+            opening_width=spec.width - 2 * m.carcass,
+            opening_height=(spec.height - toe_h) - 2 * m.carcass,
+        )
+        if fronts:
+            front_area = sum(p.size[0] * p.size[2] for p in fronts)
+            face_area = spec.width * (spec.height - toe_h)
+            coverage = 100.0 * front_area / face_area if face_area else 0.0
+            result.report["front_coverage_pct"] = coverage
+            max_x = max(p.bounds()[0][1] for p in fronts)
+            min_x = min(p.bounds()[0][0] for p in fronts)
+            if max_x - min_x > spec.width + DIM_TOL:
+                err("coverage", "door/drawer fronts overhang the cabinet width")
+            if coverage < 60:
+                warn("coverage",
+                     f"fronts cover only {coverage:.0f}% of the face — large gaps")
+        else:
+            result.report["front_coverage_pct"] = 0.0
+            if spec.doors == 0 and not spec.drawers:
+                warn("coverage", "open cabinet: no doors or drawers specified")
 
     # --- sheet goods (from the cut list) ---------------------------------
     result.report["sheet_area_m2"] = generate_cutlist(spec).sheet_area_m2

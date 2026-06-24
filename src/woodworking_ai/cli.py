@@ -18,13 +18,13 @@ import argparse
 import sys
 from pathlib import Path
 
-from .dsl import CabinetSpec
+from .dsl import spec_from_dict
 from .validator import validate
 from .cutlist import generate_cutlist
 from . import exporters
 
 
-def _emit(spec: CabinetSpec, args) -> int:
+def _emit(spec, args) -> int:
     result = validate(spec)
     print(spec.to_json())
     print()
@@ -156,8 +156,9 @@ def main(argv: list[str] | None = None) -> int:
         return _emit(res.spec, args)
 
     if args.cmd == "build":
-        spec = CabinetSpec.from_json(Path(args.spec_file).read_text(encoding="utf-8"))
-        return _emit(spec, args)
+        import json as _json
+        data = _json.loads(Path(args.spec_file).read_text(encoding="utf-8"))
+        return _emit(spec_from_dict(data), args)
 
     return 2
 

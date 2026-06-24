@@ -15,7 +15,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-from .dsl import CabinetSpec, BackStyle, Construction, CabinetType
+from .dsl import CabinetSpec, TableSpec, BackStyle, Construction, CabinetType
 
 # Construction constants shared with the cut list.
 from .cutlist import (
@@ -65,8 +65,10 @@ class PanelBox:
         return ((cx - hx, cx + hx), (cy - hy, cy + hy), (cz - sz / 2, cz + sz / 2))
 
 
-def panel_layout(spec: CabinetSpec) -> list[PanelBox]:
+def panel_layout(spec) -> list[PanelBox]:
     """Return every panel of *spec* placed in the shared coordinate frame."""
+    if isinstance(spec, TableSpec):
+        return _table_layout(spec)
     if spec.cabinet_type == CabinetType.CORNER_DIAGONAL:
         return _diagonal_layout(spec)
 
@@ -274,5 +276,36 @@ def _diagonal_layout(spec: CabinetSpec) -> list[PanelBox]:
     cy = mid[1] + ny * m.door / 2
     add("Door", (door_len, m.door, door_h), (cx, cy, z_box),
         category="front", rot_z=45.0)
+
+    return panels
+
+
+def _table_layout(spec: TableSpec) -> list[PanelBox]:
+    """A four-legged table: a top, four legs, and four aprons."""
+    W, D, H = spec.width, spec.depth, spec.height
+    tt, leg, ah, at, li = (spec.top_thickness, spec.leg, spec.apron_height,
+                           spec.apron_thickness, spec.leg_inset)
+    panels: list[PanelBox] = []
+
+    def add(label, size, center, category):
+        panels.append(PanelBox(label, size, center, category))
+
+    add("Top", (W, D, tt), (0, 0, H - tt / 2), "top")
+
+    leg_h = H - tt
+    lx = W / 2 - li - leg / 2          # leg-centre offsets
+    ly = D / 2 - li - leg / 2
+    for i, sx in enumerate((-1, 1)):
+        for j, sy in enumerate((-1, 1)):
+            add(f"Leg {2 * i + j + 1}", (leg, leg, leg_h),
+                (sx * lx, sy * ly, leg_h / 2), "leg")
+
+    az = H - tt - ah / 2               # apron centre height
+    apron_x = 2 * lx - leg             # long apron length (between legs, X)
+    apron_y = 2 * ly - leg             # short apron length (between legs, Y)
+    for sy in (-1, 1):
+        add("Apron long", (apron_x, at, ah), (0, sy * ly, az), "apron")
+    for sx in (-1, 1):
+        add("Apron short", (at, apron_y, ah), (sx * lx, 0, az), "apron")
 
     return panels

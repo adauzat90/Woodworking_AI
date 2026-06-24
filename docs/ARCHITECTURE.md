@@ -218,8 +218,11 @@ needed only to render and export 3D geometry.
    verified STEP/STL/GLB B-Rep path, and **corner cabinets** — blind corners
    (offset opening + filler) and diagonal corners (angled door via Z-rotated
    panels, with trim-to-fit blanks excluded from interference).
-6. **Casegoods beyond cabinets** *(needs decisions)*: tables, dressers, built-ins
-   — new DSL spec types and compiler rules.
+6. ✅ **Casegoods beyond cabinets:** bookcases and dressers (cabinet engine), and
+   a polymorphic **table** type (top/legs/aprons) — `panel_layout`,
+   `generate_cutlist`, `validate`, and the Critic now dispatch on the spec type,
+   so new furniture plugs into the whole pipeline. `spec_from_dict` routes a
+   payload to the right spec.
 7. ✅ **Web UI:** FastAPI backend + single-page front end with a live GLB 3D
    preview (`<model-viewer>`), parametric form, NL design box, in-browser cut
    list / cost / drilling, **live update**, **downloads** (STEP/STL/GLB/DXF/CSV),
