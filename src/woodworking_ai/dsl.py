@@ -19,6 +19,7 @@ from dataclasses import dataclass, field, asdict
 from enum import Enum, StrEnum
 from typing import Any
 import json
+import math
 
 from .units import normalize_unit, IMPERIAL, MM_PER_IN
 
@@ -420,6 +421,36 @@ class Project:
     @classmethod
     def from_json(cls, text: str) -> "Project":
         return cls.from_dict(json.loads(text))
+
+
+def place_run(specs, *, start: tuple[float, float] = (0.0, 0.0),
+              angle: float = 0.0, gap: float = 0.0,
+              labels: list[str] | None = None) -> list[Component]:
+    """Lay specs end-to-end along a wall, returning placed :class:`Component`s.
+
+    ``start`` is the front-left corner of the first piece; ``angle`` is the wall
+    direction in degrees (0 = +X, 90 = +Y), so an L-/U-shaped kitchen is just a
+    few runs at right angles:
+
+        run_a = place_run([a, b, c], start=(0, 0),    angle=0)
+        run_b = place_run([d, e],    start=(2400, 0), angle=90)
+        kitchen = Project(components=run_a + run_b)
+
+    Each piece is offset along the wall by the previous piece's width (+ ``gap``)
+    and rotated to face out of the wall, so the footprints abut without
+    overlapping. Leave a gap (or drop in a corner unit) where two runs meet.
+    """
+    ux, uy = math.cos(math.radians(angle)), math.sin(math.radians(angle))
+    out: list[Component] = []
+    cursor = 0.0
+    for i, spec in enumerate(specs):
+        w = float(getattr(spec, "width", 0.0) or 0.0)
+        out.append(Component(
+            spec=spec, x=start[0] + ux * cursor, y=start[1] + uy * cursor,
+            rotation=angle,
+            label=(labels[i] if labels and i < len(labels) else "")))
+        cursor += w + gap
+    return out
 
 
 def spec_from_dict(data: dict[str, Any]):

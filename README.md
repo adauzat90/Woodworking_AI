@@ -118,6 +118,20 @@ woodai build my_kitchen.json --estimate --imperial          # combined cut list 
 woodai build my_kitchen.json --out ./run --glb --dxf        # assembled GLB + nest
 ```
 
+**L- and U-shaped runs:** components are placed by a front-left-corner anchor and
+a wall angle, and overlaps are checked with oriented 2D footprints (so the inner
+corner where two perpendicular runs meet is verified, not just a straight row).
+The `place_run` helper lays a run along a wall so you don't hand-compute
+rotations:
+
+```python
+from woodworking_ai import CabinetSpec, Project, place_run
+
+run_a = place_run([CabinetSpec(width=600), CabinetSpec(width=600)], start=(0, 0),    angle=0)
+run_b = place_run([CabinetSpec(width=600), CabinetSpec(width=600)], start=(1200, 560), angle=90)
+kitchen = Project(name="L-kitchen", components=run_a + run_b)   # validate / cut list / GLB
+```
+
 **Everything at once:**
 
 ```bash

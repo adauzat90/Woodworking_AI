@@ -4,7 +4,7 @@ import pytest
 
 from woodworking_ai import (
     CabinetSpec, TableSpec, Component, Project, spec_from_dict, validate,
-    generate_cutlist, estimate,
+    generate_cutlist, estimate, place_run,
 )
 
 
@@ -119,6 +119,66 @@ def test_critique_project_flags_colliding_cabinets():
     assert not crit.ok
     assert crit.report["interference_count"] > 0
     assert any(i.kind == "interference" for i in crit.errors)
+
+
+# --- corner joining: L/U runs, oriented footprints --------------------------
+
+def test_place_run_straight_steps_by_width():
+    run = place_run([CabinetSpec(width=600), CabinetSpec(width=400)],
+                    start=(0, 0), angle=0)
+    assert [round(c.x) for c in run] == [0, 600]
+    assert all(c.rotation == 0 and c.y == 0 for c in run)
+
+
+def test_place_run_perpendicular_turns_the_corner():
+    run = place_run([CabinetSpec(width=600), CabinetSpec(width=600)],
+                    start=(1200, 0), angle=90)
+    # Along +Y: x is constant, y steps by width, each piece rotated 90°.
+    assert all(c.rotation == 90 and c.x == 1200 for c in run)
+    assert [round(c.y) for c in run] == [0, 600]
+
+
+def test_footprint_is_oriented_under_rotation():
+    from woodworking_ai.geometry import footprint_corners
+    c = Component(spec=CabinetSpec(width=600, depth=560), x=0, y=0, rotation=90)
+    xs = [p[0] for p in footprint_corners(c)]
+    ys = [p[1] for p in footprint_corners(c)]
+    # Rotated 90°: width now runs along Y (~600), depth along X (~560).
+    assert round(max(ys) - min(ys)) == 600
+    assert round(max(xs) - min(xs)) == 560
+
+
+def test_l_run_validates_without_false_collision():
+    runA = place_run([CabinetSpec(width=600, name="A1"),
+                      CabinetSpec(width=600, name="A2")], start=(0, 0), angle=0)
+    runB = place_run([CabinetSpec(width=600, name="B1"),
+                      CabinetSpec(width=600, name="B2")],
+                     start=(1200, 560), angle=90)
+    proj = Project(name="L", components=runA + runB)
+    assert validate(proj).ok                      # perpendicular runs don't clash
+
+
+def test_inner_corner_overlap_is_detected():
+    runA = place_run([CabinetSpec(width=600, name="A1"),
+                      CabinetSpec(width=600, name="A2")], start=(0, 0), angle=0)
+    # Run B turned into run A's footprint at the corner -> collision.
+    bad = Project(components=runA + place_run(
+        [CabinetSpec(width=600, name="X")], start=(600, 200), angle=90))
+    res = validate(bad)
+    assert not res.ok
+    assert any(i.field == "placement" for i in res.errors)
+
+
+def test_critique_detects_rotated_run_collision():
+    # The panel-AABB test skips rotated panels; the footprint check must still
+    # catch a perpendicular cabinet driven into a straight one.
+    from woodworking_ai.agents.critic import critique
+    proj = Project(components=[
+        Component(spec=CabinetSpec(width=600, depth=560), x=0, y=0, rotation=0),
+        Component(spec=CabinetSpec(width=600, depth=560), x=300, y=100,
+                  rotation=90)])
+    crit = critique(proj)
+    assert not crit.ok and crit.report["interference_count"] > 0
 
 
 def test_build_project_builds_or_skips_gracefully():

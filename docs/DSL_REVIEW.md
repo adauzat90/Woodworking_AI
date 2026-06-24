@@ -111,7 +111,11 @@ Seek-CAD) is sound and documented in `docs/ARCHITECTURE.md`.
    `geometry.project_layout` places every component's panels in the run frame,
    so the Critic detects cabinet-to-cabinet collisions and `builder.build_project`
    exports the whole run as a single GLB/STEP (and `--dxf` nests every part into
-   one cut-layout). Tests: `tests/test_project.py`.
+   one cut-layout). **L-/U-shaped runs** join correctly too: components are
+   anchored by a front-left corner + wall angle (the `place_run` helper lays a
+   run along a wall), and overlap detection uses oriented 2D footprints (SAT) so
+   the inner corner where two perpendicular runs meet is verified — not just a
+   straight row. Tests: `tests/test_project.py`.
 
 A note on enum strictness: the *structural* enums (`cabinet_type`,
 `construction`, `back`, `joinery` on a cabinet) stay strict — an unknown value

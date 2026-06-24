@@ -28,7 +28,9 @@ from pathlib import Path
 from typing import Any
 
 from ..dsl import CabinetSpec, Project
-from ..geometry import PanelBox, panel_layout, project_layout
+from ..geometry import (
+    PanelBox, panel_layout, project_layout, footprints_overlap, component_tag,
+)
 from ..cutlist import generate_cutlist
 from . import llm
 
@@ -176,12 +178,21 @@ def _critique_project(project: Project, *, use_cad: bool = False,
         sheet_area_m2=generate_cutlist(project).sheet_area_m2,
     )
 
-    hits = _interferences(panels)
-    result.report["interference_count"] = len(hits)
-    for a, b, vol in hits:
-        result.issues.append(CritiqueIssue(
-            "error", "interference",
-            f"'{a}' and '{b}' overlap (~{vol/1000:.1f} cm³) — components collide"))
+    # Component-to-component collision via oriented 2D footprints. (The panel
+    # AABB test skips rotated panels, so it can't see perpendicular runs; the
+    # footprint check is exact for any rotation. brep=True adds solid-level.)
+    comps = project.components
+    collisions = 0
+    for i in range(len(comps)):
+        for j in range(i + 1, len(comps)):
+            if footprints_overlap(comps[i], comps[j]):
+                collisions += 1
+                result.issues.append(CritiqueIssue(
+                    "error", "interference",
+                    f"'{component_tag(comps[i], i + 1)}' and "
+                    f"'{component_tag(comps[j], j + 1)}' overlap in plan — "
+                    "components collide"))
+    result.report["interference_count"] = collisions
 
     if use_cad or brep or model is not None:
         try:

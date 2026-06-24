@@ -238,8 +238,11 @@ needed only to render and export 3D geometry.
    assembled 3D model** — `geometry.project_layout` places every component's
    panels in the run frame (the same single-source-of-truth pattern), so the
    Critic checks cabinet-to-cabinet collisions and `build_project` exports the
-   whole run as one GLB/STEP/DXF. See `docs/DSL_REVIEW.md` for the review that
-   drove this.
+   whole run as one GLB/STEP/DXF. **L-/U-shaped runs** are supported: components
+   are anchored by a front-left corner + wall angle (`place_run` lays a run
+   along a wall), and overlaps use oriented 2D footprints (SAT), so the inner
+   corner where two perpendicular runs meet is verified. See `docs/DSL_REVIEW.md`
+   for the review that drove this.
 
 ---
 

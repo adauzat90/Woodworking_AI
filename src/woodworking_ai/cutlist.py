@@ -16,7 +16,7 @@ import math
 from dataclasses import dataclass, field, replace
 
 from .dsl import CabinetSpec, TableSpec, Project, BackStyle, Construction, CabinetType
-from .geometry import front_plan
+from .geometry import front_plan, component_tag
 # Construction constants now live in one neutral module shared with geometry.
 from .constants import (
     SHELF_SIDE_CLEARANCE, SHELF_SETBACK, STRETCHER_WIDTH,
@@ -183,7 +183,7 @@ def _project_cutlist(project: Project) -> CutList:
     """
     cl = CutList(spec_name=project.name)
     for i, comp in enumerate(project.components, start=1):
-        tag = comp.label or comp.display_label or f"C{i}"
+        tag = component_tag(comp, i)
         sub = generate_cutlist(comp.spec)
         for p in sub.parts:
             cl.parts.append(replace(p, name=f"{tag}: {p.name}"))

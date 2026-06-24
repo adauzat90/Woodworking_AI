@@ -14,7 +14,7 @@ from dataclasses import dataclass
 
 from .dsl import TableSpec, Project, CabinetType, Joinery
 from . import engineering, stock, proportion
-from .geometry import front_plan
+from .geometry import front_plan, footprints_overlap, component_tag
 
 # ASTM F2057 scope: clothing storage units >= 27in (686mm) tall fall under the
 # CPSC tip-over standard. Toe-kick minimums per ANSI/KCMA A161.1 (2in x 3in).
@@ -179,23 +179,24 @@ def _validate_table(spec: TableSpec) -> ValidationResult:
 def _validate_project(project: Project) -> ValidationResult:
     """Validate every component and check the run for placement overlaps."""
     issues: list[Issue] = []
-    if not project.components:
+    comps = project.components
+    if not comps:
         issues.append(Issue("warning", "components", "project has no components"))
-    spans: list[tuple[float, float, str]] = []
-    for i, comp in enumerate(project.components, start=1):
-        tag = comp.label or comp.display_label or f"C{i}"
+    for i, comp in enumerate(comps, start=1):
+        tag = component_tag(comp, i)
         for issue in validate(comp.spec).issues:
             issues.append(Issue(issue.severity, f"{tag}.{issue.field}", issue.message))
-        width = float(getattr(comp.spec, "width", 0.0) or 0.0)
-        spans.append((comp.x, comp.x + width, tag))
-    # Footprint overlap along the run (X). Components that share floor space
-    # would collide — a class of error only visible at the assembly level.
-    spans.sort()
-    for (a_lo, a_hi, a_tag), (b_lo, b_hi, b_tag) in zip(spans, spans[1:]):
-        if b_lo < a_hi - 1.0:  # 1mm slack for touching neighbours
-            issues.append(Issue("error", "placement",
-                                f"'{a_tag}' and '{b_tag}' overlap along the run; "
-                                "space components by their widths"))
+    # Oriented 2D footprint overlap — components that share floor space would
+    # collide. Works for any rotation, so it catches the inner-corner collision
+    # where two perpendicular runs of an L/U layout meet.
+    for i in range(len(comps)):
+        for j in range(i + 1, len(comps)):
+            if footprints_overlap(comps[i], comps[j]):
+                issues.append(Issue(
+                    "error", "placement",
+                    f"'{component_tag(comps[i], i + 1)}' and "
+                    f"'{component_tag(comps[j], j + 1)}' overlap in plan; space "
+                    "them or fit a corner unit / filler between the runs"))
     return ValidationResult(issues)
 
 
