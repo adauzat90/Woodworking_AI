@@ -71,10 +71,20 @@ def _fit(ax, panels, haxis, vaxis, pad: float = 30.0) -> None:
 
 
 def _cuboid_faces(p: PanelBox):
-    (x0, x1), (y0, y1), (z0, z1) = p.bounds()
+    import math
+    cx, cy, cz = p.center
+    sx, sy, sz = p.size
+    hx, hy, hz = sx / 2, sy / 2, sz / 2
+    a = math.radians(p.rot_z)
+    ca, sa = math.cos(a), math.sin(a)
+
+    def world(dx, dy, dz):
+        # Rotate the local (dx, dy) about Z, then translate to the centre.
+        return (cx + dx * ca - dy * sa, cy + dx * sa + dy * ca, cz + dz)
+
     v = [
-        (x0, y0, z0), (x1, y0, z0), (x1, y1, z0), (x0, y1, z0),
-        (x0, y0, z1), (x1, y0, z1), (x1, y1, z1), (x0, y1, z1),
+        world(-hx, -hy, -hz), world(hx, -hy, -hz), world(hx, hy, -hz), world(-hx, hy, -hz),
+        world(-hx, -hy, hz), world(hx, -hy, hz), world(hx, hy, hz), world(-hx, hy, hz),
     ]
     idx = [
         (0, 1, 2, 3), (4, 5, 6, 7), (0, 1, 5, 4),

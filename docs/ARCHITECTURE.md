@@ -211,8 +211,10 @@ needed only to render and export 3D geometry.
 4. ✅ **Estimator:** guillotine sheet nesting → sheet count + utilization, and a
    material/hardware/edge-banding/labour cost breakdown.
 5. ✅ **Hardened engine:** real drawer boxes + false fronts, center mullions, a
-   32 mm-system drilling schedule (pins/hinges/slides), a DXF cut-layout, and a
-   verified STEP/STL/GLB B-Rep path. Next: corner cabinets.
+   32 mm-system drilling schedule (pins/hinges/slides), a DXF cut-layout, a
+   verified STEP/STL/GLB B-Rep path, and **corner cabinets** — blind corners
+   (offset opening + filler) and diagonal corners (angled door via Z-rotated
+   panels, with trim-to-fit blanks excluded from interference).
 6. **Casegoods beyond cabinets** *(needs decisions)*: tables, dressers, built-ins
    — new DSL spec types and compiler rules.
 7. **Web UI** *(needs decisions)*: e.g. Next.js with live 3D (GLB) preview and

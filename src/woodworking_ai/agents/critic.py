@@ -103,25 +103,36 @@ def _overlap(a: PanelBox, b: PanelBox) -> tuple[float, float, float]:
 
 
 def _interferences(panels: list[PanelBox]) -> list[tuple[str, str, float]]:
-    """Pairs of panels that share positive volume (real collisions)."""
+    """Pairs of panels that share positive volume (real collisions).
+
+    Rotated panels are skipped: their AABB over-approximates the true footprint,
+    so an axis-aligned test would report false collisions. The opt-in B-Rep
+    check (``brep=True``) verifies those exactly.
+    """
+    checked = [p for p in panels if not getattr(p, "is_rotated", False)
+               and not getattr(p, "oversized", False)]
     hits: list[tuple[str, str, float]] = []
-    for i in range(len(panels)):
-        for j in range(i + 1, len(panels)):
-            ox, oy, oz = _overlap(panels[i], panels[j])
+    for i in range(len(checked)):
+        for j in range(i + 1, len(checked)):
+            ox, oy, oz = _overlap(checked[i], checked[j])
             if ox > TOUCH_EPS and oy > TOUCH_EPS and oz > TOUCH_EPS:
-                hits.append((panels[i].label, panels[j].label, ox * oy * oz))
+                hits.append((checked[i].label, checked[j].label, ox * oy * oz))
     return hits
 
 
-def _brep_interferences(model: Any, eps_volume: float = 1.0
+def _brep_interferences(model: Any, eps_volume: float = 1.0,
+                        skip: set[str] | None = None
                         ) -> list[tuple[str, str, float]]:
     """True solid-boolean interferences between a model's panels (mm³).
 
     Unlike the analytical AABB check, this is exact for *any* geometry —
     rotated, mitred or otherwise non-axis-aligned parts a future construction
     style might introduce. O(n²) boolean intersections, so it is opt-in.
+    ``skip`` names panels excluded from the check (e.g. trim-to-fit blanks).
     """
-    children = list(getattr(model, "children", []))
+    skip = skip or set()
+    children = [c for c in getattr(model, "children", [])
+                if getattr(c, "label", None) not in skip]
     hits: list[tuple[str, str, float]] = []
     for i in range(len(children)):
         for j in range(i + 1, len(children)):
@@ -170,6 +181,8 @@ def critique(spec: CabinetSpec, *, use_cad: bool = False,
     env_w = span(shell, 0)
     env_h = span(shell, 2)
     env_d = span(shell, 1)
+    full_width = span(panels, 0)
+    full_height = span(panels, 2)
     full_depth = span(panels, 1)
 
     result.report.update(
@@ -229,17 +242,20 @@ def critique(spec: CabinetSpec, *, use_cad: bool = False,
                 model = build_model(spec)
             dims = measure(model)
             result.report["measured"] = dims
-            # The real B-Rep includes fronts, so compare against full depth.
+            # The real B-Rep spans every panel (proud fronts, angled doors),
+            # so compare against the full panel span, not the carcass shell.
             for label, got, want in (
-                ("width", dims["width"], env_w),
-                ("height", dims["height"], env_h),
+                ("width", dims["width"], full_width),
+                ("height", dims["height"], full_height),
                 ("depth", dims["depth"], full_depth),
             ):
                 if abs(got - want) > DIM_TOL:
                     err("geometry",
                         f"built {label} {got:.1f}mm != expected {want:.1f}mm")
             if brep:
-                brep_hits = _brep_interferences(model)
+                skip = {p.label for p in panels
+                        if getattr(p, "oversized", False)}
+                brep_hits = _brep_interferences(model, skip=skip)
                 result.report["brep_interference_count"] = len(brep_hits)
                 for a, b, vol in brep_hits:
                     err("interference",

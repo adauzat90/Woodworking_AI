@@ -12,6 +12,7 @@ box in the shared frame:
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 from .dsl import CabinetSpec, BackStyle, Construction, CabinetType
@@ -25,26 +26,50 @@ from .cutlist import (
 
 @dataclass
 class PanelBox:
-    """One placed panel. ``size`` and ``center`` are (x, y, z) triples."""
+    """One placed panel. ``size`` and ``center`` are (x, y, z) triples.
+
+    ``rot_z`` rotates the panel about the vertical (Z) axis through its centre,
+    in degrees — used for the angled face/door of a diagonal corner cabinet.
+    """
 
     label: str
     size: tuple[float, float, float]
     center: tuple[float, float, float]
-    category: str = "carcass"   # carcass | back | shelf | toe | front
+    category: str = "carcass"   # carcass | back | shelf | toe | front | frame
+    rot_z: float = 0.0
+    oversized: bool = False     # a blank trimmed to shape on site (corner units)
 
     @property
     def is_front(self) -> bool:
         return self.category == "front"
 
+    @property
+    def is_rotated(self) -> bool:
+        return abs(self.rot_z) > 1e-9
+
     def bounds(self) -> tuple[tuple[float, float], ...]:
-        """Return ((xmin, xmax), (ymin, ymax), (zmin, zmax))."""
-        return tuple(
-            (c - s / 2, c + s / 2) for c, s in zip(self.center, self.size)
-        )
+        """Axis-aligned bounds ((xmin, xmax), (ymin, ymax), (zmin, zmax)).
+
+        For a rotated panel this is the AABB of the rotated box (a conservative
+        over-approximation in X/Y); Z is unaffected by a Z-rotation.
+        """
+        cx, cy, cz = self.center
+        sx, sy, sz = self.size
+        if not self.is_rotated:
+            hx, hy = sx / 2, sy / 2
+        else:
+            a = math.radians(self.rot_z)
+            ca, sa = abs(math.cos(a)), abs(math.sin(a))
+            hx = sx / 2 * ca + sy / 2 * sa
+            hy = sx / 2 * sa + sy / 2 * ca
+        return ((cx - hx, cx + hx), (cy - hy, cy + hy), (cz - sz / 2, cz + sz / 2))
 
 
 def panel_layout(spec: CabinetSpec) -> list[PanelBox]:
     """Return every panel of *spec* placed in the shared coordinate frame."""
+    if spec.cabinet_type == CabinetType.CORNER_DIAGONAL:
+        return _diagonal_layout(spec)
+
     m = spec.material
     toe_h = spec.toe_kick.height if spec.toe_kick else 0.0
     box_h = spec.height - toe_h
@@ -56,8 +81,8 @@ def panel_layout(spec: CabinetSpec) -> list[PanelBox]:
 
     panels: list[PanelBox] = []
 
-    def add(label, size, center, category="carcass"):
-        panels.append(PanelBox(label, size, center, category))
+    def add(label, size, center, category="carcass", rot_z=0.0):
+        panels.append(PanelBox(label, size, center, category, rot_z))
 
     z_box = toe_h + box_h / 2
     y_center = spec.depth / 2
@@ -185,5 +210,69 @@ def panel_layout(spec: CabinetSpec) -> list[PanelBox]:
             offset = spec.reveal / 2 + dw / 2
             add("Door L", (dw, m.door, door_h), (front_cx - offset, y_front, z), category="front")
             add("Door R", (dw, m.door, door_h), (front_cx + offset, y_front, z), category="front")
+
+    return panels
+
+
+def _diagonal_layout(spec: CabinetSpec) -> list[PanelBox]:
+    """A diagonal (angled-front) corner cabinet.
+
+    Footprint is W x D with the front-right corner cut by a 45° chamfer of leg
+    ``corner_cut``; an angled door (a Z-rotated panel) closes that chamfer. The
+    left side and back run full; the right side and front rail are shortened to
+    leave the chamfer open.
+    """
+    m = spec.material
+    W, D = spec.width, spec.depth
+    t = m.carcass
+    c = spec.corner_cut
+    toe_h = spec.toe_kick.height if spec.toe_kick else 0.0
+    box_h = spec.height - toe_h
+    z_box = toe_h + box_h / 2
+
+    panels: list[PanelBox] = []
+
+    def add(label, size, center, category="carcass", rot_z=0.0, oversized=False):
+        panels.append(PanelBox(label, size, center, category, rot_z, oversized))
+
+    # Carcass shell (outer faces sit on the footprint extremes).
+    add("Side L", (t, D, box_h), (-W / 2 + t / 2, D / 2, z_box))
+    add("Side R", (t, D - c, box_h), (W / 2 - t / 2, (c + D) / 2, z_box))
+    add("Back", (W - 2 * t, t, box_h), (0, D - t / 2, z_box), category="back")
+    # Front rail runs from the left side to where the chamfer begins.
+    front_w = (W / 2 - c) - (-W / 2 + t)
+    add("Front rail", (front_w, t, box_h),
+        ((-W / 2 + t + W / 2 - c) / 2, t / 2, z_box))
+
+    # Bottom and top blanks: square stock trimmed to the pentagon on site.
+    add("Bottom", (W - 2 * t, D - 2 * t, t), (0, D / 2, toe_h + t / 2),
+        category="carcass", oversized=True)
+    add("Top", (W - 2 * t, D - 2 * t, t), (0, D / 2, toe_h + box_h - t / 2),
+        category="carcass", oversized=True)
+
+    # Toe kick along the front.
+    if spec.toe_kick and toe_h > 0:
+        add("Toe kick", (W, t, toe_h),
+            (0, spec.toe_kick.setback + t / 2, toe_h / 2), category="toe")
+
+    # Shelves (rectangular blanks; trimmed to the corner in the shop).
+    if spec.shelves > 0:
+        usable = box_h - 2 * t
+        for i in range(spec.shelves):
+            frac = (i + 1) / (spec.shelves + 1)
+            add(f"Shelf {i + 1}", (W - 2 * t - 4, D - 2 * t - 4, m.shelf),
+                (0, D / 2, toe_h + t + frac * usable), category="shelf",
+                oversized=True)
+
+    # The angled door across the chamfer, from (W/2-c, 0) to (W/2, c).
+    door_len = max(c * math.sqrt(2) - 2 * spec.reveal, 50.0)
+    door_h = box_h - 2 * spec.reveal
+    mid = (W / 2 - c / 2, c / 2)
+    # Nudge the door outward (front-right) along the chamfer normal.
+    nx, ny = (1 / math.sqrt(2), -1 / math.sqrt(2))
+    cx = mid[0] + nx * m.door / 2
+    cy = mid[1] + ny * m.door / 2
+    add("Door", (door_len, m.door, door_h), (cx, cy, z_box),
+        category="front", rot_z=45.0)
 
     return panels

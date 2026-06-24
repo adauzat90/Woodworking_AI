@@ -111,8 +111,49 @@ def _add_drawer_box(cl: "CutList", spec: CabinetSpec, index: int,
     ))
 
 
+def _diagonal_cutlist(spec: CabinetSpec) -> CutList:
+    """Parts + hardware for a diagonal (angled-front) corner cabinet."""
+    import math
+    m = spec.material
+    cl = CutList(spec_name=spec.name)
+    W, D, t, c = spec.width, spec.depth, m.carcass, spec.corner_cut
+    toe_h = spec.toe_kick.height if spec.toe_kick else 0.0
+    box_h = spec.height - toe_h
+    front_w = (W / 2 - c) - (-W / 2 + t)
+
+    cl.parts.append(Part("Side L", 1, length=box_h, width=D, thickness=t,
+                         notes="full gable"))
+    cl.parts.append(Part("Side R", 1, length=box_h, width=D - c, thickness=t,
+                         notes="short gable (chamfer)"))
+    cl.parts.append(Part("Back", 1, length=box_h, width=W - 2 * t, thickness=t))
+    cl.parts.append(Part("Front rail", 1, length=box_h, width=front_w, thickness=t))
+    cl.parts.append(Part("Bottom", 1, length=W - 2 * t, width=D - 2 * t,
+                         thickness=t, notes="trim front-right corner"))
+    cl.parts.append(Part("Top", 1, length=W - 2 * t, width=D - 2 * t,
+                         thickness=t, notes="trim front-right corner"))
+    if spec.toe_kick and toe_h > 0:
+        cl.parts.append(Part("Toe kick", 1, length=W, width=toe_h, thickness=t))
+    if spec.shelves > 0:
+        cl.parts.append(Part("Corner shelf", spec.shelves, length=W - 2 * t - 4,
+                             width=D - 2 * t - 4, thickness=m.shelf,
+                             notes="trim to corner"))
+        cl.hardware.append(Hardware("Shelf pin", spec.shelves * 4, "5mm"))
+    door_len = max(c * math.sqrt(2) - 2 * spec.reveal, 50.0)
+    cl.parts.append(Part("Door", 1, length=box_h - 2 * spec.reveal, width=door_len,
+                         thickness=m.door, material="door/front",
+                         notes="angled 45° door"))
+    cl.hardware.append(Hardware("Concealed hinge", 2, "soft-close"))
+    cl.hardware.append(Hardware("Door pull", 1))
+    if spec.edge_banding:
+        cl.hardware.append(Hardware("Edge banding", 1, f"~{2 * box_h / 1000:.1f} m"))
+    return cl
+
+
 def generate_cutlist(spec: CabinetSpec) -> CutList:
-    """Derive the full parts + hardware list for a frameless base cabinet."""
+    """Derive the full parts + hardware list for a cabinet."""
+    if spec.cabinet_type == CabinetType.CORNER_DIAGONAL:
+        return _diagonal_cutlist(spec)
+
     m = spec.material
     cl = CutList(spec_name=spec.name)
 

@@ -105,7 +105,8 @@ Pick the model with `WOODAI_MODEL` (default `claude-opus-4-8`; e.g.
 ## What it can model
 
 - **Cabinet types:** `base` (toe kick + open top), `wall` (hung, enclosed top,
-  no toe kick), `tall` (pantry, floor-to-ceiling).
+  no toe kick), `tall` (pantry, floor-to-ceiling), `corner_blind` (offset
+  opening + filler), `corner_diagonal` (angled door).
 - **Construction:** `frameless` (Euro, overlay doors) and `face_frame`
   (hardwood stiles/rails + inset doors).
 - **Fronts:** any mix of doors (0–2), a center mullion, and a stack of drawers

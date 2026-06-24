@@ -39,11 +39,14 @@ def build_model(spec: CabinetSpec) -> Any:
     same source the Critic agent measures against.
     """
     b3d = _require_build123d()
-    Box, Pos, Compound = b3d.Box, b3d.Pos, b3d.Compound
+    Box, Pos, Compound, Rot = b3d.Box, b3d.Pos, b3d.Compound, b3d.Rot
 
     solids: list[Any] = []
     for p in panel_layout(spec):
-        solid = Pos(*p.center) * Box(*p.size)
+        solid = Box(*p.size)
+        if p.is_rotated:
+            solid = Rot(0, 0, p.rot_z) * solid
+        solid = Pos(*p.center) * solid
         solid.label = p.label
         solids.append(solid)
 
