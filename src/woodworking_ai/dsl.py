@@ -48,6 +48,7 @@ class Material:
     back: float = 6.0
     door: float = 18.0
     shelf: float = 18.0
+    drawer_box: float = 12.0     # drawer box sides/front/back stock
 
 
 @dataclass
@@ -59,6 +60,7 @@ class ToeKick:
 @dataclass
 class Drawer:
     front_height: float = 140.0
+    false_front: bool = False    # a fixed panel (e.g. sink tip-out), no box
 
 
 @dataclass

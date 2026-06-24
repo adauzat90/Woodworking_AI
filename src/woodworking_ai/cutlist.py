@@ -23,6 +23,9 @@ STRETCHER_WIDTH = 80.0         # front/back top rails on a base cabinet
 BACK_RABBET = 0.0              # rabbeted back recess captured via interior depth
 FRAME_WIDTH = 38.0             # face-frame stile/rail width (solid hardwood)
 FRAME_THICKNESS = 19.0         # face-frame stock thickness
+SLIDE_SIDE_CLEARANCE = 13.0    # gap each side for ball-bearing slides
+DRAWER_BOX_HEIGHT_DROP = 40.0  # box height below the drawer front
+DRAWER_BOX_DEPTH_GAP = 25.0    # box shallower than the interior
 
 
 @dataclass
@@ -83,6 +86,28 @@ class CutList:
             f"({len(self.parts)} unique), {n_hw} hardware items, "
             f"~{self.sheet_area_m2:.2f} m² sheet goods"
         )
+
+
+def _add_drawer_box(cl: "CutList", spec: CabinetSpec, index: int,
+                    opening_w: float, dr, interior_depth: float) -> None:
+    """Append the four box panels + bottom for one drawer."""
+    m = spec.material
+    t = m.drawer_box
+    box_w = opening_w - 2 * SLIDE_SIDE_CLEARANCE          # outer box width
+    box_h = max(dr.front_height - DRAWER_BOX_HEIGHT_DROP, 60.0)
+    box_d = max(interior_depth - DRAWER_BOX_DEPTH_GAP, 100.0)
+    cl.parts.append(Part(
+        f"Drawer {index} box side", 2, length=box_d, width=box_h, thickness=t,
+        material="drawer box", notes="grooved for bottom",
+    ))
+    cl.parts.append(Part(
+        f"Drawer {index} box front/back", 2, length=box_w - 2 * t, width=box_h,
+        thickness=t, material="drawer box",
+    ))
+    cl.parts.append(Part(
+        f"Drawer {index} box bottom", 1, length=box_w, width=box_d,
+        thickness=m.back, material="back panel", notes="captured in groove",
+    ))
 
 
 def generate_cutlist(spec: CabinetSpec) -> CutList:
@@ -171,12 +196,17 @@ def generate_cutlist(spec: CabinetSpec) -> CutList:
     drawer_band = 0.0
     for i, dr in enumerate(spec.drawers, start=1):
         front_w = opening_w - 2 * spec.reveal
+        note = "false front" if dr.false_front else front_note
         cl.parts.append(Part(
             f"Drawer front #{i}", 1,
             length=front_w, width=dr.front_height, thickness=m.door,
-            material="door/front", notes=front_note,
+            material="door/front", notes=note,
         ))
         drawer_band += dr.front_height + spec.reveal
+        if dr.false_front:
+            continue  # fixed panel: no box, no slides
+        # The drawer box itself, sized for slide and depth clearance.
+        _add_drawer_box(cl, spec, i, opening_w, dr, interior_depth)
         cl.hardware.append(Hardware("Drawer slide (pair)", 1, "ball-bearing"))
         cl.hardware.append(Hardware("Drawer pull", 1))
 

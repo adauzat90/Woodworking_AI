@@ -31,6 +31,7 @@ class PriceBook:
     # Full-sheet price keyed by the cut list's `material` label.
     sheet_price: dict[str, float] = field(default_factory=lambda: {
         "sheet": 70.0, "back panel": 30.0, "door/front": 95.0,
+        "drawer box": 55.0, "frame": 40.0,
     })
     sheet_price_default: float = 70.0
     # Per-unit hardware prices keyed by the hardware item name.
