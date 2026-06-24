@@ -16,8 +16,8 @@ import math
 from dataclasses import dataclass
 
 from .dsl import (
-    CabinetSpec, TableSpec, Project, Component, BackStyle, Construction,
-    CabinetType,
+    CabinetSpec, TableSpec, ComponentGroup, Component, BackStyle,
+    Construction, CabinetType,
 )
 
 # Construction constants shared with the cut list (neutral module, no cycle).
@@ -200,13 +200,19 @@ def component_tag(comp: Component, index: int = 1) -> str:
 def _placement(comp: Component):
     """Transform fn local (x, y) -> world (x, y) for a placed component.
 
-    A component is anchored by its **front-left corner** (local (-width/2, 0)):
-    ``component.x``/``component.y`` are where that corner sits in the run, and
-    ``component.rotation`` (degrees, CCW about vertical) turns the component
-    about it. So a straight run is side-by-side offsets, and turning a run 90°
-    at a corner just rotates each piece about the corner it butts to.
+    A leaf component is anchored by its **front-left corner** (local
+    (-width/2, 0)): ``component.x``/``component.y`` are where that corner sits in
+    the run, and ``component.rotation`` (degrees, CCW about vertical) turns the
+    component about it. So a straight run is side-by-side offsets, and turning a
+    run 90° at a corner just rotates each piece about the corner it butts to.
+
+    A nested **sub-assembly** (group) has no single width to anchor by; its child
+    panels are already placed in the group's own local frame, so it is anchored
+    at its local origin (0, 0) and ``x``/``y``/``rotation`` translate and rotate
+    that whole frame.
     """
-    w = float(getattr(comp.spec, "width", 0.0) or 0.0)
+    is_group = isinstance(comp.spec, ComponentGroup)
+    w = 0.0 if is_group else float(getattr(comp.spec, "width", 0.0) or 0.0)
     a = math.radians(comp.rotation)
     ca, sa = math.cos(a), math.sin(a)
 
@@ -218,14 +224,35 @@ def _placement(comp: Component):
     return place
 
 
+def local_plan_bounds(spec) -> tuple[float, float, float, float]:
+    """The spec's plan extent in its own local frame (xmin, xmax, ymin, ymax).
+
+    A leaf cabinet/table is a ``width`` × ``depth`` rectangle centred on X with
+    its front at Y=0. A sub-assembly's plan box is the union of its placed
+    panels' footprints, so a placed group is overlap-checked by its real outline
+    rather than a missing ``width``.
+    """
+    if isinstance(spec, ComponentGroup):
+        xs: list[float] = []
+        ys: list[float] = []
+        for p in project_layout(spec):
+            (x0, x1), (y0, y1), _ = p.bounds()
+            xs += [x0, x1]
+            ys += [y0, y1]
+        if not xs:
+            return (0.0, 0.0, 0.0, 0.0)
+        return (min(xs), max(xs), min(ys), max(ys))
+    w = float(getattr(spec, "width", 0.0) or 0.0)
+    d = float(getattr(spec, "depth", 0.0) or 0.0)
+    return (-w / 2, w / 2, 0.0, d)
+
+
 def footprint_corners(comp: Component) -> list[tuple[float, float]]:
     """The component's plan rectangle in the run frame (4 world (x, y) points)."""
     place = _placement(comp)
-    w = float(getattr(comp.spec, "width", 0.0) or 0.0)
-    d = float(getattr(comp.spec, "depth", 0.0) or 0.0)
-    # Local plan corners about the box-centre/front origin.
-    return [place(-w / 2, 0.0), place(w / 2, 0.0),
-            place(w / 2, d), place(-w / 2, d)]
+    xmin, xmax, ymin, ymax = local_plan_bounds(comp.spec)
+    return [place(xmin, ymin), place(xmax, ymin),
+            place(xmax, ymax), place(xmin, ymax)]
 
 
 def _project_poly(poly, ax: float, ay: float) -> tuple[float, float]:
@@ -255,14 +282,17 @@ def footprints_overlap(a: Component, b: Component, slack: float = 1.0) -> bool:
     return True
 
 
-def project_layout(project: Project) -> list[PanelBox]:
-    """Every panel of a whole run, placed in the shared (global) frame.
+def project_layout(project: ComponentGroup) -> list[PanelBox]:
+    """Every panel of a whole group, placed in the group's (global) frame.
 
     Each component's local panels (X centred on the box, Y=0 at its front,
-    Z=0 on the floor) are transformed into the run frame by :func:`_placement`
+    Z=0 on the floor) are transformed into the group frame by :func:`_placement`
     (front-left-corner anchor + rotation), so L- and U-shaped runs assemble
-    correctly. Built from :func:`panel_layout`, so the model the compiler builds
-    and the Critic measures is exactly the sum of the per-component layouts.
+    correctly. A component whose spec is itself a sub-assembly contributes its
+    own placed panels, transformed again by this component's placement — nesting
+    composes by construction. Built from :func:`panel_layout`, so the model the
+    compiler builds and the Critic measures is exactly the sum of the
+    per-component layouts.
     """
     out: list[PanelBox] = []
     for i, comp in enumerate(project.components, start=1):
@@ -280,7 +310,7 @@ def project_layout(project: Project) -> list[PanelBox]:
 
 def panel_layout(spec) -> list[PanelBox]:
     """Return every panel of *spec* placed in the shared coordinate frame."""
-    if isinstance(spec, Project):
+    if isinstance(spec, ComponentGroup):
         return project_layout(spec)
     if isinstance(spec, TableSpec):
         return _table_layout(spec)

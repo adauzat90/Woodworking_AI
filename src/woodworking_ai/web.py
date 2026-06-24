@@ -24,7 +24,7 @@ from typing import Any
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 
-from .dsl import CabinetSpec, TableSpec, Project, spec_from_dict
+from .dsl import CabinetSpec, TableSpec, ComponentGroup, spec_from_dict
 from .validator import validate
 from .service import build_result, export_bytes
 
@@ -62,8 +62,8 @@ def health() -> dict[str, Any]:
     return {"status": "ok", "capabilities": _capabilities()}
 
 
-def _parse_spec(payload: dict[str, Any]) -> CabinetSpec | TableSpec | Project:
-    """Build a furniture spec (cabinet, table, or project) from a payload."""
+def _parse_spec(payload: dict[str, Any]) -> CabinetSpec | TableSpec | ComponentGroup:
+    """Build a furniture spec (cabinet, table, project, or assembly) from a payload."""
     if not isinstance(payload, dict):
         raise HTTPException(status_code=400, detail="expected a JSON object")
     spec_data = payload.get("spec", payload)

@@ -12,7 +12,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-from .dsl import TableSpec, Project, CabinetType, Joinery
+from .dsl import TableSpec, ComponentGroup, CabinetType, Joinery
 from . import engineering, stock, proportion
 from .geometry import front_plan, footprints_overlap, component_tag
 
@@ -176,8 +176,8 @@ def _validate_table(spec: TableSpec) -> ValidationResult:
     return ValidationResult(issues)
 
 
-def _validate_project(project: Project) -> ValidationResult:
-    """Validate every component and check the run for placement overlaps."""
+def _validate_project(project: ComponentGroup) -> ValidationResult:
+    """Validate every component and check the group for placement overlaps."""
     issues: list[Issue] = []
     comps = project.components
     if not comps:
@@ -201,7 +201,7 @@ def _validate_project(project: Project) -> ValidationResult:
 
 
 def validate(spec) -> ValidationResult:
-    if isinstance(spec, Project):
+    if isinstance(spec, ComponentGroup):
         return _validate_project(spec)
     if isinstance(spec, TableSpec):
         return _validate_table(spec)

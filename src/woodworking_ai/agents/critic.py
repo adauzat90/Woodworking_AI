@@ -27,7 +27,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from ..dsl import CabinetSpec, Project
+from ..dsl import CabinetSpec, ComponentGroup
 from ..geometry import (
     PanelBox, panel_layout, project_layout, footprints_overlap, component_tag,
 )
@@ -160,9 +160,9 @@ def _span(group: list[PanelBox], axis: int) -> float:
     return hi - lo
 
 
-def _critique_project(project: Project, *, use_cad: bool = False,
+def _critique_project(project: ComponentGroup, *, use_cad: bool = False,
                       brep: bool = False, model: Any = None) -> CritiqueResult:
-    """Verify an assembled run: envelope, and component-to-component collisions.
+    """Verify an assembled group: envelope, and component-to-component collisions.
 
     The decisive check is interference *between* cabinets — a class of error
     that only exists once components are placed in one frame.
@@ -222,13 +222,13 @@ def _critique_project(project: Project, *, use_cad: bool = False,
 
 def critique(spec, *, use_cad: bool = False,
              brep: bool = False, model: Any = None) -> CritiqueResult:
-    """Verify the geometry implied by *spec* (cabinet, table, or project).
+    """Verify the geometry implied by *spec* (cabinet, table, or group).
 
     Set ``use_cad=True`` (or pass a pre-built ``model``) to additionally measure
     the real build123d B-Rep and cross-check it. Set ``brep=True`` to also run
     exact solid-boolean interference (needs build123d).
     """
-    if isinstance(spec, Project):
+    if isinstance(spec, ComponentGroup):
         return _critique_project(spec, use_cad=use_cad, brep=brep, model=model)
     panels = panel_layout(spec)
     result = CritiqueResult()

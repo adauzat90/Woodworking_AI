@@ -243,6 +243,16 @@ needed only to render and export 3D geometry.
    along a wall), and overlaps use oriented 2D footprints (SAT), so the inner
    corner where two perpendicular runs meet is verified. See `docs/DSL_REVIEW.md`
    for the review that drove this.
+9. ✅ **Sub-assemblies:** the run layer is now **recursive**. `Project` and the
+   new `Assembly` share a `ComponentGroup` base, and a `Component.spec` may be a
+   group, so a group nests inside a group and the whole pipeline (validate, cut
+   list, estimate, drilling, geometry, critic) recurses with no special cases —
+   a placed sub-assembly transforms (translate + rotate) as one unit, and its
+   real plan outline feeds the overlap check. **Reuse** is first-class:
+   `definitions` declares named sub-assemblies and a component places an
+   independent copy by `ref` (define-once, drop-in-many), with cyclic/unknown
+   references rejected on load. The designer agent can emit projects and
+   assemblies — `DSL_SCHEMA_HINT` documents the form. Tests: `tests/test_assembly.py`.
 
 ---
 
