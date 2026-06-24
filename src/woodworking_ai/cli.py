@@ -75,6 +75,10 @@ def _emit(spec: CabinetSpec, args) -> int:
     print(cutlist.hardware_csv())
     print("\n" + cutlist.summary())
 
+    if args.estimate:
+        from .estimator import estimate
+        print("\n" + estimate(spec, cutlist=cutlist).report_text())
+
     if args.out:
         out = Path(args.out)
         out.mkdir(parents=True, exist_ok=True)
@@ -113,6 +117,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="render PNG snapshots (needs matplotlib)")
     common.add_argument("--visual-review", action="store_true",
                         help="have Claude visually review the render (needs API key)")
+    common.add_argument("--estimate", action="store_true",
+                        help="estimate sheet count and cost")
 
     p_design = sub.add_parser("design", parents=[common],
                               help="natural language -> design (uses Claude)")

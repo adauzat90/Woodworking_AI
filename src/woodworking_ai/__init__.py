@@ -8,6 +8,7 @@ from .dsl import (
 )
 from .validator import validate, ValidationResult
 from .cutlist import generate_cutlist, CutList, Part, Hardware
+from .estimator import estimate, Estimate, PriceBook, SheetSize, pack_sheets
 
 __version__ = "0.1.0"
 
@@ -26,4 +27,9 @@ __all__ = [
     "CutList",
     "Part",
     "Hardware",
+    "estimate",
+    "Estimate",
+    "PriceBook",
+    "SheetSize",
+    "pack_sheets",
 ]
