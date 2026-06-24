@@ -21,6 +21,7 @@ CATEGORY_COLORS = {
     "back": "#e6d2ad",
     "shelf": "#d8b98a",
     "toe": "#6b4f3a",
+    "frame": "#7a5230",
     "front": "#9c6b43",
 }
 CATEGORY_ALPHA = {"front": 0.92}

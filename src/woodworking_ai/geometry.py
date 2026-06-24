@@ -14,10 +14,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .dsl import CabinetSpec, BackStyle
+from .dsl import CabinetSpec, BackStyle, Construction
 
 # Construction constants shared with the cut list.
-from .cutlist import STRETCHER_WIDTH, SHELF_SIDE_CLEARANCE, SHELF_SETBACK
+from .cutlist import (
+    STRETCHER_WIDTH, SHELF_SIDE_CLEARANCE, SHELF_SETBACK,
+    FRAME_WIDTH, FRAME_THICKNESS,
+)
 
 
 @dataclass
@@ -105,27 +108,54 @@ def panel_layout(spec: CabinetSpec) -> list[PanelBox]:
         add("Toe kick", (spec.width, m.carcass, toe_h),
             (0, setback + m.carcass / 2, toe_h / 2), category="toe")
 
+    # --- face frame (stiles + rails) for face-frame construction ---------
+    is_ff = spec.construction == Construction.FACE_FRAME
+    if is_ff:
+        y_frame = -FRAME_THICKNESS / 2
+        x_stile = spec.width / 2 - FRAME_WIDTH / 2
+        add("Stile L", (FRAME_WIDTH, FRAME_THICKNESS, box_h),
+            (-x_stile, y_frame, z_box), category="frame")
+        add("Stile R", (FRAME_WIDTH, FRAME_THICKNESS, box_h),
+            (x_stile, y_frame, z_box), category="frame")
+        rail_w = spec.width - 2 * FRAME_WIDTH
+        add("Rail top", (rail_w, FRAME_THICKNESS, FRAME_WIDTH),
+            (0, y_frame, toe_h + box_h - FRAME_WIDTH / 2), category="frame")
+        add("Rail bottom", (rail_w, FRAME_THICKNESS, FRAME_WIDTH),
+            (0, y_frame, toe_h + FRAME_WIDTH / 2), category="frame")
+
     # --- fronts: drawers stack at the top, doors fill the rest -----------
-    y_front = -m.door / 2
+    # The front "region" is the full carcass face (frameless, overlay) or the
+    # inner opening of the face frame (inset doors flush with the frame).
+    if is_ff:
+        opening_w = spec.width - 2 * FRAME_WIDTH
+        region_bottom = toe_h + FRAME_WIDTH
+        region_h = box_h - 2 * FRAME_WIDTH
+        y_front = -FRAME_THICKNESS + m.door / 2   # door flush with frame front
+    else:
+        opening_w = spec.width
+        region_bottom = toe_h
+        region_h = box_h
+        y_front = -m.door / 2                      # overlay, proud of the carcass
+
     drawer_band = 0.0
-    z_cursor = toe_h + box_h
+    z_cursor = region_bottom + region_h
     for i, dr in enumerate(spec.drawers, start=1):
-        fw = spec.width - 2 * spec.reveal
+        fw = opening_w - 2 * spec.reveal
         z = z_cursor - spec.reveal - dr.front_height / 2
         add(f"Drawer front {i}", (fw, m.door, dr.front_height),
             (0, y_front, z), category="front")
         z_cursor -= dr.front_height + spec.reveal
         drawer_band += dr.front_height + spec.reveal
 
-    door_region = box_h - drawer_band
+    door_region = region_h - drawer_band
     if spec.doors > 0 and door_region > 0:
         door_h = door_region - 2 * spec.reveal
-        z = toe_h + (box_h - drawer_band) / 2
+        z = region_bottom + (region_h - drawer_band) / 2
         if spec.doors == 1:
-            dw = spec.width - 2 * spec.reveal
+            dw = opening_w - 2 * spec.reveal
             add("Door", (dw, m.door, door_h), (0, y_front, z), category="front")
         else:
-            dw = (spec.width - 3 * spec.reveal) / 2
+            dw = (opening_w - 3 * spec.reveal) / 2
             offset = spec.reveal / 2 + dw / 2
             add("Door L", (dw, m.door, door_h), (-offset, y_front, z), category="front")
             add("Door R", (dw, m.door, door_h), (offset, y_front, z), category="front")

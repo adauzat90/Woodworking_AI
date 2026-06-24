@@ -14,13 +14,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .dsl import CabinetSpec, BackStyle
+from .dsl import CabinetSpec, BackStyle, Construction
 
 # Small construction constants (mm). Centralised so they are easy to tune.
 SHELF_SIDE_CLEARANCE = 2.0     # gap each side so an adjustable shelf drops in
 SHELF_SETBACK = 20.0           # shelf shallower than interior depth
 STRETCHER_WIDTH = 80.0         # front/back top rails on a base cabinet
 BACK_RABBET = 0.0              # rabbeted back recess captured via interior depth
+FRAME_WIDTH = 38.0             # face-frame stile/rail width (solid hardwood)
+FRAME_THICKNESS = 19.0         # face-frame stock thickness
 
 
 @dataclass
@@ -146,29 +148,48 @@ def generate_cutlist(spec: CabinetSpec) -> CutList:
             notes=f"set back {spec.toe_kick.setback:.0f}mm",
         ))
 
+    # ---- face frame (solid hardwood stiles + rails) ---------------------
+    is_ff = spec.construction == Construction.FACE_FRAME
+    if is_ff:
+        cl.parts.append(Part(
+            "Face-frame stile", 2, length=box_height, width=FRAME_WIDTH,
+            thickness=FRAME_THICKNESS, material="frame", grain="length",
+            notes="vertical, hardwood",
+        ))
+        cl.parts.append(Part(
+            "Face-frame rail", 2, length=spec.width - 2 * FRAME_WIDTH,
+            width=FRAME_WIDTH, thickness=FRAME_THICKNESS, material="frame",
+            notes="top & bottom, hardwood",
+        ))
+
     # ---- fronts: drawers stack at the top, doors fill the rest ----------
+    # Face-frame fronts are inset in the frame opening; frameless are overlay.
+    opening_w = (spec.width - 2 * FRAME_WIDTH) if is_ff else spec.width
+    region_h = (box_height - 2 * FRAME_WIDTH) if is_ff else box_height
+    front_note = "inset" if is_ff else "overlay"
+
     drawer_band = 0.0
     for i, dr in enumerate(spec.drawers, start=1):
-        front_w = spec.width - 2 * spec.reveal
+        front_w = opening_w - 2 * spec.reveal
         cl.parts.append(Part(
             f"Drawer front #{i}", 1,
             length=front_w, width=dr.front_height, thickness=m.door,
-            material="door/front", notes="overlay",
+            material="door/front", notes=front_note,
         ))
         drawer_band += dr.front_height + spec.reveal
         cl.hardware.append(Hardware("Drawer slide (pair)", 1, "ball-bearing"))
         cl.hardware.append(Hardware("Drawer pull", 1))
 
-    door_region = box_height - drawer_band
+    door_region = region_h - drawer_band
     if spec.doors > 0 and door_region > 0:
         door_h = door_region - 2 * spec.reveal
         if spec.doors == 1:
-            door_w = spec.width - 2 * spec.reveal
-        else:  # two doors share the width with a center reveal
-            door_w = (spec.width - 3 * spec.reveal) / 2
+            door_w = opening_w - 2 * spec.reveal
+        else:  # two doors share the opening with a center reveal
+            door_w = (opening_w - 3 * spec.reveal) / 2
         cl.parts.append(Part(
             "Door", spec.doors, length=door_h, width=door_w, thickness=m.door,
-            material="door/front", notes="full overlay",
+            material="door/front", notes=f"{front_note} ({spec.doors})",
         ))
         cl.hardware.append(Hardware("Concealed hinge", spec.doors * 2, "soft-close"))
         cl.hardware.append(Hardware("Door pull", spec.doors))
