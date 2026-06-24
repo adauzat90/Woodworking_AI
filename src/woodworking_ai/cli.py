@@ -79,6 +79,10 @@ def _emit(spec: CabinetSpec, args) -> int:
         from .estimator import estimate
         print("\n" + estimate(spec, cutlist=cutlist).report_text())
 
+    if args.drill:
+        from .drilling import drilling_schedule
+        print("\n" + drilling_schedule(spec).report_text())
+
     if args.out:
         out = Path(args.out)
         out.mkdir(parents=True, exist_ok=True)
@@ -86,6 +90,11 @@ def _emit(spec: CabinetSpec, args) -> int:
         exporters.write_hardware_csv(cutlist, out / "hardware.csv")
         (out / "spec.json").write_text(spec.to_json() + "\n", encoding="utf-8")
         print(f"\nWrote spec.json, cutlist.csv, hardware.csv to {out}/")
+        if args.drill:
+            from .drilling import drilling_schedule
+            (out / "drilling.csv").write_text(
+                drilling_schedule(spec).to_csv() + "\n", encoding="utf-8")
+            print("Wrote drilling.csv")
 
         if args.step or args.stl or args.glb:
             from .builder import build_model, measure
@@ -119,6 +128,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="have Claude visually review the render (needs API key)")
     common.add_argument("--estimate", action="store_true",
                         help="estimate sheet count and cost")
+    common.add_argument("--drill", action="store_true",
+                        help="print the drilling schedule (32mm system, hinges)")
 
     p_design = sub.add_parser("design", parents=[common],
                               help="natural language -> design (uses Claude)")
