@@ -113,12 +113,36 @@ def _interferences(panels: list[PanelBox]) -> list[tuple[str, str, float]]:
     return hits
 
 
+def _brep_interferences(model: Any, eps_volume: float = 1.0
+                        ) -> list[tuple[str, str, float]]:
+    """True solid-boolean interferences between a model's panels (mm³).
+
+    Unlike the analytical AABB check, this is exact for *any* geometry —
+    rotated, mitred or otherwise non-axis-aligned parts a future construction
+    style might introduce. O(n²) boolean intersections, so it is opt-in.
+    """
+    children = list(getattr(model, "children", []))
+    hits: list[tuple[str, str, float]] = []
+    for i in range(len(children)):
+        for j in range(i + 1, len(children)):
+            a, b = children[i], children[j]
+            try:
+                vol = (a & b).volume
+            except Exception:
+                vol = 0.0  # disjoint solids can raise instead of empty
+            if vol > eps_volume:
+                hits.append((getattr(a, "label", f"#{i}"),
+                             getattr(b, "label", f"#{j}"), vol))
+    return hits
+
+
 def critique(spec: CabinetSpec, *, use_cad: bool = False,
-             model: Any = None) -> CritiqueResult:
+             brep: bool = False, model: Any = None) -> CritiqueResult:
     """Verify the geometry implied by *spec*.
 
     Set ``use_cad=True`` (or pass a pre-built ``model``) to additionally measure
-    the real build123d B-Rep and cross-check it.
+    the real build123d B-Rep and cross-check it. Set ``brep=True`` to also run
+    exact solid-boolean interference (needs build123d).
     """
     panels = panel_layout(spec)
     result = CritiqueResult()
@@ -198,7 +222,7 @@ def critique(spec: CabinetSpec, *, use_cad: bool = False,
     result.report["sheet_area_m2"] = generate_cutlist(spec).sheet_area_m2
 
     # --- optional geometric cross-check ----------------------------------
-    if use_cad or model is not None:
+    if use_cad or brep or model is not None:
         try:
             from ..builder import build_model, measure
             if model is None:
@@ -214,6 +238,12 @@ def critique(spec: CabinetSpec, *, use_cad: bool = False,
                 if abs(got - want) > DIM_TOL:
                     err("geometry",
                         f"built {label} {got:.1f}mm != expected {want:.1f}mm")
+            if brep:
+                brep_hits = _brep_interferences(model)
+                result.report["brep_interference_count"] = len(brep_hits)
+                for a, b, vol in brep_hits:
+                    err("interference",
+                        f"B-Rep: '{a}' and '{b}' intersect (~{vol/1000:.1f} cm³)")
         except RuntimeError as exc:
             warn("geometry", f"could not build B-Rep for cross-check: {exc}")
 

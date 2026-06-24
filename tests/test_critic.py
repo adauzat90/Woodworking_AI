@@ -129,3 +129,30 @@ def test_report_text_renders():
     text = critique(base_spec()).report_text()
     assert "Critic report" in text
     assert "interferences" in text
+
+
+# --- B-Rep interference (build123d-gated, graceful without it) -----------
+
+def test_brep_check_runs_or_skips_gracefully():
+    crit = critique(base_spec(), brep=True)
+    try:
+        import build123d  # noqa: F401
+        # With build123d present, a correct cabinet has no real intersections.
+        assert crit.report.get("brep_interference_count", 0) == 0
+        assert crit.ok
+    except ImportError:
+        # Without it, the check is skipped with a warning, never an error.
+        assert crit.ok
+        assert any(i.kind == "geometry" for i in crit.warnings)
+
+
+def test_brep_interferences_detects_overlap_when_cad_present():
+    b3d = pytest.importorskip("build123d")
+    from woodworking_ai.agents.critic import _brep_interferences
+    a = b3d.Pos(0, 0, 0) * b3d.Box(100, 100, 100)
+    a.label = "A"
+    b = b3d.Pos(40, 0, 0) * b3d.Box(100, 100, 100)
+    b.label = "B"
+    model = b3d.Compound(children=[a, b])
+    hits = _brep_interferences(model)
+    assert len(hits) == 1 and hits[0][2] > 0
