@@ -150,6 +150,14 @@ def validate(spec: CabinetSpec) -> ValidationResult:
             err("corner_cut", "a diagonal corner needs a positive corner_cut")
         elif spec.corner_cut >= min(spec.width, spec.depth):
             err("corner_cut", "corner_cut cannot exceed the cabinet footprint")
+    elif spec.cabinet_type == CabinetType.BOOKCASE:
+        if spec.doors:
+            warn("doors", "a bookcase is open shelving; set doors to 0")
+        if spec.shelves == 0:
+            warn("shelves", "a bookcase usually has shelves")
+    elif spec.cabinet_type == CabinetType.DRESSER:
+        if not spec.drawers:
+            warn("drawers", "a dresser is a drawer bank; add some drawers")
     else:  # BASE
         if spec.depth > 700:
             warn("depth", "unusually deep for a base cabinet")

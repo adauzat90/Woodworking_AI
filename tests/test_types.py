@@ -91,3 +91,39 @@ def test_tall_without_toe_kick_warns():
 
 def test_short_tall_cabinet_warns():
     assert any(w.field == "height" for w in validate(tall(height=1200)).warnings)
+
+
+# --- bookcase + dresser --------------------------------------------------
+
+def test_bookcase_is_open_with_full_top():
+    bc = CabinetSpec(name="BC", cabinet_type=CabinetType.BOOKCASE, width=800,
+                     height=1800, depth=300, shelves=4, doors=0,
+                     toe_kick=ToeKick(80, 40))
+    assert bc.has_full_top
+    assert validate(bc).ok
+    assert critique(bc).report["interference_count"] == 0
+    assert "Top" in {p.label for p in panel_layout(bc)}
+
+
+def test_bookcase_with_doors_warns():
+    bc = CabinetSpec(name="BC", cabinet_type=CabinetType.BOOKCASE, width=800,
+                     height=1800, depth=300, shelves=4, doors=2,
+                     toe_kick=ToeKick(80, 40))
+    assert any(w.field == "doors" for w in validate(bc).warnings)
+
+
+def test_dresser_drawer_bank():
+    dr = CabinetSpec(name="DR", cabinet_type=CabinetType.DRESSER, width=900,
+                     height=800, depth=500, shelves=0, doors=0,
+                     drawers=[Drawer(180), Drawer(180), Drawer(180)],
+                     toe_kick=ToeKick(80, 40))
+    assert validate(dr).ok
+    assert critique(dr).report["interference_count"] == 0
+    fronts = [p for p in generate_cutlist(dr).parts if p.name.startswith("Drawer front")]
+    assert len(fronts) == 3
+
+
+def test_dresser_without_drawers_warns():
+    dr = CabinetSpec(name="DR", cabinet_type=CabinetType.DRESSER, width=900,
+                     height=800, depth=500, doors=0, drawers=[])
+    assert any(w.field == "drawers" for w in validate(dr).warnings)

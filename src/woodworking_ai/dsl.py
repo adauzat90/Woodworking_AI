@@ -23,6 +23,8 @@ class CabinetType(str, Enum):
     TALL = "tall"        # floor-to-ceiling pantry/utility, toe kick, full top
     CORNER_BLIND = "corner_blind"        # door opening + a blind filler return
     CORNER_DIAGONAL = "corner_diagonal"  # 45° angled face with an angled door
+    BOOKCASE = "bookcase"  # open shelving, enclosed top, no doors
+    DRESSER = "dresser"    # a drawer bank / chest of drawers, enclosed top
 
 
 class Construction(str, Enum):
@@ -95,8 +97,10 @@ class CabinetSpec:
 
     @property
     def has_full_top(self) -> bool:
-        """Wall and tall cabinets get an enclosed top panel; base uses rails."""
-        return self.cabinet_type in (CabinetType.WALL, CabinetType.TALL)
+        """Enclosed-top units; base/corner cabinets use top rails instead."""
+        return self.cabinet_type in (
+            CabinetType.WALL, CabinetType.TALL,
+            CabinetType.BOOKCASE, CabinetType.DRESSER)
 
     @property
     def is_corner(self) -> bool:
