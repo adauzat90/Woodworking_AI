@@ -27,7 +27,18 @@ def test_health_reports_capabilities():
     r = client.get("/api/health")
     assert r.status_code == 200
     caps = r.json()["capabilities"]
-    assert {"render", "glb", "llm"} <= caps.keys()
+    assert {"render", "glb", "llm", "convex"} <= caps.keys()
+
+
+def test_convex_url_injected_when_configured(monkeypatch):
+    monkeypatch.setenv("CONVEX_URL", "https://demo.convex.cloud")
+    assert "demo.convex.cloud" in client.get("/").text
+
+
+def test_convex_url_absent_by_default(monkeypatch):
+    monkeypatch.delenv("CONVEX_URL", raising=False)
+    body = client.get("/").text
+    assert "window.__CONVEX_URL__=''" in body
 
 
 def test_build_returns_full_bundle():

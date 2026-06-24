@@ -43,12 +43,17 @@ def _capabilities() -> dict[str, bool]:
         "render": has("matplotlib"),
         "glb": has("build123d"),
         "llm": has("anthropic") and bool(os.environ.get("ANTHROPIC_API_KEY")),
+        "convex": bool(os.environ.get("CONVEX_URL")),
     }
 
 
 @app.get("/", response_class=HTMLResponse)
 def index() -> str:
-    return (STATIC / "index.html").read_text(encoding="utf-8")
+    html = (STATIC / "index.html").read_text(encoding="utf-8")
+    # Expose an optional Convex deployment URL to the front end.
+    convex = os.environ.get("CONVEX_URL", "")
+    inject = f'<script>window.__CONVEX_URL__={convex!r};</script>'
+    return html.replace("<!--CONVEX_URL-->", inject)
 
 
 @app.get("/api/health")

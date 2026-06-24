@@ -221,8 +221,10 @@ needed only to render and export 3D geometry.
 6. **Casegoods beyond cabinets** *(needs decisions)*: tables, dressers, built-ins
    — new DSL spec types and compiler rules.
 7. ✅ **Web UI:** FastAPI backend + single-page front end with a live GLB 3D
-   preview (`<model-viewer>`), parametric form, NL design box, and in-browser
-   cut list / cost / drilling. Next: persistence, slider live-update, KCL export.
+   preview (`<model-viewer>`), parametric form, NL design box, in-browser cut
+   list / cost / drilling, **live update**, **downloads** (STEP/STL/GLB/DXF/CSV),
+   **share links**, and a **saved-design library** (Convex or localStorage).
+   Next: KCL export for Zoo interop.
 
 ---
 

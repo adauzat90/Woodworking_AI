@@ -1,0 +1,13 @@
+{
+  "name": "woodworking-ai-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Convex backend for the Woodworking AI cabinet designer (save/load designs).",
+  "scripts": {
+    "convex": "convex dev",
+    "deploy": "convex deploy"
+  },
+  "dependencies": {
+    "convex": "^1.17.0"
+  }
+}

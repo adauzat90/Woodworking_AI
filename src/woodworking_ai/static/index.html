@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Woodworking AI — Cabinet Designer</title>
+<!--CONVEX_URL-->
 <script type="module"
   src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
 <style>
@@ -120,6 +121,17 @@
     </fieldset>
     <button id="buildBtn">🔨 Build design</button>
     <div class="check"><input id="auto" type="checkbox" /><label style="margin:0">Live update as I change values</label></div>
+    <fieldset style="margin-top:14px">
+      <legend>Library</legend>
+      <button id="saveBtn" class="secondary">💾 Save current design</button>
+      <label>Saved designs</label>
+      <select id="savedList"><option value="">— none —</option></select>
+      <div class="row" style="margin-top:8px">
+        <div><button id="loadBtn" class="secondary">Load</button></div>
+        <div><button id="delBtn" class="secondary">Delete</button></div>
+      </div>
+      <div id="storeNote" class="muted" style="font-size:11px;margin-top:6px"></div>
+    </fieldset>
   </div>
 
   <div class="preview">
@@ -323,6 +335,71 @@ $("tabs").querySelectorAll("button").forEach(b => b.onclick = () => {
   paint();
 });
 
+// --- Library: Convex when CONVEX_URL is configured, else localStorage --------
+const CONVEX_URL = window.__CONVEX_URL__ || "";
+const CONVEX_VER = "1.17.0";
+let _convex = null, _anyApi = null;
+async function convexApi() {
+  if (!CONVEX_URL) return null;
+  if (!_convex) {
+    const [{ ConvexClient }, { anyApi }] = await Promise.all([
+      import(`https://esm.sh/convex@${CONVEX_VER}/browser`),
+      import(`https://esm.sh/convex@${CONVEX_VER}/server`),
+    ]);
+    _convex = new ConvexClient(CONVEX_URL);
+    _anyApi = anyApi;
+  }
+  return { client: _convex, api: _anyApi };
+}
+const LS_KEY = "woodai_designs";
+const store = {
+  backend: CONVEX_URL ? "Convex (cloud)" : "this browser (localStorage)",
+  async list() {
+    const cx = await convexApi();
+    if (cx) return await cx.client.query(cx.api.designs.list, {});
+    return JSON.parse(localStorage.getItem(LS_KEY) || "[]");
+  },
+  async save(name, spec) {
+    const cx = await convexApi();
+    if (cx) return await cx.client.mutation(cx.api.designs.save, { name, spec });
+    const l = JSON.parse(localStorage.getItem(LS_KEY) || "[]");
+    l.unshift({ _id: "loc_" + Date.now(), name, spec, createdAt: Date.now() });
+    localStorage.setItem(LS_KEY, JSON.stringify(l.slice(0, 50)));
+  },
+  async remove(id) {
+    const cx = await convexApi();
+    if (cx) return await cx.client.mutation(cx.api.designs.remove, { id });
+    const l = JSON.parse(localStorage.getItem(LS_KEY) || "[]").filter(d => d._id !== id);
+    localStorage.setItem(LS_KEY, JSON.stringify(l));
+  },
+};
+let savedCache = [];
+async function refreshSaved() {
+  try {
+    savedCache = await store.list();
+    $("savedList").innerHTML = '<option value="">— none —</option>' +
+      savedCache.map(d => `<option value="${d._id}">${d.name}</option>`).join("");
+    $("storeNote").textContent = `${savedCache.length} saved · stored in ${store.backend}` +
+      (CONVEX_URL ? "" : " — run convex/ for cloud sync");
+  } catch (e) { $("storeNote").textContent = "library error: " + e.message; }
+}
+$("saveBtn").onclick = async () => {
+  const spec = last ? last.spec : specFromForm();
+  const name = prompt("Name this design:", spec.name || "Cabinet");
+  if (!name) return;
+  await store.save(name, spec); refreshSaved();
+};
+$("loadBtn").onclick = async () => {
+  const d = savedCache.find(x => x._id === $("savedList").value);
+  if (!d) return;
+  syncForm(d.spec);
+  try { render(await post("/api/build", {spec: d.spec})); } catch (e) { showError(e.message); }
+};
+$("delBtn").onclick = async () => {
+  const id = $("savedList").value;
+  if (id) { await store.remove(id); refreshSaved(); }
+};
+
 // Live update: debounced rebuild when a parameter changes.
 let autoTimer = null;
 function maybeAuto() {
@@ -335,6 +412,7 @@ document.querySelectorAll(".controls input, .controls select").forEach(el => {
 });
 
 health();
+refreshSaved();
 loadFromHash();
 window.addEventListener("hashchange", loadFromHash);
 </script>

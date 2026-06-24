@@ -20,6 +20,11 @@ out/
 *.stl
 *.glb
 
+# Node / Convex
+node_modules/
+convex/_generated/
+.convex/
+
 # Secrets / env
 .env
 .env.*

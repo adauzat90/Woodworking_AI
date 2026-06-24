@@ -114,7 +114,15 @@ python -m woodworking_ai.web          # http://127.0.0.1:8000
 Type a description (uses Claude if `ANTHROPIC_API_KEY` is set) **or** dial in the
 parameters, and get an interactive GLB model (via `<model-viewer>`), the cut
 list, hardware schedule, cost estimate, and drilling schedule — all in the
-browser. The API:
+browser. Plus:
+
+- **Live update** — toggle on to rebuild as you change parameters.
+- **Downloads** — STEP, STL, GLB, DXF cut-layout, cut-list & drilling CSV.
+- **Share links** — encodes the design in the URL; open it to restore the design.
+- **Library** — save/load named designs. Uses **Convex** when configured
+  (`CONVEX_URL`), otherwise the browser's `localStorage`. See [`convex/`](convex/).
+
+The API:
 
 | Endpoint | Purpose |
 |---|---|
