@@ -178,6 +178,7 @@ src/woodworking_ai/
   geometry.py     # panel_layout(): the single source of truth for panel placement
   builder.py      # Spec → build123d B-Rep geometry (the compiler)
   render.py       # Headless front/side/iso snapshots (matplotlib, no GPU)
+  estimator.py    # Sheet nesting + cost estimate (pure math, no CAD dep)
   exporters.py    # Geometry → STEP / STL / GLB ; cut list → CSV
   agents/
     llm.py        # Anthropic client wrapper (Claude), incl. vision
@@ -199,16 +200,18 @@ needed only to render and export 3D geometry.
 
 ## 6. Roadmap
 
-1. **MVP (this prototype):** frameless base cabinet — DSL, validator, cut list,
-   build123d geometry, STEP/STL export, an LLM designer agent, and the Critic.
-2. Wall cabinets, tall/pantry units, face-frame construction.
-3. ✅ Critic agent: interference + envelope checks **and** render-based visual
-   review (done). Next: real B-Rep boolean interference (beyond AABB) and
-   multi-angle / textured renders.
-4. Sheet nesting + cost estimation (Estimator agent).
-5. Casegoods beyond cabinets: tables, dressers, built-ins.
-6. Web UI (Next.js) with live 3D (GLB) preview and slider overrides à la
-   Prompt2CAD; optional KCL export for Zoo interop.
+1. ✅ **MVP:** frameless base cabinet — DSL, validator, cut list, build123d
+   geometry, STEP/STL export, an LLM designer agent, and the Critic.
+2. ✅ **Cabinet types & construction:** wall and tall/pantry cabinets; face-frame
+   construction (stiles/rails + inset fronts) alongside frameless overlay.
+3. ✅ **Critic:** envelope + AABB interference, render-based visual review, and
+   opt-in true B-Rep boolean interference. Next: multi-angle / textured renders.
+4. ✅ **Estimator:** guillotine sheet nesting → sheet count + utilization, and a
+   material/hardware/edge-banding/labour cost breakdown.
+5. **Casegoods beyond cabinets** *(next)*: tables, dressers, built-ins — new DSL
+   spec types and compiler rules.
+6. **Web UI** *(needs decisions)*: e.g. Next.js with live 3D (GLB) preview and
+   slider overrides à la Prompt2CAD; optional KCL export for Zoo interop.
 
 ---
 

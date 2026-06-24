@@ -86,14 +86,32 @@ woodai build out/spec.json --out ./out --render          # PNG snapshots
 woodai design "30 inch drawer base, 3 drawers" --out ./out --visual-review
 ```
 
+**Cost estimate (sheet nesting + material/hardware/labour):**
+
+```bash
+woodai build out/spec.json --estimate
+```
+
 Pick the model with `WOODAI_MODEL` (default `claude-opus-4-8`; e.g.
 `claude-sonnet-4-6` for cheaper runs).
+
+## What it can model
+
+- **Cabinet types:** `base` (toe kick + open top), `wall` (hung, enclosed top,
+  no toe kick), `tall` (pantry, floor-to-ceiling).
+- **Construction:** `frameless` (Euro, overlay doors) and `face_frame`
+  (hardwood stiles/rails + inset doors).
+- **Fronts:** any mix of doors (0–2) and a stack of drawers, with configurable
+  reveal, back style, joinery, shelves, and toe kick.
+- **Outputs:** validated spec, geometry critique, headless render + optional
+  visual review, cut list + hardware schedule (CSV), a sheet-nesting **cost
+  estimate**, and STEP/STL/GLB when build123d is installed.
 
 ## The design language (example)
 
 ```json
 {
-  "type": "base_cabinet",
+  "cabinet_type": "base",
   "name": "Sink Base",
   "width": 900, "height": 720, "depth": 560,
   "material": { "carcass": 18, "back": 6, "door": 18, "shelf": 18 },
@@ -117,6 +135,7 @@ Pick the model with `WOODAI_MODEL` (default `claude-opus-4-8`; e.g.
 | `src/woodworking_ai/geometry.py` | `panel_layout()` — single source of panel placement |
 | `src/woodworking_ai/builder.py` | Spec → build123d B-Rep geometry |
 | `src/woodworking_ai/render.py` | Headless front/side/iso snapshots (matplotlib) |
+| `src/woodworking_ai/estimator.py` | Sheet nesting + cost estimate (pure math) |
 | `src/woodworking_ai/exporters.py` | STEP / STL / GLB / CSV export |
 | `src/woodworking_ai/agents/designer.py` | Claude designer + validate/critic-repair loop |
 | `src/woodworking_ai/agents/critic.py` | Computational + render-based (visual) verification |
