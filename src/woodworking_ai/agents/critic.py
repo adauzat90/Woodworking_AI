@@ -23,7 +23,6 @@ Two layers:
 from __future__ import annotations
 
 import json
-import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -213,14 +212,13 @@ def critique(spec: CabinetSpec, *, use_cad: bool = False,
     # --- clear opening + front coverage (cabinets only) ------------------
     if is_cabinet:
         m = spec.material
-        toe_h = spec.toe_kick.height if spec.toe_kick else 0.0
         result.report.update(
-            opening_width=spec.width - 2 * m.carcass,
-            opening_height=(spec.height - toe_h) - 2 * m.carcass,
+            opening_width=spec.interior_width,
+            opening_height=spec.box_height - 2 * m.carcass,
         )
         if fronts:
             front_area = sum(p.size[0] * p.size[2] for p in fronts)
-            face_area = spec.width * (spec.height - toe_h)
+            face_area = spec.width * spec.box_height
             coverage = 100.0 * front_area / face_area if face_area else 0.0
             result.report["front_coverage_pct"] = coverage
             max_x = max(p.bounds()[0][1] for p in fronts)
@@ -290,13 +288,8 @@ Respond with ONE JSON object and nothing else:
  "notes": "one-sentence overall impression"}"""
 
 
-def _extract_json(text: str) -> dict:
-    fenced = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
-    candidate = fenced.group(1) if fenced else text
-    start, end = candidate.find("{"), candidate.rfind("}")
-    if start == -1 or end == -1:
-        raise ValueError(f"no JSON object in vision response: {text[:160]!r}")
-    return json.loads(candidate[start : end + 1])
+# The Designer and Critic share one tolerant JSON extractor (see agents.llm).
+_extract_json = llm.extract_json
 
 
 def visual_review(spec: CabinetSpec, *, image_path: str | Path | None = None,

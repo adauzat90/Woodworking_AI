@@ -1,8 +1,6 @@
 """Tests for the joinery, drawer-slide hardware, and real-stock checks
 (STRUCT-002/010, STRUCT-011, HW-001/002, GRAIN-001, MAT-001/002/003)."""
 
-import pytest
-
 from woodworking_ai import (
     CabinetSpec, CabinetType, Material, ToeKick, Drawer, TableSpec, Joinery,
     validate, stock,

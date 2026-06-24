@@ -12,8 +12,9 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-from .dsl import CabinetSpec, TableSpec, CabinetType, Construction, Joinery
+from .dsl import TableSpec, CabinetType, Joinery
 from . import engineering, stock, proportion
+from .geometry import front_plan
 
 # ASTM F2057 scope: clothing storage units >= 27in (686mm) tall fall under the
 # CPSC tip-over standard. Toe-kick minimums per ANSI/KCMA A161.1 (2in x 3in).
@@ -21,8 +22,6 @@ F2057_HEIGHT_MM = 686.0
 KCMA_TOE_MIN_HEIGHT = 75.0   # ~3 in
 KCMA_TOE_MIN_SETBACK = 50.0  # ~2 in deep
 
-FRAME_WIDTH = 38.0           # face-frame stile width (matches cutlist.py)
-MULLION_WIDTH = 60.0         # frameless center post between a pair of doors
 SIDE_MOUNT_CLEARANCE = 12.7  # ½in nominal per-side gap for side-mount slides
 MIN_DRAWER_BOX_WIDTH = 150.0 # below this a box is barely usable
 
@@ -192,12 +191,9 @@ def validate(spec) -> ValidationResult:
         issues.append(Issue("info", fieldname, msg))
 
     # --- basic positive, finite, sane dimensions -------------------------
-    def finite_positive(val: object) -> bool:
-        return isinstance(val, (int, float)) and math.isfinite(val) and val > 0
-
     for name in ("width", "height", "depth"):
         val = getattr(spec, name)
-        if not finite_positive(val):
+        if not _finite_positive(val):
             err(name, f"must be a positive, finite number, got {val!r}")
         elif val > MAX_DIMENSION:
             err(name, f"exceeds the practical maximum of {MAX_DIMENSION:.0f}mm")
@@ -205,7 +201,7 @@ def validate(spec) -> ValidationResult:
     m = spec.material
     for name in ("carcass", "back", "door", "shelf", "drawer_box"):
         val = getattr(m, name, 18.0)
-        if not finite_positive(val):
+        if not _finite_positive(val):
             err(f"material.{name}", f"thickness must be positive & finite, got {val!r}")
 
     # Counts must be sane and bounded (range() over a huge count would hang).
@@ -224,13 +220,12 @@ def validate(spec) -> ValidationResult:
     if spec.width < 2 * m.carcass + 50:
         err("width", "too narrow to hold two sides plus a usable opening")
 
-    toe_h = spec.toe_kick.height if spec.toe_kick else 0.0
-    if toe_h >= spec.height:
+    if spec.toe_kick_height >= spec.height:
         err("toe_kick.height", "toe kick is taller than the whole cabinet")
     if spec.toe_kick and spec.toe_kick.setback >= spec.depth:
         err("toe_kick.setback", "toe kick setback exceeds cabinet depth")
 
-    box_height = spec.height - toe_h
+    box_height = spec.box_height
     if box_height <= m.carcass * 2:
         err("height", "carcass box height collapses after removing toe kick")
 
@@ -343,14 +338,14 @@ def validate(spec) -> ValidationResult:
              "a glued butt joint is weak in tension/shear for a carcass; use "
              "dado/rabbet/dowel/domino so panels are mechanically captured")
 
+    # Shared front layout (single source of truth for door/drawer sizing).
+    plan = front_plan(spec)
+
     # --- drawer slides + box joinery (HW-001/002, STRUCT-011, GRAIN-001) -
     boxed = [d for d in spec.drawers if not d.false_front]
     if boxed:
-        is_ff = spec.construction == Construction.FACE_FRAME
-        opening_w = (spec.width - 2 * FRAME_WIDTH) if is_ff else spec.width
-        if spec.cabinet_type == CabinetType.CORNER_BLIND and spec.blind_width > 0:
-            opening_w -= spec.blind_width
-        interior_depth = spec.depth - m.back
+        opening_w = plan.opening_w
+        interior_depth = spec.interior_depth
 
         # Corner joints — dedupe so N identical drawers don't spam N warnings.
         for cj in {str(d.corner_joint).strip().lower() for d in boxed}:
@@ -412,17 +407,8 @@ def validate(spec) -> ValidationResult:
                  f"{HINGE_CUP_DEPTH:.1f}mm hinge cup; use ≥16mm door stock for a "
                  "35mm concealed hinge")
 
-    if spec.doors > 0 and not spec.is_corner:
-        is_ff = spec.construction == Construction.FACE_FRAME
-        opening_w = (spec.width - 2 * FRAME_WIDTH) if is_ff else spec.width
-        mullion_w = (FRAME_WIDTH if is_ff else MULLION_WIDTH) \
-            if (spec.center_mullion and spec.doors == 2) else 0.0
-        if spec.doors == 1:
-            door_w = opening_w - 2 * spec.reveal
-        elif mullion_w:
-            door_w = (opening_w - mullion_w) / 2 - 2 * spec.reveal
-        else:  # two doors share the opening with a center reveal
-            door_w = (opening_w - 3 * spec.reveal) / 2
+    if spec.doors > 0 and not spec.is_corner and plan.doors:
+        door_w = min(d.width for d in plan.doors)  # narrowest leaf
         if door_w < HINGE_MIN_DOOR_WIDTH:
             err("doors",
                 f"each door is only {door_w:.0f}mm wide — too narrow for a 35mm "
@@ -434,8 +420,8 @@ def validate(spec) -> ValidationResult:
                  "consider a wider door or a compact hinge")
 
     # --- buildable from real stock (MAT-001/002) -------------------------
-    box_h = spec.height - toe_h
-    interior_w = spec.width - 2 * m.carcass
+    box_h = spec.box_height
+    interior_w = spec.interior_width
     for name in ("carcass", "back", "door", "shelf"):
         t = getattr(m, name)
         if not stock.is_standard_sheet_thickness(t):

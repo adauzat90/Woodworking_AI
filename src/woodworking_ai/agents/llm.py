@@ -6,7 +6,9 @@ an API key unless you actually run the LLM designer agent.
 
 from __future__ import annotations
 
+import json
 import os
+import re
 from typing import Any
 
 # Sensible default; override with WOODAI_MODEL. Opus for the strongest design
@@ -74,3 +76,18 @@ def _text(resp: Any) -> str:
     return "".join(
         block.text for block in resp.content if getattr(block, "type", None) == "text"
     ).strip()
+
+
+def extract_json(text: str) -> dict:
+    """Pull the first JSON object out of an LLM response, tolerating fences.
+
+    Shared by the Designer (spec output) and the Critic (vision verdict).
+    Raises ``ValueError`` if no JSON object is present and lets
+    ``json.JSONDecodeError`` propagate for malformed JSON.
+    """
+    fenced = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
+    candidate = fenced.group(1) if fenced else text
+    start, end = candidate.find("{"), candidate.rfind("}")
+    if start == -1 or end == -1:
+        raise ValueError(f"No JSON object found in response: {text[:200]!r}")
+    return json.loads(candidate[start : end + 1])

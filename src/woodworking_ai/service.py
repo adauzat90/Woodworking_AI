@@ -14,6 +14,13 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from .dsl import CabinetSpec
+from .validator import validate
+from .cutlist import generate_cutlist
+from .estimator import estimate
+from .drilling import drilling_schedule
+from .agents.critic import critique
+
 
 def _clean(obj: Any) -> Any:
     """Recursively replace non-finite floats (NaN/inf) with None.
@@ -28,13 +35,6 @@ def _clean(obj: Any) -> Any:
     if isinstance(obj, (list, tuple)):
         return [_clean(v) for v in obj]
     return obj
-
-from .dsl import CabinetSpec
-from .validator import validate
-from .cutlist import generate_cutlist
-from .estimator import estimate
-from .drilling import drilling_schedule
-from .agents.critic import critique
 
 
 def _b64_file(path: Path, mime: str) -> str:
@@ -72,11 +72,9 @@ def export_bytes(spec: CabinetSpec, fmt: str) -> tuple[bytes, str, str]:
     """
     fmt = fmt.lower()
     base = (spec.name or "cabinet").replace(" ", "_")
-    from .cutlist import generate_cutlist
 
     if fmt in ("cutlist", "hardware", "drilling"):
         if fmt == "drilling":
-            from .drilling import drilling_schedule
             text = drilling_schedule(spec).to_csv()
         else:
             cl = generate_cutlist(spec)

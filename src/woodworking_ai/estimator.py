@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 
 from .dsl import CabinetSpec
 from .cutlist import CutList, generate_cutlist
+from .packing import pack
 
 
 @dataclass
@@ -70,6 +71,7 @@ class Estimate:
     labour_hours: float
     labour_cost: float
     currency: str = "$"
+    _rate: float = 65.0       # shop_rate_per_hour, echoed for report_text()
 
     @property
     def total(self) -> float:
@@ -103,65 +105,26 @@ class Estimate:
         ]
         return "\n".join(lines)
 
-    _rate: float = 65.0
-
-
-def _orient(length: float, width: float) -> tuple[float, float]:
-    """Longest side along the sheet length."""
-    return (max(length, width), min(length, width))
-
 
 def pack_sheets(rects: list[tuple[float, float]], sheet: SheetSize
                 ) -> tuple[int, float, int]:
-    """Next-fit-decreasing-height shelf packing.
+    """Shelf-pack *rects* and report (sheets_used, utilization, oversize_count).
 
-    Returns (sheets_used, utilization, oversize_count). Each rect is (l, w) and
-    is auto-oriented longest-side-along-length.
+    Thin wrapper over :func:`woodworking_ai.packing.pack`, which the DXF
+    cut-layout export shares, so the quote and the nest diagram always agree.
     """
-    oriented = [_orient(l, w) for (l, w) in rects]
-    oversize = sum(1 for (l, w) in oriented
-                   if l > sheet.length or w > sheet.width)
-    fit = [(l, w) for (l, w) in oriented
-           if l <= sheet.length and w <= sheet.width]
-    if not fit:
-        return (0, 0.0, oversize)
-
-    # Tallest shelves first packs cleaner.
-    fit.sort(key=lambda r: r[1], reverse=True)
-
-    sheets = 1
-    shelf_y = 0.0           # bottom of the current shelf
-    shelf_h = 0.0           # height of the current shelf
-    cursor_x = 0.0          # next free x on the current shelf
-    packed_area = 0.0
-
-    for (l, w) in fit:
-        if cursor_x + l <= sheet.length:           # fits on current shelf
-            pass
-        else:                                      # new shelf
-            shelf_y += shelf_h + sheet.kerf
-            shelf_h = 0.0
-            cursor_x = 0.0
-            if shelf_y + w > sheet.width:          # new sheet
-                sheets += 1
-                shelf_y = 0.0
-        cursor_x += l + sheet.kerf
-        shelf_h = max(shelf_h, w)
-        packed_area += l * w
-
-    sheet_area = sheet.length * sheet.width
-    utilization = packed_area / (sheets * sheet_area)
-    return (sheets, utilization, oversize)
+    placed, oversize = pack([(l, w, "") for (l, w) in rects], sheet)
+    if not placed:
+        return (0, 0.0, len(oversize))
+    packed_area = sum(l * w for shelf in placed for (_, _, l, w, _) in shelf)
+    utilization = packed_area / (len(placed) * sheet.length * sheet.width)
+    return (len(placed), utilization, len(oversize))
 
 
 def _edge_banding_metres(spec: CabinetSpec) -> float:
     if not getattr(spec, "edge_banding", False):
         return 0.0
-    m = spec.material
-    toe_h = spec.toe_kick.height if spec.toe_kick else 0.0
-    box_h = spec.height - toe_h
-    interior_w = spec.width - 2 * m.carcass
-    return (2 * box_h + interior_w) / 1000.0
+    return (2 * spec.box_height + spec.interior_width) / 1000.0
 
 
 def estimate(spec: CabinetSpec, *, cutlist: CutList | None = None,
