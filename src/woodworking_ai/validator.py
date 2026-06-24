@@ -13,7 +13,7 @@ import math
 from dataclasses import dataclass
 
 from .dsl import CabinetSpec, TableSpec, CabinetType, Construction, Joinery
-from . import engineering, stock
+from . import engineering, stock, proportion
 
 # ASTM F2057 scope: clothing storage units >= 27in (686mm) tall fall under the
 # CPSC tip-over standard. Toe-kick minimums per ANSI/KCMA A161.1 (2in x 3in).
@@ -36,7 +36,7 @@ MAX_DRAWERS = 20
 
 @dataclass
 class Issue:
-    severity: str   # "error" | "warning"
+    severity: str   # "error" | "warning" | "info"
     field: str
     message: str
 
@@ -60,6 +60,11 @@ class ValidationResult:
     def warnings(self) -> list[Issue]:
         return [i for i in self.issues if i.severity == "warning"]
 
+    @property
+    def infos(self) -> list[Issue]:
+        """Advisory notes (proportion, comfort) — never block a build."""
+        return [i for i in self.issues if i.severity == "info"]
+
     def as_feedback(self) -> str:
         """Human/agent-readable summary used to prompt a repair."""
         if not self.issues:
@@ -79,6 +84,9 @@ def _validate_table(spec: TableSpec) -> ValidationResult:
 
     def warn(f, m):
         issues.append(Issue("warning", f, m))
+
+    def info(f, m):
+        issues.append(Issue("info", f, m))
 
     for name in ("width", "depth", "height", "top_thickness", "leg",
                  "apron_height", "apron_thickness", "leg_inset"):
@@ -131,6 +139,25 @@ def _validate_table(spec: TableSpec) -> ValidationResult:
             warn("top_thickness",
                  f"a {spec.top_thickness:.0f}mm solid top is thicker than 12/4 "
                  "stock surfaces to; laminate two boards or thin the top")
+
+    # --- proportion advisories (PROP-001/002, INFO) ----------------------
+    top = proportion.ratio_of(spec.width, spec.depth)
+    if proportion.is_awkward(top):
+        longer, shorter = max(spec.width, spec.depth), min(spec.width, spec.depth)
+        _, short_target = proportion.golden_targets(longer, shorter)
+        info("proportion",
+             f"top {spec.width:.0f}×{spec.depth:.0f}mm reads as {top:.2f}:1; "
+             f"a golden-ratio top (≈{longer:.0f}×{short_target:.0f}mm) is more "
+             "pleasing")
+    slim = proportion.slenderness(spec.leg, spec.height)
+    if slim < proportion.LEG_MIN_RATIO:
+        info("leg", f"a {spec.leg:.0f}mm leg looks spindly under a "
+                    f"{spec.height:.0f}mm-tall table; ~{spec.height*0.06:.0f}mm "
+                    "reads sturdier")
+    elif slim > proportion.LEG_MAX_RATIO:
+        info("leg", f"a {spec.leg:.0f}mm leg looks heavy for a "
+                    f"{spec.height:.0f}mm table; ~{spec.height*0.08:.0f}mm is "
+                    "lighter")
     return ValidationResult(issues)
 
 
@@ -144,6 +171,9 @@ def validate(spec) -> ValidationResult:
 
     def warn(fieldname: str, msg: str) -> None:
         issues.append(Issue("warning", fieldname, msg))
+
+    def info(fieldname: str, msg: str) -> None:
+        issues.append(Issue("info", fieldname, msg))
 
     # --- basic positive, finite, sane dimensions -------------------------
     def finite_positive(val: object) -> bool:
@@ -354,5 +384,25 @@ def validate(spec) -> ValidationResult:
         warn("width",
              f"a {box_h:.0f}×{max(spec.depth, interior_w):.0f}mm panel exceeds a "
              "standard 2440×1220 sheet; seam, use an oversize sheet, or resize")
+
+    # --- proportion advisories (PROP-001/003, INFO) ----------------------
+    # Front face: how the piece reads head-on. Corner cabinets have an
+    # irregular face, so skip them.
+    if not spec.is_corner:
+        face = proportion.ratio_of(spec.width, box_h)
+        if proportion.is_awkward(face):
+            longer, shorter = max(spec.width, box_h), min(spec.width, box_h)
+            tall_target, short_target = proportion.golden_targets(longer, shorter)
+            info("proportion",
+                 f"front face {spec.width:.0f}×{box_h:.0f}mm reads as {face:.2f}:1; "
+                 f"the golden ratio (1.62:1) is more balanced — e.g. shorten the "
+                 f"long side to {short_target:.0f}mm or extend the short side to "
+                 f"{tall_target:.0f}mm")
+    drawer_heights = [d.front_height for d in spec.drawers]
+    if len(drawer_heights) >= 3 and not proportion.is_well_graduated(drawer_heights):
+        info("drawers",
+             "drawer heights are irregular; a uniform or graduated bank "
+             "(shorter drawers on top, taller toward the bottom) looks more "
+             "intentional")
 
     return ValidationResult(issues)

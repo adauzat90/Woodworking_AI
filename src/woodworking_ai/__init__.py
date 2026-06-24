@@ -7,7 +7,7 @@ from .dsl import (
     Drawer, Construction, BackStyle, Joinery,
 )
 from .validator import validate, ValidationResult
-from . import engineering, stock
+from . import engineering, stock, proportion
 from .cutlist import generate_cutlist, CutList, Part, Hardware
 from .estimator import estimate, Estimate, PriceBook, SheetSize, pack_sheets
 from .drilling import drilling_schedule, DrillingSchedule, hinge_count
@@ -29,6 +29,7 @@ __all__ = [
     "ValidationResult",
     "engineering",
     "stock",
+    "proportion",
     "generate_cutlist",
     "CutList",
     "Part",

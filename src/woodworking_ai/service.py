@@ -113,6 +113,7 @@ def build_result(spec: CabinetSpec, *, want_png: bool = True,
         "valid": v.ok,
         "warnings": [{"field": i.field, "message": i.message} for i in v.warnings],
         "errors": [{"field": i.field, "message": i.message} for i in v.errors],
+        "advisories": [{"field": i.field, "message": i.message} for i in v.infos],
     }
     if not v.ok:
         # A broken spec: report the errors, skip the expensive downstream work.

@@ -178,12 +178,19 @@ backed by the calculators in `src/woodworking_ai/engineering.py`):
 | MAT-001 | `material.*` thickness | Warns on thicknesses that aren't stocked sheet goods (`stock.py`). |
 | MAT-002 | carcass panel size | Warns when a panel won't yield from a standard 2440×1220 sheet. |
 | MAT-003 | table `top_thickness` | Warns when a solid top is thicker than 12/4 stock surfaces to. |
+| PROP-001 | cabinet face / table top | INFO when the primary rectangle is far from any pleasing ratio; suggests golden-ratio dimensions (`proportion.py`). |
+| PROP-002 | table `leg` | INFO when the leg is spindly or chunky for the table height. |
+| PROP-003 | drawer bank | INFO when 3+ drawer heights are neither uniform nor graduated. |
 | DIM/STRUCT (existing) | `validate` | Dimensional bounds, opening fit, door/drawer fit, per-type sanity were already present pre-audit. |
 
-Backed by the `stock.py` catalog (sheet thicknesses/sizes, hardwood quarter
-system). Still catalog-only: STRUCT-012 (dovetail orientation — needs joint
-geometry), HW-005 (hinge bore vs. stile), PROP-* (proportion), and DIM-009
-(32 mm grid). These need richer geometric/joint metadata than the spec carries.
+`info`-severity advisories never affect `ValidationResult.ok` (so they never
+trigger the designer's repair loop) and are surfaced separately via
+`ValidationResult.infos` and the API's `advisories` field.
+
+Backed by the `stock.py` and `proportion.py` helpers. Still catalog-only:
+STRUCT-012 (dovetail orientation — needs joint geometry), HW-005 (hinge bore
+vs. stile), and DIM-009 (32 mm grid). These need richer geometric/joint
+metadata than the spec carries.
 
 ## Implementation notes for the compiler
 
