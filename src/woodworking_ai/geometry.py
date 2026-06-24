@@ -19,7 +19,7 @@ from .dsl import CabinetSpec, BackStyle, Construction
 # Construction constants shared with the cut list.
 from .cutlist import (
     STRETCHER_WIDTH, SHELF_SIDE_CLEARANCE, SHELF_SETBACK,
-    FRAME_WIDTH, FRAME_THICKNESS,
+    FRAME_WIDTH, FRAME_THICKNESS, MULLION_WIDTH,
 )
 
 
@@ -151,9 +151,23 @@ def panel_layout(spec: CabinetSpec) -> list[PanelBox]:
     if spec.doors > 0 and door_region > 0:
         door_h = door_region - 2 * spec.reveal
         z = region_bottom + (region_h - drawer_band) / 2
+        mullion_w = (FRAME_WIDTH if is_ff else MULLION_WIDTH) \
+            if (spec.center_mullion and spec.doors == 2) else 0.0
+        if mullion_w:
+            # A vertical post/stile in the front plane between the two doors.
+            m_th = FRAME_THICKNESS if is_ff else m.door
+            m_y = -m_th / 2 if is_ff else -m.door / 2
+            add("Center stile" if is_ff else "Mullion",
+                (mullion_w, m_th, door_region),
+                (0, m_y, z), category="frame")
         if spec.doors == 1:
             dw = opening_w - 2 * spec.reveal
             add("Door", (dw, m.door, door_h), (0, y_front, z), category="front")
+        elif mullion_w:
+            dw = (opening_w - mullion_w) / 2 - 2 * spec.reveal
+            offset = mullion_w / 2 + spec.reveal + dw / 2
+            add("Door L", (dw, m.door, door_h), (-offset, y_front, z), category="front")
+            add("Door R", (dw, m.door, door_h), (offset, y_front, z), category="front")
         else:
             dw = (opening_w - 3 * spec.reveal) / 2
             offset = spec.reveal / 2 + dw / 2

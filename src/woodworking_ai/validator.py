@@ -105,6 +105,8 @@ def validate(spec: CabinetSpec) -> ValidationResult:
         warn("doors", "a single door wider than 600mm tends to sag; consider two")
     if spec.shelves > 0 and spec.drawers:
         warn("shelves", "shelves above a drawer bank may be obstructed by the box")
+    if spec.center_mullion and spec.doors != 2:
+        warn("center_mullion", "a center mullion only applies to a pair of doors")
 
     # --- per cabinet type ------------------------------------------------
     if spec.cabinet_type == CabinetType.WALL:

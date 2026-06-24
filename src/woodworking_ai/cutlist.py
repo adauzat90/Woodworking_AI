@@ -23,6 +23,7 @@ STRETCHER_WIDTH = 80.0         # front/back top rails on a base cabinet
 BACK_RABBET = 0.0              # rabbeted back recess captured via interior depth
 FRAME_WIDTH = 38.0             # face-frame stile/rail width (solid hardwood)
 FRAME_THICKNESS = 19.0         # face-frame stock thickness
+MULLION_WIDTH = 60.0           # frameless center post between a pair of doors
 SLIDE_SIDE_CLEARANCE = 13.0    # gap each side for ball-bearing slides
 DRAWER_BOX_HEIGHT_DROP = 40.0  # box height below the drawer front
 DRAWER_BOX_DEPTH_GAP = 25.0    # box shallower than the interior
@@ -213,8 +214,24 @@ def generate_cutlist(spec: CabinetSpec) -> CutList:
     door_region = region_h - drawer_band
     if spec.doors > 0 and door_region > 0:
         door_h = door_region - 2 * spec.reveal
+        mullion_w = (FRAME_WIDTH if is_ff else MULLION_WIDTH) \
+            if (spec.center_mullion and spec.doors == 2) else 0.0
+        if mullion_w:
+            if is_ff:
+                cl.parts.append(Part(
+                    "Face-frame center stile", 1, length=door_region,
+                    width=mullion_w, thickness=FRAME_THICKNESS,
+                    material="frame", notes="between doors",
+                ))
+            else:
+                cl.parts.append(Part(
+                    "Mullion", 1, length=door_region, width=mullion_w,
+                    thickness=m.door, material="door/front", notes="center post",
+                ))
         if spec.doors == 1:
             door_w = opening_w - 2 * spec.reveal
+        elif mullion_w:
+            door_w = (opening_w - mullion_w) / 2 - 2 * spec.reveal
         else:  # two doors share the opening with a center reveal
             door_w = (opening_w - 3 * spec.reveal) / 2
         cl.parts.append(Part(

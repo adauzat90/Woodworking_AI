@@ -85,6 +85,7 @@ class CabinetSpec:
     drawers: list[Drawer] = field(default_factory=list)
 
     reveal: float = 3.0          # gap around overlay doors/drawers
+    center_mullion: bool = False # vertical post/stile between a pair of doors
     edge_banding: bool = True
     name: str = "Cabinet"
 
