@@ -16,8 +16,10 @@ dependencies = []
 agent = ["anthropic>=0.40"]
 # Geometry + export (heavy; OpenCascade kernel).
 cad = ["build123d>=0.7"]
-dev = ["pytest>=7"]
-all = ["anthropic>=0.40", "build123d>=0.7", "pytest>=7"]
+# Headless rendering for the render-based Critic review.
+render = ["matplotlib>=3.6"]
+dev = ["pytest>=7", "matplotlib>=3.6"]
+all = ["anthropic>=0.40", "build123d>=0.7", "matplotlib>=3.6", "pytest>=7"]
 
 [project.scripts]
 woodai = "woodworking_ai.cli:main"

@@ -22,12 +22,16 @@ Two layers:
 
 from __future__ import annotations
 
+import json
+import re
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from ..dsl import CabinetSpec
 from ..geometry import PanelBox, panel_layout
 from ..cutlist import generate_cutlist
+from . import llm
 
 # Tolerances in mm. Panels that merely touch (shared faces) overlap by ~0; only
 # overlaps beyond this count as interference.
@@ -213,4 +217,117 @@ def critique(spec: CabinetSpec, *, use_cad: bool = False,
         except RuntimeError as exc:
             warn("geometry", f"could not build B-Rep for cross-check: {exc}")
 
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Render-based review: render the model and let a vision model inspect it.
+# ---------------------------------------------------------------------------
+
+VISION_SYSTEM = """You are a master cabinetmaker reviewing a rendered cabinet \
+design before it goes to the shop. You are shown a front elevation, a side \
+elevation, and an isometric view of the SAME cabinet, rendered from its \
+parametric spec.
+
+Judge only what the render shows. Look for visual problems a measurement check \
+would miss, such as: doors or drawers that look missing, lopsided, or unevenly \
+sized; gaps that look too large or uneven; panels that stick out or float; a \
+toe kick that is missing or wrong; proportions that look off for the stated use.
+
+Respond with ONE JSON object and nothing else:
+{"looks_correct": true|false,
+ "issues": ["short description", ...],   // empty if it looks right
+ "notes": "one-sentence overall impression"}"""
+
+
+def _extract_json(text: str) -> dict:
+    fenced = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
+    candidate = fenced.group(1) if fenced else text
+    start, end = candidate.find("{"), candidate.rfind("}")
+    if start == -1 or end == -1:
+        raise ValueError(f"no JSON object in vision response: {text[:160]!r}")
+    return json.loads(candidate[start : end + 1])
+
+
+def visual_review(spec: CabinetSpec, *, image_path: str | Path | None = None,
+                  model: str | None = None) -> CritiqueResult:
+    """Render *spec* and have a vision model inspect the snapshot.
+
+    Findings come back as ``kind="visual"`` issues. If matplotlib or the
+    Anthropic SDK / API key are unavailable, the review is skipped gracefully
+    with a single warning rather than raising.
+    """
+    from ..render import render_cabinet  # lazy: matplotlib optional
+
+    result = CritiqueResult()
+
+    # 1) Render the snapshot (or reuse one provided by the caller).
+    try:
+        if image_path is None:
+            import tempfile
+            image_path = Path(tempfile.mkdtemp()) / f"{spec.name or 'cabinet'}.png"
+            render_cabinet(spec, image_path)
+        else:
+            image_path = Path(image_path)
+            if not image_path.exists():
+                render_cabinet(spec, image_path)
+    except RuntimeError as exc:
+        result.issues.append(CritiqueIssue("warning", "visual",
+                                           f"render skipped: {exc}"))
+        return result
+    result.report["render_path"] = str(image_path)
+
+    # 2) Ask the vision model to inspect it.
+    summary = (
+        f"{spec.name}: {spec.width:.0f} x {spec.height:.0f} x {spec.depth:.0f} mm, "
+        f"{spec.construction.value}, {spec.doors} door(s), "
+        f"{len(spec.drawers)} drawer(s), {spec.shelves} shelf(s)."
+    )
+    try:
+        text = llm.complete_with_image(
+            VISION_SYSTEM,
+            f"Cabinet spec: {summary}\nReview the three views.",
+            image_path.read_bytes(), model=model,
+        )
+    except llm.LLMError as exc:
+        result.issues.append(CritiqueIssue("warning", "visual",
+                                           f"vision review skipped: {exc}"))
+        return result
+
+    # 3) Parse the verdict.
+    try:
+        verdict = _extract_json(text)
+    except (ValueError, json.JSONDecodeError) as exc:
+        result.issues.append(CritiqueIssue("warning", "visual",
+                                           f"could not parse vision verdict: {exc}"))
+        return result
+
+    result.report["visual_notes"] = verdict.get("notes", "")
+    result.report["looks_correct"] = bool(verdict.get("looks_correct", True))
+    for issue in verdict.get("issues", []):
+        # Visual findings are warnings: a second opinion, not a hard gate.
+        result.issues.append(CritiqueIssue("warning", "visual", str(issue)))
+    return result
+
+
+def render_review(spec: CabinetSpec, *, image_path: str | Path | None = None,
+                  use_llm: bool = True, model: str | None = None) -> CritiqueResult:
+    """Full review: computational :func:`critique` + optional visual review.
+
+    The two result sets are merged so callers get one report and one issue list.
+    """
+    result = critique(spec)
+    if use_llm:
+        visual = visual_review(spec, image_path=image_path, model=model)
+        result.issues.extend(visual.issues)
+        result.report.update(visual.report)
+    elif image_path is not None:
+        # Just produce the render without calling the model.
+        from ..render import render_cabinet
+        try:
+            render_cabinet(spec, image_path)
+            result.report["render_path"] = str(image_path)
+        except RuntimeError as exc:
+            result.issues.append(CritiqueIssue("warning", "visual",
+                                               f"render skipped: {exc}"))
     return result

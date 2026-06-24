@@ -48,6 +48,26 @@ def _emit(spec: CabinetSpec, args) -> int:
             print(f"  {e}", file=sys.stderr)
         return 1
 
+    # Render-based review: snapshot the model and optionally let Claude inspect it.
+    if args.render or args.visual_review:
+        render_path = (Path(args.out) / "render.png") if args.out else None
+        if args.visual_review:
+            from .agents.critic import visual_review
+            vis = visual_review(spec, image_path=render_path)
+            if "render_path" in vis.report:
+                print(f"\nRendered snapshot: {vis.report['render_path']}")
+            notes = vis.report.get("visual_notes")
+            if notes:
+                verdict = "looks correct" if vis.report.get("looks_correct") else "issues found"
+                print(f"Visual review ({verdict}): {notes}")
+            for v in vis.issues:
+                print(f"  {v}")
+        else:
+            from .render import render_cabinet
+            target = render_path or Path("render.png")
+            render_cabinet(spec, target)
+            print(f"\nRendered snapshot: {target}")
+
     cutlist = generate_cutlist(spec)
     print("\nCut list:")
     print(cutlist.to_csv())
@@ -89,6 +109,10 @@ def main(argv: list[str] | None = None) -> int:
     common.add_argument("--step", action="store_true", help="export STEP (needs build123d)")
     common.add_argument("--stl", action="store_true", help="export STL (needs build123d)")
     common.add_argument("--glb", action="store_true", help="export GLB (needs build123d)")
+    common.add_argument("--render", action="store_true",
+                        help="render PNG snapshots (needs matplotlib)")
+    common.add_argument("--visual-review", action="store_true",
+                        help="have Claude visually review the render (needs API key)")
 
     p_design = sub.add_parser("design", parents=[common],
                               help="natural language -> design (uses Claude)")

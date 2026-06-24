@@ -27,7 +27,13 @@ The **Critic** closes the loop: it rebuilds the geometry, measures it, and
 checks the overall envelope, part interferences, and front coverage against the
 spec — feeding any problem back to the Designer for repair (it caught a real
 rail-vs-back collision during development). It runs analytically with no CAD
-dependency.
+dependency. It can also do a **render-based review**: snapshot the model and ask
+a vision-capable Claude to flag anything measurement misses.
+
+![Rendered cabinet — front, side and isometric views](docs/example-render.png)
+
+*Front / side / isometric snapshots rendered headlessly from the spec — the same
+images the render-based Critic hands to the vision model.*
 
 ## Why this approach
 
@@ -44,6 +50,7 @@ list and hardware list, so there is a single source of truth.
 pip install -e .            # core: DSL, validator, cut list (no heavy deps)
 pip install -e ".[agent]"   # + the Claude designer agent
 pip install -e ".[cad]"     # + build123d for 3D geometry / STEP / STL / GLB
+pip install -e ".[render]"  # + matplotlib for snapshot renders / visual review
 pip install -e ".[all]"     # everything, incl. pytest
 ```
 
@@ -70,6 +77,13 @@ woodai design "36 inch sink base, two shaker doors, soft-close, one shelf"
 ```bash
 woodai design "tall pantry 600 wide, 4 shelves" --out ./out --step --stl
 woodai build out/spec.json --out ./out --step   # rebuild from a saved spec
+```
+
+**Render snapshots and a visual review (needs matplotlib; review needs a key):**
+
+```bash
+woodai build out/spec.json --out ./out --render          # PNG snapshots
+woodai design "30 inch drawer base, 3 drawers" --out ./out --visual-review
 ```
 
 Pick the model with `WOODAI_MODEL` (default `claude-opus-4-8`; e.g.
@@ -102,9 +116,10 @@ Pick the model with `WOODAI_MODEL` (default `claude-opus-4-8`; e.g.
 | `src/woodworking_ai/cutlist.py` | Spec → parts + hardware (pure math) |
 | `src/woodworking_ai/geometry.py` | `panel_layout()` — single source of panel placement |
 | `src/woodworking_ai/builder.py` | Spec → build123d B-Rep geometry |
+| `src/woodworking_ai/render.py` | Headless front/side/iso snapshots (matplotlib) |
 | `src/woodworking_ai/exporters.py` | STEP / STL / GLB / CSV export |
 | `src/woodworking_ai/agents/designer.py` | Claude designer + validate/critic-repair loop |
-| `src/woodworking_ai/agents/critic.py` | Computational verifier (envelope, interference) |
+| `src/woodworking_ai/agents/critic.py` | Computational + render-based (visual) verification |
 | `examples/base_cabinet.py` | End-to-end example, no LLM required |
 | `tests/` | Pure-math tests (no CAD / API key needed) |
 
@@ -118,6 +133,6 @@ pytest
 ## Status & roadmap
 
 MVP: frameless **base cabinets** end to end, including the **Critic** verify
-loop. Next: wall/tall cabinets, face-frame construction, render-based critic
-review, sheet nesting + cost, and a web UI with live GLB preview. Full roadmap
-in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+loop with both computational and render-based (visual) review. Next: wall/tall
+cabinets, face-frame construction, sheet nesting + cost, and a web UI with live
+GLB preview. Full roadmap in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).

@@ -42,7 +42,35 @@ def complete(system: str, messages: list[dict[str, str]],
         system=system,
         messages=messages,
     )
-    # Concatenate any text blocks in the response.
+    return _text(resp)
+
+
+def complete_with_image(system: str, user_text: str, image_bytes: bytes,
+                        media_type: str = "image/png", model: str | None = None,
+                        max_tokens: int = 1500) -> str:
+    """Send a single image plus text to a vision-capable Claude model."""
+    import base64
+
+    client = get_client()
+    b64 = base64.standard_b64encode(image_bytes).decode("ascii")
+    resp = client.messages.create(
+        model=model or DEFAULT_MODEL,
+        max_tokens=max_tokens,
+        system=system,
+        messages=[{
+            "role": "user",
+            "content": [
+                {"type": "image", "source": {
+                    "type": "base64", "media_type": media_type, "data": b64}},
+                {"type": "text", "text": user_text},
+            ],
+        }],
+    )
+    return _text(resp)
+
+
+def _text(resp: Any) -> str:
+    """Concatenate the text blocks of a messages response."""
     return "".join(
         block.text for block in resp.content if getattr(block, "type", None) == "text"
     ).strip()
