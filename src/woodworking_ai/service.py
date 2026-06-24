@@ -146,6 +146,19 @@ def build_result(spec, *, want_png: bool = True,
     ]
     result["cutlist_summary"] = cl.summary()
 
+    # Solid-lumber requirement in board feet / running length. Empty for an
+    # all-sheet-goods cabinet; populated for tables, face frames, etc.
+    lumber_groups = cl.lumber_breakdown()
+    result["lumber"] = {
+        "board_feet": round(cl.total_board_feet, 2),
+        "groups": [
+            {"material": g["material"], "thickness": g["thickness"],
+             "parts": g["parts"], "board_feet": round(g["board_feet"], 2),
+             "length_mm": round(g["length_mm"], 1)}
+            for g in lumber_groups
+        ],
+    }
+
     est = estimate(spec, cutlist=cl)
     result["estimate"] = {
         "currency": est.currency,

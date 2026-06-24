@@ -262,6 +262,14 @@ function fmtArea(m2) {
   if (unit() === "imperial") return (m2 / 0.09290304).toFixed(1) + " ft²";
   return (+m2).toFixed(2) + " m²";
 }
+// Running (linear) length of stock, for solid lumber bought by the metre/foot.
+function fmtRun(mm) {
+  if (mm == null || !isFinite(mm)) return "";
+  if (unit() === "imperial") return (mm / 304.8).toFixed(1) + " ft";
+  return (mm / 1000).toFixed(2) + " m";
+}
+// Materials cut from solid stock (board feet) rather than sheet goods.
+const SOLID_MATERIALS = new Set(["frame", "top", "leg", "apron"]);
 
 // --- form inputs honour the same toggle (length fields only) ----------------
 const LEN_IDS = ["width","height","depth","reveal","toe","blind_width","corner_cut",
@@ -589,33 +597,65 @@ function lumberPane(d) {
     const k = p.material + "@" + p.thickness;
     areaByKey[k] = (areaByKey[k] || 0) + (p.length / 1000) * (p.width / 1000) * p.qty;
   }
-  const grossArea = d.cutlist.reduce(
-    (a, p) => a + (p.length / 1000) * (p.width / 1000) * p.qty, 0);
+  // Split the two ways stock is bought: sheet goods vs. solid lumber.
+  const sheetGroups = e.groups.filter(g => !SOLID_MATERIALS.has(g.material));
+  const solidGroups = (d.lumber && d.lumber.groups) || [];
+  const sheetsToBuy = sheetGroups.reduce((n, g) => n + g.sheets, 0);
+  const boardFeet = (d.lumber && d.lumber.board_feet) || 0;
+  const sheetArea = d.cutlist.reduce((a, p) =>
+    SOLID_MATERIALS.has(p.material) ? a
+      : a + (p.length / 1000) * (p.width / 1000) * p.qty, 0);
   const sheetDims = unit() === "imperial" ? "8 × 4 ft" : "2440 × 1220 mm";
-  const oversize = e.groups.reduce((n, g) => n + (g.oversize || 0), 0);
+  const oversize = sheetGroups.reduce((n, g) => n + (g.oversize || 0), 0);
 
-  let h = `<div class="headline">
-      <div class="big">${e.total_sheets}</div>
-      <div class="sub">sheet${e.total_sheets === 1 ? "" : "s"} of stock to buy
-        <div class="muted">standard ${sheetDims} · ~${fmtArea(grossArea)} of parts</div></div>
-    </div>`;
-  // One chip per material: "<n> × <material>".
-  h += '<div class="chips">' + e.groups.map(g =>
-    `<span class="chip"><b>${g.sheets}×</b> ${g.material} ${fmtLen(g.thickness, true)}</span>`
-  ).join("") + "</div>";
-  h += table(
-    ["Material", `Thk (${u})`, "Parts", "Sheets", "Used", `Area`],
-    e.groups.map(g => {
-      const area = areaByKey[g.material + "@" + g.thickness] || 0;
-      const util = Math.round(g.utilization * 100) + "%";
-      const flag = g.oversize ? ` ⚠ ${g.oversize} oversize` : "";
-      return [g.material + flag, fmtLen(g.thickness), g.parts, g.sheets, util, fmtArea(area)];
-    }));
-  h += `<p class="muted" style="margin-top:10px">Sheet counts include nesting
-    waste from a guillotine pack; “Used” is the packed area per sheet. ` +
-    (oversize ? `⚠ ${oversize} part(s) exceed a single sheet — split or order oversized stock. `
-              : "") +
-    `Order ${e.total_sheets} sheet${e.total_sheets === 1 ? "" : "s"} total.</p>`;
+  // Headline: one stat block per kind of stock actually needed.
+  const stats = [];
+  if (sheetsToBuy > 0 || boardFeet === 0)
+    stats.push(`<div><div class="big">${sheetsToBuy}</div>
+      <div class="sub">sheet${sheetsToBuy === 1 ? "" : "s"} of goods
+        <div class="muted">${sheetDims} · ~${fmtArea(sheetArea)} of parts</div></div></div>`);
+  if (boardFeet > 0)
+    stats.push(`<div><div class="big">${boardFeet.toFixed(1)}</div>
+      <div class="sub">board feet of solid lumber
+        <div class="muted">tops, legs, aprons &amp; frames</div></div></div>`);
+  let h = `<div class="headline" style="gap:28px">${stats.join("")}</div>`;
+
+  // --- sheet goods -----------------------------------------------------
+  if (sheetGroups.length) {
+    h += '<div class="chips">' + sheetGroups.map(g =>
+      `<span class="chip"><b>${g.sheets}×</b> ${g.material} ${fmtLen(g.thickness, true)}</span>`
+    ).join("") + "</div>";
+    h += "<h4>Sheet goods</h4>";
+    h += table(
+      ["Material", `Thk (${u})`, "Parts", "Sheets", "Used", "Area"],
+      sheetGroups.map(g => {
+        const area = areaByKey[g.material + "@" + g.thickness] || 0;
+        const util = Math.round(g.utilization * 100) + "%";
+        const flag = g.oversize ? ` ⚠ ${g.oversize} oversize` : "";
+        return [g.material + flag, fmtLen(g.thickness), g.parts, g.sheets, util, fmtArea(area)];
+      }));
+    h += `<p class="muted" style="margin-top:8px">Sheet counts include nesting
+      waste from a guillotine pack; “Used” is the packed area per sheet. ` +
+      (oversize ? `⚠ ${oversize} part(s) exceed a single sheet — split or order oversized stock. ` : "") +
+      `Order ${sheetsToBuy} sheet${sheetsToBuy === 1 ? "" : "s"} total.</p>`;
+  }
+
+  // --- solid lumber (board feet) ---------------------------------------
+  if (solidGroups.length) {
+    h += '<div class="chips" style="margin-top:14px">' + solidGroups.map(g =>
+      `<span class="chip"><b>${g.board_feet.toFixed(1)}</b> bd ft · ${g.material} ${fmtLen(g.thickness, true)}</span>`
+    ).join("") + "</div>";
+    h += "<h4>Solid lumber (board feet)</h4>";
+    h += table(
+      ["Material", `Thk (${u})`, "Parts", "Length", "Board feet"],
+      solidGroups.map(g =>
+        [g.material, fmtLen(g.thickness), g.parts, fmtRun(g.length_mm),
+         g.board_feet.toFixed(2) + " bd ft"]));
+    h += `<p class="muted" style="margin-top:8px">Solid stock is bought by the
+      board foot (or the running length for legs &amp; aprons). Figures are net
+      of waste — add ~15–20% for milling and defects. ` +
+      `<b>${boardFeet.toFixed(1)} bd ft</b> total.</p>`;
+  }
   return h;
 }
 
