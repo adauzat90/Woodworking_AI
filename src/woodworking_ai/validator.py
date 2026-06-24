@@ -12,14 +12,21 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-from .dsl import CabinetSpec, TableSpec, CabinetType
-from . import engineering
+from .dsl import CabinetSpec, TableSpec, CabinetType, Construction, Joinery
+from . import engineering, stock
 
 # ASTM F2057 scope: clothing storage units >= 27in (686mm) tall fall under the
 # CPSC tip-over standard. Toe-kick minimums per ANSI/KCMA A161.1 (2in x 3in).
 F2057_HEIGHT_MM = 686.0
 KCMA_TOE_MIN_HEIGHT = 75.0   # ~3 in
 KCMA_TOE_MIN_SETBACK = 50.0  # ~2 in deep
+
+FRAME_WIDTH = 38.0           # face-frame stile width (matches cutlist.py)
+SIDE_MOUNT_CLEARANCE = 12.7  # ½in nominal per-side gap for side-mount slides
+MIN_DRAWER_BOX_WIDTH = 150.0 # below this a box is barely usable
+
+# Drawer-corner joints that properly resist the pull-apart load of opening.
+STRONG_DRAWER_JOINTS = {"dovetail", "box", "rabbet", "locking_rabbet"}
 
 # Practical bounds that also guard against pathological inputs (huge loops, NaN).
 MAX_DIMENSION = 6000.0   # mm — larger than any real cabinet/pantry
@@ -108,6 +115,22 @@ def _validate_table(spec: TableSpec) -> ValidationResult:
                  f"allow ~{move:.1f}mm of seasonal movement across the "
                  f"{spec.depth:.0f}mm top; ensure the floating attachment has "
                  "room to slide")
+
+    # --- leg-to-apron joinery vs. racking (STRUCT-002) -------------------
+    joint = str(getattr(spec, "joinery", "mortise_tenon")).strip().lower()
+    if joint in ("pocket", "butt", "screw"):
+        warn("joinery",
+             f"a {joint.replace('_', ' ')} leg-to-apron joint resists racking "
+             "poorly; prefer mortise & tenon, domino, or dowels (with corner "
+             "blocks)")
+
+    # --- solid top buildable from real stock (MAT-003) -------------------
+    if getattr(spec, "solid_top", True):
+        q = stock.required_quarter(spec.top_thickness)
+        if q is None:
+            warn("top_thickness",
+                 f"a {spec.top_thickness:.0f}mm solid top is thicker than 12/4 "
+                 "stock surfaces to; laminate two boards or thin the top")
     return ValidationResult(issues)
 
 
@@ -267,5 +290,69 @@ def validate(spec) -> ValidationResult:
             warn("toe_kick.setback",
                  f"toe space shallower than the ~{KCMA_TOE_MIN_SETBACK:.0f}mm "
                  "(2in) KCMA minimum depth")
+
+    # --- carcass joinery vs. load (STRUCT-010/014) -----------------------
+    if spec.joinery == Joinery.BUTT:
+        warn("joinery",
+             "a glued butt joint is weak in tension/shear for a carcass; use "
+             "dado/rabbet/dowel/domino so panels are mechanically captured")
+
+    # --- drawer slides + box joinery (HW-001/002, STRUCT-011, GRAIN-001) -
+    boxed = [d for d in spec.drawers if not d.false_front]
+    if boxed:
+        is_ff = spec.construction == Construction.FACE_FRAME
+        opening_w = (spec.width - 2 * FRAME_WIDTH) if is_ff else spec.width
+        if spec.cabinet_type == CabinetType.CORNER_BLIND and spec.blind_width > 0:
+            opening_w -= spec.blind_width
+        interior_depth = spec.depth - m.back
+
+        # Corner joints — dedupe so N identical drawers don't spam N warnings.
+        for cj in {str(d.corner_joint).strip().lower() for d in boxed}:
+            if cj == "butt":
+                warn("drawers",
+                     "drawer corners use a butt joint (end-grain glue, weak and "
+                     "pulls apart when opened); use dovetail, box, or a locking "
+                     "rabbet")
+            elif cj not in STRONG_DRAWER_JOINTS:
+                warn("drawers",
+                     f"drawer corner '{cj}' is weak for the pull-open load; "
+                     "prefer dovetail, box joint, or a locking rabbet")
+
+        # Side-mount slide clearance (HW-001) + resulting box width.
+        for clr in {round(d.slide_clearance, 2) for d in boxed
+                    if str(d.slide_type).strip().lower() == "side_mount"}:
+            if not (10.0 <= clr <= 14.0):
+                warn("drawers",
+                     f"side-mount slides need ~{SIDE_MOUNT_CLEARANCE:.1f}mm "
+                     f"(½in) per side; got {clr:.1f}mm — drawer will bind or rattle")
+            box_w = opening_w - 2 * clr
+            if box_w <= 0:
+                err("drawers",
+                    "opening is too narrow for side-mount slides plus a box")
+            elif box_w < MIN_DRAWER_BOX_WIDTH:
+                warn("drawers",
+                     f"drawer box only {box_w:.0f}mm wide after slide clearance; "
+                     "barely usable")
+
+        # Slide length vs. cabinet depth (HW-002).
+        for sl in {round(d.slide_length, 1) for d in boxed if d.slide_length > 0}:
+            if sl > interior_depth:
+                err("drawers",
+                    f"drawer slide length {sl:.0f}mm exceeds the {interior_depth:.0f}mm "
+                    "interior depth; it won't fit")
+
+    # --- buildable from real stock (MAT-001/002) -------------------------
+    box_h = spec.height - toe_h
+    interior_w = spec.width - 2 * m.carcass
+    for name in ("carcass", "back", "door", "shelf"):
+        t = getattr(m, name)
+        if not stock.is_standard_sheet_thickness(t):
+            warn(f"material.{name}",
+                 f"{t:.1f}mm is not a stocked sheet thickness; nearest is "
+                 f"{stock.nearest_sheet_thickness(t):.0f}mm")
+    if not stock.fits_standard_sheet(box_h, max(spec.depth, interior_w)):
+        warn("width",
+             f"a {box_h:.0f}×{max(spec.depth, interior_w):.0f}mm panel exceeds a "
+             "standard 2440×1220 sheet; seam, use an oversize sheet, or resize")
 
     return ValidationResult(issues)

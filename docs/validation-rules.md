@@ -170,12 +170,20 @@ backed by the calculators in `src/woodworking_ai/engineering.py`):
 | STRUCT-030/031 | cabinet tip-over (DRESSER/TALL) | Warns when a unit ≥686 mm has no `anti_tip`, and when tall+shallow (depth/height < 0.40). |
 | STRUCT-042 | toe-kick minimums | Warns below ~75 mm high / ~50 mm deep (KCMA). |
 | MOVE-001/002 | table `top_fixing` | Error on a rigidly fixed solid top; warns the seasonal allowance for floating tops. |
+| STRUCT-010 | carcass `joinery` | Warns on a glued butt carcass joint. |
+| STRUCT-011 / GRAIN-001 | drawer `corner_joint` | Warns on weak (butt/dowel) drawer corners; flags the end-grain butt joint specifically. |
+| STRUCT-002 | table `joinery` | Warns when a pocket/butt/screw leg-to-apron joint resists racking poorly. |
+| HW-001 | drawer `slide_clearance` / `slide_type` | Warns when side-mount clearance isn't ~12.7 mm; errors when the opening leaves no usable box. |
+| HW-002 | drawer `slide_length` | Errors when the slide is longer than the cabinet is deep. |
+| MAT-001 | `material.*` thickness | Warns on thicknesses that aren't stocked sheet goods (`stock.py`). |
+| MAT-002 | carcass panel size | Warns when a panel won't yield from a standard 2440×1220 sheet. |
+| MAT-003 | table `top_thickness` | Warns when a solid top is thicker than 12/4 stock surfaces to. |
 | DIM/STRUCT (existing) | `validate` | Dimensional bounds, opening fit, door/drawer fit, per-type sanity were already present pre-audit. |
 
-Still catalog-only (need DSL surface for per-joint / per-drawer-box data):
-GRAIN-*, HW-001/002 (slide clearance), STRUCT-010..014 (joint-by-load),
-PROP-* (proportion), most MAT-* (stock matching). These are the next
-implementation targets.
+Backed by the `stock.py` catalog (sheet thicknesses/sizes, hardwood quarter
+system). Still catalog-only: STRUCT-012 (dovetail orientation — needs joint
+geometry), HW-005 (hinge bore vs. stile), PROP-* (proportion), and DIM-009
+(32 mm grid). These need richer geometric/joint metadata than the spec carries.
 
 ## Implementation notes for the compiler
 
