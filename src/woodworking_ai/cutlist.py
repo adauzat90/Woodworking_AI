@@ -13,9 +13,9 @@ is the convention a cut list / nesting tool expects.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
-from .dsl import CabinetSpec, TableSpec, BackStyle, Construction, CabinetType
+from .dsl import CabinetSpec, TableSpec, Project, BackStyle, Construction, CabinetType
 from .geometry import front_plan
 # Construction constants now live in one neutral module shared with geometry.
 from .constants import (
@@ -175,8 +175,27 @@ def _table_cutlist(spec: TableSpec) -> CutList:
     return cl
 
 
+def _project_cutlist(project: Project) -> CutList:
+    """One combined cut list for a whole run, parts tagged by component.
+
+    Each component's parts and hardware are merged under a short label so a shop
+    sees one list but can still tell which cabinet a panel belongs to.
+    """
+    cl = CutList(spec_name=project.name)
+    for i, comp in enumerate(project.components, start=1):
+        tag = comp.label or comp.display_label or f"C{i}"
+        sub = generate_cutlist(comp.spec)
+        for p in sub.parts:
+            cl.parts.append(replace(p, name=f"{tag}: {p.name}"))
+        for h in sub.hardware:
+            cl.hardware.append(replace(h, name=f"{tag}: {h.name}"))
+    return cl
+
+
 def generate_cutlist(spec) -> CutList:
-    """Derive the full parts + hardware list for a cabinet or table."""
+    """Derive the full parts + hardware list for a cabinet, table, or project."""
+    if isinstance(spec, Project):
+        return _project_cutlist(spec)
     if isinstance(spec, TableSpec):
         return _table_cutlist(spec)
     if spec.cabinet_type == CabinetType.CORNER_DIAGONAL:

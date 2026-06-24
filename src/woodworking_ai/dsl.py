@@ -7,17 +7,23 @@ schedule.
 
 The spec is plain dataclasses with JSON (de)serialization, so it has zero CAD
 dependencies and can be produced, validated, diffed, and stored anywhere.
+
+Units: the engine is **millimetre-native**. A spec may be authored in inches by
+setting ``"units": "in"`` — :meth:`from_dict` converts every length to mm on
+load and stamps ``units = "mm"``, so everything downstream is canonical mm.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
-from enum import Enum
+from enum import Enum, StrEnum
 from typing import Any
 import json
 
+from .units import normalize_unit, IMPERIAL, MM_PER_IN
 
-class CabinetType(str, Enum):
+
+class CabinetType(StrEnum):
     BASE = "base"        # sits on the floor, toe kick, top stretchers
     WALL = "wall"        # hangs on the wall, no toe kick, full top
     TALL = "tall"        # floor-to-ceiling pantry/utility, toe kick, full top
@@ -27,18 +33,18 @@ class CabinetType(str, Enum):
     DRESSER = "dresser"    # a drawer bank / chest of drawers, enclosed top
 
 
-class Construction(str, Enum):
+class Construction(StrEnum):
     FRAMELESS = "frameless"      # Euro / frameless box
     FACE_FRAME = "face_frame"    # traditional face-frame
 
 
-class BackStyle(str, Enum):
+class BackStyle(StrEnum):
     RABBETED = "rabbeted"        # back sits in a rabbet on the sides/top/bottom
     APPLIED = "applied"          # back nailed/screwed to the rear edges
     GROOVED = "grooved"          # back captured in a groove
 
 
-class Joinery(str, Enum):
+class Joinery(StrEnum):
     DADO = "dado"
     DOWEL = "dowel"
     DOMINO = "domino"
@@ -49,6 +55,55 @@ class Joinery(str, Enum):
     MORTISE_TENON = "mortise_tenon"  # strongest frame joint
     DOVETAIL = "dovetail"       # drawer corners, resists pull-apart
     BOX = "box"                 # finger joint, strong glue surface
+
+
+class CornerJoint(StrEnum):
+    """Drawer-box corner joint."""
+    DOVETAIL = "dovetail"
+    BOX = "box"
+    RABBET = "rabbet"
+    LOCKING_RABBET = "locking_rabbet"
+    DOWEL = "dowel"
+    BUTT = "butt"               # end-grain glue — weak, pulls apart
+
+
+class DovetailTails(StrEnum):
+    """Which member carries the tails of a drawer-front dovetail."""
+    SIDES = "sides"             # correct: front can't be pulled off
+    FRONT = "front"            # wrong: interlock doesn't resist opening
+
+
+class SlideType(StrEnum):
+    SIDE_MOUNT = "side_mount"
+    UNDERMOUNT = "undermount"
+
+
+class Grain(StrEnum):
+    FLATSAWN = "flatsawn"
+    QUARTERSAWN = "quartersawn"
+
+
+class TopFixing(StrEnum):
+    FLOATING = "floating"      # movement allowed (figure-8s, Z-clips, slots)
+    FIXED = "fixed"           # rigid — cracks a solid top across the grain
+
+
+def _coerce_enum(enum_cls: type[Enum], value: Any, *, aliases: dict | None = None):
+    """Best-effort coerce *value* to *enum_cls*.
+
+    Returns the matching enum member, or — when the value is unknown — the
+    normalized lowercase string, so the validator can still flag it rather than
+    the constructor raising on a typo. Already-correct members pass through.
+    """
+    if isinstance(value, enum_cls):
+        return value
+    s = str(value).strip().lower()
+    if aliases and s in aliases:
+        s = aliases[s]
+    try:
+        return enum_cls(s)
+    except ValueError:
+        return s
 
 
 @dataclass
@@ -72,12 +127,27 @@ class Drawer:
     front_height: float = 140.0
     false_front: bool = False    # a fixed panel (e.g. sink tip-out), no box
     # --- box joinery + slide hardware (optional; defaults = good practice) ----
-    corner_joint: str = "dovetail"   # dovetail | box | rabbet | dowel | butt
-    dovetail_tails: str = "sides"    # tails on "sides" (correct) so the front
-                                     # can't pull off; "front" is wrong
-    slide_type: str = "side_mount"   # side_mount | undermount
+    corner_joint: CornerJoint = CornerJoint.DOVETAIL  # dovetail|box|rabbet|...
+    dovetail_tails: DovetailTails = DovetailTails.SIDES  # tails on the sides so
+                                     # the front can't pull off; "front" is wrong
+    slide_type: SlideType = SlideType.SIDE_MOUNT     # side_mount | undermount
     slide_clearance: float = 12.7    # per-side gap for side-mount slides (½in)
     slide_length: float = 0.0        # nominal slide length; 0 = derive from depth
+
+    def __post_init__(self) -> None:
+        # Accept plain strings (e.g. from JSON) and normalize to the enums.
+        self.corner_joint = _coerce_enum(CornerJoint, self.corner_joint)
+        self.dovetail_tails = _coerce_enum(
+            DovetailTails, self.dovetail_tails, aliases={"side": "sides"})
+        self.slide_type = _coerce_enum(SlideType, self.slide_type)
+
+
+def _to_mm(d: dict, fields: tuple[str, ...]) -> None:
+    """Multiply the named length fields of *d* (in inches) by 25.4, in place."""
+    for f in fields:
+        v = d.get(f)
+        if isinstance(v, (int, float)) and not isinstance(v, bool):
+            d[f] = v * MM_PER_IN
 
 
 @dataclass
@@ -156,6 +226,10 @@ class CabinetSpec:
         d["construction"] = self.construction.value
         d["back"] = self.back.value
         d["joinery"] = self.joinery.value
+        for dr in d.get("drawers", []):
+            for k in ("corner_joint", "dovetail_tails", "slide_type"):
+                if isinstance(dr.get(k), Enum):
+                    dr[k] = dr[k].value
         return d
 
     def to_json(self, indent: int = 2) -> str:
@@ -164,6 +238,20 @@ class CabinetSpec:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "CabinetSpec":
         data = dict(data)  # don't mutate caller's dict
+        # Imperial input -> canonical mm (lengths only; loads/counts unchanged).
+        if normalize_unit(data.get("units")) == IMPERIAL:
+            _to_mm(data, ("width", "height", "depth", "reveal",
+                          "blind_width", "corner_cut"))
+            if isinstance(data.get("material"), dict):
+                _to_mm(data["material"],
+                       ("carcass", "back", "door", "shelf", "drawer_box"))
+            if isinstance(data.get("toe_kick"), dict):
+                _to_mm(data["toe_kick"], ("height", "setback"))
+            for dr in (data.get("drawers") or []):
+                if isinstance(dr, dict):
+                    _to_mm(dr, ("front_height", "slide_clearance", "slide_length"))
+            data["units"] = "mm"
+
         if "material" in data and isinstance(data["material"], dict):
             data["material"] = Material(**data["material"])
         if data.get("toe_kick") is not None and isinstance(data["toe_kick"], dict):
@@ -187,6 +275,8 @@ class CabinetSpec:
             ("back", BackStyle),
             ("joinery", Joinery),
         ):
+            # Structural enums are strict: an unknown value raises rather than
+            # silently degrading, because it picks the whole build path.
             if key in data and not isinstance(data[key], enum_cls):
                 data[key] = enum_cls(data[key])
         # Ignore unknown keys so the language can evolve without breaking old specs.
@@ -220,18 +310,35 @@ class TableSpec:
 
     # --- material/movement (optional; defaults describe a well-built top) ------
     solid_top: bool = True       # solid wood (moves) vs. a stable sheet good
-    top_fixing: str = "floating" # "floating" (movement allowed) | "fixed"
-    grain: str = "flatsawn"      # "flatsawn" | "quartersawn" — affects movement
-    joinery: str = "mortise_tenon"  # leg-to-apron joint; drives racking check
+    top_fixing: TopFixing = TopFixing.FLOATING  # movement allowed vs. rigid
+    grain: Grain = Grain.FLATSAWN               # affects seasonal movement
+    joinery: Joinery = Joinery.MORTISE_TENON    # leg-to-apron; drives racking
+
+    def __post_init__(self) -> None:
+        self.top_fixing = _coerce_enum(TopFixing, self.top_fixing)
+        self.grain = _coerce_enum(
+            Grain, self.grain, aliases={"quarter": "quartersawn",
+                                        "quarter_sawn": "quartersawn",
+                                        "flat": "flatsawn", "flat_sawn": "flatsawn"})
+        self.joinery = _coerce_enum(Joinery, self.joinery)
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        d = asdict(self)
+        for k in ("top_fixing", "grain", "joinery"):
+            if isinstance(getattr(self, k), Enum):
+                d[k] = getattr(self, k).value
+        return d
 
     def to_json(self, indent: int = 2) -> str:
         return json.dumps(self.to_dict(), indent=indent)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "TableSpec":
+        data = dict(data)
+        if normalize_unit(data.get("units")) == IMPERIAL:
+            _to_mm(data, ("width", "depth", "height", "top_thickness", "leg",
+                          "apron_height", "apron_thickness", "leg_inset"))
+            data["units"] = "mm"
         known = {f for f in cls.__dataclass_fields__}
         return cls(**{k: v for k, v in data.items() if k in known})
 
@@ -240,37 +347,127 @@ class TableSpec:
         return cls.from_dict(json.loads(text))
 
 
+# ---------------------------------------------------------------------------
+# Assemblies: a Project is a run of placed components (e.g. a kitchen).
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class Component:
+    """One placed piece of furniture within a :class:`Project`.
+
+    ``x``/``y`` locate the component's origin in the run (mm); ``rotation`` is
+    degrees about the vertical axis (for corner returns). Placement drives the
+    assembly view and an overlap sanity check — the per-component cut list is
+    unaffected by where it sits.
+    """
+    spec: CabinetSpec | TableSpec
+    x: float = 0.0
+    y: float = 0.0
+    rotation: float = 0.0
+    label: str = ""
+
+    @property
+    def display_label(self) -> str:
+        return self.label or getattr(self.spec, "name", "Component")
+
+
+@dataclass
+class Project:
+    """A collection of placed components — a multi-cabinet run / built-in.
+
+    The whole pipeline (validate, cut list, estimate) accepts a Project and
+    aggregates across its components, so a kitchen yields one combined cut list
+    and one quote.
+    """
+    name: str = "Project"
+    units: str = "mm"
+    components: list[Component] = field(default_factory=list)
+    kind: str = "project"
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "kind": "project",
+            "name": self.name,
+            "units": "mm",
+            "components": [
+                {"label": c.label, "x": c.x, "y": c.y, "rotation": c.rotation,
+                 "spec": c.spec.to_dict()}
+                for c in self.components
+            ],
+        }
+
+    def to_json(self, indent: int = 2) -> str:
+        return json.dumps(self.to_dict(), indent=indent)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Project":
+        data = dict(data)
+        comps: list[Component] = []
+        for c in data.get("components", []):
+            if not isinstance(c, dict):
+                continue
+            spec_data = c.get("spec", c)
+            comps.append(Component(
+                spec=spec_from_dict(spec_data),
+                x=float(c.get("x", 0.0)), y=float(c.get("y", 0.0)),
+                rotation=float(c.get("rotation", 0.0)),
+                label=str(c.get("label", "")),
+            ))
+        return cls(name=str(data.get("name", "Project")),
+                   units="mm", components=comps)
+
+    @classmethod
+    def from_json(cls, text: str) -> "Project":
+        return cls.from_dict(json.loads(text))
+
+
 def spec_from_dict(data: dict[str, Any]):
-    """Pick the right furniture spec from a payload (cabinet vs table)."""
+    """Pick the right furniture spec from a payload (project/cabinet/table)."""
     kind = str(data.get("kind", "")).lower()
+    if kind == "project" or "components" in data:
+        return Project.from_dict(data)
     if kind == "table" or "leg" in data or "top_thickness" in data:
         return TableSpec.from_dict(data)
     return CabinetSpec.from_dict(data)
 
 
-# The schema description handed to the LLM designer agent as part of its prompt.
-DSL_SCHEMA_HINT = """\
-A cabinet is described by this JSON object (units default to "mm"):
+# ---------------------------------------------------------------------------
+# Schema description handed to the LLM designer. The enum value lists are
+# generated from the dataclasses above so the prompt can never advertise a
+# vocabulary that drifts from the code (guarded by tests/test_schema_hint.py).
+# ---------------------------------------------------------------------------
 
-{
-  "cabinet_type": "base" | "wall" | "tall" | "corner_blind" |
-                  "corner_diagonal" | "bookcase" | "dresser",
+def _opts(enum_cls: type[Enum]) -> str:
+    return " | ".join(f'"{m.value}"' for m in enum_cls)
+
+
+DSL_SCHEMA_HINT = f"""\
+Output ONE furniture spec as a JSON object. It is either a CABINET or a TABLE.
+Set "units" to "mm" (default) or "in"; give every dimension in that unit and do
+not mix — inches are converted to millimetres on load.
+
+== CABINET ==
+{{
+  "cabinet_type": {_opts(CabinetType)},
   "name": "Sink Base",
   "units": "mm",
   "width": <overall width>,
   "height": <overall height, including toe kick>,
   "depth": <overall depth>,
-  "material": {"carcass": 18, "back": 6, "door": 18, "shelf": 18,
-               "drawer_box": 12},
-  "construction": "frameless" | "face_frame",
-  "back": "rabbeted" | "applied" | "grooved",
-  "joinery": "dado" | "dowel" | "domino" | "screw",
-  "toe_kick": {"height": 100, "setback": 50}  | null,
+  "material": {{"carcass": 18, "back": 6, "door": 18, "shelf": 18,
+               "drawer_box": 12}},
+  "construction": {_opts(Construction)},
+  "back": {_opts(BackStyle)},
+  "joinery": {_opts(Joinery)},
+  "toe_kick": {{"height": 100, "setback": 50}}  | null,
   "shelves": <integer count of adjustable shelves>,
   "doors": <integer count of doors, 0, 1 or 2>,
-  "drawers": [{"front_height": 140, "false_front": false,
-               "corner_joint": "dovetail", "slide_type": "side_mount",
-               "slide_clearance": 12.7}, ...],
+  "drawers": [{{"front_height": 140, "false_front": false,
+               "corner_joint": {_opts(CornerJoint)},
+               "dovetail_tails": {_opts(DovetailTails)},
+               "slide_type": {_opts(SlideType)},
+               "slide_clearance": 12.7}}, ...],
   "reveal": <gap in mm around overlay doors/drawers, e.g. 3>,
   "center_mullion": <true to add a vertical post between a pair of doors>,
   "blind_width": <corner_blind only: width of the blind/filler return>,
@@ -279,7 +476,26 @@ A cabinet is described by this JSON object (units default to "mm"):
   "shelf_species": "plywood" | "mdf" | "particleboard" | "oak" | "maple" | ...,
   "shelf_load_kg_per_m": <expected shelf load, e.g. 25 (books ~20-40)>,
   "anti_tip": true | false
-}
+}}
+
+== TABLE ==
+{{
+  "kind": "table",
+  "name": "Dining Table",
+  "units": "mm",
+  "width": <length of the top>,
+  "depth": <width of the top>,
+  "height": <floor to top surface, ~740>,
+  "top_thickness": 25,
+  "leg": <square leg cross-section, e.g. 60>,
+  "apron_height": 90,
+  "apron_thickness": 20,
+  "leg_inset": <leg outer face set in from the top edge, e.g. 40>,
+  "solid_top": true | false,
+  "top_fixing": {_opts(TopFixing)},
+  "grain": {_opts(Grain)},
+  "joinery": {_opts(Joinery)}
+}}
 
 The validator checks shelf sag (deflection vs span/360) from shelf_species,
 shelf thickness, span and load — prefer thicker/stiffer shelves or shorter
@@ -292,7 +508,8 @@ should be real stock (6/9/12/15/18/21/25mm) and panels should fit a
 ≥16mm thick and each door wide enough (>50mm) to host the cup. Dovetailed
 drawers keep their tails on the sides so the front can't pull off. Cabinets
 with adjustable shelves need a box tall and deep enough for the 32mm drilling
-system.
+system. A solid table top must use a "floating" top_fixing so it can move
+seasonally; mortise_tenon or domino leg-to-apron joints resist racking best.
 
 Rules of thumb by cabinet_type:
 - base: floor cabinet, ~720mm box + ~100mm toe kick, 560-600mm deep. Has a toe
@@ -307,5 +524,5 @@ Rules of thumb by cabinet_type:
   degree chamfer leg (smaller than width and depth).
 - bookcase: open shelving, enclosed top, "doors": 0 and several "shelves".
 - dresser: a drawer bank / chest, enclosed top; populate "drawers".
-Convert any imperial dimensions to mm (1 in = 25.4 mm).
+Convert any imperial dimensions to mm (1 in = 25.4 mm) or set "units": "in".
 """

@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .dsl import CabinetSpec
+from .dsl import CabinetSpec, Project
 from .cutlist import CutList, generate_cutlist
 from .packing import pack
 
@@ -130,13 +130,56 @@ def _edge_banding_metres(spec: CabinetSpec) -> float:
     return (2 * spec.box_height + spec.interior_width) / 1000.0
 
 
-def estimate(spec: CabinetSpec, *, cutlist: CutList | None = None,
+def _estimate_project(project: Project, prices: PriceBook,
+                      sheet: SheetSize) -> Estimate:
+    """Sum component estimates into one quote.
+
+    Sheets are counted per component (each cabinet is cut from its own sheets,
+    which is how a shop actually buys material), then like sheet groups are
+    merged for the report. Hardware, banding and labour add straight up.
+    """
+    groups: dict[tuple[str, float], SheetGroup] = {}
+    material_cost = hardware_cost = banding_cost = banding_m = 0.0
+    labour_hours = labour_cost = 0.0
+    for comp in project.components:
+        e = estimate(comp.spec, prices=prices, sheet=sheet)
+        material_cost += e.material_cost
+        hardware_cost += e.hardware_cost
+        banding_cost += e.edge_banding_cost
+        banding_m += e.edge_banding_m
+        labour_hours += e.labour_hours
+        labour_cost += e.labour_cost
+        for g in e.groups:
+            key = (g.material, g.thickness)
+            if key in groups:
+                acc = groups[key]
+                acc.part_count += g.part_count
+                acc.sheets += g.sheets
+                acc.oversize += g.oversize
+                acc.utilization = max(acc.utilization, g.utilization)
+            else:
+                groups[key] = SheetGroup(g.material, g.thickness, g.part_count,
+                                         g.sheets, g.utilization, g.oversize)
+    est = Estimate(
+        spec_name=project.name, groups=sorted(
+            groups.values(), key=lambda g: (g.material, g.thickness)),
+        material_cost=material_cost, hardware_cost=hardware_cost,
+        edge_banding_cost=banding_cost, edge_banding_m=banding_m,
+        labour_hours=labour_hours, labour_cost=labour_cost,
+    )
+    est._rate = prices.shop_rate_per_hour
+    return est
+
+
+def estimate(spec, *, cutlist: CutList | None = None,
              prices: PriceBook | None = None,
              sheet: SheetSize | None = None) -> Estimate:
-    """Produce a cost estimate for *spec*."""
-    cl = cutlist or generate_cutlist(spec)
+    """Produce a cost estimate for a cabinet, table, or project."""
     prices = prices or PriceBook()
     sheet = sheet or SheetSize()
+    if isinstance(spec, Project):
+        return _estimate_project(spec, prices, sheet)
+    cl = cutlist or generate_cutlist(spec)
 
     # Group panels by (material, thickness) and nest each group.
     groups: dict[tuple[str, float], list] = {}

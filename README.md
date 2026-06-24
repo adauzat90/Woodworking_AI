@@ -95,13 +95,24 @@ woodai build out/spec.json --estimate --drill
 woodai build out/spec.json --out ./out --dxf       # writes cutlayout.dxf
 ```
 
-**Imperial output** (for US shops): add `--imperial` to render the cut list and
-reports in fractional inches (to 1/16″). The engine stays millimetre-native —
-only the display changes; the 32 mm drilling schedule remains in mm because it
-*is* a metric boring system. The web UI has the same toggle.
+**Imperial, in and out** (for US shops): add `--imperial` to render the cut list
+and reports in fractional inches (to 1/16″). The engine stays millimetre-native
+— only the display changes; the 32 mm drilling schedule remains in mm because it
+*is* a metric boring system. You can also *author* in inches: set
+`"units": "in"` in a spec (or use inches in the web form) and dimensions are
+converted to mm on load. The web UI has a single units toggle for both.
 
 ```bash
 woodai build out/spec.json --estimate --imperial
+```
+
+**Projects (multi-cabinet runs):** a spec with `"kind": "project"` holds several
+placed components (a kitchen run, a built-in). `validate`, the cut list, and the
+cost estimate aggregate across the whole run — one combined cut list (parts
+tagged per cabinet), one quote, plus a placement-overlap check.
+
+```bash
+woodai build my_kitchen.json --estimate --imperial   # combined run cut list
 ```
 
 **Everything at once:**

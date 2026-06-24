@@ -24,7 +24,7 @@ from typing import Any
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 
-from .dsl import CabinetSpec, TableSpec, spec_from_dict
+from .dsl import CabinetSpec, TableSpec, Project, spec_from_dict
 from .validator import validate
 from .service import build_result, export_bytes
 
@@ -68,9 +68,15 @@ def _parse_spec(payload: dict[str, Any]) -> CabinetSpec | TableSpec:
         raise HTTPException(status_code=400, detail="expected a JSON object")
     spec_data = payload.get("spec", payload)
     try:
-        return spec_from_dict(spec_data)
+        spec = spec_from_dict(spec_data)
     except (TypeError, ValueError, AttributeError) as exc:
         raise HTTPException(status_code=400, detail=f"bad spec: {exc}")
+    if isinstance(spec, Project):
+        raise HTTPException(
+            status_code=400,
+            detail="multi-component projects are not supported by this endpoint; "
+                   "submit one cabinet or table at a time")
+    return spec
 
 
 @app.post("/api/build")

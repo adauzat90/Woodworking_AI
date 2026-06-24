@@ -18,13 +18,52 @@ import argparse
 import sys
 from pathlib import Path
 
-from .dsl import spec_from_dict
+from .dsl import spec_from_dict, Project
 from .validator import validate
 from .cutlist import generate_cutlist
 from . import exporters
 
 
+def _emit_project(project: Project, args) -> int:
+    """Emit a whole run: aggregate validation, combined cut list, one quote."""
+    unit = "imperial" if getattr(args, "imperial", False) else "metric"
+    result = validate(project)
+    print(project.to_json())
+    print()
+    if result.warnings:
+        print("Warnings:")
+        for w in result.warnings:
+            print(f"  {w}")
+    if not result.ok:
+        print("Errors (project is not buildable):", file=sys.stderr)
+        for e in result.errors:
+            print(f"  {e}", file=sys.stderr)
+        return 1
+
+    cutlist = generate_cutlist(project)
+    print("\nCombined cut list:")
+    print(cutlist.to_csv(unit))
+    print("\nHardware:")
+    print(cutlist.hardware_csv())
+    print("\n" + cutlist.summary(unit))
+
+    if args.estimate:
+        from .estimator import estimate
+        print("\n" + estimate(project).report_text(unit))
+
+    if args.out:
+        out = Path(args.out)
+        out.mkdir(parents=True, exist_ok=True)
+        exporters.write_cutlist_csv(cutlist, out / "cutlist.csv", unit)
+        exporters.write_hardware_csv(cutlist, out / "hardware.csv")
+        (out / "project.json").write_text(project.to_json() + "\n", encoding="utf-8")
+        print(f"\nWrote project.json, cutlist.csv, hardware.csv to {out}/")
+    return 0
+
+
 def _emit(spec, args) -> int:
+    if isinstance(spec, Project):
+        return _emit_project(spec, args)
     unit = "imperial" if getattr(args, "imperial", False) else "metric"
     result = validate(spec)
     print(spec.to_json())

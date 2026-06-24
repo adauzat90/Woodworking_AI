@@ -59,9 +59,9 @@ Seek-CAD) is sound and documented in `docs/ARCHITECTURE.md`.
    > (`units.py`) was added: the engine stays millimetre-native, but the cut
    > list, cost/critic reports, CSV downloads, and the web UI can render in
    > fractional inches (to 1/16″) via a units toggle (`--imperial` on the CLI,
-   > a `units` field on `/api/export`, a dropdown in the SPA). This addresses
-   > the *output* half of the units concern; *input* hardening (converting an
-   > imperial-valued spec on load) is still open.
+   > a `units` field on `/api/export`, a dropdown in the SPA). *Input* hardening
+   > followed (see recommendation 1 below): `from_dict` now converts an
+   > imperial-valued spec to mm on load, so the field is fully load-bearing.
 
 2. **The agent can only ever produce a cabinet.** `designer.py` hard-codes
    `CabinetSpec.from_dict`, and `DSL_SCHEMA_HINT` describes cabinets only. The
@@ -87,14 +87,32 @@ Seek-CAD) is sound and documented in `docs/ARCHITECTURE.md`.
    stringly-typed while the cabinet's joinery is an enum. Promote to enums for
    parity and self-documentation.
 
-## Recommendations (prioritized)
+## Recommendations (prioritized) — all implemented ✅
 
-1. Make `units` sound — normalize to mm in `from_dict`, or drop the field.
-2. Wire the table type into the designer (both schemas in the prompt; route via
-   `spec_from_dict`).
-3. Generate `DSL_SCHEMA_HINT` from the dataclasses (or add a drift-guard test).
-4. Promote `Drawer`/`TableSpec` string fields to enums.
-5. Plan an assembly/project layer holding multiple specs with placement.
+1. **Make `units` sound — done.** `from_dict` now converts an imperial-valued
+   spec (`"units": "in"`) to canonical mm on load (lengths only; counts/loads
+   untouched) and stamps `units = "mm"`. The web form's units toggle now drives
+   *input* too (inches in, converted on submit; mm specs shown back in inches).
+   Tests: `tests/test_dsl_units_enums.py`.
+2. **Wire the table type into the designer — done.** `designer.py` routes via
+   `spec_from_dict`, the prompt carries both the cabinet and table schemas, and
+   `DesignResult.spec` is `CabinetSpec | TableSpec`. Tests: `tests/test_designer.py`.
+3. **Generate `DSL_SCHEMA_HINT` from the dataclasses — done.** The enum option
+   lists in the hint are built from the enums (`_opts`), so they can't drift; a
+   guard test asserts every enum value appears. Tests: `tests/test_schema_hint.py`.
+4. **Promote `Drawer`/`TableSpec` string fields to enums — done.** New
+   `StrEnum`s `CornerJoint`, `DovetailTails`, `SlideType`, `Grain`, `TopFixing`
+   (and `TableSpec.joinery` now reuses `Joinery`), coerced in `__post_init__`
+   (tolerant: unknown values stay strings for the validator to flag).
+5. **Assembly/project layer — done.** `Component` + `Project` hold placed specs;
+   `validate`, `generate_cutlist`, and `estimate` accept a `Project` and
+   aggregate across components (combined cut list tagged per cabinet, summed
+   quote, placement-overlap check). Tests: `tests/test_project.py`.
+
+A note on enum strictness: the *structural* enums (`cabinet_type`,
+`construction`, `back`, `joinery` on a cabinet) stay strict — an unknown value
+raises, because it selects the whole build path. The advisory drawer/table
+sub-fields degrade gracefully to a validator warning instead.
 
 ## Bottom line
 

@@ -12,28 +12,31 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 
-from ..dsl import CabinetSpec, DSL_SCHEMA_HINT
+from ..dsl import CabinetSpec, TableSpec, spec_from_dict, DSL_SCHEMA_HINT
 from ..validator import validate, ValidationResult
 from .critic import critique, CritiqueResult
 from . import llm
 
 
 SYSTEM_PROMPT = f"""You are a master cabinetmaker and CAD engineer. You convert a \
-customer's plain-language request into a precise cabinet specification expressed \
+customer's plain-language request into a precise furniture specification expressed \
 ONLY as a single JSON object in the project's furniture design language.
+
+The request may call for a cabinet (casework) or a table; choose the matching \
+spec below. For a table set "kind": "table".
 
 {DSL_SCHEMA_HINT}
 
 Output requirements:
 - Respond with ONE JSON object and nothing else. No prose, no markdown fences.
 - Choose sensible, buildable defaults for anything the customer did not specify.
-- Convert imperial measurements to millimetres.
+- Give dimensions in millimetres, or set "units": "in" and use inches.
 - If the request is ambiguous, make the most common professional choice."""
 
 
 @dataclass
 class DesignResult:
-    spec: CabinetSpec
+    spec: CabinetSpec | TableSpec
     validation: ValidationResult
     raw_responses: list[str]
     attempts: int
@@ -54,7 +57,7 @@ def design_from_prompt(
     """
     messages: list[dict[str, str]] = [{"role": "user", "content": prompt}]
     raw_responses: list[str] = []
-    last_spec: CabinetSpec | None = None
+    last_spec: CabinetSpec | TableSpec | None = None
     last_validation: ValidationResult | None = None
     last_critique: CritiqueResult | None = None
 
@@ -64,7 +67,7 @@ def design_from_prompt(
 
         try:
             data = llm.extract_json(text)
-            spec = CabinetSpec.from_dict(data)
+            spec = spec_from_dict(data)
         except (ValueError, TypeError, json.JSONDecodeError) as exc:
             # Couldn't even parse — ask the agent to fix its output format.
             messages.append({"role": "assistant", "content": text})

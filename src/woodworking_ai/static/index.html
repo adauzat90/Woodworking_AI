@@ -218,6 +218,42 @@ function fmtArea(m2) {
   return (+m2).toFixed(2) + " m²";
 }
 
+// --- form inputs honour the same toggle (length fields only) ----------------
+const LEN_IDS = ["width","height","depth","reveal","toe","blind_width","corner_cut",
+  "t_width","t_depth","t_height","t_top","t_leg","t_inset","t_apronh","t_apront"];
+let formUnit = "metric";   // tracks the unit the form values are currently in
+const mmFromDisp = v => formUnit === "imperial" ? v * MM_PER_IN : v;
+const dispFromMM = mm => formUnit === "imperial" ? mm / MM_PER_IN : mm;
+const roundDisp  = v => formUnit === "imperial" ? Math.round(v*100)/100 : Math.round(v*10)/10;
+
+function setUnitLabels() {
+  const u = unitLabel();
+  for (const id of LEN_IDS) {
+    const el = $(id), lab = el && el.previousElementSibling;
+    if (!lab || lab.tagName !== "LABEL") continue;
+    if (lab.dataset.base === undefined)
+      lab.dataset.base = lab.textContent.replace(/\s*\(.*?\)\s*$/, "").trim();
+    lab.textContent = `${lab.dataset.base} (${u})`;
+  }
+}
+// Reconcile the form to the toggle: convert every length input in place.
+function applyUnitChange() {
+  const newU = unit();
+  if (newU !== formUnit) {
+    const toImperial = newU === "imperial";
+    for (const id of LEN_IDS) {
+      const el = $(id);
+      if (!el || el.value === "") continue;
+      const mm = formUnit === "imperial" ? (+el.value) * MM_PER_IN : +el.value;
+      const disp = toImperial ? mm / MM_PER_IN : mm;
+      el.value = toImperial ? Math.round(disp*100)/100 : Math.round(disp*10)/10;
+    }
+    formUnit = newU;
+    setUnitLabels();
+  }
+  paint();
+}
+
 async function health() {
   try {
     const h = await (await fetch("/api/health")).json();
@@ -243,30 +279,32 @@ function toggleFurniture() {
 $("furniture").addEventListener("change", toggleFurniture);
 
 function tableSpecFromForm() {
+  const L = id => mmFromDisp(+$(id).value);   // length inputs -> mm
   return {
     kind: "table", name: $("t_name").value || "Table",
-    width: +$("t_width").value, depth: +$("t_depth").value, height: +$("t_height").value,
-    top_thickness: +$("t_top").value, leg: +$("t_leg").value,
-    leg_inset: +$("t_inset").value, apron_height: +$("t_apronh").value,
-    apron_thickness: +$("t_apront").value,
+    width: L("t_width"), depth: L("t_depth"), height: L("t_height"),
+    top_thickness: L("t_top"), leg: L("t_leg"),
+    leg_inset: L("t_inset"), apron_height: L("t_apronh"),
+    apron_thickness: L("t_apront"),
   };
 }
 
 function specFromForm() {
   if ($("furniture").value === "table") return tableSpecFromForm();
-  const toe = +$("toe").value;
+  const L = id => mmFromDisp(+$(id).value);   // length inputs -> mm
+  const toe = L("toe");
   const nd = Math.max(0, +$("drawers").value | 0);
   return {
     cabinet_type: $("cabinet_type").value,
     construction: $("construction").value,
     name: $("name").value || "Cabinet",
-    width: +$("width").value, height: +$("height").value, depth: +$("depth").value,
+    width: L("width"), height: L("height"), depth: L("depth"),
     doors: +$("doors").value, shelves: Math.max(0, +$("shelves").value | 0),
     drawers: Array.from({length: nd}, () => ({front_height: 140})),
-    reveal: +$("reveal").value,
+    reveal: L("reveal"),
     center_mullion: $("mullion").checked,
-    blind_width: +($("blind_width").value || 0),
-    corner_cut: +($("corner_cut").value || 0),
+    blind_width: $("blind_width").value ? L("blind_width") : 0,
+    corner_cut: $("corner_cut").value ? L("corner_cut") : 0,
     toe_kick: toe > 0 ? {height: toe, setback: 50} : null,
   };
 }
@@ -297,21 +335,25 @@ $("designBtn").onclick = async () => {
 };
 
 function syncForm(s) {
+  // Specs are always mm; show each length in the form's current unit.
+  const isLen = id => LEN_IDS.includes(id);
+  const put = (id, v) => { if (v !== undefined && $(id))
+    $(id).value = isLen(id) ? roundDisp(dispFromMM(v)) : v; };
   if (s.kind === "table") {
     $("furniture").value = "table"; toggleFurniture();
     const map = {t_name:"name",t_width:"width",t_depth:"depth",t_height:"height",
       t_top:"top_thickness",t_leg:"leg",t_inset:"leg_inset",t_apronh:"apron_height",
       t_apront:"apron_thickness"};
-    for (const [el,k] of Object.entries(map)) if (s[k] !== undefined) $(el).value = s[k];
+    for (const [el,k] of Object.entries(map)) put(el, s[k]);
     return;
   }
   $("furniture").value = "cabinet"; toggleFurniture();
   for (const k of ["name","cabinet_type","construction","width","height","depth",
                    "doors","shelves","reveal","blind_width","corner_cut"])
-    if (s[k] !== undefined && $(k)) $(k).value = s[k];
+    put(k, s[k]);
   $("drawers").value = (s.drawers || []).length;
   $("mullion").checked = !!s.center_mullion;
-  $("toe").value = s.toe_kick ? s.toe_kick.height : 0;
+  put("toe", s.toe_kick ? s.toe_kick.height : 0);
   toggleCorner();
 }
 function showError(msg) {
@@ -427,8 +469,8 @@ $("tabs").querySelectorAll("button").forEach(b => b.onclick = () => {
   $("tabs").querySelectorAll("button").forEach(x=>x.classList.toggle("active", x===b));
   paint();
 });
-// Switching display units reformats the already-loaded bundle instantly.
-$("units").onchange = () => paint();
+// Switching units converts the form inputs and reformats the loaded bundle.
+$("units").onchange = applyUnitChange;
 
 // --- Library: Convex when CONVEX_URL is configured, else localStorage --------
 const CONVEX_URL = window.__CONVEX_URL__ || "";
@@ -505,6 +547,11 @@ function maybeAuto() {
 document.querySelectorAll(".controls input, .controls select").forEach(el => {
   if (el.id !== "prompt" && el.id !== "auto") el.addEventListener("input", maybeAuto);
 });
+
+// Initialise the form to the default display unit (inches for US shops): the
+// HTML defaults are authored in mm, so convert them once on load.
+setUnitLabels();
+applyUnitChange();
 
 health();
 refreshSaved();
