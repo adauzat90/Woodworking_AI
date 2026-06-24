@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from .cutlist import CutList
+from .dxf import export_cutlayout_dxf  # noqa: F401  (re-export, no CAD dep)
 
 
 def export_step(model: Any, path: str | Path) -> Path:
