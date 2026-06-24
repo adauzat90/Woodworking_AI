@@ -168,7 +168,15 @@ def build_result(spec, *, want_png: bool = True,
     result["drilling"] = {
         "total_holes": drill.total_holes,
         "ops": [{"part": o.part, "operation": o.operation,
-                 "holes": len(o.holes), "note": o.note} for o in drill.ops],
+                 "holes": len(o.holes), "note": o.note,
+                 # Per-hole positions so the UI can show exactly where to bore.
+                 # Coordinates are metric (the 32mm boring system is metric).
+                 "hole_list": [
+                     {"face": h.face, "u": round(h.u, 1), "v": round(h.v, 1),
+                      "dia": h.dia, "depth": h.depth, "note": h.note}
+                     for h in o.holes
+                 ]}
+                for o in drill.ops],
     }
 
     result["render_png"] = _render_png(spec) if want_png else None

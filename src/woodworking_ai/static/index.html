@@ -66,6 +66,23 @@
   .cost-grid { display:grid; grid-template-columns:auto auto; gap:4px 24px; max-width:340px; }
   .cost-grid .total { font-weight:700; border-top:1px solid var(--line); padding-top:6px; }
   .muted { color:var(--muted); }
+  /* Headline summary for the Lumber and Drilling tabs. */
+  .headline { display:flex; align-items:center; gap:14px; margin:6px 0 14px; }
+  .headline .big { font-size:34px; font-weight:700; color:var(--wood); line-height:1; }
+  .headline .sub { font-size:12.5px; }
+  .chips { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 12px; }
+  .chip { background:#3a352f; border-radius:7px; padding:5px 11px; font-size:12px; }
+  .chip b { color:var(--wood); font-weight:700; }
+  details { margin:6px 0; border:1px solid var(--line); border-radius:7px;
+            padding:4px 10px; background:var(--bg); }
+  details[open] { padding-bottom:8px; }
+  summary { cursor:pointer; padding:3px 0; font-size:12.5px; list-style:none; }
+  summary::-webkit-details-marker { display:none; }
+  summary::before { content:"▸ "; color:var(--muted); }
+  details[open] summary::before { content:"▾ "; }
+  summary .count { color:var(--muted); }
+  h4 { margin:16px 0 6px; font-size:12px; color:var(--muted);
+       text-transform:uppercase; letter-spacing:.05em; }
 </style>
 </head>
 <body>
@@ -204,9 +221,10 @@
       </div>
       <div class="tabs" id="tabs">
         <button data-t="cutlist" class="active">Cut list</button>
+        <button data-t="lumber">Lumber</button>
+        <button data-t="drilling">Drilling</button>
         <button data-t="hardware">Hardware</button>
         <button data-t="cost">Cost</button>
-        <button data-t="drilling">Drilling</button>
         <label class="units-toggle" title="Display units for the cut list and reports (the engine is millimetre-native)">
           <span class="muted">Units</span>
           <select id="units">
@@ -537,6 +555,8 @@ function paint() {
     h += `<p class="muted">${(d.spec&&d.spec.name)||"Design"}: ${groupSummary(d.spec)}`
        + `${panels} panels (${d.cutlist.length} unique), ${hw} hardware items, `
        + `~${fmtArea(area)} sheet goods</p>`;
+  } else if (tab === "lumber") {
+    h = lumberPane(d);
   } else if (tab === "hardware") {
     h = table(["Item","Qty","Notes"], d.hardware.map(x=>[x.name,x.qty,x.notes]));
   } else if (tab === "cost") {
@@ -551,11 +571,96 @@ function paint() {
       table(["Material",`Thk (${u})`,"Parts","Sheets","Used"],
         e.groups.map(g=>[g.material,fmtLen(g.thickness),g.parts,g.sheets,Math.round(g.utilization*100)+"%"]));
   } else if (tab === "drilling") {
-    h = `<p class="muted">${d.drilling.total_holes} holes total</p>` +
-      table(["Part","Operation","Holes","Note"],
-        d.drilling.ops.map(o=>[o.part,o.operation,o.holes,o.note]));
+    h = drillingPane(d);
   }
   $("pane").innerHTML = h;
+}
+
+// --- Lumber tab: how much material to buy ------------------------------------
+// Headlines the sheet/board count, then breaks it down per material so the shop
+// knows exactly what to order. Numbers come straight from the cost estimate's
+// nesting (estimate.groups) plus the cut list's gross face area.
+function lumberPane(d) {
+  const e = d.estimate, u = unitLabel();
+  if (!e || !e.groups) return '<p class="muted">No lumber data.</p>';
+  // Gross face area per (material, thickness) from the cut list.
+  const areaByKey = {};
+  for (const p of d.cutlist) {
+    const k = p.material + "@" + p.thickness;
+    areaByKey[k] = (areaByKey[k] || 0) + (p.length / 1000) * (p.width / 1000) * p.qty;
+  }
+  const grossArea = d.cutlist.reduce(
+    (a, p) => a + (p.length / 1000) * (p.width / 1000) * p.qty, 0);
+  const sheetDims = unit() === "imperial" ? "8 × 4 ft" : "2440 × 1220 mm";
+  const oversize = e.groups.reduce((n, g) => n + (g.oversize || 0), 0);
+
+  let h = `<div class="headline">
+      <div class="big">${e.total_sheets}</div>
+      <div class="sub">sheet${e.total_sheets === 1 ? "" : "s"} of stock to buy
+        <div class="muted">standard ${sheetDims} · ~${fmtArea(grossArea)} of parts</div></div>
+    </div>`;
+  // One chip per material: "<n> × <material>".
+  h += '<div class="chips">' + e.groups.map(g =>
+    `<span class="chip"><b>${g.sheets}×</b> ${g.material} ${fmtLen(g.thickness, true)}</span>`
+  ).join("") + "</div>";
+  h += table(
+    ["Material", `Thk (${u})`, "Parts", "Sheets", "Used", `Area`],
+    e.groups.map(g => {
+      const area = areaByKey[g.material + "@" + g.thickness] || 0;
+      const util = Math.round(g.utilization * 100) + "%";
+      const flag = g.oversize ? ` ⚠ ${g.oversize} oversize` : "";
+      return [g.material + flag, fmtLen(g.thickness), g.parts, g.sheets, util, fmtArea(area)];
+    }));
+  h += `<p class="muted" style="margin-top:10px">Sheet counts include nesting
+    waste from a guillotine pack; “Used” is the packed area per sheet. ` +
+    (oversize ? `⚠ ${oversize} part(s) exceed a single sheet — split or order oversized stock. `
+              : "") +
+    `Order ${e.total_sheets} sheet${e.total_sheets === 1 ? "" : "s"} total.</p>`;
+  return h;
+}
+
+// --- Drilling tab: every hole, where to bore it ------------------------------
+// Headlines the hole count with a per-type breakdown, lists the operations, then
+// exposes the exact bore positions (u/v/Ø/depth, metric) under each operation.
+function drillCategory(op) {
+  if (/shelf-pin/i.test(op)) return "Shelf-pin · 5mm";
+  if (/hinge/i.test(op)) return "Hinge cup · 35mm";
+  if (/slide/i.test(op)) return "Drawer slide · 4mm";
+  return "Other";
+}
+function drillingPane(d) {
+  const dr = d.drilling;
+  if (!dr || !dr.ops.length)
+    return '<p class="muted">No drilling required for this design.</p>';
+  // Holes by category, for the chip summary.
+  const cats = {};
+  for (const o of dr.ops) {
+    const c = drillCategory(o.operation);
+    cats[c] = (cats[c] || 0) + o.holes;
+  }
+  let h = `<div class="headline">
+      <div class="big">${dr.total_holes}</div>
+      <div class="sub">holes to drill
+        <div class="muted">positions are metric — 32mm boring system</div></div>
+    </div>`;
+  h += '<div class="chips">' + Object.entries(cats).map(([c, n]) =>
+    `<span class="chip"><b>${n}</b> ${c}</span>`).join("") + "</div>";
+  h += table(["Part", "Operation", "Holes", "Note"],
+    dr.ops.map(o => [o.part, o.operation, o.holes, o.note]));
+  // Exact positions, collapsible per operation. u = along depth/width,
+  // v = up from the panel's bottom edge.
+  h += "<h4>Hole positions</h4>";
+  for (const o of dr.ops) {
+    const holes = o.hole_list || [];
+    if (!holes.length) continue;
+    h += `<details><summary>${o.part} — ${o.operation}
+      <span class="count">(${o.holes} hole${o.holes === 1 ? "" : "s"})</span></summary>` +
+      table(["#", "Face", "U (mm)", "V (mm)", "Ø (mm)", "Depth (mm)"],
+        holes.map((hh, i) => [i + 1, hh.face, hh.u.toFixed(1), hh.v.toFixed(1),
+                              hh.dia.toFixed(1), hh.depth.toFixed(1)])) +
+      "</details>";
+  }
+  return h;
 }
 function table(cols, rows) {
   return "<table><thead><tr>" + cols.map(c=>`<th>${c}</th>`).join("") +
