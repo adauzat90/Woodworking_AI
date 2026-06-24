@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .dsl import Project
+from .dsl import ComponentGroup
 from .geometry import panel_layout, component_tag
 
 # 32 mm System and boring constants (mm).
@@ -134,7 +134,7 @@ def _pin_heights(panel_h: float, max_holes: int = 400) -> list[float]:
     return out
 
 
-def _project_drilling(project: Project) -> DrillingSchedule:
+def _project_drilling(project: ComponentGroup) -> DrillingSchedule:
     """Combine each component's drilling schedule, part names tagged per cabinet.
 
     Hole positions are local to each part, so they don't depend on where the
@@ -151,7 +151,7 @@ def _project_drilling(project: Project) -> DrillingSchedule:
 
 
 def drilling_schedule(spec) -> DrillingSchedule:
-    if isinstance(spec, Project):
+    if isinstance(spec, ComponentGroup):
         return _project_drilling(spec)
     panels = panel_layout(spec)
     sched = DrillingSchedule(spec_name=spec.name)

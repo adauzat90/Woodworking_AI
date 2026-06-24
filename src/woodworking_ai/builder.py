@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .dsl import CabinetSpec, Project
+from .dsl import CabinetSpec, ComponentGroup
 from .geometry import panel_layout, project_layout
 
 
@@ -52,16 +52,17 @@ def build_model(spec: CabinetSpec) -> Any:
     """Return a build123d ``Compound`` of labelled panels for *spec*.
 
     Panel placement comes from :func:`woodworking_ai.geometry.panel_layout`, the
-    same source the Critic agent measures against. Accepts a :class:`Project`
-    too, assembling the whole run into one model.
+    same source the Critic agent measures against. Accepts a
+    :class:`ComponentGroup` (Project or sub-assembly) too, assembling the whole
+    group into one model.
     """
-    if isinstance(spec, Project):
+    if isinstance(spec, ComponentGroup):
         return build_project(spec)
     return _compound_from_panels(panel_layout(spec), spec.name)
 
 
-def build_project(project: Project) -> Any:
-    """Assemble a whole run into one build123d ``Compound``.
+def build_project(project: ComponentGroup) -> Any:
+    """Assemble a whole group into one build123d ``Compound``.
 
     Each component's panels are placed in the run frame by
     :func:`woodworking_ai.geometry.project_layout`, so the assembled B-Rep is

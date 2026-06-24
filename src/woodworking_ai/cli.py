@@ -18,14 +18,14 @@ import argparse
 import sys
 from pathlib import Path
 
-from .dsl import spec_from_dict, Project
+from .dsl import spec_from_dict, ComponentGroup
 from .validator import validate
 from .cutlist import generate_cutlist
 from . import exporters
 
 
-def _emit_project(project: Project, args) -> int:
-    """Emit a whole run: aggregate validation, combined cut list, one quote."""
+def _emit_project(project: ComponentGroup, args) -> int:
+    """Emit a whole group: aggregate validation, combined cut list, one quote."""
     unit = "imperial" if getattr(args, "imperial", False) else "metric"
     result = validate(project)
     print(project.to_json())
@@ -101,7 +101,7 @@ def _emit_project(project: Project, args) -> int:
 
 
 def _emit(spec, args) -> int:
-    if isinstance(spec, Project):
+    if isinstance(spec, ComponentGroup):
         return _emit_project(spec, args)
     unit = "imperial" if getattr(args, "imperial", False) else "metric"
     result = validate(spec)

@@ -86,7 +86,7 @@
     <select id="furniture">
       <option value="cabinet">Cabinet</option>
       <option value="table">Table</option>
-      <option value="project">Project (run)</option>
+      <option value="project">Project / assembly</option>
     </select>
     <div id="cabinetFields">
     <fieldset>
@@ -152,14 +152,28 @@
     </div><!-- /tableFields -->
     <div id="projectFields" style="display:none">
     <fieldset>
-      <legend>Project — multi-cabinet run</legend>
+      <legend>Project &amp; sub-assemblies</legend>
       <p class="muted" style="font-size:11px;margin:0 0 6px">
         A run of placed components. <code>x</code>/<code>y</code> locate each
         piece's front-left corner (mm); <code>rotation</code> turns a run 90° at a
-        corner. Edit the JSON, then Build — you get one combined cut list, quote,
-        drilling schedule, and assembled view.</p>
+        corner. A <b>sub-assembly</b> is a named group that moves as one unit:
+        nest it inline (a component whose <code>spec</code> has
+        <code>"kind":"assembly"</code>) or define it once under
+        <code>definitions</code> and drop in copies with <code>"ref"</code>.
+        Build to get one combined cut list, quote, drilling schedule, and an
+        assembled view.</p>
+      <div class="row" style="align-items:end">
+        <div><label>Load example</label>
+          <select id="projectSample">
+            <option value="run">L-kitchen run</option>
+            <option value="reuse">Reuse a sub-assembly (definitions + ref)</option>
+            <option value="nested">Inline nested sub-assembly</option>
+          </select></div>
+        <div style="flex:0 0 auto"><button id="formatJson" class="secondary"
+          type="button" style="white-space:nowrap">↵ Format</button></div>
+      </div>
       <textarea id="projectJson"
-        style="height:200px;font-family:ui-monospace,Menlo,monospace;font-size:11px"></textarea>
+        style="height:220px;font-family:ui-monospace,Menlo,monospace;font-size:11px"></textarea>
     </fieldset>
     </div><!-- /projectFields -->
     <button id="buildBtn">🔨 Build design</button>
@@ -306,6 +320,42 @@ const SAMPLE_PROJECT = {
   ]
 };
 
+// Define a sub-assembly once, place independent copies by `ref`.
+const SAMPLE_REUSE = {
+  kind: "project", name: "Wall of cabinets",
+  definitions: {
+    wall_pair: {
+      kind: "assembly", name: "Wall pair",
+      components: [
+        {x: 0,   spec: {cabinet_type: "wall", name: "Wall", width: 600, toe_kick: null}},
+        {x: 600, spec: {cabinet_type: "wall", name: "Wall", width: 600, toe_kick: null}}
+      ]
+    }
+  },
+  components: [
+    {ref: "wall_pair", x: 0, y: 0,    label: "Upper-L"},
+    {ref: "wall_pair", x: 0, y: 1500, label: "Upper-R"}
+  ]
+};
+
+// A sub-assembly nested inline as one component of the run.
+const SAMPLE_NESTED = {
+  kind: "project", name: "Galley kitchen",
+  components: [
+    {label: "Bank", x: 0, y: 0, rotation: 0,
+     spec: {kind: "assembly", name: "Drawer bank", components: [
+       {x: 0,   spec: {cabinet_type: "base", name: "3-drawer", width: 600,
+                       drawers: [{front_height: 140}, {front_height: 200}, {front_height: 260}]}},
+       {x: 600, spec: {cabinet_type: "base", name: "3-drawer", width: 600,
+                       drawers: [{front_height: 140}, {front_height: 200}, {front_height: 260}]}}
+     ]}},
+    {label: "Sink", x: 1200, y: 0, rotation: 0,
+     spec: {cabinet_type: "base", name: "Sink base", width: 900, doors: 2, shelves: 1}}
+  ]
+};
+
+const PROJECT_SAMPLES = {run: SAMPLE_PROJECT, reuse: SAMPLE_REUSE, nested: SAMPLE_NESTED};
+
 function tableSpecFromForm() {
   const L = id => mmFromDisp(+$(id).value);   // length inputs -> mm
   return {
@@ -369,7 +419,8 @@ function syncForm(s) {
   const isLen = id => LEN_IDS.includes(id);
   const put = (id, v) => { if (v !== undefined && $(id))
     $(id).value = isLen(id) ? roundDisp(dispFromMM(v)) : v; };
-  if (s.kind === "project") {
+  if (s.kind === "project" || s.kind === "assembly") {
+    // Projects and (top-level) sub-assemblies both edit as JSON in the same pane.
     $("furniture").value = "project"; toggleFurniture();
     $("projectJson").value = JSON.stringify(s, null, 2);
     return;
@@ -460,6 +511,18 @@ function loadFromHash() {
   } catch (e) {}
 }
 
+// "3 components (1 sub-assembly) · " for a project/assembly, else "".
+function isGroup(s) { return s && (s.kind === "project" || s.kind === "assembly"); }
+function groupSummary(s) {
+  if (!isGroup(s)) return "";
+  const comps = s.components || [];
+  const subs = comps.filter(c => c.ref || isGroup(c.spec)).length;
+  const plural = n => n === 1 ? "" : "s";
+  let txt = `${comps.length} component${plural(comps.length)}`;
+  if (subs) txt += ` (${subs} sub-assembl${subs === 1 ? "y" : "ies"})`;
+  return txt + " · ";
+}
+
 function paint() {
   if (!last) return;
   const d = last; let h = "";
@@ -471,8 +534,9 @@ function paint() {
     const panels = d.cutlist.reduce((n,p)=>n+p.qty,0);
     const hw = (d.hardware||[]).reduce((n,x)=>n+x.qty,0);
     const area = d.cutlist.reduce((a,p)=>a+(p.length/1000)*(p.width/1000)*p.qty,0);
-    h += `<p class="muted">${(d.spec&&d.spec.name)||"Design"}: ${panels} panels `
-       + `(${d.cutlist.length} unique), ${hw} hardware items, ~${fmtArea(area)} sheet goods</p>`;
+    h += `<p class="muted">${(d.spec&&d.spec.name)||"Design"}: ${groupSummary(d.spec)}`
+       + `${panels} panels (${d.cutlist.length} unique), ${hw} hardware items, `
+       + `~${fmtArea(area)} sheet goods</p>`;
   } else if (tab === "hardware") {
     h = table(["Item","Qty","Notes"], d.hardware.map(x=>[x.name,x.qty,x.notes]));
   } else if (tab === "cost") {
@@ -583,8 +647,19 @@ document.querySelectorAll(".controls input, .controls select").forEach(el => {
   if (el.id !== "prompt" && el.id !== "auto") el.addEventListener("input", maybeAuto);
 });
 
-// Seed the Project editor with a runnable sample.
+// Seed the Project editor with a runnable sample, and let the picker swap in a
+// sub-assembly example. "Format" re-indents (and validates) the current JSON.
 $("projectJson").value = JSON.stringify(SAMPLE_PROJECT, null, 2);
+$("projectSample").onchange = () => {
+  const s = PROJECT_SAMPLES[$("projectSample").value] || SAMPLE_PROJECT;
+  $("projectJson").value = JSON.stringify(s, null, 2);
+  maybeAuto();
+};
+$("formatJson").onclick = () => {
+  try { $("projectJson").value =
+    JSON.stringify(JSON.parse($("projectJson").value), null, 2); }
+  catch (e) { showError("Project JSON: " + e.message); }
+};
 
 // Initialise the form to the default display unit (inches for US shops): the
 // HTML defaults are authored in mm, so convert them once on load.

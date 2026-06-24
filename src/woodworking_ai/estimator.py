@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .dsl import CabinetSpec, Project
+from .dsl import CabinetSpec, ComponentGroup
 from .cutlist import CutList, generate_cutlist
 from .packing import pack
 
@@ -130,7 +130,7 @@ def _edge_banding_metres(spec: CabinetSpec) -> float:
     return (2 * spec.box_height + spec.interior_width) / 1000.0
 
 
-def _estimate_project(project: Project, prices: PriceBook,
+def _estimate_project(project: ComponentGroup, prices: PriceBook,
                       sheet: SheetSize) -> Estimate:
     """Sum component estimates into one quote.
 
@@ -174,10 +174,10 @@ def _estimate_project(project: Project, prices: PriceBook,
 def estimate(spec, *, cutlist: CutList | None = None,
              prices: PriceBook | None = None,
              sheet: SheetSize | None = None) -> Estimate:
-    """Produce a cost estimate for a cabinet, table, or project."""
+    """Produce a cost estimate for a cabinet, table, or group."""
     prices = prices or PriceBook()
     sheet = sheet or SheetSize()
-    if isinstance(spec, Project):
+    if isinstance(spec, ComponentGroup):
         return _estimate_project(spec, prices, sheet)
     cl = cutlist or generate_cutlist(spec)
 

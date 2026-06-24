@@ -15,7 +15,8 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field, replace
 
-from .dsl import CabinetSpec, TableSpec, Project, BackStyle, Construction, CabinetType
+from .dsl import (CabinetSpec, TableSpec, ComponentGroup, BackStyle,
+                  Construction, CabinetType)
 from .geometry import front_plan, component_tag
 # Construction constants now live in one neutral module shared with geometry.
 from .constants import (
@@ -175,8 +176,8 @@ def _table_cutlist(spec: TableSpec) -> CutList:
     return cl
 
 
-def _project_cutlist(project: Project) -> CutList:
-    """One combined cut list for a whole run, parts tagged by component.
+def _project_cutlist(project: ComponentGroup) -> CutList:
+    """One combined cut list for a whole group, parts tagged by component.
 
     Each component's parts and hardware are merged under a short label so a shop
     sees one list but can still tell which cabinet a panel belongs to.
@@ -193,8 +194,8 @@ def _project_cutlist(project: Project) -> CutList:
 
 
 def generate_cutlist(spec) -> CutList:
-    """Derive the full parts + hardware list for a cabinet, table, or project."""
-    if isinstance(spec, Project):
+    """Derive the full parts + hardware list for a cabinet, table, or group."""
+    if isinstance(spec, ComponentGroup):
         return _project_cutlist(spec)
     if isinstance(spec, TableSpec):
         return _table_cutlist(spec)

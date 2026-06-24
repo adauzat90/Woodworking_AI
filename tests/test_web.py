@@ -164,3 +164,69 @@ def test_export_project_cutlist_imperial():
                     json={"spec": PROJECT_SPEC, "units": "imperial"})
     assert r.status_code == 200
     assert r.text.splitlines()[0].startswith("part,qty,length_in")
+
+
+# --- sub-assemblies through the API (the SPA's "Project / assembly" samples) ---
+
+# Define a sub-assembly once, place independent copies by ref (SAMPLE_REUSE).
+REUSE_SPEC = {
+    "kind": "project", "name": "Wall of cabinets",
+    "definitions": {
+        "wall_pair": {
+            "kind": "assembly", "name": "Wall pair",
+            "components": [
+                {"x": 0, "spec": {"cabinet_type": "wall", "width": 600,
+                                  "toe_kick": None}},
+                {"x": 600, "spec": {"cabinet_type": "wall", "width": 600,
+                                    "toe_kick": None}},
+            ],
+        },
+    },
+    "components": [
+        {"ref": "wall_pair", "x": 0, "y": 0, "label": "Upper-L"},
+        {"ref": "wall_pair", "x": 0, "y": 1500, "label": "Upper-R"},
+    ],
+}
+
+# A sub-assembly nested inline as one component (SAMPLE_NESTED).
+NESTED_SPEC = {
+    "kind": "project", "name": "Galley kitchen",
+    "components": [
+        {"label": "Bank", "x": 0, "y": 0, "spec": {
+            "kind": "assembly", "name": "Drawer bank", "components": [
+                {"x": 0, "spec": {"cabinet_type": "base", "width": 600,
+                                  "drawers": [{"front_height": 160}]}},
+                {"x": 600, "spec": {"cabinet_type": "base", "width": 600,
+                                    "drawers": [{"front_height": 160}]}},
+            ]}},
+        {"label": "Sink", "x": 1200, "y": 0, "spec": {
+            "cabinet_type": "base", "width": 900, "doors": 2, "shelves": 1}},
+    ],
+}
+
+
+def test_build_reuse_resolves_refs_and_aggregates():
+    d = client.post("/api/build", json={"spec": REUSE_SPEC, "glb": False}).json()
+    assert d["valid"] is True
+    # The two ref placements stay terse in the echoed spec (no inline spec).
+    assert all(c.get("ref") == "wall_pair" for c in d["spec"]["components"])
+    # Both copies' parts are in the one combined cut list.
+    assert any(p["name"].startswith("Upper-L · ") for p in d["cutlist"])
+    assert any(p["name"].startswith("Upper-R · ") for p in d["cutlist"])
+
+
+def test_build_nested_assembly_aggregates_and_validates():
+    d = client.post("/api/build", json={"spec": NESTED_SPEC, "glb": False}).json()
+    assert d["valid"] is True
+    # The bank's two cabinets are tagged under the nested component.
+    assert any(p["name"].startswith("Bank · ") for p in d["cutlist"])
+    assert d["drilling"]["total_holes"] > 0
+
+
+def test_build_rejects_cyclic_subassembly():
+    bad = {"kind": "project",
+           "definitions": {"a": {"kind": "assembly", "components": [{"ref": "b"}]},
+                           "b": {"kind": "assembly", "components": [{"ref": "a"}]}},
+           "components": [{"ref": "a"}]}
+    r = client.post("/api/build", json={"spec": bad, "glb": False})
+    assert r.status_code == 400          # bad spec, surfaced not 500'd

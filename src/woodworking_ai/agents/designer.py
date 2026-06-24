@@ -12,7 +12,8 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 
-from ..dsl import CabinetSpec, TableSpec, spec_from_dict, DSL_SCHEMA_HINT
+from ..dsl import (CabinetSpec, TableSpec, Project, Assembly, spec_from_dict,
+                   DSL_SCHEMA_HINT)
 from ..validator import validate, ValidationResult
 from .critic import critique, CritiqueResult
 from . import llm
@@ -22,8 +23,10 @@ SYSTEM_PROMPT = f"""You are a master cabinetmaker and CAD engineer. You convert 
 customer's plain-language request into a precise furniture specification expressed \
 ONLY as a single JSON object in the project's furniture design language.
 
-The request may call for a cabinet (casework) or a table; choose the matching \
-spec below. For a table set "kind": "table".
+The request may call for a single cabinet (casework) or a table, or a multi-part \
+PROJECT (a run of cabinets / a built-in) — choose the matching spec below. For a \
+table set "kind": "table"; for anything with more than one piece emit a project \
+with placed components, and factor any repeated group into a reusable assembly.
 
 {DSL_SCHEMA_HINT}
 
@@ -36,7 +39,7 @@ Output requirements:
 
 @dataclass
 class DesignResult:
-    spec: CabinetSpec | TableSpec
+    spec: CabinetSpec | TableSpec | Project | Assembly
     validation: ValidationResult
     raw_responses: list[str]
     attempts: int
@@ -57,7 +60,7 @@ def design_from_prompt(
     """
     messages: list[dict[str, str]] = [{"role": "user", "content": prompt}]
     raw_responses: list[str] = []
-    last_spec: CabinetSpec | TableSpec | None = None
+    last_spec: CabinetSpec | TableSpec | Project | Assembly | None = None
     last_validation: ValidationResult | None = None
     last_critique: CritiqueResult | None = None
 

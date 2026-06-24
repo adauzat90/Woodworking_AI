@@ -18,6 +18,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field, asdict
 from enum import Enum, StrEnum
 from typing import Any
+import copy
 import json
 import math
 
@@ -349,74 +350,171 @@ class TableSpec:
 
 
 # ---------------------------------------------------------------------------
-# Assemblies: a Project is a run of placed components (e.g. a kitchen).
+# Assemblies. A component group places child specs in one frame:
+#   * Project  — the top-level run / built-in (e.g. a whole kitchen).
+#   * Assembly — a *named, reusable sub-assembly*: a group that nests inside a
+#     component and moves as one unit (a drawer bank, a wall-cabinet pair, ...).
+# Both share :class:`ComponentGroup`, so every pipeline stage (validate, cut
+# list, estimate, drilling, geometry) handles them identically and recurses
+# into each component's spec — nesting "just works".
+#
+# Reuse (define-once, place-many) is expressed with ``definitions`` + ``ref``:
+# a group declares named sub-assemblies under ``definitions`` and a component
+# places a fresh copy of one by setting ``ref`` instead of an inline ``spec``.
 # ---------------------------------------------------------------------------
 
 
 @dataclass
 class Component:
-    """One placed piece of furniture within a :class:`Project`.
+    """One placed piece of furniture within a :class:`ComponentGroup`.
 
-    ``x``/``y`` locate the component's origin in the run (mm); ``rotation`` is
-    degrees about the vertical axis (for corner returns). Placement drives the
-    assembly view and an overlap sanity check — the per-component cut list is
-    unaffected by where it sits.
+    ``x``/``y`` locate the component's origin in the parent frame (mm);
+    ``rotation`` is degrees CCW about the vertical axis (for corner returns and
+    sub-assembly orientation). The spec may be a leaf (cabinet/table) or a nested
+    :class:`Assembly`. ``ref`` names a sub-assembly in the enclosing group's
+    ``definitions``; on load it is resolved to a fresh copy placed here, so one
+    definition can be dropped in many times. Placement drives the assembly view
+    and an overlap sanity check — the per-component cut list is unaffected by
+    where the piece sits.
     """
-    spec: CabinetSpec | TableSpec
+    spec: "CabinetSpec | TableSpec | Assembly | Project | None" = None
     x: float = 0.0
     y: float = 0.0
     rotation: float = 0.0
     label: str = ""
+    ref: str = ""                 # name of a definition this component instances
+
+
+class _Defs:
+    """A chained registry of named sub-assembly definitions.
+
+    Definitions are resolved lazily (so one may reference another) with a visit
+    stack that turns a cyclic reference into a clear error rather than infinite
+    recursion. ``parent`` lets a nested group see the definitions declared by an
+    enclosing group, with the innermost declaration winning.
+    """
+
+    def __init__(self, raw: dict | None, parent: "_Defs | None" = None) -> None:
+        self.raw = dict(raw or {})
+        self.parent = parent
+        self.parsed: dict[str, Any] = {}
+
+    def resolve(self, name: str, stack: frozenset) -> Any:
+        if name in self.parsed:
+            return self.parsed[name]
+        if name in self.raw:
+            if name in stack:
+                raise ValueError(f"cyclic sub-assembly reference: {name!r}")
+            spec = _spec_from_dict(self.raw[name], self, stack | {name})
+            self.parsed[name] = spec
+            return spec
+        if self.parent is not None:
+            return self.parent.resolve(name, stack)
+        raise ValueError(f"unknown sub-assembly ref: {name!r}")
+
+    def local(self, stack: frozenset) -> dict[str, Any]:
+        """All definitions declared at this level, parsed (for round-tripping)."""
+        return {name: self.resolve(name, stack) for name in self.raw}
+
+
+def _component_from_dict(c: dict, defs: "_Defs", stack: frozenset) -> Component:
+    ref = str(c.get("ref", "") or "")
+    if ref:
+        # A reference instances a *fresh copy* so edits to one placement don't
+        # bleed into its siblings (and so each can sit at its own coordinates).
+        spec = copy.deepcopy(defs.resolve(ref, stack))
+    else:
+        spec = _spec_from_dict(c.get("spec", c), defs, stack)
+    return Component(
+        spec=spec, ref=ref,
+        x=float(c.get("x", 0.0)), y=float(c.get("y", 0.0)),
+        rotation=float(c.get("rotation", 0.0)),
+        label=str(c.get("label", "")),
+    )
 
 
 @dataclass
-class Project:
-    """A collection of placed components — a multi-cabinet run / built-in.
+class ComponentGroup:
+    """A named group of placed components that assemble and move as one unit.
 
-    The whole pipeline (validate, cut list, estimate) accepts a Project and
-    aggregates across its components, so a kitchen yields one combined cut list
-    and one quote.
+    Base for :class:`Project` (top-level run) and :class:`Assembly` (a nestable,
+    reusable sub-assembly). The whole pipeline dispatches on this type and
+    aggregates across ``components``, recursing into each component's spec, so a
+    group of groups is handled with no special cases.
     """
-    name: str = "Project"
+    name: str = "Group"
     units: str = "mm"
     components: list[Component] = field(default_factory=list)
-    kind: str = "project"
+    # Named reusable sub-assemblies a component can place by ``ref``.
+    definitions: dict[str, Any] = field(default_factory=dict)
+    kind: str = "group"
 
     def to_dict(self) -> dict[str, Any]:
-        return {
-            "kind": "project",
-            "name": self.name,
-            "units": "mm",
-            "components": [
-                {"label": c.label, "x": c.x, "y": c.y, "rotation": c.rotation,
-                 "spec": c.spec.to_dict()}
-                for c in self.components
-            ],
-        }
+        d: dict[str, Any] = {"kind": self.kind, "name": self.name, "units": "mm"}
+        if self.definitions:
+            d["definitions"] = {n: s.to_dict() for n, s in self.definitions.items()}
+        comps: list[dict[str, Any]] = []
+        for c in self.components:
+            item: dict[str, Any] = {
+                "label": c.label, "x": c.x, "y": c.y, "rotation": c.rotation}
+            if c.ref:
+                item["ref"] = c.ref          # placements stay terse; spec lives
+            else:                            # once, in `definitions`
+                item["spec"] = c.spec.to_dict()
+            comps.append(item)
+        d["components"] = comps
+        return d
 
     def to_json(self, indent: int = 2) -> str:
         return json.dumps(self.to_dict(), indent=indent)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Project":
+    def from_dict(cls, data: dict[str, Any], *,
+                  parent_defs: "_Defs | None" = None,
+                  _stack: frozenset = frozenset()) -> "ComponentGroup":
         data = dict(data)
-        comps: list[Component] = []
-        for c in data.get("components", []):
-            if not isinstance(c, dict):
-                continue
-            spec_data = c.get("spec", c)
-            comps.append(Component(
-                spec=spec_from_dict(spec_data),
-                x=float(c.get("x", 0.0)), y=float(c.get("y", 0.0)),
-                rotation=float(c.get("rotation", 0.0)),
-                label=str(c.get("label", "")),
-            ))
-        return cls(name=str(data.get("name", "Project")),
-                   units="mm", components=comps)
+        defs = _Defs(data.get("definitions"), parent=parent_defs)
+        comps = [
+            _component_from_dict(c, defs, _stack)
+            for c in data.get("components", []) if isinstance(c, dict)
+        ]
+        return cls(
+            name=str(data.get("name", cls().name)),
+            units="mm", components=comps,
+            definitions=defs.local(_stack),
+        )
 
     @classmethod
-    def from_json(cls, text: str) -> "Project":
+    def from_json(cls, text: str) -> "ComponentGroup":
         return cls.from_dict(json.loads(text))
+
+
+@dataclass
+class Project(ComponentGroup):
+    """A collection of placed components — a multi-cabinet run / built-in.
+
+    The whole pipeline (validate, cut list, estimate) accepts a Project and
+    aggregates across its components, so a kitchen yields one combined cut list
+    and one quote. Components may be leaf cabinets/tables or nested
+    :class:`Assembly` sub-assemblies.
+    """
+    name: str = "Project"
+    kind: str = "project"
+
+
+@dataclass
+class Assembly(ComponentGroup):
+    """A named, reusable sub-assembly: a group of components placed and moved as
+    one unit, that nests inside a component of another group.
+
+    Use it both inline (a component whose ``spec`` is an Assembly) and as a
+    reusable definition (declared under a group's ``definitions`` and dropped in
+    by ``ref``). Its own components are positioned in the assembly's *local*
+    frame, anchored at the assembly origin; placing the assembly translates and
+    rotates that whole frame.
+    """
+    name: str = "Assembly"
+    kind: str = "assembly"
 
 
 def place_run(specs, *, start: tuple[float, float] = (0.0, 0.0),
@@ -449,14 +547,27 @@ def place_run(specs, *, start: tuple[float, float] = (0.0, 0.0),
     return out
 
 
-def spec_from_dict(data: dict[str, Any]):
-    """Pick the right furniture spec from a payload (project/cabinet/table)."""
+def _spec_from_dict(data: dict[str, Any], defs: "_Defs | None", stack: frozenset):
+    """Pick the right spec, threading the definition registry into groups."""
     kind = str(data.get("kind", "")).lower()
+    if kind == "assembly":
+        return Assembly.from_dict(data, parent_defs=defs, _stack=stack)
     if kind == "project" or "components" in data:
-        return Project.from_dict(data)
+        return Project.from_dict(data, parent_defs=defs, _stack=stack)
     if kind == "table" or "leg" in data or "top_thickness" in data:
         return TableSpec.from_dict(data)
     return CabinetSpec.from_dict(data)
+
+
+def spec_from_dict(data: dict[str, Any]):
+    """Pick the right furniture spec from a payload.
+
+    Routes to a cabinet, table, :class:`Project` run, or :class:`Assembly`
+    sub-assembly. Component ``ref``s are resolved against the group's
+    ``definitions`` (define-once, place-many); a cyclic or unknown reference
+    raises ``ValueError``.
+    """
+    return _spec_from_dict(data, None, frozenset())
 
 
 # ---------------------------------------------------------------------------
@@ -523,6 +634,40 @@ not mix — inches are converted to millimetres on load.
   "grain": {_opts(Grain)},
   "joinery": {_opts(Joinery)}
 }}
+
+== PROJECT / ASSEMBLY (multi-part) ==
+For anything with more than one piece — a kitchen run, a built-in, a wall of
+cabinets — emit a PROJECT: a list of placed components. Each component sits at
+an (x, y) origin in millimetres (front-left corner for a cabinet) and an optional
+"rotation" in degrees CCW about vertical (use 90 to turn a run around a corner).
+{{
+  "kind": "project",
+  "name": "Kitchen",
+  "units": "mm",
+  "definitions": {{                 // optional: named, reusable SUB-ASSEMBLIES
+    "drawer_bank": {{
+      "kind": "assembly",
+      "name": "Drawer Bank",
+      "components": [
+        {{"spec": {{ <a cabinet or table spec> }}, "x": 0, "y": 0}},
+        {{"spec": {{ ... }}, "x": 600, "y": 0}}
+      ]
+    }}
+  }},
+  "components": [
+    {{"spec": {{ <a cabinet/table/assembly spec> }}, "x": 0, "y": 0, "label": "B1"}},
+    {{"ref": "drawer_bank", "x": 1200, "y": 0, "label": "B2"}}  // place a copy of
+  ]                                                             // a definition
+}}
+An ASSEMBLY ("kind": "assembly") is the same shape as a project but is meant to
+nest: use it for a repeated group (a drawer bank, a wall-cabinet pair) so it
+moves as one unit. Place a sub-assembly either inline (a component whose "spec"
+is the assembly) or by reference — declare it once under "definitions" and drop
+it in many times with "ref": "<name>" (each ref is an independent copy, so give
+each its own x/y). Assemblies may nest, but a reference must not form a cycle.
+Lay pieces edge-to-edge by stepping x by the previous piece's width; do not let
+footprints overlap (the validator checks plan collisions across the whole run,
+including sub-assemblies).
 
 The validator checks shelf sag (deflection vs span/360) from shelf_species,
 shelf thickness, span and load — prefer thicker/stiffer shelves or shorter
