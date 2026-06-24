@@ -47,11 +47,21 @@ Seek-CAD) is sound and documented in `docs/ARCHITECTURE.md`.
 
 ## Gaps & issues (most material first)
 
-1. **`units` is decorative — a latent correctness bug.** The field exists on
-   both specs and in the schema hint, but nothing converts on it: every module
-   assumes mm. An agent emitting `"units": "in"` with inch values is silently
-   treated as mm. The only safeguard is an LLM prompt instruction. Make the
-   field load-bearing (normalize to mm in `from_dict`) or remove it.
+1. **`units` is decorative on *input* — a latent correctness bug.** The field
+   exists on both specs and in the schema hint, but nothing converts on it for
+   *input*: every module assumes mm. An agent emitting `"units": "in"` with inch
+   values is silently treated as mm. The only safeguard is an LLM prompt
+   instruction. Make the field load-bearing on input (normalize to mm in
+   `from_dict`) or remove it.
+
+   > **Update — imperial *output* now implemented.** Since most users are US
+   > shops working in fractional inches, an imperial **display layer**
+   > (`units.py`) was added: the engine stays millimetre-native, but the cut
+   > list, cost/critic reports, CSV downloads, and the web UI can render in
+   > fractional inches (to 1/16″) via a units toggle (`--imperial` on the CLI,
+   > a `units` field on `/api/export`, a dropdown in the SPA). This addresses
+   > the *output* half of the units concern; *input* hardening (converting an
+   > imperial-valued spec on load) is still open.
 
 2. **The agent can only ever produce a cabinet.** `designer.py` hard-codes
    `CabinetSpec.from_dict`, and `DSL_SCHEMA_HINT` describes cabinets only. The

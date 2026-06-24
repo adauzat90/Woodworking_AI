@@ -25,6 +25,7 @@ from . import exporters
 
 
 def _emit(spec, args) -> int:
+    unit = "imperial" if getattr(args, "imperial", False) else "metric"
     result = validate(spec)
     print(spec.to_json())
     print()
@@ -41,7 +42,7 @@ def _emit(spec, args) -> int:
     # Critic: verify the geometry the spec produces (analytical, no CAD needed).
     from .agents.critic import critique
     crit = critique(spec)
-    print("\n" + crit.report_text())
+    print("\n" + crit.report_text(unit))
     if not crit.ok:
         print("\nCritic found geometry errors:", file=sys.stderr)
         for e in crit.errors:
@@ -70,14 +71,14 @@ def _emit(spec, args) -> int:
 
     cutlist = generate_cutlist(spec)
     print("\nCut list:")
-    print(cutlist.to_csv())
+    print(cutlist.to_csv(unit))
     print("\nHardware:")
     print(cutlist.hardware_csv())
-    print("\n" + cutlist.summary())
+    print("\n" + cutlist.summary(unit))
 
     if args.estimate:
         from .estimator import estimate
-        print("\n" + estimate(spec, cutlist=cutlist).report_text())
+        print("\n" + estimate(spec, cutlist=cutlist).report_text(unit))
 
     if args.drill:
         from .drilling import drilling_schedule
@@ -86,7 +87,7 @@ def _emit(spec, args) -> int:
     if args.out:
         out = Path(args.out)
         out.mkdir(parents=True, exist_ok=True)
-        exporters.write_cutlist_csv(cutlist, out / "cutlist.csv")
+        exporters.write_cutlist_csv(cutlist, out / "cutlist.csv", unit)
         exporters.write_hardware_csv(cutlist, out / "hardware.csv")
         (out / "spec.json").write_text(spec.to_json() + "\n", encoding="utf-8")
         print(f"\nWrote spec.json, cutlist.csv, hardware.csv to {out}/")
@@ -135,6 +136,10 @@ def main(argv: list[str] | None = None) -> int:
                         help="estimate sheet count and cost")
     common.add_argument("--drill", action="store_true",
                         help="print the drilling schedule (32mm system, hinges)")
+    common.add_argument("--imperial", action="store_true",
+                        help="show cut list and reports in fractional inches "
+                             "(engine stays metric; the 32mm drilling schedule "
+                             "remains in mm)")
 
     p_design = sub.add_parser("design", parents=[common],
                               help="natural language -> design (uses Claude)")

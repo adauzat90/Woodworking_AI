@@ -52,10 +52,13 @@
   .downloads button { width:auto; margin:0; padding:4px 10px; font-size:12px;
     background:#3a352f; font-weight:500; }
   .downloads button.share { background:var(--accent); margin-left:auto; }
-  .tabs { display:flex; gap:2px; padding:8px 12px 0; }
+  .tabs { display:flex; gap:2px; padding:8px 12px 0; align-items:center; }
   .tabs button { width:auto; margin:0; padding:6px 12px; background:transparent;
     color:var(--muted); border-bottom:2px solid transparent; border-radius:0; font-weight:500; }
   .tabs button.active { color:var(--text); border-color:var(--accent); }
+  .units-toggle { display:flex; align-items:center; gap:6px; margin-left:auto;
+    font-size:11px; }
+  .units-toggle select { width:auto; margin:0; padding:3px 6px; font-size:11px; }
   .tabpane { flex:1; overflow:auto; padding:6px 16px 16px; }
   table { width:100%; border-collapse:collapse; font-size:12.5px; }
   th, td { text-align:left; padding:5px 8px; border-bottom:1px solid var(--line); }
@@ -177,6 +180,13 @@
         <button data-t="hardware">Hardware</button>
         <button data-t="cost">Cost</button>
         <button data-t="drilling">Drilling</button>
+        <label class="units-toggle" title="Display units for the cut list and reports (the engine is millimetre-native)">
+          <span class="muted">Units</span>
+          <select id="units">
+            <option value="imperial">Inches (fractional)</option>
+            <option value="metric">Millimetres</option>
+          </select>
+        </label>
       </div>
       <div class="tabpane" id="pane"></div>
     </div>
@@ -185,6 +195,28 @@
 <script>
 const $ = id => document.getElementById(id);
 let last = null, tab = "cutlist";
+
+// --- display units (engine is millimetre-native; this is display only) ------
+const MM_PER_IN = 25.4;
+function unit() { return $("units").value; }
+function unitLabel() { return unit() === "imperial" ? "in" : "mm"; }
+// Render a mm length as fractional inches (to 1/16") or mm, for the UI tables.
+function fmtLen(mm, mark = false) {
+  if (mm == null || !isFinite(mm)) return "";
+  if (unit() !== "imperial") return (+mm).toFixed(1) + (mark ? " mm" : "");
+  const sign = mm < 0 ? "-" : "";
+  let sixteenths = Math.round(Math.abs(mm) / MM_PER_IN * 16);
+  let whole = Math.floor(sixteenths / 16), frac = sixteenths % 16;
+  const suf = mark ? '"' : "";
+  if (frac === 0) return sign + whole + suf;
+  const g = (a, b) => b ? g(b, a % b) : a;
+  const d = g(frac, 16); frac /= d; const den = 16 / d;
+  return sign + (whole ? whole + "-" : "") + frac + "/" + den + suf;
+}
+function fmtArea(m2) {
+  if (unit() === "imperial") return (m2 / 0.09290304).toFixed(1) + " ft²";
+  return (+m2).toFixed(2) + " m²";
+}
 
 async function health() {
   try {
@@ -318,7 +350,8 @@ function render(d) {
 async function download(fmt) {
   if (!last) return;
   const r = await fetch("/api/export/" + fmt, {method:"POST",
-    headers:{"Content-Type":"application/json"}, body: JSON.stringify({spec: last.spec})});
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({spec: last.spec, units: unit()})});
   if (!r.ok) { alert((await r.json().catch(()=>({detail:r.statusText}))).detail); return; }
   const blob = await r.blob();
   const cd = r.headers.get("Content-Disposition") || "";
@@ -353,10 +386,16 @@ function loadFromHash() {
 function paint() {
   if (!last) return;
   const d = last; let h = "";
+  const u = unitLabel();
   if (tab === "cutlist") {
-    h = table(["Part","Qty","L","W","Thk","Material","Notes"],
-      d.cutlist.map(p => [p.name,p.qty,p.length,p.width,p.thickness,p.material,p.notes]));
-    h += `<p class="muted">${d.cutlist_summary||""}</p>`;
+    h = table([`Part`,`Qty`,`L (${u})`,`W (${u})`,`Thk (${u})`,`Material`,`Notes`],
+      d.cutlist.map(p => [p.name,p.qty,fmtLen(p.length),fmtLen(p.width),
+                          fmtLen(p.thickness),p.material,p.notes]));
+    const panels = d.cutlist.reduce((n,p)=>n+p.qty,0);
+    const hw = (d.hardware||[]).reduce((n,x)=>n+x.qty,0);
+    const area = d.cutlist.reduce((a,p)=>a+(p.length/1000)*(p.width/1000)*p.qty,0);
+    h += `<p class="muted">${(d.spec&&d.spec.name)||"Design"}: ${panels} panels `
+       + `(${d.cutlist.length} unique), ${hw} hardware items, ~${fmtArea(area)} sheet goods</p>`;
   } else if (tab === "hardware") {
     h = table(["Item","Qty","Notes"], d.hardware.map(x=>[x.name,x.qty,x.notes]));
   } else if (tab === "cost") {
@@ -368,8 +407,8 @@ function paint() {
       <div>Labour (${e.labour_hours}h)</div><div>${e.currency}${e.labour.toFixed(2)}</div>
       <div class="total">Total</div><div class="total">${e.currency}${e.total.toFixed(2)}</div></div>
       <h4>Sheets</h4>` +
-      table(["Material","Thk","Parts","Sheets","Used"],
-        e.groups.map(g=>[g.material,g.thickness,g.parts,g.sheets,Math.round(g.utilization*100)+"%"]));
+      table(["Material",`Thk (${u})`,"Parts","Sheets","Used"],
+        e.groups.map(g=>[g.material,fmtLen(g.thickness),g.parts,g.sheets,Math.round(g.utilization*100)+"%"]));
   } else if (tab === "drilling") {
     h = `<p class="muted">${d.drilling.total_holes} holes total</p>` +
       table(["Part","Operation","Holes","Note"],
@@ -388,6 +427,8 @@ $("tabs").querySelectorAll("button").forEach(b => b.onclick = () => {
   $("tabs").querySelectorAll("button").forEach(x=>x.classList.toggle("active", x===b));
   paint();
 });
+// Switching display units reformats the already-loaded bundle instantly.
+$("units").onchange = () => paint();
 
 // --- Library: Convex when CONVEX_URL is configured, else localStorage --------
 const CONVEX_URL = window.__CONVEX_URL__ || "";

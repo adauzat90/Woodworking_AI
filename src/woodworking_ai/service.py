@@ -64,8 +64,12 @@ def _glb(spec: CabinetSpec) -> str | None:
         return None
 
 
-def export_bytes(spec: CabinetSpec, fmt: str) -> tuple[bytes, str, str]:
+def export_bytes(spec: CabinetSpec, fmt: str,
+                 units: str = "metric") -> tuple[bytes, str, str]:
     """Return (data, media_type, filename) for a downloadable export.
+
+    ``units="imperial"`` renders the cut list in fractional inches. The 32mm
+    drilling schedule stays metric — it *is* a metric boring system.
 
     Raises ValueError for an unknown format and RuntimeError if a CAD format is
     requested without build123d installed.
@@ -78,7 +82,7 @@ def export_bytes(spec: CabinetSpec, fmt: str) -> tuple[bytes, str, str]:
             text = drilling_schedule(spec).to_csv()
         else:
             cl = generate_cutlist(spec)
-            text = cl.to_csv() if fmt == "cutlist" else cl.hardware_csv()
+            text = cl.to_csv(units) if fmt == "cutlist" else cl.hardware_csv()
         return text.encode("utf-8"), "text/csv", f"{base}_{fmt}.csv"
 
     if fmt == "dxf":

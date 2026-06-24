@@ -37,9 +37,10 @@ def export_glb(model: Any, path: str | Path) -> Path:
     return path
 
 
-def write_cutlist_csv(cutlist: CutList, path: str | Path) -> Path:
+def write_cutlist_csv(cutlist: CutList, path: str | Path,
+                      unit: str = "metric") -> Path:
     path = Path(path)
-    path.write_text(cutlist.to_csv() + "\n", encoding="utf-8")
+    path.write_text(cutlist.to_csv(unit) + "\n", encoding="utf-8")
     return path
 
 

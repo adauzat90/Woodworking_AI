@@ -95,6 +95,15 @@ woodai build out/spec.json --estimate --drill
 woodai build out/spec.json --out ./out --dxf       # writes cutlayout.dxf
 ```
 
+**Imperial output** (for US shops): add `--imperial` to render the cut list and
+reports in fractional inches (to 1/16″). The engine stays millimetre-native —
+only the display changes; the 32 mm drilling schedule remains in mm because it
+*is* a metric boring system. The web UI has the same toggle.
+
+```bash
+woodai build out/spec.json --estimate --imperial
+```
+
 **Everything at once:**
 
 ```bash

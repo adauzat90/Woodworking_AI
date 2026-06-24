@@ -71,18 +71,22 @@ class CritiqueResult:
             return "Geometry verified: overall dimensions match and no parts collide."
         return "\n".join(str(i) for i in self.issues)
 
-    def report_text(self) -> str:
+    def report_text(self, unit: str = "metric") -> str:
+        from ..units import format_length as _fl, format_area as _fa
         r = self.report
+
+        def L(key: str) -> str:
+            return _fl(r.get(key, 0), unit)
+
         lines = [
             "Critic report",
-            f"  overall (mm):    {r.get('width', 0):.0f} W x "
-            f"{r.get('height', 0):.0f} H x {r.get('depth', 0):.0f} D (carcass)",
-            f"  with fronts:     {r.get('depth_with_fronts', 0):.0f} mm deep",
-            f"  clear opening:   {r.get('opening_width', 0):.0f} x "
-            f"{r.get('opening_height', 0):.0f} mm",
+            f"  overall:         {L('width')} W x {L('height')} H x "
+            f"{L('depth')} D (carcass)",
+            f"  with fronts:     {L('depth_with_fronts')} deep",
+            f"  clear opening:   {L('opening_width')} x {L('opening_height')}",
             f"  panels:          {r.get('panel_count', 0)}",
             f"  front coverage:  {r.get('front_coverage_pct', 0):.0f}% of the face",
-            f"  sheet goods:     ~{r.get('sheet_area_m2', 0):.2f} m²",
+            f"  sheet goods:     ~{_fa(r.get('sheet_area_m2', 0), unit)}",
             f"  interferences:   {r.get('interference_count', 0)}",
         ]
         if self.issues:

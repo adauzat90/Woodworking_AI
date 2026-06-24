@@ -82,22 +82,25 @@ class Estimate:
     def total_sheets(self) -> int:
         return sum(g.sheets for g in self.groups)
 
-    def report_text(self) -> str:
+    def report_text(self, unit: str = "metric") -> str:
+        from .units import format_length, format_run_mm
         c = self.currency
         lines = [f"Cost estimate — {self.spec_name}", "  sheet goods:"]
         for g in self.groups:
             note = f"  ({g.oversize} oversize!)" if g.oversize else ""
+            thk = format_length(g.thickness, unit)
             lines.append(
-                f"    {g.material:<12} {g.thickness:>4.0f}mm  "
+                f"    {g.material:<12} {thk:>8}  "
                 f"{g.part_count:>2} parts -> {g.sheets} sheet(s), "
                 f"{g.utilization*100:4.0f}% used{note}"
             )
+        banding = format_run_mm(self.edge_banding_m * 1000.0, unit)
         lines += [
             f"  material:        {c}{self.material_cost:8.2f} "
             f"({self.total_sheets} sheets)",
             f"  hardware:        {c}{self.hardware_cost:8.2f}",
             f"  edge banding:    {c}{self.edge_banding_cost:8.2f} "
-            f"({self.edge_banding_m:.1f} m)",
+            f"({banding})",
             f"  labour:          {c}{self.labour_cost:8.2f} "
             f"({self.labour_hours:.1f} h @ {c}{self._rate:.0f}/h)",
             f"  {'-'*30}",

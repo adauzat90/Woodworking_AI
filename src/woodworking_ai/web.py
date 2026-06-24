@@ -111,8 +111,9 @@ def api_export(fmt: str, payload: dict[str, Any]) -> Response:
     v = validate(spec)
     if not v.ok:
         raise HTTPException(status_code=422, detail=v.as_feedback())
+    units = payload.get("units", "metric")
     try:
-        data, mime, filename = export_bytes(spec, fmt)
+        data, mime, filename = export_bytes(spec, fmt, units=units)
     except ValueError as exc:
         raise HTTPException(status_code=415, detail=str(exc))
     except RuntimeError as exc:  # e.g. build123d missing for STEP/STL/GLB
