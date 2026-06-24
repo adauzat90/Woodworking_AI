@@ -258,7 +258,8 @@ true (ASTM F2057 tip-over). Toe kicks should be >=75mm high and >=50mm deep.
 Drawer corners should be "dovetail", "box", or "rabbet" (a "butt" corner is
 weak); side-mount slides need ~12.7mm clearance per side. Sheet thicknesses
 should be real stock (6/9/12/15/18/21/25mm) and panels should fit a
-2440×1220mm sheet.
+2440×1220mm sheet. Doors take 35mm concealed hinges, so door stock should be
+≥16mm thick and each door wide enough (>50mm) to host the cup.
 
 Rules of thumb by cabinet_type:
 - base: floor cabinet, ~720mm box + ~100mm toe kick, 560-600mm deep. Has a toe

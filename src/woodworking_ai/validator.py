@@ -22,8 +22,18 @@ KCMA_TOE_MIN_HEIGHT = 75.0   # ~3 in
 KCMA_TOE_MIN_SETBACK = 50.0  # ~2 in deep
 
 FRAME_WIDTH = 38.0           # face-frame stile width (matches cutlist.py)
+MULLION_WIDTH = 60.0         # frameless center post between a pair of doors
 SIDE_MOUNT_CLEARANCE = 12.7  # ½in nominal per-side gap for side-mount slides
 MIN_DRAWER_BOX_WIDTH = 150.0 # below this a box is barely usable
+
+# 35mm concealed (Euro) hinge cup geometry (matches drilling.py).
+HINGE_CUP_DIA = 35.0
+HINGE_CUP_DEPTH = 12.5
+HINGE_CUP_INSET = 22.5       # cup centre in from the door's hinge edge
+# Cup outer edge reaches INSET + DIA/2 from the hinge edge; the door must be at
+# least this wide to host the bore, plus a little material for strength.
+HINGE_MIN_DOOR_WIDTH = HINGE_CUP_INSET + HINGE_CUP_DIA / 2  # 40mm hard minimum
+HINGE_MIN_DOOR_BACKING = 3.0  # material left behind the cup
 
 # Drawer-corner joints that properly resist the pull-apart load of opening.
 STRONG_DRAWER_JOINTS = {"dovetail", "box", "rabbet", "locking_rabbet"}
@@ -370,6 +380,42 @@ def validate(spec) -> ValidationResult:
                 err("drawers",
                     f"drawer slide length {sl:.0f}mm exceeds the {interior_depth:.0f}mm "
                     "interior depth; it won't fit")
+
+    # --- concealed hinge bore vs. door (HW-005) --------------------------
+    has_door = spec.doors > 0 or spec.cabinet_type == CabinetType.CORNER_DIAGONAL
+    if has_door:
+        # A 35mm cup bores 12.5mm deep; the door must host it with backing.
+        if m.door <= HINGE_CUP_DEPTH:
+            err("material.door",
+                f"a {m.door:.0f}mm door is thinner than the {HINGE_CUP_DEPTH:.1f}mm "
+                "hinge cup; a 35mm concealed hinge cannot be bored — thicken the "
+                "door or change hinge")
+        elif m.door < HINGE_CUP_DEPTH + HINGE_MIN_DOOR_BACKING:
+            warn("material.door",
+                 f"only {m.door - HINGE_CUP_DEPTH:.1f}mm of material behind a "
+                 f"{HINGE_CUP_DEPTH:.1f}mm hinge cup; use ≥16mm door stock for a "
+                 "35mm concealed hinge")
+
+    if spec.doors > 0 and not spec.is_corner:
+        is_ff = spec.construction == Construction.FACE_FRAME
+        opening_w = (spec.width - 2 * FRAME_WIDTH) if is_ff else spec.width
+        mullion_w = (FRAME_WIDTH if is_ff else MULLION_WIDTH) \
+            if (spec.center_mullion and spec.doors == 2) else 0.0
+        if spec.doors == 1:
+            door_w = opening_w - 2 * spec.reveal
+        elif mullion_w:
+            door_w = (opening_w - mullion_w) / 2 - 2 * spec.reveal
+        else:  # two doors share the opening with a center reveal
+            door_w = (opening_w - 3 * spec.reveal) / 2
+        if door_w < HINGE_MIN_DOOR_WIDTH:
+            err("doors",
+                f"each door is only {door_w:.0f}mm wide — too narrow for a 35mm "
+                f"hinge cup (needs ≥{HINGE_MIN_DOOR_WIDTH:.0f}mm); use one door, "
+                "drop the center mullion, or fit a compact hinge")
+        elif door_w < HINGE_MIN_DOOR_WIDTH + 10.0:
+            warn("doors",
+                 f"each door is {door_w:.0f}mm wide — tight for a 35mm hinge cup; "
+                 "consider a wider door or a compact hinge")
 
     # --- buildable from real stock (MAT-001/002) -------------------------
     box_h = spec.height - toe_h

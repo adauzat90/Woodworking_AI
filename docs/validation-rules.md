@@ -175,6 +175,7 @@ backed by the calculators in `src/woodworking_ai/engineering.py`):
 | STRUCT-002 | table `joinery` | Warns when a pocket/butt/screw leg-to-apron joint resists racking poorly. |
 | HW-001 | drawer `slide_clearance` / `slide_type` | Warns when side-mount clearance isn't ~12.7 mm; errors when the opening leaves no usable box. |
 | HW-002 | drawer `slide_length` | Errors when the slide is longer than the cabinet is deep. |
+| HW-005 | door thickness / width | Errors when a door can't host a 35mm concealed hinge cup (too thin for the 12.5mm bore, or too narrow for the 40mm footprint); warns when marginal. |
 | MAT-001 | `material.*` thickness | Warns on thicknesses that aren't stocked sheet goods (`stock.py`). |
 | MAT-002 | carcass panel size | Warns when a panel won't yield from a standard 2440×1220 sheet. |
 | MAT-003 | table `top_thickness` | Warns when a solid top is thicker than 12/4 stock surfaces to. |
@@ -188,9 +189,9 @@ trigger the designer's repair loop) and are surfaced separately via
 `ValidationResult.infos` and the API's `advisories` field.
 
 Backed by the `stock.py` and `proportion.py` helpers. Still catalog-only:
-STRUCT-012 (dovetail orientation — needs joint geometry), HW-005 (hinge bore
-vs. stile), and DIM-009 (32 mm grid). These need richer geometric/joint
-metadata than the spec carries.
+STRUCT-012 (dovetail orientation — needs per-joint geometry) and DIM-009
+(32 mm hole grid — needs the bored hole pattern). These need richer
+geometric metadata than the spec carries.
 
 ## Implementation notes for the compiler
 
