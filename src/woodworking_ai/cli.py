@@ -64,6 +64,10 @@ def _emit_project(project: Project, args) -> int:
         from .estimator import estimate
         print("\n" + estimate(project).report_text(unit))
 
+    if args.drill:
+        from .drilling import drilling_schedule
+        print("\n" + drilling_schedule(project).report_text())
+
     if args.out:
         out = Path(args.out)
         out.mkdir(parents=True, exist_ok=True)
@@ -71,6 +75,11 @@ def _emit_project(project: Project, args) -> int:
         exporters.write_hardware_csv(cutlist, out / "hardware.csv")
         (out / "project.json").write_text(project.to_json() + "\n", encoding="utf-8")
         print(f"\nWrote project.json, cutlist.csv, hardware.csv to {out}/")
+        if args.drill:
+            from .drilling import drilling_schedule
+            (out / "drilling.csv").write_text(
+                drilling_schedule(project).to_csv() + "\n", encoding="utf-8")
+            print("Wrote drilling.csv")
         if args.dxf:
             exporters.export_cutlayout_dxf(project, out / "cutlayout.dxf",
                                            cutlist=cutlist)

@@ -186,9 +186,9 @@ def _project_cutlist(project: Project) -> CutList:
         tag = component_tag(comp, i)
         sub = generate_cutlist(comp.spec)
         for p in sub.parts:
-            cl.parts.append(replace(p, name=f"{tag}: {p.name}"))
+            cl.parts.append(replace(p, name=f"{tag} · {p.name}"))
         for h in sub.hardware:
-            cl.hardware.append(replace(h, name=f"{tag}: {h.name}"))
+            cl.hardware.append(replace(h, name=f"{tag} · {h.name}"))
     return cl
 
 

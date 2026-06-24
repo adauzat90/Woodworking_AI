@@ -368,10 +368,6 @@ class Component:
     rotation: float = 0.0
     label: str = ""
 
-    @property
-    def display_label(self) -> str:
-        return self.label or getattr(self.spec, "name", "Component")
-
 
 @dataclass
 class Project:

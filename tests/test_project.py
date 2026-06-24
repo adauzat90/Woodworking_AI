@@ -32,8 +32,8 @@ def test_project_roundtrips():
 def test_combined_cutlist_tags_parts_by_component():
     cl = generate_cutlist(_kitchen())
     names = [p.name for p in cl.parts]
-    assert any(n.startswith("B1: ") for n in names)
-    assert any(n.startswith("ISL: ") for n in names)
+    assert any(n.startswith("B1 · ") for n in names)
+    assert any(n.startswith("ISL · ") for n in names)
     # The combined list is the sum of the components' parts.
     total = sum(len(generate_cutlist(c.spec).parts) for c in _kitchen().components)
     assert len(cl.parts) == total
@@ -197,3 +197,42 @@ def test_build_project_builds_or_skips_gracefully():
     assert dims["width"] == pytest.approx(1500.0, abs=1.0)
     # build_model dispatches a Project to build_project.
     assert measure(build_model(p))["width"] == pytest.approx(1500.0, abs=1.0)
+
+
+def test_project_drilling_aggregates_per_component():
+    from woodworking_ai.drilling import drilling_schedule
+    p = Project(components=[
+        Component(spec=CabinetSpec(width=600, shelves=2, doors=2), x=0, label="B1"),
+        Component(spec=CabinetSpec(width=600, shelves=2, doors=2), x=600, label="B2")])
+    sched = drilling_schedule(p)
+    one = drilling_schedule(CabinetSpec(width=600, shelves=2, doors=2)).total_holes
+    assert one > 0
+    assert sched.total_holes == 2 * one          # not silently empty
+    assert any(op.part.startswith("B1 · ") for op in sched.ops)
+
+
+def test_full_pipeline_composes_corner_run_table_imperial():
+    """Everything together: an L-run with a corner cabinet + a table island,
+    through validate / cut list (imperial) / estimate / critic / drilling."""
+    from woodworking_ai.agents.critic import critique
+    from woodworking_ai.drilling import drilling_schedule
+    corner = CabinetSpec.from_dict({"cabinet_type": "corner_diagonal",
+                                    "width": 900, "depth": 600, "corner_cut": 450,
+                                    "name": "Corner", "shelves": 1})
+    base = CabinetSpec.from_dict({"cabinet_type": "base", "width": 600,
+                                  "doors": 2, "shelves": 1, "name": "Base"})
+    runA = place_run([corner, base], start=(0, 0), angle=0)
+    island = Component(spec=TableSpec(name="Island", width=1200, depth=800),
+                       x=0, y=2000, label="ISL")
+    proj = Project(name="Kitchen", components=runA + [island])
+
+    assert validate(proj).ok
+    cl = generate_cutlist(proj)
+    names = [p.name for p in cl.parts]
+    assert any(n.startswith("Corner · ") for n in names)
+    assert any(n.startswith("ISL · ") for n in names)
+    assert cl.to_csv("imperial").splitlines()[0].endswith("material,grain,notes")
+    assert "length_in" in cl.to_csv("imperial").splitlines()[0]
+    assert estimate(proj).total > 0
+    assert critique(proj).ok
+    assert drilling_schedule(proj).total_holes > 0
