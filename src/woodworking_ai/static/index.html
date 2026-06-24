@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Woodworking AI — Cabinet Designer</title>
+<!--CONVEX_URL-->
+<script type="module"
+  src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+<style>
+  :root { --bg:#1c1a17; --panel:#262320; --line:#3a352f; --wood:#caa472;
+          --accent:#9c6b43; --text:#ece6dd; --muted:#a59c8e; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.5 system-ui, sans-serif; background:var(--bg);
+         color:var(--text); }
+  header { padding:14px 20px; border-bottom:1px solid var(--line);
+           display:flex; align-items:baseline; gap:12px; }
+  header h1 { font-size:18px; margin:0; }
+  header span { color:var(--muted); font-size:13px; }
+  .wrap { display:grid; grid-template-columns:340px 1fr; gap:0; height:calc(100vh - 53px); }
+  .controls { padding:18px; overflow-y:auto; border-right:1px solid var(--line); }
+  .preview { display:flex; flex-direction:column; min-width:0; }
+  .stage { flex:1; background:#141210; display:flex; align-items:center;
+           justify-content:center; min-height:240px; position:relative; }
+  model-viewer, .stage img { width:100%; height:100%; }
+  .stage .ph { color:var(--muted); }
+  .results { height:42%; border-top:1px solid var(--line); display:flex;
+             flex-direction:column; }
+  fieldset { border:1px solid var(--line); border-radius:8px; margin:0 0 14px;
+             padding:12px; }
+  legend { padding:0 6px; color:var(--muted); font-size:12px; text-transform:uppercase;
+           letter-spacing:.05em; }
+  label { display:block; margin:8px 0 3px; font-size:12px; color:var(--muted); }
+  input, select, textarea { width:100%; background:var(--bg); color:var(--text);
+    border:1px solid var(--line); border-radius:6px; padding:7px 9px; font:inherit; }
+  textarea { resize:vertical; min-height:60px; }
+  .row { display:flex; gap:8px; } .row > div { flex:1; }
+  .check { display:flex; align-items:center; gap:8px; margin-top:10px; }
+  .check input { width:auto; }
+  button { width:100%; margin-top:10px; padding:10px; border:0; border-radius:7px;
+    background:var(--accent); color:#fff; font-weight:600; cursor:pointer; }
+  button.secondary { background:#3a352f; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  .or { text-align:center; color:var(--muted); margin:14px 0; font-size:12px; }
+  .status { padding:10px 16px; border-bottom:1px solid var(--line); font-size:13px;
+            display:flex; gap:16px; flex-wrap:wrap; align-items:center; }
+  .pill { padding:2px 9px; border-radius:99px; font-size:12px; }
+  .ok { background:#244a2c; color:#b6e7c0; } .bad { background:#4a2424; color:#e7b6b6; }
+  .warn { background:#4a4124; color:#e7dab6; }
+  .downloads { display:flex; gap:6px; align-items:center; flex-wrap:wrap;
+               padding:8px 16px; border-bottom:1px solid var(--line); }
+  .downloads button { width:auto; margin:0; padding:4px 10px; font-size:12px;
+    background:#3a352f; font-weight:500; }
+  .downloads button.share { background:var(--accent); margin-left:auto; }
+  .tabs { display:flex; gap:2px; padding:8px 12px 0; }
+  .tabs button { width:auto; margin:0; padding:6px 12px; background:transparent;
+    color:var(--muted); border-bottom:2px solid transparent; border-radius:0; font-weight:500; }
+  .tabs button.active { color:var(--text); border-color:var(--accent); }
+  .tabpane { flex:1; overflow:auto; padding:6px 16px 16px; }
+  table { width:100%; border-collapse:collapse; font-size:12.5px; }
+  th, td { text-align:left; padding:5px 8px; border-bottom:1px solid var(--line); }
+  th { color:var(--muted); font-weight:600; position:sticky; top:0; background:var(--panel); }
+  .cost-grid { display:grid; grid-template-columns:auto auto; gap:4px 24px; max-width:340px; }
+  .cost-grid .total { font-weight:700; border-top:1px solid var(--line); padding-top:6px; }
+  .muted { color:var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>🪵 Woodworking AI</h1>
+  <span>AI cabinet &amp; furniture designer — parametric language → buildable output</span>
+</header>
+<div class="wrap">
+  <div class="controls">
+    <fieldset>
+      <legend>Describe it</legend>
+      <textarea id="prompt" placeholder="e.g. 900mm sink base, two shaker doors, soft-close, one shelf"></textarea>
+      <button id="designBtn" class="secondary">✨ Design with AI</button>
+      <div id="llmNote" class="muted" style="font-size:11px;margin-top:6px"></div>
+    </fieldset>
+    <div class="or">— or build from parameters —</div>
+    <label>Furniture</label>
+    <select id="furniture">
+      <option value="cabinet">Cabinet</option>
+      <option value="table">Table</option>
+    </select>
+    <div id="cabinetFields">
+    <fieldset>
+      <legend>Cabinet</legend>
+      <label>Name</label><input id="name" value="My Cabinet" />
+      <div class="row">
+        <div><label>Type</label>
+          <select id="cabinet_type">
+            <option value="base">Base</option>
+            <option value="wall">Wall</option>
+            <option value="tall">Tall / pantry</option>
+            <option value="corner_blind">Corner — blind</option>
+            <option value="corner_diagonal">Corner — diagonal</option>
+          </select></div>
+        <div><label>Construction</label>
+          <select id="construction">
+            <option value="frameless">Frameless</option>
+            <option value="face_frame">Face frame</option>
+          </select></div>
+      </div>
+      <div class="row">
+        <div><label>Width</label><input id="width" type="number" value="600" /></div>
+        <div><label>Height</label><input id="height" type="number" value="720" /></div>
+        <div><label>Depth</label><input id="depth" type="number" value="560" /></div>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Fronts</legend>
+      <div class="row">
+        <div><label>Doors</label>
+          <select id="doors"><option>0</option><option>1</option><option selected>2</option></select></div>
+        <div><label>Drawers</label><input id="drawers" type="number" value="0" min="0" /></div>
+        <div><label>Shelves</label><input id="shelves" type="number" value="1" min="0" /></div>
+      </div>
+      <div class="row">
+        <div><label>Reveal (mm)</label><input id="reveal" type="number" value="3" /></div>
+        <div><label>Toe kick (mm, 0=none)</label><input id="toe" type="number" value="100" /></div>
+      </div>
+      <div class="check"><input id="mullion" type="checkbox" /><label style="margin:0">Center mullion</label></div>
+      <div id="blindWrap" style="display:none"><label>Blind width (mm)</label><input id="blind_width" type="number" value="350" /></div>
+      <div id="diagWrap" style="display:none"><label>Corner cut (mm)</label><input id="corner_cut" type="number" value="450" /></div>
+    </fieldset>
+    </div><!-- /cabinetFields -->
+    <div id="tableFields" style="display:none">
+    <fieldset>
+      <legend>Table</legend>
+      <label>Name</label><input id="t_name" value="My Table" />
+      <div class="row">
+        <div><label>Length</label><input id="t_width" type="number" value="1400" /></div>
+        <div><label>Depth</label><input id="t_depth" type="number" value="800" /></div>
+        <div><label>Height</label><input id="t_height" type="number" value="740" /></div>
+      </div>
+      <div class="row">
+        <div><label>Top thickness</label><input id="t_top" type="number" value="25" /></div>
+        <div><label>Leg (sq)</label><input id="t_leg" type="number" value="60" /></div>
+        <div><label>Leg inset</label><input id="t_inset" type="number" value="40" /></div>
+      </div>
+      <div class="row">
+        <div><label>Apron height</label><input id="t_apronh" type="number" value="90" /></div>
+        <div><label>Apron thickness</label><input id="t_apront" type="number" value="20" /></div>
+      </div>
+    </fieldset>
+    </div><!-- /tableFields -->
+    <button id="buildBtn">🔨 Build design</button>
+    <div class="check"><input id="auto" type="checkbox" /><label style="margin:0">Live update as I change values</label></div>
+    <fieldset style="margin-top:14px">
+      <legend>Library</legend>
+      <button id="saveBtn" class="secondary">💾 Save current design</button>
+      <label>Saved designs</label>
+      <select id="savedList"><option value="">— none —</option></select>
+      <div class="row" style="margin-top:8px">
+        <div><button id="loadBtn" class="secondary">Load</button></div>
+        <div><button id="delBtn" class="secondary">Delete</button></div>
+      </div>
+      <div id="storeNote" class="muted" style="font-size:11px;margin-top:6px"></div>
+    </fieldset>
+  </div>
+
+  <div class="preview">
+    <div class="stage" id="stage"><div class="ph">Build a cabinet to see it here</div></div>
+    <div class="results">
+      <div class="status" id="status"><span class="muted">No design yet.</span></div>
+      <div class="downloads" id="downloads" style="display:none">
+        <span class="muted" style="font-size:12px">Download:</span>
+        <button data-f="step">STEP</button><button data-f="stl">STL</button>
+        <button data-f="glb">GLB</button><button data-f="dxf">DXF</button>
+        <button data-f="cutlist">Cut list</button><button data-f="drilling">Drilling</button>
+        <button id="shareBtn" class="share">🔗 Share</button>
+      </div>
+      <div class="tabs" id="tabs">
+        <button data-t="cutlist" class="active">Cut list</button>
+        <button data-t="hardware">Hardware</button>
+        <button data-t="cost">Cost</button>
+        <button data-t="drilling">Drilling</button>
+      </div>
+      <div class="tabpane" id="pane"></div>
+    </div>
+  </div>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+let last = null, tab = "cutlist";
+
+async function health() {
+  try {
+    const h = await (await fetch("/api/health")).json();
+    const c = h.capabilities;
+    $("designBtn").disabled = !c.llm;
+    $("llmNote").textContent = c.llm ? "" :
+      "Set ANTHROPIC_API_KEY on the server to enable AI design.";
+    if (!c.glb) $("llmNote").textContent += " (3D model needs build123d; showing render image.)";
+  } catch (e) {}
+}
+function toggleCorner() {
+  const t = $("cabinet_type").value;
+  $("blindWrap").style.display = t === "corner_blind" ? "block" : "none";
+  $("diagWrap").style.display  = t === "corner_diagonal" ? "block" : "none";
+}
+$("cabinet_type").addEventListener("change", toggleCorner);
+
+function toggleFurniture() {
+  const t = $("furniture").value === "table";
+  $("tableFields").style.display = t ? "block" : "none";
+  $("cabinetFields").style.display = t ? "none" : "block";
+}
+$("furniture").addEventListener("change", toggleFurniture);
+
+function tableSpecFromForm() {
+  return {
+    kind: "table", name: $("t_name").value || "Table",
+    width: +$("t_width").value, depth: +$("t_depth").value, height: +$("t_height").value,
+    top_thickness: +$("t_top").value, leg: +$("t_leg").value,
+    leg_inset: +$("t_inset").value, apron_height: +$("t_apronh").value,
+    apron_thickness: +$("t_apront").value,
+  };
+}
+
+function specFromForm() {
+  if ($("furniture").value === "table") return tableSpecFromForm();
+  const toe = +$("toe").value;
+  const nd = Math.max(0, +$("drawers").value | 0);
+  return {
+    cabinet_type: $("cabinet_type").value,
+    construction: $("construction").value,
+    name: $("name").value || "Cabinet",
+    width: +$("width").value, height: +$("height").value, depth: +$("depth").value,
+    doors: +$("doors").value, shelves: Math.max(0, +$("shelves").value | 0),
+    drawers: Array.from({length: nd}, () => ({front_height: 140})),
+    reveal: +$("reveal").value,
+    center_mullion: $("mullion").checked,
+    blind_width: +($("blind_width").value || 0),
+    corner_cut: +($("corner_cut").value || 0),
+    toe_kick: toe > 0 ? {height: toe, setback: 50} : null,
+  };
+}
+
+function setBusy(b) {
+  $("buildBtn").disabled = b; $("designBtn").disabled = b;
+  if (b) $("stage").innerHTML = '<div class="ph">Building…</div>';
+}
+async function post(url, body) {
+  const r = await fetch(url, {method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify(body)});
+  if (!r.ok) throw new Error((await r.json().catch(()=>({detail:r.statusText}))).detail);
+  return r.json();
+}
+$("buildBtn").onclick = async () => {
+  setBusy(true);
+  try { render(await post("/api/build", {spec: specFromForm()})); }
+  catch (e) { showError(e.message); } finally { setBusy(false); health(); }
+};
+$("designBtn").onclick = async () => {
+  const prompt = $("prompt").value.trim();
+  if (!prompt) return;
+  setBusy(true);
+  try {
+    const d = await post("/api/design", {prompt});
+    syncForm(d.spec); render(d);
+  } catch (e) { showError(e.message); } finally { setBusy(false); health(); }
+};
+
+function syncForm(s) {
+  if (s.kind === "table") {
+    $("furniture").value = "table"; toggleFurniture();
+    const map = {t_name:"name",t_width:"width",t_depth:"depth",t_height:"height",
+      t_top:"top_thickness",t_leg:"leg",t_inset:"leg_inset",t_apronh:"apron_height",
+      t_apront:"apron_thickness"};
+    for (const [el,k] of Object.entries(map)) if (s[k] !== undefined) $(el).value = s[k];
+    return;
+  }
+  $("furniture").value = "cabinet"; toggleFurniture();
+  for (const k of ["name","cabinet_type","construction","width","height","depth",
+                   "doors","shelves","reveal","blind_width","corner_cut"])
+    if (s[k] !== undefined && $(k)) $(k).value = s[k];
+  $("drawers").value = (s.drawers || []).length;
+  $("mullion").checked = !!s.center_mullion;
+  $("toe").value = s.toe_kick ? s.toe_kick.height : 0;
+  toggleCorner();
+}
+function showError(msg) {
+  $("stage").innerHTML = '<div class="ph">⚠ ' + msg + '</div>';
+  $("status").innerHTML = '<span class="pill bad">error</span><span>'+msg+'</span>';
+}
+
+function render(d) {
+  last = d;
+  if (d.errors && d.errors.length) {
+    showError(d.errors.map(e => e.field+": "+e.message).join("; ")); return;
+  }
+  // 3D / image stage
+  if (d.glb) {
+    $("stage").innerHTML =
+      `<model-viewer camera-controls auto-rotate shadow-intensity="1"
+        exposure="1.1" src="${d.glb}"></model-viewer>`;
+  } else if (d.render_png) {
+    $("stage").innerHTML = `<img src="${d.render_png}" style="object-fit:contain" />`;
+  } else $("stage").innerHTML = '<div class="ph">No preview available</div>';
+
+  // status
+  const e = d.estimate, cr = d.critique;
+  const bits = [];
+  bits.push(`<span class="pill ${d.valid?'ok':'bad'}">${d.valid?'valid':'invalid'}</span>`);
+  if (cr) bits.push(`<span class="pill ${cr.ok?'ok':'warn'}">geometry ${cr.ok?'verified':'check'}</span>`);
+  if (e) bits.push(`<strong>${e.currency}${e.total.toFixed(2)}</strong> · ${e.total_sheets} sheets · ${e.labour_hours}h`);
+  if (d.warnings && d.warnings.length)
+    bits.push(`<span class="pill warn">${d.warnings.length} warning(s)</span>`);
+  if (d.attempts) bits.push(`<span class="muted">AI: ${d.attempts} attempt(s)</span>`);
+  $("status").innerHTML = bits.join("");
+  $("downloads").style.display = "flex";
+  paint();
+}
+
+async function download(fmt) {
+  if (!last) return;
+  const r = await fetch("/api/export/" + fmt, {method:"POST",
+    headers:{"Content-Type":"application/json"}, body: JSON.stringify({spec: last.spec})});
+  if (!r.ok) { alert((await r.json().catch(()=>({detail:r.statusText}))).detail); return; }
+  const blob = await r.blob();
+  const cd = r.headers.get("Content-Disposition") || "";
+  const m = cd.match(/filename="(.+?)"/);
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = m ? m[1] : ("cabinet." + fmt);
+  a.click(); URL.revokeObjectURL(a.href);
+}
+$("downloads").querySelectorAll("button[data-f]").forEach(b =>
+  b.onclick = () => download(b.dataset.f));
+
+$("shareBtn").onclick = async () => {
+  if (!last) return;
+  const enc = btoa(unescape(encodeURIComponent(JSON.stringify(last.spec))));
+  const url = location.origin + location.pathname + "#spec=" + enc;
+  try { await navigator.clipboard.writeText(url); $("shareBtn").textContent = "✓ Copied"; }
+  catch { prompt("Share link:", url); }
+  setTimeout(() => $("shareBtn").textContent = "🔗 Share", 1500);
+  history.replaceState(null, "", "#spec=" + enc);
+};
+
+function loadFromHash() {
+  const m = location.hash.match(/spec=([^&]+)/);
+  if (!m) return;
+  try {
+    const spec = JSON.parse(decodeURIComponent(escape(atob(m[1]))));
+    syncForm(spec);
+    post("/api/build", {spec}).then(render).catch(e => showError(e.message));
+  } catch (e) {}
+}
+
+function paint() {
+  if (!last) return;
+  const d = last; let h = "";
+  if (tab === "cutlist") {
+    h = table(["Part","Qty","L","W","Thk","Material","Notes"],
+      d.cutlist.map(p => [p.name,p.qty,p.length,p.width,p.thickness,p.material,p.notes]));
+    h += `<p class="muted">${d.cutlist_summary||""}</p>`;
+  } else if (tab === "hardware") {
+    h = table(["Item","Qty","Notes"], d.hardware.map(x=>[x.name,x.qty,x.notes]));
+  } else if (tab === "cost") {
+    const e = d.estimate;
+    h = `<div class="cost-grid">
+      <div>Material (${e.total_sheets} sheets)</div><div>${e.currency}${e.material.toFixed(2)}</div>
+      <div>Hardware</div><div>${e.currency}${e.hardware.toFixed(2)}</div>
+      <div>Edge banding</div><div>${e.currency}${e.edge_banding.toFixed(2)}</div>
+      <div>Labour (${e.labour_hours}h)</div><div>${e.currency}${e.labour.toFixed(2)}</div>
+      <div class="total">Total</div><div class="total">${e.currency}${e.total.toFixed(2)}</div></div>
+      <h4>Sheets</h4>` +
+      table(["Material","Thk","Parts","Sheets","Used"],
+        e.groups.map(g=>[g.material,g.thickness,g.parts,g.sheets,Math.round(g.utilization*100)+"%"]));
+  } else if (tab === "drilling") {
+    h = `<p class="muted">${d.drilling.total_holes} holes total</p>` +
+      table(["Part","Operation","Holes","Note"],
+        d.drilling.ops.map(o=>[o.part,o.operation,o.holes,o.note]));
+  }
+  $("pane").innerHTML = h;
+}
+function table(cols, rows) {
+  return "<table><thead><tr>" + cols.map(c=>`<th>${c}</th>`).join("") +
+    "</tr></thead><tbody>" +
+    rows.map(r=>"<tr>"+r.map(c=>`<td>${c??""}</td>`).join("")+"</tr>").join("") +
+    "</tbody></table>";
+}
+$("tabs").querySelectorAll("button").forEach(b => b.onclick = () => {
+  tab = b.dataset.t;
+  $("tabs").querySelectorAll("button").forEach(x=>x.classList.toggle("active", x===b));
+  paint();
+});
+
+// --- Library: Convex when CONVEX_URL is configured, else localStorage --------
+const CONVEX_URL = window.__CONVEX_URL__ || "";
+const CONVEX_VER = "1.17.0";
+let _convex = null, _anyApi = null;
+async function convexApi() {
+  if (!CONVEX_URL) return null;
+  if (!_convex) {
+    const [{ ConvexClient }, { anyApi }] = await Promise.all([
+      import(`https://esm.sh/convex@${CONVEX_VER}/browser`),
+      import(`https://esm.sh/convex@${CONVEX_VER}/server`),
+    ]);
+    _convex = new ConvexClient(CONVEX_URL);
+    _anyApi = anyApi;
+  }
+  return { client: _convex, api: _anyApi };
+}
+const LS_KEY = "woodai_designs";
+const store = {
+  backend: CONVEX_URL ? "Convex (cloud)" : "this browser (localStorage)",
+  async list() {
+    const cx = await convexApi();
+    if (cx) return await cx.client.query(cx.api.designs.list, {});
+    return JSON.parse(localStorage.getItem(LS_KEY) || "[]");
+  },
+  async save(name, spec) {
+    const cx = await convexApi();
+    if (cx) return await cx.client.mutation(cx.api.designs.save, { name, spec });
+    const l = JSON.parse(localStorage.getItem(LS_KEY) || "[]");
+    l.unshift({ _id: "loc_" + Date.now(), name, spec, createdAt: Date.now() });
+    localStorage.setItem(LS_KEY, JSON.stringify(l.slice(0, 50)));
+  },
+  async remove(id) {
+    const cx = await convexApi();
+    if (cx) return await cx.client.mutation(cx.api.designs.remove, { id });
+    const l = JSON.parse(localStorage.getItem(LS_KEY) || "[]").filter(d => d._id !== id);
+    localStorage.setItem(LS_KEY, JSON.stringify(l));
+  },
+};
+let savedCache = [];
+async function refreshSaved() {
+  try {
+    savedCache = await store.list();
+    $("savedList").innerHTML = '<option value="">— none —</option>' +
+      savedCache.map(d => `<option value="${d._id}">${d.name}</option>`).join("");
+    $("storeNote").textContent = `${savedCache.length} saved · stored in ${store.backend}` +
+      (CONVEX_URL ? "" : " — run convex/ for cloud sync");
+  } catch (e) { $("storeNote").textContent = "library error: " + e.message; }
+}
+$("saveBtn").onclick = async () => {
+  const spec = last ? last.spec : specFromForm();
+  const name = prompt("Name this design:", spec.name || "Cabinet");
+  if (!name) return;
+  await store.save(name, spec); refreshSaved();
+};
+$("loadBtn").onclick = async () => {
+  const d = savedCache.find(x => x._id === $("savedList").value);
+  if (!d) return;
+  syncForm(d.spec);
+  try { render(await post("/api/build", {spec: d.spec})); } catch (e) { showError(e.message); }
+};
+$("delBtn").onclick = async () => {
+  const id = $("savedList").value;
+  if (id) { await store.remove(id); refreshSaved(); }
+};
+
+// Live update: debounced rebuild when a parameter changes.
+let autoTimer = null;
+function maybeAuto() {
+  if (!$("auto").checked) return;
+  clearTimeout(autoTimer);
+  autoTimer = setTimeout(() => $("buildBtn").click(), 450);
+}
+document.querySelectorAll(".controls input, .controls select").forEach(el => {
+  if (el.id !== "prompt" && el.id !== "auto") el.addEventListener("input", maybeAuto);
+});
+
+health();
+refreshSaved();
+loadFromHash();
+window.addEventListener("hashchange", loadFromHash);
+</script>
+</body>
+</html>

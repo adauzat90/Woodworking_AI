@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "woodworking-ai"
+version = "0.1.0"
+description = "Design cabinets and furniture with AI agents that write a parametric design language and compile it to machinable geometry and cut lists."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = []
+
+[project.optional-dependencies]
+# The LLM designer agent.
+agent = ["anthropic>=0.40"]
+# Geometry + export (heavy; OpenCascade kernel).
+cad = ["build123d>=0.7"]
+# Headless rendering for the render-based Critic review.
+render = ["matplotlib>=3.6"]
+# Web app (FastAPI backend + SPA).
+web = ["fastapi>=0.110", "uvicorn>=0.27"]
+dev = ["pytest>=7", "matplotlib>=3.6", "fastapi>=0.110", "httpx>=0.27"]
+all = ["anthropic>=0.40", "build123d>=0.7", "matplotlib>=3.6",
+       "fastapi>=0.110", "uvicorn>=0.27", "pytest>=7", "httpx>=0.27"]
+
+[project.scripts]
+woodai = "woodworking_ai.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+woodworking_ai = ["static/*.html", "static/*.css", "static/*.js"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
