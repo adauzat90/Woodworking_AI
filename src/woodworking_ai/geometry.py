@@ -17,8 +17,8 @@ from dataclasses import dataclass
 
 from .dsl import CabinetSpec, TableSpec, BackStyle, Construction, CabinetType
 
-# Construction constants shared with the cut list.
-from .cutlist import (
+# Construction constants shared with the cut list (neutral module, no cycle).
+from .constants import (
     STRETCHER_WIDTH, SHELF_SIDE_CLEARANCE, SHELF_SETBACK,
     FRAME_WIDTH, FRAME_THICKNESS, MULLION_WIDTH,
 )
@@ -63,6 +63,130 @@ class PanelBox:
             hx = sx / 2 * ca + sy / 2 * sa
             hy = sx / 2 * sa + sy / 2 * ca
         return ((cx - hx, cx + hx), (cy - hy, cy + hy), (cz - sz / 2, cz + sz / 2))
+
+
+@dataclass
+class FrontItem:
+    """One door / drawer / mullion / blind-filler in the front plane.
+
+    Geometry uses the full placement (``x``/``y``/``z`` centre + ``width`` x
+    ``thickness`` x ``height``); the cut list uses only the flat dimensions.
+    Both read the same object so the 3D model and the parts list cannot drift.
+    """
+
+    kind: str            # "drawer" | "door" | "mullion" | "filler"
+    width: float         # face width (X)
+    height: float        # face height (Z)
+    thickness: float     # stock thickness (Y)
+    x: float             # X centre in the cabinet frame
+    y: float             # Y centre (front-plane depth)
+    z: float             # Z centre
+    index: int = 0       # 1-based drawer index (drawers only)
+    hand: str = ""       # "L" / "R" for a pair of doors, else ""
+    false_front: bool = False
+
+
+@dataclass
+class FrontPlan:
+    """The complete front layout shared by the compiler and the cut list."""
+
+    opening_w: float        # clear opening after the face frame / blind return
+    region_bottom: float    # Z of the bottom of the usable front region
+    region_h: float         # height of that region
+    is_face_frame: bool
+    items: list[FrontItem]
+
+    @property
+    def drawers(self) -> list[FrontItem]:
+        return [i for i in self.items if i.kind == "drawer"]
+
+    @property
+    def doors(self) -> list[FrontItem]:
+        return [i for i in self.items if i.kind == "door"]
+
+    @property
+    def mullion(self) -> FrontItem | None:
+        return next((i for i in self.items if i.kind == "mullion"), None)
+
+
+def front_plan(spec: CabinetSpec) -> FrontPlan:
+    """Lay out the fronts (doors, drawers, mullion, blind filler) for *spec*.
+
+    Drawers stack from the top; doors fill what remains. This is the single
+    source of truth for front sizing and placement — the compiler turns each
+    item into a panel, the cut list into a part.
+    """
+    m = spec.material
+    toe_h = spec.toe_kick_height
+    box_h = spec.box_height
+    is_ff = spec.construction == Construction.FACE_FRAME
+
+    if is_ff:                                   # inset, flush with the frame
+        opening_w = spec.width - 2 * FRAME_WIDTH
+        region_bottom = toe_h + FRAME_WIDTH
+        region_h = box_h - 2 * FRAME_WIDTH
+        y_front = -FRAME_THICKNESS + m.door / 2
+    else:                                       # overlay, proud of the carcass
+        opening_w = spec.width
+        region_bottom = toe_h
+        region_h = box_h
+        y_front = -m.door / 2
+
+    items: list[FrontItem] = []
+
+    # Blind corner: a fixed filler covers the blind return; the opening shifts.
+    front_cx = 0.0
+    if spec.cabinet_type == CabinetType.CORNER_BLIND and spec.blind_width > 0:
+        bw = spec.blind_width
+        opening_w -= bw
+        front_cx = bw / 2
+        filler_w = bw - spec.reveal
+        items.append(FrontItem(
+            "filler", filler_w, region_h - 2 * spec.reveal, m.door,
+            x=-spec.width / 2 + spec.reveal + filler_w / 2, y=y_front,
+            z=region_bottom + region_h / 2))
+
+    # Drawers stack down from the top of the region.
+    drawer_band = 0.0
+    z_cursor = region_bottom + region_h
+    for i, dr in enumerate(spec.drawers, start=1):
+        fw = opening_w - 2 * spec.reveal
+        z = z_cursor - spec.reveal - dr.front_height / 2
+        items.append(FrontItem(
+            "drawer", fw, dr.front_height, m.door,
+            x=front_cx, y=y_front, z=z, index=i, false_front=dr.false_front))
+        z_cursor -= dr.front_height + spec.reveal
+        drawer_band += dr.front_height + spec.reveal
+
+    # Doors fill the rest of the region.
+    door_region = region_h - drawer_band
+    if spec.doors > 0 and door_region > 0:
+        door_h = door_region - 2 * spec.reveal
+        z = region_bottom + door_region / 2
+        mullion_w = (FRAME_WIDTH if is_ff else MULLION_WIDTH) \
+            if (spec.center_mullion and spec.doors == 2) else 0.0
+        if mullion_w:
+            m_th = FRAME_THICKNESS if is_ff else m.door
+            items.append(FrontItem(
+                "mullion", mullion_w, door_region, m_th,
+                x=front_cx, y=-m_th / 2, z=z))
+        if spec.doors == 1:
+            dw = opening_w - 2 * spec.reveal
+            items.append(FrontItem(
+                "door", dw, door_h, m.door, x=front_cx, y=y_front, z=z))
+        else:
+            if mullion_w:
+                dw = (opening_w - mullion_w) / 2 - 2 * spec.reveal
+                offset = mullion_w / 2 + spec.reveal + dw / 2
+            else:
+                dw = (opening_w - 3 * spec.reveal) / 2
+                offset = spec.reveal / 2 + dw / 2
+            items.append(FrontItem("door", dw, door_h, m.door,
+                                   x=front_cx - offset, y=y_front, z=z, hand="L"))
+            items.append(FrontItem("door", dw, door_h, m.door,
+                                   x=front_cx + offset, y=y_front, z=z, hand="R"))
+
+    return FrontPlan(opening_w, region_bottom, region_h, is_ff, items)
 
 
 def panel_layout(spec) -> list[PanelBox]:
@@ -150,68 +274,19 @@ def panel_layout(spec) -> list[PanelBox]:
         add("Rail bottom", (rail_w, FRAME_THICKNESS, FRAME_WIDTH),
             (0, y_frame, toe_h + FRAME_WIDTH / 2), category="frame")
 
-    # --- fronts: drawers stack at the top, doors fill the rest -----------
-    # The front "region" is the full carcass face (frameless, overlay) or the
-    # inner opening of the face frame (inset doors flush with the frame).
-    if is_ff:
-        opening_w = spec.width - 2 * FRAME_WIDTH
-        region_bottom = toe_h + FRAME_WIDTH
-        region_h = box_h - 2 * FRAME_WIDTH
-        y_front = -FRAME_THICKNESS + m.door / 2   # door flush with frame front
-    else:
-        opening_w = spec.width
-        region_bottom = toe_h
-        region_h = box_h
-        y_front = -m.door / 2                      # overlay, proud of the carcass
-
-    # Blind corner: the access opening occupies one side; a fixed filler panel
-    # covers the blind return that tucks behind the adjacent cabinet.
-    front_cx = 0.0
-    if spec.cabinet_type == CabinetType.CORNER_BLIND and spec.blind_width > 0:
-        bw = spec.blind_width
-        opening_w -= bw
-        front_cx = bw / 2                          # shift opening to the right
-        filler_w = bw - spec.reveal
-        add("Blind filler", (filler_w, m.door, region_h - 2 * spec.reveal),
-            (-spec.width / 2 + spec.reveal + filler_w / 2, y_front,
-             region_bottom + region_h / 2), category="front")
-
-    drawer_band = 0.0
-    z_cursor = region_bottom + region_h
-    for i, dr in enumerate(spec.drawers, start=1):
-        fw = opening_w - 2 * spec.reveal
-        z = z_cursor - spec.reveal - dr.front_height / 2
-        add(f"Drawer front {i}", (fw, m.door, dr.front_height),
-            (front_cx, y_front, z), category="front")
-        z_cursor -= dr.front_height + spec.reveal
-        drawer_band += dr.front_height + spec.reveal
-
-    door_region = region_h - drawer_band
-    if spec.doors > 0 and door_region > 0:
-        door_h = door_region - 2 * spec.reveal
-        z = region_bottom + (region_h - drawer_band) / 2
-        mullion_w = (FRAME_WIDTH if is_ff else MULLION_WIDTH) \
-            if (spec.center_mullion and spec.doors == 2) else 0.0
-        if mullion_w:
-            # A vertical post/stile in the front plane between the two doors.
-            m_th = FRAME_THICKNESS if is_ff else m.door
-            m_y = -m_th / 2 if is_ff else -m.door / 2
-            add("Center stile" if is_ff else "Mullion",
-                (mullion_w, m_th, door_region),
-                (front_cx, m_y, z), category="frame")
-        if spec.doors == 1:
-            dw = opening_w - 2 * spec.reveal
-            add("Door", (dw, m.door, door_h), (front_cx, y_front, z), category="front")
-        elif mullion_w:
-            dw = (opening_w - mullion_w) / 2 - 2 * spec.reveal
-            offset = mullion_w / 2 + spec.reveal + dw / 2
-            add("Door L", (dw, m.door, door_h), (front_cx - offset, y_front, z), category="front")
-            add("Door R", (dw, m.door, door_h), (front_cx + offset, y_front, z), category="front")
-        else:
-            dw = (opening_w - 3 * spec.reveal) / 2
-            offset = spec.reveal / 2 + dw / 2
-            add("Door L", (dw, m.door, door_h), (front_cx - offset, y_front, z), category="front")
-            add("Door R", (dw, m.door, door_h), (front_cx + offset, y_front, z), category="front")
+    # --- fronts: doors, drawers, mullion, blind filler (shared layout) ---
+    # The same plan the cut list consumes, so panels and parts never disagree.
+    for it in front_plan(spec).items:
+        if it.kind == "mullion":
+            label, category = ("Center stile" if is_ff else "Mullion"), "frame"
+        elif it.kind == "drawer":
+            label, category = f"Drawer front {it.index}", "front"
+        elif it.kind == "filler":
+            label, category = "Blind filler", "front"
+        else:  # door
+            label, category = ("Door" if not it.hand else f"Door {it.hand}"), "front"
+        add(label, (it.width, it.thickness, it.height), (it.x, it.y, it.z),
+            category=category)
 
     return panels
 

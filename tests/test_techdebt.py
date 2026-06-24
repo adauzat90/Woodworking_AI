@@ -6,10 +6,14 @@ the estimator and the DXF export, the shared JSON extractor, and the expanded
 designer schema hint.
 """
 
+import pytest
+
 from woodworking_ai import (
     CabinetSpec, CabinetType, Material, ToeKick, Drawer, SheetSize, pack_sheets,
+    Construction, generate_cutlist,
 )
 from woodworking_ai.dsl import DSL_SCHEMA_HINT
+from woodworking_ai.geometry import front_plan, panel_layout
 from woodworking_ai.packing import pack
 from woodworking_ai.dxf import _pack_positions
 from woodworking_ai.agents import llm
@@ -92,3 +96,54 @@ def test_designer_and_critic_share_extractor():
 def test_schema_hint_documents_all_cabinet_types():
     for ct in CabinetType:
         assert ct.value in DSL_SCHEMA_HINT, f"{ct.value} missing from schema hint"
+
+
+# --- one shared front layout (geometry panels == cut-list parts) ---------
+
+# A spread of front configurations: overlay/inset, single/double doors,
+# mullion, drawer banks, false fronts, and a blind corner.
+_FRONT_CASES = [
+    dict(doors=2, drawers=[]),
+    dict(doors=1, width=450, drawers=[]),
+    dict(doors=2, center_mullion=True),
+    dict(doors=2, construction=Construction.FACE_FRAME),
+    dict(doors=2, center_mullion=True, construction=Construction.FACE_FRAME),
+    dict(doors=0, drawers=[Drawer(140), Drawer(180), Drawer(180)]),
+    dict(doors=2, drawers=[Drawer(160), Drawer(160, false_front=True)]),
+    dict(cabinet_type=CabinetType.CORNER_BLIND, blind_width=300, doors=1,
+         width=900),
+]
+
+
+@pytest.mark.parametrize("opts", _FRONT_CASES)
+def test_front_panels_and_parts_share_dimensions(opts):
+    spec = _spec(**opts)
+    plan = front_plan(spec)
+    panels = {p.label: p for p in panel_layout(spec)}
+    parts = {p.name: p for p in generate_cutlist(spec).parts}
+
+    # Every drawer front: same width (X) and height (Z) in panel and part.
+    for dr in plan.drawers:
+        panel = panels[f"Drawer front {dr.index}"]
+        part = parts[f"Drawer front #{dr.index}"]
+        assert panel.size[0] == pytest.approx(part.length)   # face width
+        assert panel.size[2] == pytest.approx(part.width)    # face height
+        assert dr.width == pytest.approx(part.length)
+
+    # Doors: the cut list rolls all leaves into one qty>=1 part; the geometry
+    # places one panel per leaf. Counts and per-leaf dimensions must agree.
+    door_panels = [p for lbl, p in panels.items()
+                   if lbl == "Door" or lbl.startswith("Door ")]
+    if plan.doors:
+        part = parts["Door"]
+        assert part.qty == len(door_panels) == len(plan.doors)
+        for panel in door_panels:
+            assert panel.size[0] == pytest.approx(part.width)    # door width
+            assert panel.size[2] == pytest.approx(part.length)   # door height
+
+
+def test_front_plan_is_pure_and_repeatable():
+    # No hidden state: two calls on equal specs give identical layouts.
+    a = front_plan(_spec(doors=2, drawers=[Drawer(150)]))
+    b = front_plan(_spec(doors=2, drawers=[Drawer(150)]))
+    assert [vars(i) for i in a.items] == [vars(i) for i in b.items]

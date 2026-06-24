@@ -16,18 +16,13 @@ import math
 from dataclasses import dataclass, field
 
 from .dsl import CabinetSpec, TableSpec, BackStyle, Construction, CabinetType
-
-# Small construction constants (mm). Centralised so they are easy to tune.
-SHELF_SIDE_CLEARANCE = 2.0     # gap each side so an adjustable shelf drops in
-SHELF_SETBACK = 20.0           # shelf shallower than interior depth
-STRETCHER_WIDTH = 80.0         # front/back top rails on a base cabinet
-BACK_RABBET = 0.0              # rabbeted back recess captured via interior depth
-FRAME_WIDTH = 38.0             # face-frame stile/rail width (solid hardwood)
-FRAME_THICKNESS = 19.0         # face-frame stock thickness
-MULLION_WIDTH = 60.0           # frameless center post between a pair of doors
-SLIDE_SIDE_CLEARANCE = 13.0    # gap each side for ball-bearing slides
-DRAWER_BOX_HEIGHT_DROP = 40.0  # box height below the drawer front
-DRAWER_BOX_DEPTH_GAP = 25.0    # box shallower than the interior
+from .geometry import front_plan
+# Construction constants now live in one neutral module shared with geometry.
+from .constants import (
+    SHELF_SIDE_CLEARANCE, SHELF_SETBACK, STRETCHER_WIDTH,
+    FRAME_WIDTH, FRAME_THICKNESS,
+    SLIDE_SIDE_CLEARANCE, DRAWER_BOX_HEIGHT_DROP, DRAWER_BOX_DEPTH_GAP,
+)
 
 
 @dataclass
@@ -91,12 +86,13 @@ class CutList:
 
 
 def _add_drawer_box(cl: "CutList", spec: CabinetSpec, index: int,
-                    opening_w: float, dr, interior_depth: float) -> None:
+                    opening_w: float, front_height: float,
+                    interior_depth: float) -> None:
     """Append the four box panels + bottom for one drawer."""
     m = spec.material
     t = m.drawer_box
     box_w = opening_w - 2 * SLIDE_SIDE_CLEARANCE          # outer box width
-    box_h = max(dr.front_height - DRAWER_BOX_HEIGHT_DROP, 60.0)
+    box_h = max(front_height - DRAWER_BOX_HEIGHT_DROP, 60.0)
     box_d = max(interior_depth - DRAWER_BOX_DEPTH_GAP, 100.0)
     cl.parts.append(Part(
         f"Drawer {index} box side", 2, length=box_d, width=box_h, thickness=t,
@@ -251,67 +247,60 @@ def generate_cutlist(spec) -> CutList:
             notes="top & bottom, hardwood",
         ))
 
-    # ---- fronts: drawers stack at the top, doors fill the rest ----------
-    # Face-frame fronts are inset in the frame opening; frameless are overlay.
-    opening_w = (spec.width - 2 * FRAME_WIDTH) if is_ff else spec.width
-    region_h = (box_height - 2 * FRAME_WIDTH) if is_ff else box_height
+    # ---- fronts: doors, drawers, mullion, blind filler ------------------
+    # Sizes/positions come from the shared front_plan (also drives geometry), so
+    # the parts list and the 3D model can never disagree about the fronts.
+    plan = front_plan(spec)
     front_note = "inset" if is_ff else "overlay"
 
-    # Blind corner: a fixed filler covers the blind return; opening shrinks.
-    if spec.cabinet_type == CabinetType.CORNER_BLIND and spec.blind_width > 0:
-        opening_w -= spec.blind_width
+    filler = next((it for it in plan.items if it.kind == "filler"), None)
+    if filler is not None:
         cl.parts.append(Part(
-            "Blind filler", 1, length=region_h - 2 * spec.reveal,
-            width=spec.blind_width - spec.reveal, thickness=m.door,
-            material="door/front", notes="covers blind return",
+            "Blind filler", 1, length=filler.height, width=filler.width,
+            thickness=filler.thickness, material="door/front",
+            notes="covers blind return",
         ))
 
-    drawer_band = 0.0
-    for i, dr in enumerate(spec.drawers, start=1):
-        front_w = opening_w - 2 * spec.reveal
+    for dr in plan.drawers:
         note = "false front" if dr.false_front else front_note
         cl.parts.append(Part(
-            f"Drawer front #{i}", 1,
-            length=front_w, width=dr.front_height, thickness=m.door,
+            f"Drawer front #{dr.index}", 1,
+            length=dr.width, width=dr.height, thickness=dr.thickness,
             material="door/front", notes=note,
         ))
-        drawer_band += dr.front_height + spec.reveal
         if dr.false_front:
             continue  # fixed panel: no box, no slides
         # The drawer box itself, sized for slide and depth clearance.
-        _add_drawer_box(cl, spec, i, opening_w, dr, interior_depth)
+        _add_drawer_box(cl, spec, dr.index, plan.opening_w, dr.height,
+                        interior_depth)
         cl.hardware.append(Hardware("Drawer slide (pair)", 1, "ball-bearing"))
         cl.hardware.append(Hardware("Drawer pull", 1))
 
-    door_region = region_h - drawer_band
-    if spec.doors > 0 and door_region > 0:
-        door_h = door_region - 2 * spec.reveal
-        mullion_w = (FRAME_WIDTH if is_ff else MULLION_WIDTH) \
-            if (spec.center_mullion and spec.doors == 2) else 0.0
-        if mullion_w:
-            if is_ff:
-                cl.parts.append(Part(
-                    "Face-frame center stile", 1, length=door_region,
-                    width=mullion_w, thickness=FRAME_THICKNESS,
-                    material="frame", notes="between doors",
-                ))
-            else:
-                cl.parts.append(Part(
-                    "Mullion", 1, length=door_region, width=mullion_w,
-                    thickness=m.door, material="door/front", notes="center post",
-                ))
-        if spec.doors == 1:
-            door_w = opening_w - 2 * spec.reveal
-        elif mullion_w:
-            door_w = (opening_w - mullion_w) / 2 - 2 * spec.reveal
-        else:  # two doors share the opening with a center reveal
-            door_w = (opening_w - 3 * spec.reveal) / 2
+    mullion = plan.mullion
+    if mullion is not None:
+        if is_ff:
+            cl.parts.append(Part(
+                "Face-frame center stile", 1, length=mullion.height,
+                width=mullion.width, thickness=mullion.thickness,
+                material="frame", notes="between doors",
+            ))
+        else:
+            cl.parts.append(Part(
+                "Mullion", 1, length=mullion.height, width=mullion.width,
+                thickness=mullion.thickness, material="door/front",
+                notes="center post",
+            ))
+
+    doors = plan.doors
+    if doors:
+        d0 = doors[0]
         cl.parts.append(Part(
-            "Door", spec.doors, length=door_h, width=door_w, thickness=m.door,
-            material="door/front", notes=f"{front_note} ({spec.doors})",
+            "Door", len(doors), length=d0.height, width=d0.width,
+            thickness=d0.thickness, material="door/front",
+            notes=f"{front_note} ({len(doors)})",
         ))
-        cl.hardware.append(Hardware("Concealed hinge", spec.doors * 2, "soft-close"))
-        cl.hardware.append(Hardware("Door pull", spec.doors))
+        cl.hardware.append(Hardware("Concealed hinge", len(doors) * 2, "soft-close"))
+        cl.hardware.append(Hardware("Door pull", len(doors)))
 
     # ---- edge banding (rough running length on exposed front edges) -----
     if spec.edge_banding:
