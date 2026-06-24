@@ -1,6 +1,5 @@
 """Imperial-input normalization and the promoted enum fields."""
 
-import math
 
 import pytest
 

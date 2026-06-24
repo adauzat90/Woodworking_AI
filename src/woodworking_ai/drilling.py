@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .dsl import CabinetSpec, Project
+from .dsl import Project
 from .geometry import panel_layout, component_tag
 
 # 32 mm System and boring constants (mm).

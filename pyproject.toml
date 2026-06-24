@@ -7,7 +7,7 @@ name = "woodworking-ai"
 version = "0.1.0"
 description = "Design cabinets and furniture with AI agents that write a parametric design language and compile it to machinable geometry and cut lists."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = { text = "MIT" }
 dependencies = []
 
@@ -40,7 +40,7 @@ testpaths = ["tests"]
 [tool.ruff]
 # Pyflakes ("F") catches the real bugs cheaply — unused imports, undefined
 # names, redefinitions — without bikeshedding pure style. Honors `# noqa`.
-target-version = "py310"
+target-version = "py311"  # StrEnum (dsl.py) requires 3.11+
 src = ["src", "tests"]
 
 [tool.ruff.lint]
