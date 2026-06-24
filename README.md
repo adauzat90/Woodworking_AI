@@ -160,6 +160,10 @@ parameters, and get an interactive GLB model (via `<model-viewer>`), the cut
 list, hardware schedule, cost estimate, and drilling schedule — all in the
 browser. Plus:
 
+- **Furniture / Project modes** — design a single cabinet or table, or switch to
+  **Project (run)** to build a multi-cabinet run from JSON: one combined cut list,
+  quote, drilling schedule, and an assembled view (placement collisions flagged).
+- **Units toggle** — view the cut list and reports in fractional inches or mm.
 - **Live update** — toggle on to rebuild as you change parameters.
 - **Downloads** — STEP, STL, GLB, DXF cut-layout, cut-list & drilling CSV.
 - **Share links** — encodes the design in the URL; open it to restore the design.

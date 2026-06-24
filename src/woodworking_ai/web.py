@@ -62,21 +62,15 @@ def health() -> dict[str, Any]:
     return {"status": "ok", "capabilities": _capabilities()}
 
 
-def _parse_spec(payload: dict[str, Any]) -> CabinetSpec | TableSpec:
-    """Build a furniture spec from a request payload or raise HTTP 400."""
+def _parse_spec(payload: dict[str, Any]) -> CabinetSpec | TableSpec | Project:
+    """Build a furniture spec (cabinet, table, or project) from a payload."""
     if not isinstance(payload, dict):
         raise HTTPException(status_code=400, detail="expected a JSON object")
     spec_data = payload.get("spec", payload)
     try:
-        spec = spec_from_dict(spec_data)
+        return spec_from_dict(spec_data)
     except (TypeError, ValueError, AttributeError) as exc:
         raise HTTPException(status_code=400, detail=f"bad spec: {exc}")
-    if isinstance(spec, Project):
-        raise HTTPException(
-            status_code=400,
-            detail="multi-component projects are not supported by this endpoint; "
-                   "submit one cabinet or table at a time")
-    return spec
 
 
 @app.post("/api/build")

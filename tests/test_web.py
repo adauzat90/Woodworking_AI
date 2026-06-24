@@ -123,3 +123,44 @@ def test_export_step_and_glb_with_build123d():
 def test_export_unknown_format_415():
     r = client.post("/api/export/foo", json={"spec": VALID_SPEC})
     assert r.status_code == 415
+
+
+# --- multi-component projects -------------------------------------------------
+
+PROJECT_SPEC = {
+    "kind": "project", "name": "Galley",
+    "components": [
+        {"label": "A", "x": 0, "y": 0,
+         "spec": {"cabinet_type": "base", "width": 900, "doors": 2, "shelves": 1}},
+        {"label": "B", "x": 900, "y": 0,
+         "spec": {"cabinet_type": "base", "width": 600,
+                  "drawers": [{"front_height": 160}]}},
+    ],
+}
+
+
+def test_build_project_returns_aggregated_bundle():
+    d = client.post("/api/build", json={"spec": PROJECT_SPEC, "glb": False}).json()
+    assert d["valid"] is True
+    assert d["spec"]["kind"] == "project"
+    assert d["critique"]["report"]["component_count"] == 2
+    # Combined cut list is tagged per component, holes aggregate across the run.
+    assert any(p["name"].startswith("A · ") for p in d["cutlist"])
+    assert d["drilling"]["total_holes"] > 0
+
+
+def test_build_project_detects_placement_collision():
+    bad = {"kind": "project", "components": [
+        {"label": "A", "x": 0, "y": 0, "spec": {"cabinet_type": "base", "width": 900}},
+        {"label": "B", "x": 300, "y": 0, "spec": {"cabinet_type": "base", "width": 900}},
+    ]}
+    d = client.post("/api/build", json={"spec": bad, "glb": False}).json()
+    assert d["valid"] is False
+    assert any(e["field"] == "placement" for e in d["errors"])
+
+
+def test_export_project_cutlist_imperial():
+    r = client.post("/api/export/cutlist",
+                    json={"spec": PROJECT_SPEC, "units": "imperial"})
+    assert r.status_code == 200
+    assert r.text.splitlines()[0].startswith("part,qty,length_in")

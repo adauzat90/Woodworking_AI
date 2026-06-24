@@ -64,7 +64,7 @@ def _glb(spec: CabinetSpec) -> str | None:
         return None
 
 
-def export_bytes(spec: CabinetSpec, fmt: str,
+def export_bytes(spec, fmt: str,
                  units: str = "metric") -> tuple[bytes, str, str]:
     """Return (data, media_type, filename) for a downloadable export.
 
@@ -106,9 +106,14 @@ def export_bytes(spec: CabinetSpec, fmt: str,
     raise ValueError(f"unknown export format: {fmt}")
 
 
-def build_result(spec: CabinetSpec, *, want_png: bool = True,
+def build_result(spec, *, want_png: bool = True,
                  want_glb: bool = True) -> dict[str, Any]:
-    """Full design bundle for *spec* (always JSON-serialisable)."""
+    """Full design bundle for *spec* — a cabinet, table, or whole project.
+
+    Always JSON-serialisable; aggregate stages (cut list, cost, drilling,
+    critic, render) dispatch on the spec type, so a Project returns the combined
+    run bundle.
+    """
     v = validate(spec)
     result: dict[str, Any] = {
         "spec": spec.to_dict(),

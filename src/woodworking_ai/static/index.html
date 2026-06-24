@@ -86,6 +86,7 @@
     <select id="furniture">
       <option value="cabinet">Cabinet</option>
       <option value="table">Table</option>
+      <option value="project">Project (run)</option>
     </select>
     <div id="cabinetFields">
     <fieldset>
@@ -149,6 +150,18 @@
       </div>
     </fieldset>
     </div><!-- /tableFields -->
+    <div id="projectFields" style="display:none">
+    <fieldset>
+      <legend>Project — multi-cabinet run</legend>
+      <p class="muted" style="font-size:11px;margin:0 0 6px">
+        A run of placed components. <code>x</code>/<code>y</code> locate each
+        piece's front-left corner (mm); <code>rotation</code> turns a run 90° at a
+        corner. Edit the JSON, then Build — you get one combined cut list, quote,
+        drilling schedule, and assembled view.</p>
+      <textarea id="projectJson"
+        style="height:200px;font-family:ui-monospace,Menlo,monospace;font-size:11px"></textarea>
+    </fieldset>
+    </div><!-- /projectFields -->
     <button id="buildBtn">🔨 Build design</button>
     <div class="check"><input id="auto" type="checkbox" /><label style="margin:0">Live update as I change values</label></div>
     <fieldset style="margin-top:14px">
@@ -272,11 +285,26 @@ function toggleCorner() {
 $("cabinet_type").addEventListener("change", toggleCorner);
 
 function toggleFurniture() {
-  const t = $("furniture").value === "table";
-  $("tableFields").style.display = t ? "block" : "none";
-  $("cabinetFields").style.display = t ? "none" : "block";
+  const v = $("furniture").value;
+  $("cabinetFields").style.display = v === "cabinet" ? "block" : "none";
+  $("tableFields").style.display   = v === "table"   ? "block" : "none";
+  $("projectFields").style.display = v === "project" ? "block" : "none";
 }
 $("furniture").addEventListener("change", toggleFurniture);
+
+// A small L-kitchen so "Project" mode builds something immediately.
+const SAMPLE_PROJECT = {
+  kind: "project", name: "L-kitchen",
+  components: [
+    {label: "Sink",    x: 0,    y: 0,   rotation: 0,
+     spec: {cabinet_type: "base", name: "Sink base", width: 900, doors: 2, shelves: 1}},
+    {label: "Drawers", x: 900,  y: 0,   rotation: 0,
+     spec: {cabinet_type: "base", name: "Drawer base", width: 600,
+            drawers: [{front_height: 140}, {front_height: 200}, {front_height: 260}]}},
+    {label: "Return",  x: 1500, y: 560, rotation: 90,
+     spec: {cabinet_type: "base", name: "Return base", width: 600, doors: 1, shelves: 1}}
+  ]
+};
 
 function tableSpecFromForm() {
   const L = id => mmFromDisp(+$(id).value);   // length inputs -> mm
@@ -290,7 +318,9 @@ function tableSpecFromForm() {
 }
 
 function specFromForm() {
-  if ($("furniture").value === "table") return tableSpecFromForm();
+  const v = $("furniture").value;
+  if (v === "table") return tableSpecFromForm();
+  if (v === "project") return JSON.parse($("projectJson").value);   // throws -> showError
   const L = id => mmFromDisp(+$(id).value);   // length inputs -> mm
   const toe = L("toe");
   const nd = Math.max(0, +$("drawers").value | 0);
@@ -339,6 +369,11 @@ function syncForm(s) {
   const isLen = id => LEN_IDS.includes(id);
   const put = (id, v) => { if (v !== undefined && $(id))
     $(id).value = isLen(id) ? roundDisp(dispFromMM(v)) : v; };
+  if (s.kind === "project") {
+    $("furniture").value = "project"; toggleFurniture();
+    $("projectJson").value = JSON.stringify(s, null, 2);
+    return;
+  }
   if (s.kind === "table") {
     $("furniture").value = "table"; toggleFurniture();
     const map = {t_name:"name",t_width:"width",t_depth:"depth",t_height:"height",
@@ -547,6 +582,9 @@ function maybeAuto() {
 document.querySelectorAll(".controls input, .controls select").forEach(el => {
   if (el.id !== "prompt" && el.id !== "auto") el.addEventListener("input", maybeAuto);
 });
+
+// Seed the Project editor with a runnable sample.
+$("projectJson").value = JSON.stringify(SAMPLE_PROJECT, null, 2);
 
 // Initialise the form to the default display unit (inches for US shops): the
 // HTML defaults are authored in mm, so convert them once on load.
