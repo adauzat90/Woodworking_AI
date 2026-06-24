@@ -159,6 +159,24 @@ These are the highest-value "silent failure" checks.
 
 ---
 
+## Implementation status
+
+These rules are wired into the engine today (`src/woodworking_ai/validator.py`,
+backed by the calculators in `src/woodworking_ai/engineering.py`):
+
+| Rule(s) | Where | Notes |
+|---|---|---|
+| STRUCT-020/021/022 | `evaluate_shelf` → cabinet shelves | Beam deflection vs. span/360 (error) and visible-sag limit (warning); stiffness from `shelf_species`. |
+| STRUCT-030/031 | cabinet tip-over (DRESSER/TALL) | Warns when a unit ≥686 mm has no `anti_tip`, and when tall+shallow (depth/height < 0.40). |
+| STRUCT-042 | toe-kick minimums | Warns below ~75 mm high / ~50 mm deep (KCMA). |
+| MOVE-001/002 | table `top_fixing` | Error on a rigidly fixed solid top; warns the seasonal allowance for floating tops. |
+| DIM/STRUCT (existing) | `validate` | Dimensional bounds, opening fit, door/drawer fit, per-type sanity were already present pre-audit. |
+
+Still catalog-only (need DSL surface for per-joint / per-drawer-box data):
+GRAIN-*, HW-001/002 (slide clearance), STRUCT-010..014 (joint-by-load),
+PROP-* (proportion), most MAT-* (stock matching). These are the next
+implementation targets.
+
 ## Implementation notes for the compiler
 
 1. **Intent drives the rule set.** Each `intent` (table, chair, base-cabinet,

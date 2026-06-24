@@ -13,6 +13,13 @@ import math
 from dataclasses import dataclass
 
 from .dsl import CabinetSpec, TableSpec, CabinetType
+from . import engineering
+
+# ASTM F2057 scope: clothing storage units >= 27in (686mm) tall fall under the
+# CPSC tip-over standard. Toe-kick minimums per ANSI/KCMA A161.1 (2in x 3in).
+F2057_HEIGHT_MM = 686.0
+KCMA_TOE_MIN_HEIGHT = 75.0   # ~3 in
+KCMA_TOE_MIN_SETBACK = 50.0  # ~2 in deep
 
 # Practical bounds that also guard against pathological inputs (huge loops, NaN).
 MAX_DIMENSION = 6000.0   # mm — larger than any real cabinet/pantry
@@ -84,6 +91,23 @@ def _validate_table(spec: TableSpec) -> ValidationResult:
         warn("apron_thickness", "apron is as thick as the leg; unusual")
     if spec.height < 350 or spec.height > 1200:
         warn("height", "unusual table height (typical 700–760mm)")
+
+    # --- wood movement on a solid top (MOVE-001/002) ---------------------
+    # The top's width (depth, Y) runs across the grain and moves seasonally.
+    if getattr(spec, "solid_top", True):
+        move = engineering.seasonal_movement(
+            spec.depth, getattr(spec, "grain", "flatsawn"))
+        if str(getattr(spec, "top_fixing", "floating")).lower() == "fixed":
+            err("top_fixing",
+                f"a solid top {spec.depth:.0f}mm across the grain moves about "
+                f"{move:.1f}mm seasonally; fixing it rigidly will crack it. Use "
+                "floating attachment (figure-8 fasteners, Z-clips, or slotted "
+                "cleats)")
+        elif move >= 6.0:
+            warn("top_fixing",
+                 f"allow ~{move:.1f}mm of seasonal movement across the "
+                 f"{spec.depth:.0f}mm top; ensure the floating attachment has "
+                 "room to slide")
     return ValidationResult(issues)
 
 
@@ -197,5 +221,51 @@ def validate(spec) -> ValidationResult:
     else:  # BASE
         if spec.depth > 700:
             warn("depth", "unusually deep for a base cabinet")
+
+    # --- shelf deflection / sag (STRUCT-020..022) ------------------------
+    # Treat each shelf as a simply-supported beam spanning the interior width.
+    if spec.shelves > 0:
+        span = spec.width - 2 * m.carcass
+        shelf_depth = max(spec.depth - 30.0, 1.0)  # back/clearance setback
+        res = engineering.evaluate_shelf(
+            span=span,
+            depth=shelf_depth,
+            thickness=m.shelf,
+            load_kg_per_m=getattr(spec, "shelf_load_kg_per_m", 25.0),
+            species=getattr(spec, "shelf_species", "plywood"),
+        )
+        if res.status == "fail":
+            err("shelves",
+                f"shelf will sag {res.deflection:.1f}mm over a {span:.0f}mm span, "
+                f"past the {res.engineering_limit:.1f}mm structural limit "
+                "(span/360); shorten span, thicken, stiffen, or add support")
+        elif res.status == "visible":
+            warn("shelves",
+                 f"shelf sag {res.deflection:.1f}mm over {span:.0f}mm will be "
+                 f"visible (> {res.visible_limit:.1f}mm); consider a stiffer "
+                 "material, thicker shelf, or a center support")
+
+    # --- tip-over stability (STRUCT-030/031, ASTM F2057) -----------------
+    if spec.cabinet_type in (CabinetType.DRESSER, CabinetType.TALL):
+        if spec.height >= F2057_HEIGHT_MM and not getattr(spec, "anti_tip", False):
+            warn("anti_tip",
+                 "tall storage unit is in scope for the ASTM F2057 tip-over "
+                 "standard; provide an anti-tip restraint and a marked "
+                 "wall-attachment point (set anti_tip=true)")
+        if engineering.tip_safety_factor(spec.height, spec.depth) < 0.40:
+            warn("depth",
+                 "tall and shallow: high tip-over risk; deepen the base, lower "
+                 "the centre of gravity, or require wall anchoring")
+
+    # --- toe-kick minimum dimensions (STRUCT-042, KCMA A161.1) -----------
+    if spec.toe_kick is not None:
+        if spec.toe_kick.height < KCMA_TOE_MIN_HEIGHT:
+            warn("toe_kick.height",
+                 f"toe kick below the ~{KCMA_TOE_MIN_HEIGHT:.0f}mm (3in) KCMA "
+                 "minimum height")
+        if spec.toe_kick.setback < KCMA_TOE_MIN_SETBACK:
+            warn("toe_kick.setback",
+                 f"toe space shallower than the ~{KCMA_TOE_MIN_SETBACK:.0f}mm "
+                 "(2in) KCMA minimum depth")
 
     return ValidationResult(issues)
