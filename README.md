@@ -132,6 +132,11 @@ run_b = place_run([CabinetSpec(width=600), CabinetSpec(width=600)], start=(1200,
 kitchen = Project(name="L-kitchen", components=run_a + run_b)   # validate / cut list / GLB
 ```
 
+A whole run renders as one assembly — here an L-kitchen of a diagonal corner
+cabinet, a door base, a drawer bank, a perpendicular return, and a table island:
+
+![Assembled L-kitchen — front, side and isometric views](docs/example-kitchen.png)
+
 **Everything at once:**
 
 ```bash
