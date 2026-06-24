@@ -3,8 +3,7 @@
 import pytest
 
 from woodworking_ai import (
-    CabinetSpec, CabinetType, Material, ToeKick, Drawer,
-    estimate, PriceBook, SheetSize, pack_sheets,
+    CabinetSpec, CabinetType, Material, ToeKick, estimate, PriceBook, SheetSize, pack_sheets,
 )
 
 

@@ -10,7 +10,6 @@ until the design is sound or we give up.
 from __future__ import annotations
 
 import json
-import re
 from dataclasses import dataclass
 
 from ..dsl import CabinetSpec, DSL_SCHEMA_HINT
@@ -41,17 +40,6 @@ class DesignResult:
     critique: CritiqueResult | None = None
 
 
-def _extract_json(text: str) -> dict:
-    """Pull the first JSON object out of an LLM response, tolerating fences."""
-    fenced = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
-    candidate = fenced.group(1) if fenced else text
-    start = candidate.find("{")
-    end = candidate.rfind("}")
-    if start == -1 or end == -1:
-        raise ValueError(f"No JSON object found in response: {text[:200]!r}")
-    return json.loads(candidate[start : end + 1])
-
-
 def design_from_prompt(
     prompt: str,
     *,
@@ -75,7 +63,7 @@ def design_from_prompt(
         raw_responses.append(text)
 
         try:
-            data = _extract_json(text)
+            data = llm.extract_json(text)
             spec = CabinetSpec.from_dict(data)
         except (ValueError, TypeError, json.JSONDecodeError) as exc:
             # Couldn't even parse — ask the agent to fix its output format.

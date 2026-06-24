@@ -12,7 +12,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-from .dsl import CabinetSpec, TableSpec, CabinetType
+from .dsl import TableSpec, CabinetType
 
 # Practical bounds that also guard against pathological inputs (huge loops, NaN).
 MAX_DIMENSION = 6000.0   # mm — larger than any real cabinet/pantry
@@ -99,12 +99,9 @@ def validate(spec) -> ValidationResult:
         issues.append(Issue("warning", fieldname, msg))
 
     # --- basic positive, finite, sane dimensions -------------------------
-    def finite_positive(val: object) -> bool:
-        return isinstance(val, (int, float)) and math.isfinite(val) and val > 0
-
     for name in ("width", "height", "depth"):
         val = getattr(spec, name)
-        if not finite_positive(val):
+        if not _finite_positive(val):
             err(name, f"must be a positive, finite number, got {val!r}")
         elif val > MAX_DIMENSION:
             err(name, f"exceeds the practical maximum of {MAX_DIMENSION:.0f}mm")
@@ -112,7 +109,7 @@ def validate(spec) -> ValidationResult:
     m = spec.material
     for name in ("carcass", "back", "door", "shelf", "drawer_box"):
         val = getattr(m, name, 18.0)
-        if not finite_positive(val):
+        if not _finite_positive(val):
             err(f"material.{name}", f"thickness must be positive & finite, got {val!r}")
 
     # Counts must be sane and bounded (range() over a huge count would hang).
@@ -131,13 +128,12 @@ def validate(spec) -> ValidationResult:
     if spec.width < 2 * m.carcass + 50:
         err("width", "too narrow to hold two sides plus a usable opening")
 
-    toe_h = spec.toe_kick.height if spec.toe_kick else 0.0
-    if toe_h >= spec.height:
+    if spec.toe_kick_height >= spec.height:
         err("toe_kick.height", "toe kick is taller than the whole cabinet")
     if spec.toe_kick and spec.toe_kick.setback >= spec.depth:
         err("toe_kick.setback", "toe kick setback exceeds cabinet depth")
 
-    box_height = spec.height - toe_h
+    box_height = spec.box_height
     if box_height <= m.carcass * 2:
         err("height", "carcass box height collapses after removing toe kick")
 

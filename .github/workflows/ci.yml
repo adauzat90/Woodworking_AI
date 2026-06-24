@@ -29,5 +29,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[render,web,dev]"
 
+      - name: Lint (ruff — Pyflakes rules)
+        run: ruff check src tests
+
       - name: Run tests
         run: pytest -q

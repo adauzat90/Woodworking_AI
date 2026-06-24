@@ -15,35 +15,7 @@ from pathlib import Path
 from .dsl import CabinetSpec
 from .cutlist import CutList, generate_cutlist
 from .estimator import SheetSize
-
-
-def _orient(l: float, w: float) -> tuple[float, float]:
-    return (max(l, w), min(l, w))
-
-
-def _pack_positions(items: list[tuple[float, float, str]], sheet: SheetSize):
-    """Next-fit-decreasing-height packing that records (x, y, l, w, label)."""
-    oriented = [(*_orient(l, w), label) for (l, w, label) in items]
-    fit = [(l, w, n) for (l, w, n) in oriented
-           if l <= sheet.length and w <= sheet.width]
-    oversize = [n for (l, w, n) in oriented
-                if l > sheet.length or w > sheet.width]
-    fit.sort(key=lambda r: r[1], reverse=True)
-
-    sheets: list[list] = [[]]
-    shelf_y = shelf_h = cursor_x = 0.0
-    for (l, w, label) in fit:
-        if cursor_x + l > sheet.length:
-            shelf_y += shelf_h + sheet.kerf
-            shelf_h = 0.0
-            cursor_x = 0.0
-            if shelf_y + w > sheet.width:
-                sheets.append([])
-                shelf_y = 0.0
-        sheets[-1].append((cursor_x, shelf_y, l, w, label))
-        cursor_x += l + sheet.kerf
-        shelf_h = max(shelf_h, w)
-    return sheets, oversize
+from .packing import pack as _pack_positions  # shared shelf nester
 
 
 def _line(x1, y1, x2, y2, layer="PANEL") -> list[str]:
