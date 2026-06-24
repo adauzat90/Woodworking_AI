@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# Tests / tooling
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Project outputs (generated geometry & cut lists)
+out/
+*.step
+*.stl
+*.glb
+
+# Secrets / env
+.env
+.env.*
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

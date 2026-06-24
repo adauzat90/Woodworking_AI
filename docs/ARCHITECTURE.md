@@ -1,0 +1,201 @@
+# Woodworking AI — Architecture & Design
+
+> An application that designs cabinets and furniture using AI agents that write
+> and refine a **parametric design language**, then compile that language into
+> real, machinable 3D geometry, cut lists, and hardware schedules.
+
+---
+
+## 1. The core idea
+
+Most "AI + 3D" tools try to make a model *generate a mesh directly*. That fails
+for furniture, because furniture has to be **buildable**: square panels, real
+sheet-goods thicknesses, joinery that actually fits, and a cut list a shop can
+take to a saw or CNC.
+
+The pattern that works — proven by [Zoo's **Zookeeper**](https://zoo.dev/research/zookeeper)
+agent and academic systems like [Seek-CAD](https://arxiv.org/pdf/2505.17702) — is:
+
+> **The AI agent does not draw the furniture. It writes _code_ in a parametric
+> design language, executes that code to build real geometry, inspects the
+> result, and repairs its own code until the design is valid.**
+
+LLMs are far stronger at producing and debugging *language* than at producing
+binary geometry. So we make CAD into a language the agent can read, write, and
+verify. The design's source of truth is text — versionable, diffable, and
+explainable — exactly like source code.
+
+### Prior art this design draws from
+
+| Tool | Premise | What we borrow |
+|---|---|---|
+| [Zookeeper / Zoo](https://zoo.dev/research/zookeeper) | Conversational agent writes **KCL** (a CAD language), executes & debugs it, inspects mass/volume/snapshots | The agent-writes-code + execute-verify-repair loop; B-Rep output |
+| [KCL](https://zoo.dev/research/introducing-kcl) | A programming language whose source of truth is text, not binary | "Design as code" — store geometry as a language so LLMs understand it |
+| [Prompt2CAD](https://www.3dprintingjournal.com/p/prompt2cad-ai-designs-furniture-but) | Text → parametric furniture with adjustable sliders; exports STEP/DXF/STL/GLB | Parameters as first-class knobs; multi-format export |
+| [Flatma](https://flatma.com/en/articles/ai-3d-model-generator/) | AI custom cabinets, each design ships a **material list + cut list** | Construction-ready outputs, not just a render |
+| [PolyBoard](https://wooddesigner.org/polyboard-software-tools/) | Parametric cabinet software → cut lists, CNC files, pricing | What cabinetmakers actually need downstream |
+| [CadQuery](https://github.com/cadquery/cadquery) / [build123d](https://build123d.readthedocs.io/en/latest/external.html) | Python, B-Rep, parametric, STEP/DXF export | Our geometry engine (see §3) |
+
+---
+
+## 2. The "form of programming language": a furniture DSL
+
+We do **not** ask the LLM to write raw build123d Python (powerful, but easy to
+get subtly wrong and hard to validate). Instead we define a small, declarative
+**furniture description language** — a typed spec the agent emits as JSON. This
+is the "programming language" at the heart of the app.
+
+```jsonc
+{
+  "type": "base_cabinet",
+  "units": "mm",
+  "width": 600, "height": 720, "depth": 560,
+  "material": { "carcass": 18, "back": 6, "door": 18 },   // sheet thicknesses
+  "construction": "frameless",            // frameless (Euro) | face_frame
+  "back": "rabbeted",                     // rabbeted | applied | grooved
+  "toe_kick": { "height": 100, "setback": 50 },
+  "shelves": 1,
+  "doors": 2,
+  "drawers": [ { "front_height": 140 } ],
+  "joinery": "dado",                      // dado | dowel | domino | screw
+  "reveal": 3,                            // gap around overlay doors/drawers
+  "edge_banding": true
+}
+```
+
+Why a DSL instead of raw CAD code:
+
+1. **Validatable.** Every field has a type and a range. The agent's output is
+   checked *before* we attempt geometry — most errors are caught for free.
+2. **Compilable.** One deterministic compiler turns the spec into geometry,
+   so the geometry is always correct *given a valid spec*. The agent only has to
+   get the spec right, not the trigonometry.
+3. **Explainable & editable.** A human (or another agent) can read and tweak
+   the spec. It diffs cleanly in git.
+4. **Cut-list native.** Because parts are explicit in the spec, the cut list and
+   hardware schedule fall out of the same data — no second source of truth.
+
+The DSL is intentionally layered: it can grow from cabinets to tables, dressers,
+and built-ins by adding spec types and compiler rules, without changing agents.
+
+---
+
+## 3. Engine recommendation: **build123d**
+
+Recommended after weighing the options for a **furniture/woodworking** target:
+
+| Engine | Kernel / output | Verdict for this app |
+|---|---|---|
+| **build123d** ✅ | OpenCascade B-Rep, Python, STEP/DXF/STL | **Chosen.** Modern, clean Python the LLM writes well; true B-Rep → STEP for CNC and DXF for nesting/cut layouts; runs locally so the verify loop is free and offline. |
+| CadQuery | Same kernel, older fluent API | Great fallback; build123d is its cleaner successor. We keep our compiler engine-swappable. |
+| KCL (Zoo) | Hosted B-Rep + ML API | Powerful but a third-party dependency and less control over the verify loop. Good future export target. |
+| OpenSCAD | Own DSL, **mesh** output | Rejected: mesh-only means no clean STEP/DXF, poor fit for CNC cabinetry. |
+
+build123d gives us **B-Rep** (boundary representation), which is what lets us
+export clean **STEP** (machining/CNC), **DXF** (2D cut layouts / nesting),
+plus **STL/GLB** for preview/AR — the same multi-format story as Prompt2CAD.
+
+The compiler is isolated behind an interface so a future KCL or CadQuery backend
+can be added without touching the DSL or the agents.
+
+---
+
+## 4. The agent loop
+
+```
+            ┌─────────────────────────────────────────────────────────┐
+            │                                                         │
+  User NL   ▼                                                         │
+ "36in base   ┌──────────────┐   DSL spec    ┌──────────────┐         │
+  cabinet,  │  Designer     │ ────────────▶ │  Validator    │         │
+  2 doors,  │  agent (LLM)  │               │ (types,ranges,│         │
+  shaker"   │  NL → DSL     │ ◀──────────── │  sanity rules)│         │
+            └──────────────┘  repair prompt └──────┬───────┘         │
+                                                   │ valid spec      │
+                                                   ▼                 │
+                                            ┌──────────────┐         │
+                                            │  Compiler     │        │
+                                            │ DSL→build123d │        │
+                                            │  B-Rep model  │        │
+                                            └──────┬───────┘         │
+                                  build error /    │  geometry       │
+                                  interference     ▼                 │
+                                            ┌──────────────┐         │
+                                            │  Critic       │ ───────┘
+                                            │ measure dims, │  feedback
+                                            │ check fit vs  │  to agent
+                                            │ spec, render  │
+                                            └──────┬───────┘
+                                                   │ pass
+                                                   ▼
+                       Outputs: GLB preview · STEP (CNC) · DXF (cut layout)
+                                · cut list (CSV) · hardware schedule
+```
+
+The decisive feature — same as Zookeeper and Seek-CAD — is the
+**execute-and-verify loop**: the agent's output is *run*, the resulting geometry
+is *measured*, and discrepancies are fed back so the agent self-corrects. This
+is what separates a buildable design from a plausible hallucination.
+
+### Agents
+
+- **Designer** — Natural language → DSL spec. Few-shot prompted with the DSL
+  schema and worked examples. The only agent that must "understand" furniture.
+- **Validator** — *Not* an LLM. Deterministic schema + woodworking sanity rules
+  (e.g. shelf depth ≤ carcass depth − back, door reveal ≥ 0, drawer box clears
+  slides). Cheap, fast, catches most errors before geometry.
+- **Critic** — Measures the built model (overall dims, part interferences) and
+  confirms it matches the spec; on mismatch, emits a structured repair note.
+- *(future)* **Estimator** — sheet-goods nesting, board-feet, cost.
+
+---
+
+## 5. Repository layout
+
+```
+src/woodworking_ai/
+  dsl.py          # The furniture language: typed spec dataclasses + JSON (de)serialize
+  validator.py    # Schema + woodworking sanity rules (pure Python, no CAD dep)
+  cutlist.py      # Spec → parts list + hardware schedule (pure math, no CAD dep)
+  builder.py      # Spec → build123d B-Rep geometry (the compiler)
+  exporters.py    # Geometry → STEP / STL / GLB ; cut list → CSV
+  agents/
+    llm.py        # Anthropic client wrapper (Claude)
+    designer.py   # NL → DSL with validate-and-repair loop
+  cli.py          # `woodai design "..."` entry point
+examples/
+  base_cabinet.py # Build a cabinet straight from a DSL spec (no LLM needed)
+tests/
+  test_cutlist.py # Pure-math tests that run without build123d or an API key
+```
+
+Design choice: **cutlist.py and validator.py have no CAD dependency**, so the
+business-critical logic (parts, dimensions, hardware, sanity) runs anywhere,
+fast, and is fully unit-tested. The heavy build123d/OpenCascade dependency is
+needed only to render and export 3D geometry.
+
+---
+
+## 6. Roadmap
+
+1. **MVP (this prototype):** frameless base cabinet — DSL, validator, cut list,
+   build123d geometry, STEP/STL export, and an LLM designer agent.
+2. Wall cabinets, tall/pantry units, face-frame construction.
+3. Critic agent with real interference checks + render-based self-review.
+4. Sheet nesting + cost estimation (Estimator agent).
+5. Casegoods beyond cabinets: tables, dressers, built-ins.
+6. Web UI (Next.js) with live 3D (GLB) preview and slider overrides à la
+   Prompt2CAD; optional KCL export for Zoo interop.
+
+---
+
+## 7. Sources
+
+- Zoo, *Zookeeper: The Conversational CAD Agent* — https://zoo.dev/research/zookeeper
+- Zoo, *KCL: A Programming Language for Parametric CAD* — https://zoo.dev/research/introducing-kcl
+- *Prompt2CAD* — https://www.3dprintingjournal.com/p/prompt2cad-ai-designs-furniture-but
+- Flatma, *AI 3D Model Generator* — https://flatma.com/en/articles/ai-3d-model-generator/
+- *Seek-CAD: Self-refined Generative Modeling for 3D Parametric CAD* — https://arxiv.org/pdf/2505.17702
+- CadQuery — https://github.com/cadquery/cadquery
+- build123d — https://build123d.readthedocs.io/en/latest/external.html
+- PolyBoard — https://wooddesigner.org/polyboard-software-tools/
