@@ -40,3 +40,17 @@ def test_project_package_builds():
     ])
     data = build_package_pdf(proj)
     assert data[:5] == b"%PDF-"
+
+
+def test_manual_orders_cut_then_process_then_build():
+    import pytest
+    fitz = pytest.importorskip("fitz")
+    data = build_package_pdf(_cab())
+    doc = fitz.open(stream=data, filetype="pdf")
+    text = "\n".join(p.get_text() for p in doc)
+    # Use the unique section headings; the cover/overview mention similar phrases.
+    cut = text.index("Cut & label all parts")
+    process = text.index("Process all parts (while flat)")
+    build = text.index("Build: Carcass")
+    final = text.rindex("Final assembly")   # the heading, not the overview mention
+    assert cut < process < build < final, "cut → process → build → final order"
