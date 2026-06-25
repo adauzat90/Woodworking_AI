@@ -86,7 +86,9 @@ def _emit_project(project: ComponentGroup, args) -> int:
             print("Wrote cutlayout.dxf")
         if args.step or args.stl or args.glb:
             from .builder import build_project, measure
-            model = build_project(project)
+            model = build_project(
+                project,
+                joinery_geometry=getattr(args, "joinery_geometry", False))
             print(f"Assembled geometry: {measure(model)}")
             if args.step:
                 exporters.export_step(model, out / "project.step")
@@ -196,7 +198,8 @@ def _emit(spec, args) -> int:
 
         if args.step or args.stl or args.glb:
             from .builder import build_model, measure
-            model = build_model(spec)
+            model = build_model(
+                spec, joinery_geometry=getattr(args, "joinery_geometry", False))
             dims = measure(model)
             print(f"Geometry built: {dims}")
             if args.step:
@@ -236,6 +239,10 @@ def main(argv: list[str] | None = None) -> int:
                         help="print the drilling schedule (32mm system, hinges)")
     common.add_argument("--joinery", action="store_true",
                         help="print the joinery setup sheet (dado/rabbet/etc.)")
+    common.add_argument("--joinery-geometry", action="store_true",
+                        dest="joinery_geometry",
+                        help="cut joinery + bores into the exported STEP/STL/GLB "
+                             "B-Rep (machine honest; needs build123d)")
     common.add_argument("--assembly", action="store_true",
                         help="print the step-by-step assembly sequence")
     common.add_argument("--imperial", action="store_true",

@@ -95,11 +95,14 @@ def model_glb_bytes(spec, *, factor: float = 0.0,
 
 
 def export_bytes(spec, fmt: str,
-                 units: str = "metric") -> tuple[bytes, str, str]:
+                 units: str = "metric",
+                 joinery_geometry: bool = False) -> tuple[bytes, str, str]:
     """Return (data, media_type, filename) for a downloadable export.
 
     ``units="imperial"`` renders the cut list in fractional inches. The 32mm
     drilling schedule stays metric — it *is* a metric boring system.
+    ``joinery_geometry=True`` cuts dados/rabbets/grooves and bores into the
+    exported CAD B-Rep (step/stl/glb); it is ignored by the non-CAD formats.
 
     Raises ValueError for an unknown format and RuntimeError if a CAD format is
     requested without build123d installed.
@@ -146,7 +149,7 @@ def export_bytes(spec, fmt: str,
         mime = {"step": "application/step", "stl": "model/stl",
                 "glb": "model/gltf-binary"}[fmt]
         with tempfile.TemporaryDirectory() as d:
-            model = build_model(spec)
+            model = build_model(spec, joinery_geometry=joinery_geometry)
             p = fn(model, Path(d) / f"c.{fmt}")
             return p.read_bytes(), mime, f"{base}.{fmt}"
 
