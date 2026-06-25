@@ -101,10 +101,13 @@ def _step(n, title, detail, part_ids=None, hardware=None, category="assembly"):
     return AssemblyStep(n, title, detail, part_ids or [], hardware or [], category)
 
 
-def _cabinet_plan(spec: CabinetSpec, cl) -> list[SubAssembly]:
-    parts = cl.parts
-    all_ids = [p.id for p in parts if p.id]
+def _classify_parts(parts) -> dict[str, list[str]]:
+    """Group cut-list part IDs into the sub-assemblies that build them.
 
+    Precise, material-aware grouping: drawer-box and door parts are claimed by
+    their own sub-assemblies, so the carcass is what's left of the sheet goods
+    (sides/bottom/top/stretcher) — never a "box side" or a "countertop".
+    """
     def ids_where(pred) -> list[str]:
         return [p.id for p in parts if p.id and pred(p)]
 
@@ -112,29 +115,43 @@ def _cabinet_plan(spec: CabinetSpec, cl) -> list[SubAssembly]:
         n = p.name.lower()
         return any(s in n for s in subs)
 
-    # Precise, material-aware grouping. Drawer-box and door parts are claimed by
-    # their own sub-assemblies, so the carcass is what's left of the sheet goods
-    # (sides/bottom/top/stretcher) — never a "box side" or a "countertop".
-    drawer_box_ids = ids_where(lambda p: p.material == "drawer box"
-                               or (name_has(p, "drawer") and name_has(p, "box")))
-    door_ids = ids_where(lambda p: p.material in ("door/front", "door panel")
-                         and name_has(p, "door"))
-    frame = ids_where(lambda p: p.material == "frame")
-    accessory_ids = ids_where(lambda p: p.material in ("countertop", "molding")
-                              or name_has(p, "filler", "end panel"))
-    shelves = ids_where(lambda p: name_has(p, "shelf"))
-    toe = ids_where(lambda p: name_has(p, "toe"))
-    back = ids_where(lambda p: p.material == "back panel"
-                     and not name_has(p, "drawer"))
-    sides = ids_where(lambda p: p.material == "sheet" and name_has(p, "side")
-                      and not name_has(p, "drawer"))
-    _claimed = set(drawer_box_ids + door_ids + frame + accessory_ids
-                   + shelves + toe + back)
+    groups = {
+        "drawer_box": ids_where(lambda p: p.material == "drawer box"
+                                or (name_has(p, "drawer") and name_has(p, "box"))),
+        "door": ids_where(lambda p: p.material in ("door/front", "door panel")
+                          and name_has(p, "door")),
+        "frame": ids_where(lambda p: p.material == "frame"),
+        "accessory": ids_where(lambda p: p.material in ("countertop", "molding")
+                               or name_has(p, "filler", "end panel")),
+        "shelves": ids_where(lambda p: name_has(p, "shelf")),
+        "toe": ids_where(lambda p: name_has(p, "toe")),
+        "back": ids_where(lambda p: p.material == "back panel"
+                          and not name_has(p, "drawer")),
+        "sides": ids_where(lambda p: p.material == "sheet" and name_has(p, "side")
+                           and not name_has(p, "drawer")),
+    }
+    claimed = set(groups["drawer_box"] + groups["door"] + groups["frame"]
+                  + groups["accessory"] + groups["shelves"] + groups["toe"]
+                  + groups["back"])
     # Carcass: the structural box panels not claimed by another sub-assembly.
-    carcass = ids_where(lambda p: p.id not in _claimed
-                        and p.material in ("sheet", "solid panel")
-                        and not name_has(p, "drawer front"))
-    door_parts = door_ids
+    groups["carcass"] = ids_where(
+        lambda p: p.id not in claimed
+        and p.material in ("sheet", "solid panel")
+        and not name_has(p, "drawer front"))
+    return groups
+
+
+def _cabinet_plan(spec: CabinetSpec, cl) -> list[SubAssembly]:
+    parts = cl.parts
+    all_ids = [p.id for p in parts if p.id]
+    g = _classify_parts(parts)
+    door_parts = g["door"]
+    frame = g["frame"]
+    shelves = g["shelves"]
+    toe = g["toe"]
+    back = g["back"]
+    sides = g["sides"]
+    carcass = g["carcass"]
     hw = {h.name for h in cl.hardware}
     is_ff = spec.construction == Construction.FACE_FRAME
     style = str(getattr(spec, "door_style", "slab")).lower()
