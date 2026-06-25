@@ -522,6 +522,97 @@ def _add_assembly_hardware(cl: "CutList", spec: CabinetSpec) -> None:
         category="fastener"))
 
 
+def _add_front_parts(cl: "CutList", spec: CabinetSpec, is_ff: bool,
+                     interior_depth: float) -> None:
+    """Append the front parts + their hardware: filler, drawers, mullion, doors.
+
+    Sizes/positions come from the shared ``front_plan`` (which also drives
+    geometry), so the parts list and the 3D model can never disagree about the
+    fronts.
+    """
+    plan = front_plan(spec)
+    front_note = "inset" if is_ff else "overlay"
+    brand = getattr(spec, "hardware_brand", "generic")
+
+    filler = next((it for it in plan.items if it.kind == "filler"), None)
+    if filler is not None:
+        cl.parts.append(Part(
+            "Blind filler", 1, length=filler.height, width=filler.width,
+            thickness=filler.thickness, material=MAT_DOOR_FRONT,
+            notes="covers blind return",
+        ))
+
+    for dr in plan.drawers:
+        note = "false front" if dr.false_front else front_note
+        cl.parts.append(Part(
+            f"Drawer front #{dr.index}", 1,
+            length=dr.width, width=dr.height, thickness=dr.thickness,
+            material=MAT_DOOR_FRONT, notes=note,
+            # A sheet-good front shows on all four edges → band all round.
+            banded_edges="LLSS" if spec.edge_banding else "",
+        ))
+        if dr.false_front:
+            continue  # fixed panel: no box, no slides
+        sdr = spec.drawers[dr.index - 1] if dr.index - 1 < len(spec.drawers) else None
+        spec_slide_len = float(getattr(sdr, "slide_length", 0.0) or 0.0)
+        # The drawer box itself, sized for slide and depth clearance. When no
+        # slide length is given, the box depth snaps to a real (orderable) slide.
+        chosen = _add_drawer_box(cl, spec, dr.index, plan.opening_w, dr.height,
+                                 interior_depth, spec_slide_len)
+        slide_len = spec_slide_len or chosen
+        slide = select_slide(
+            brand, str(getattr(sdr, "slide_type", "side_mount")), slide_len)
+        slide_note = (f"{slide.name} — {slide.length:.0f}mm"
+                      if slide.length else slide.name)
+        cl.hardware.append(Hardware(
+            "Drawer slide (pair)", 1, slide_note, sku=slide.sku,
+            brand=slide.brand))
+        if slide.locking_holes:
+            cl.hardware.append(Hardware(
+                "Drawer slide locking device (pair)", 1,
+                f"{slide.rear_notch and 'box rear notch required' or ''}".strip(),
+                brand=slide.brand, category="connector"))
+        pull = select_pull(brand)
+        cl.hardware.append(Hardware(
+            "Drawer pull", 1,
+            f"{pull.hole_spacing:.0f}mm CC" if pull.hole_spacing else "knob",
+            sku=pull.sku, brand=pull.brand))
+
+    mullion = plan.mullion
+    if mullion is not None:
+        if is_ff:
+            cl.parts.append(Part(
+                "Face-frame center stile", 1, length=mullion.height,
+                width=mullion.width, thickness=mullion.thickness,
+                material=MAT_FRAME, notes="between doors",
+            ))
+        else:
+            cl.parts.append(Part(
+                "Mullion", 1, length=mullion.height, width=mullion.width,
+                thickness=mullion.thickness, material=MAT_DOOR_FRONT,
+                notes="center post",
+            ))
+
+    doors = plan.doors
+    if doors:
+        d0 = doors[0]
+        _add_door_parts(cl, spec, doors, front_note)
+        overlay = "inset" if is_ff else getattr(spec, "hinge_overlay", "overlay")
+        hinge = select_hinge(brand, overlay)
+        n_hinges = len(doors) * hinge_count(d0.height)
+        cl.hardware.append(Hardware(
+            "Concealed hinge", n_hinges, f"{hinge.name} ({overlay})",
+            sku=hinge.sku, brand=hinge.brand))
+        cl.hardware.append(Hardware(
+            "Hinge mounting plate", n_hinges, "one per hinge",
+            sku=hinge.plate_sku, brand=hinge.brand))
+        pull = select_pull(brand)
+        cl.hardware.append(Hardware(
+            "Door pull", len(doors),
+            f"{pull.hole_spacing:.0f}mm CC" if pull.hole_spacing else "knob",
+            sku=pull.sku, brand=pull.brand))
+
+
 def _diagonal_cutlist(spec: CabinetSpec) -> CutList:
     """Parts + hardware for a diagonal (angled-front) corner cabinet."""
     m = spec.material
@@ -735,89 +826,7 @@ def _cabinet_cutlist(spec) -> CutList:
         ))
 
     # ---- fronts: doors, drawers, mullion, blind filler ------------------
-    # Sizes/positions come from the shared front_plan (also drives geometry), so
-    # the parts list and the 3D model can never disagree about the fronts.
-    plan = front_plan(spec)
-    front_note = "inset" if is_ff else "overlay"
-    brand = getattr(spec, "hardware_brand", "generic")
-
-    filler = next((it for it in plan.items if it.kind == "filler"), None)
-    if filler is not None:
-        cl.parts.append(Part(
-            "Blind filler", 1, length=filler.height, width=filler.width,
-            thickness=filler.thickness, material=MAT_DOOR_FRONT,
-            notes="covers blind return",
-        ))
-
-    for dr in plan.drawers:
-        note = "false front" if dr.false_front else front_note
-        cl.parts.append(Part(
-            f"Drawer front #{dr.index}", 1,
-            length=dr.width, width=dr.height, thickness=dr.thickness,
-            material=MAT_DOOR_FRONT, notes=note,
-            # A sheet-good front shows on all four edges → band all round.
-            banded_edges="LLSS" if spec.edge_banding else "",
-        ))
-        if dr.false_front:
-            continue  # fixed panel: no box, no slides
-        sdr = spec.drawers[dr.index - 1] if dr.index - 1 < len(spec.drawers) else None
-        spec_slide_len = float(getattr(sdr, "slide_length", 0.0) or 0.0)
-        # The drawer box itself, sized for slide and depth clearance. When no
-        # slide length is given, the box depth snaps to a real (orderable) slide.
-        chosen = _add_drawer_box(cl, spec, dr.index, plan.opening_w, dr.height,
-                                 interior_depth, spec_slide_len)
-        slide_len = spec_slide_len or chosen
-        slide = select_slide(
-            brand, str(getattr(sdr, "slide_type", "side_mount")), slide_len)
-        slide_note = (f"{slide.name} — {slide.length:.0f}mm"
-                      if slide.length else slide.name)
-        cl.hardware.append(Hardware(
-            "Drawer slide (pair)", 1, slide_note, sku=slide.sku,
-            brand=slide.brand))
-        if slide.locking_holes:
-            cl.hardware.append(Hardware(
-                "Drawer slide locking device (pair)", 1,
-                f"{slide.rear_notch and 'box rear notch required' or ''}".strip(),
-                brand=slide.brand, category="connector"))
-        pull = select_pull(brand)
-        cl.hardware.append(Hardware(
-            "Drawer pull", 1,
-            f"{pull.hole_spacing:.0f}mm CC" if pull.hole_spacing else "knob",
-            sku=pull.sku, brand=pull.brand))
-
-    mullion = plan.mullion
-    if mullion is not None:
-        if is_ff:
-            cl.parts.append(Part(
-                "Face-frame center stile", 1, length=mullion.height,
-                width=mullion.width, thickness=mullion.thickness,
-                material=MAT_FRAME, notes="between doors",
-            ))
-        else:
-            cl.parts.append(Part(
-                "Mullion", 1, length=mullion.height, width=mullion.width,
-                thickness=mullion.thickness, material=MAT_DOOR_FRONT,
-                notes="center post",
-            ))
-
-    doors = plan.doors
-    if doors:
-        d0 = doors[0]
-        _add_door_parts(cl, spec, doors, front_note)
-        overlay = "inset" if is_ff else getattr(spec, "hinge_overlay", "overlay")
-        hinge = select_hinge(brand, overlay)
-        n_hinges = len(doors) * hinge_count(d0.height)
-        cl.hardware.append(Hardware(
-            "Concealed hinge", n_hinges, f"{hinge.name} ({overlay})",
-            sku=hinge.sku, brand=hinge.brand))
-        cl.hardware.append(Hardware(
-            "Hinge mounting plate", n_hinges, "one per hinge",
-            sku=hinge.plate_sku, brand=hinge.brand))
-        pull = select_pull(brand)
-        cl.hardware.append(Hardware(
-            "Door pull", len(doors),
-            f"{pull.hole_spacing:.0f}mm CC" if pull.hole_spacing else "knob",
-            sku=pull.sku, brand=pull.brand))
+    _add_front_parts(cl, spec, is_ff, interior_depth)
 
     # ---- carcass assembly hardware (estimate from joinery) --------------
     _add_assembly_hardware(cl, spec)

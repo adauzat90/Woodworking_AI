@@ -22,10 +22,27 @@ A :class:`LeafFurniture` provides:
 * ``assembly(spec, cl)``    → ``list[SubAssembly]`` — build plan (optional;
   defaults to a single generic "Build" sub-assembly when not provided).
 
-Each leaf implementation lives in its home modules (geometry/cutlist/validator/…)
-and registers its stage callables here, so the behaviour-preserving H0 refactor
-moved *no* arithmetic — it only routed the existing branch bodies through this
-table. Pure data; no CAD dependency.
+Two registration conventions are supported, and both are intentional:
+
+1. **Distributed** (the built-in cabinet and table). Each *stage's* callable
+   lives in the module that owns that concern and registers itself there —
+   ``geometry`` registers ``panels``, ``cutlist`` registers ``cut_parts``,
+   ``validator`` registers ``validate``, and so on. A kind's behaviour is
+   assembled across modules via repeated ``register(KIND, stage=fn)`` calls.
+   Best when a type reuses a lot of an existing module's helpers (a cabinet's
+   cut list leans heavily on the rest of ``cutlist``).
+
+2. **Co-located** (wall_shelf, box, bench — all in :mod:`furniture_types`).
+   One module owns *all five* stages for a type and registers them in a single
+   ``register(KIND, panels=…, cut_parts=…, …)`` call. Best for a small,
+   self-contained type whose logic doesn't lean on another module's internals.
+   Co-located modules import only the **public** helpers they need
+   (``cutlist.resolve_part_stock``, ``assembly_steps.step``, …) — never a
+   sibling's private symbols.
+
+Pick whichever fits a new type; both route through this one registry, so no
+pipeline stage ever needs editing to add a furniture type. Pure data; no CAD
+dependency.
 """
 
 from __future__ import annotations
