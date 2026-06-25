@@ -278,27 +278,27 @@ def cutplan_dxf(plan: CutPlan) -> str:
     Boards are tiled left-to-right; each placed part is a labelled rectangle in
     the board's own frame. Pure text — no CAD dependency.
     """
-    from .dxf import _rect, _text, _layer_table
+    from .dxf import rect, text, layer_table
     gap = 200.0
-    out: list[str] = _layer_table()
+    out: list[str] = layer_table()
     out += ["0", "SECTION", "2", "ENTITIES"]
     ox = 0.0
     for bp in plan.boards:
         if not bp.placements:
             continue
         b = bp.board
-        out += _rect(ox, 0, b.length, b.width, layer="SHEET")
+        out += rect(ox, 0, b.length, b.width, layer="SHEET")
         tag = b.id or _board_label(b)
         inst = f" #{bp.instance}" if b.qty > 1 else ""
-        out += _text(ox + 5, b.width + 30, 40, f"{tag}{inst}", layer="SHEET")
+        out += text(ox + 5, b.width + 30, 40, f"{tag}{inst}", layer="SHEET")
         for p in bp.placements:
-            out += _rect(ox + p.x, p.y, p.length, p.width)
-            out += _text(ox + p.x + 8, p.y + p.width / 2 - 8, 16,
+            out += rect(ox + p.x, p.y, p.length, p.width)
+            out += text(ox + p.x + 8, p.y + p.width / 2 - 8, 16,
                          f"{p.label} {p.length:.0f}x{p.width:.0f}")
         ox += b.length + gap
     if plan.shortfall:
         labels = ", ".join(s.label for s in plan.shortfall)
-        out += _text(0, -60, 24, f"SHORTFALL (buy): {labels}", "WARN")
+        out += text(0, -60, 24, f"SHORTFALL (buy): {labels}", "WARN")
     out += ["0", "ENDSEC", "0", "EOF"]
     return "\n".join(out) + "\n"
 

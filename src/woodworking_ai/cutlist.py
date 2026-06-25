@@ -162,7 +162,7 @@ _CATEGORY_TO_AREA = {
 }
 
 
-def _resolve_part_stock(parts: list["Part"], spec) -> None:
+def resolve_part_stock(parts: list["Part"], spec) -> None:
     """Stamp each part's physical ``form``/``species`` from *spec*, in place.
 
     The role→material declaration lives on the spec (global default + per-area
@@ -536,7 +536,7 @@ def _diagonal_cutlist(spec: CabinetSpec) -> CutList:
     cl.hardware.append(Hardware("Door pull", 1))
     if spec.edge_banding:
         cl.hardware.append(Hardware("Edge banding", 1, "match carcass front edges"))
-    _resolve_part_stock(cl.parts, spec)
+    resolve_part_stock(cl.parts, spec)
     assign_ids(cl.parts)
     return cl
 
@@ -567,7 +567,7 @@ def _table_cutlist(spec: TableSpec) -> CutList:
                          thickness=spec.apron_thickness, material="apron"))
     cl.hardware.append(Hardware("Corner bracket", 4, "leg-to-apron"))
     cl.hardware.append(Hardware("Tabletop fastener", 8, "expansion clip"))
-    _resolve_part_stock(cl.parts, spec)
+    resolve_part_stock(cl.parts, spec)
     assign_ids(cl.parts)
     return cl
 
@@ -813,8 +813,8 @@ def _cabinet_cutlist(spec) -> CutList:
 
     # Solid-wood carcass: edge-glue the sheet panels from boards. Triggered by an
     # explicit panel_construction, or by declaring the carcass form as "solid".
-    from .materials import resolve as _resolve_area
-    carcass_form, _ = _resolve_area(spec, "carcass")
+    from .materials import resolve
+    carcass_form, _ = resolve(spec, "carcass")
     if (str(getattr(spec, "panel_construction", "sheet")).lower() == "glue_up"
             or carcass_form == "solid"):
         _expand_glue_ups(cl)
@@ -824,7 +824,7 @@ def _cabinet_cutlist(spec) -> CutList:
         from .accessories import add_accessory_parts
         add_accessory_parts(cl, spec)
 
-    _resolve_part_stock(cl.parts, spec)
+    resolve_part_stock(cl.parts, spec)
     assign_ids(cl.parts)
     return cl
 

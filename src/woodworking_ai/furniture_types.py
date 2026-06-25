@@ -25,10 +25,10 @@ from . import furniture
 from .dispatch import WALL_SHELF, BOX, BENCH
 from .dsl import WallShelfSpec, BoxSpec, BenchSpec, ShelfFixing
 from .geometry import PanelBox
-from .cutlist import CutList, Part, Hardware, assign_ids, _resolve_part_stock
+from .cutlist import CutList, Part, Hardware, assign_ids, resolve_part_stock
 from .validator import Issue
 from .joinery import JoineryOp
-from .assembly_steps import SubAssembly, _step
+from .assembly_steps import SubAssembly, step
 from . import engineering
 from . import hardware as hw
 
@@ -119,7 +119,7 @@ def _wall_shelf_cutlist(spec: WallShelfSpec) -> CutList:
             hw.HIDDEN_BRACKET.name, 1, hw.HIDDEN_BRACKET.note,
             sku=hw.HIDDEN_BRACKET.sku, category="connector"))
 
-    _resolve_part_stock(cl.parts, spec)
+    resolve_part_stock(cl.parts, spec)
     assign_ids(cl.parts)
     return cl
 
@@ -191,27 +191,27 @@ def _wall_shelf_assembly(spec: WallShelfSpec, cl) -> list[SubAssembly]:
     sub = SubAssembly("Wall shelf", "A board on a cleat or brackets",
                       part_ids=ids, category="carcass")
     sub.steps = [
-        _step(1, "Mill & finish the board",
+        step(1, "Mill & finish the board",
               "Dimension the shelf board (and cleats), ease the edges, and apply "
               "the finish before mounting.", ids, category="prep"),
     ]
     if spec.fixing == ShelfFixing.FRENCH_CLEAT:
-        sub.steps.append(_step(
+        sub.steps.append(step(
             2, "Cut & fit the French cleat",
             "Rip the 45° bevel pair; fix the wall strip level into studs and "
             "screw the shelf strip under the board's rear.", ids, hw_names,
             "hardware"))
-        sub.steps.append(_step(
+        sub.steps.append(step(
             3, "Hang the shelf",
             "Drop the board's cleat onto the wall cleat — it self-registers and "
             "locks down.", category="hardware"))
     elif spec.fixing == ShelfFixing.BRACKETS:
-        sub.steps.append(_step(
+        sub.steps.append(step(
             2, "Mount the brackets & shelf",
             "Anchor the brackets level into studs, then screw the board down to "
             "them.", ids, hw_names, "hardware"))
     else:
-        sub.steps.append(_step(
+        sub.steps.append(step(
             2, "Fit the hidden brackets",
             "Anchor the concealed rods into the wall and slide the back-bored "
             "board onto them.", ids, hw_names, "hardware"))
@@ -292,7 +292,7 @@ def _box_cutlist(spec: BoxSpec) -> CutList:
             hw.LID_SUPPORT.name, 1, hw.LID_SUPPORT.note, sku=hw.LID_SUPPORT.sku,
             category="hardware"))
 
-    _resolve_part_stock(cl.parts, spec)
+    resolve_part_stock(cl.parts, spec)
     assign_ids(cl.parts)
     return cl
 
@@ -385,10 +385,10 @@ def _box_assembly(spec: BoxSpec, cl) -> list[SubAssembly]:
     body = SubAssembly("Box body", "Four sides and a captured bottom",
                        part_ids=body_ids, category="carcass")
     body.steps = [
-        _step(1, "Cut the corner joints & bottom groove",
+        step(1, "Cut the corner joints & bottom groove",
               "Cut the chosen corner joint on all four corners and the groove "
               "for the bottom per the joinery sheet.", body_ids, category="joinery"),
-        _step(2, "Glue up the box",
+        step(2, "Glue up the box",
               "Dry-fit, then glue and clamp the box square; slide the bottom into "
               "its groove and check it is flat and not in wind.", body_ids,
               category="carcass"),
@@ -398,14 +398,14 @@ def _box_assembly(spec: BoxSpec, cl) -> list[SubAssembly]:
         lid = SubAssembly("Lid", "A hinged lid", part_ids=lid_ids,
                           category="fronts")
         lid.steps = [
-            _step(1, "Fit & hinge the lid",
+            step(1, "Fit & hinge the lid",
                   "Trim the lid to fit, mortise the hinges into the lid and rear, "
                   "and hang it; add the lid stay.", lid_ids, hw_names, "hardware"),
         ]
         subs.append(lid)
     final = SubAssembly("Final", "Finish the chest", category="final")
     final.steps = [
-        _step(1, "Sand & finish",
+        step(1, "Sand & finish",
               "Final-sand, ease the edges, and apply the finish.",
               category="finish"),
     ]
@@ -503,7 +503,7 @@ def _bench_cutlist(spec: BenchSpec) -> CutList:
             notes="lower rail, resists racking"))
     cl.hardware.append(Hardware("Corner bracket", 4, "leg-to-apron"))
     cl.hardware.append(Hardware("Seat fastener", 6, "expansion clip"))
-    _resolve_part_stock(cl.parts, spec)
+    resolve_part_stock(cl.parts, spec)
     assign_ids(cl.parts)
     return cl
 
@@ -583,10 +583,10 @@ def _bench_assembly(spec: BenchSpec, cl) -> list[SubAssembly]:
     base = SubAssembly("Base", "Four legs joined by aprons and stretchers",
                        part_ids=base_ids, category="carcass")
     base.steps = [
-        _step(1, "Cut the leg joints",
+        step(1, "Cut the leg joints",
               "Mortise the legs and tenon the aprons and stretchers (or Domino/"
               "dowel) per the joinery sheet.", base_ids, category="joinery"),
-        _step(2, "Glue up the base",
+        step(2, "Glue up the base",
               "Glue the two end assemblies (legs + short aprons + stretchers), "
               "then join with the long rails; check for square and wind.",
               base_ids, category="carcass"),
@@ -594,18 +594,18 @@ def _bench_assembly(spec: BenchSpec, cl) -> list[SubAssembly]:
     seat_sub = SubAssembly("Seat", "The seat top", part_ids=seat,
                            category="carcass")
     seat_sub.steps = [
-        _step(1, "Prepare the seat",
+        step(1, "Prepare the seat",
               "Edge-glue the boards into a flat panel (or dimension the sheet) "
               "and sand level.", seat, category="carcass"),
     ]
     final = SubAssembly("Final assembly", "Join seat to base and finish",
                         category="final")
     final.steps = [
-        _step(1, "Attach the seat",
+        step(1, "Attach the seat",
               "Fasten the seat to the base allowing for seasonal movement "
               "(figure-8 fasteners / Z-clips).", seat, ["Seat fastener"],
               "hardware"),
-        _step(2, "Sand & finish", "Final-sand and apply the finish.",
+        step(2, "Sand & finish", "Final-sand and apply the finish.",
               category="finish"),
     ]
     return [base, seat_sub, final]

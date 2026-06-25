@@ -126,20 +126,20 @@ def _default_assembly(spec, cl) -> list:
     Keeps the assembly stage working for new leaf types without forcing each to
     author a bespoke plan. Imports the assembly types lazily to dodge a cycle.
     """
-    from .assembly_steps import SubAssembly, _step
+    from .assembly_steps import SubAssembly, step
     parts = getattr(cl, "parts", [])
     ids = [p.id for p in parts if getattr(p, "id", "")]
     sub = SubAssembly(
         "Build", "Mill, join, assemble and finish the piece",
         part_ids=ids, category="carcass")
     sub.steps = [
-        _step(1, "Mill & label all parts",
+        step(1, "Mill & label all parts",
               "Cut every part to the cut-list sizes and label each with its ID.",
               ids, category="prep"),
-        _step(2, "Join & assemble",
+        step(2, "Join & assemble",
               "Cut the joinery, dry-fit, then glue and clamp square.", ids,
               category="carcass"),
-        _step(3, "Sand & finish",
+        step(3, "Sand & finish",
               "Final-sand, ease the edges, and apply the finish.",
               category="finish"),
     ]

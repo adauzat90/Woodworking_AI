@@ -285,14 +285,29 @@ def _hinge_ops(doors, sides, side_by_hand, pid) -> list[DrillOp]:
 # that rotation. These helpers do that once, so the nest DXF and the per-part
 # shop drawings project bores identically.
 
-def _placement_rotated(part_length: float, part_width: float,
-                       rect_l: float, rect_w: float) -> bool:
+def placement_rotated(part_length: float, part_width: float,
+                      rect_l: float, rect_w: float) -> bool:
     """True if the part was laid width-along-the-sheet (rotated) when nested.
 
     Decided from the placed rectangle: ``rect_l`` (along the sheet length) maps
     to whichever part dimension it matches more closely.
     """
     return abs(rect_l - part_length) > abs(rect_l - part_width)
+
+
+def place_rect(rotated: bool, x: float, y: float,
+               a: float, b: float, da: float, db: float
+               ) -> tuple[float, float, float, float]:
+    """Map a local rectangle into a nest placement honouring the rotation.
+
+    Mirrors :func:`place_holes`: when the part is nested *rotated* the ``a``/``da``
+    axis runs along the sheet x-axis; otherwise ``b``/``db`` does. One swap rule
+    shared by the nest DXF's cut-out and housing bands (and drawings), so the
+    part-frame→sheet transform lives in exactly one place.
+    """
+    if rotated:
+        return (x + a, y + b, da, db)
+    return (x + b, y + a, db, da)
 
 
 def place_holes(holes, part_length: float, part_width: float,
@@ -305,7 +320,7 @@ def place_holes(holes, part_length: float, part_width: float,
     nested unrotated, ``v`` runs along the sheet x-axis and ``u`` along y; when
     rotated the two swap — so a bore always lands inside its part outline.
     """
-    rotated = _placement_rotated(part_length, part_width, rect_l, rect_w)
+    rotated = placement_rotated(part_length, part_width, rect_l, rect_w)
     out: list[tuple[float, float, Hole]] = []
     for h in holes:
         if rotated:                       # part.width runs along the sheet x-axis

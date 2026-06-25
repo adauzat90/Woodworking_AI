@@ -81,7 +81,7 @@ def _clamp_step(n, parts_by_id, ids, category="carcass",
               f"{int(plan['spacing_mm'])}mm of glue line), each at least "
               f"~{int(plan['length_mm'])}mm long to span the joint. "
               "Alternate clamps over and under to keep the panel flat.")
-    return _step(n, title, detail, list(ids or []), ["Bar/parallel clamps"],
+    return step(n, title, detail, list(ids or []), ["Bar/parallel clamps"],
                  category)
 
 
@@ -160,7 +160,7 @@ def _ids(parts, *predicates) -> list[str]:
     return out
 
 
-def _step(n, title, detail, part_ids=None, hardware=None, category="assembly"):
+def step(n, title, detail, part_ids=None, hardware=None, category="assembly"):
     return AssemblyStep(n, title, detail, part_ids or [], hardware or [], category)
 
 
@@ -186,16 +186,16 @@ def _augment_glue_up(sub: "SubAssembly", parts_by_id: dict, glue_ids,
     ids = list(glue_ids or [])
     extra: list[AssemblyStep] = []
     n0 = len(sub.steps)
-    extra.append(_step(
+    extra.append(step(
         n0 + 1, "Dry-fit before glue",
         "Assemble dry with clamps and a square: confirm every joint closes and "
         "nothing racks before any glue is spread.", ids, category=category))
-    extra.append(_step(
+    extra.append(step(
         n0 + 2, "Glue open-time caution",
         f"Ordinary PVA has only ~{PVA_OPEN_TIME_MIN[0]}-{PVA_OPEN_TIME_MIN[1]} "
         "min of open time — lay clamps and cauls out first, and use a slower "
         "glue for a big glue-up.", ids, category=category))
-    extra.append(_step(
+    extra.append(step(
         n0 + 3, "Check diagonals for square",
         "With the joint clamped, measure both diagonals: equal means square. "
         "Adjust clamp angle until they match, then leave it to cure.", ids,
@@ -204,13 +204,13 @@ def _augment_glue_up(sub: "SubAssembly", parts_by_id: dict, glue_ids,
     if clamp is not None:
         extra.append(clamp)
     if cross_grain:
-        extra.append(_step(
+        extra.append(step(
             n0 + 5, "Cross-grain caution",
             "Don't glue a wide solid panel rigidly cross-grain — it will move "
             "with the seasons and split. Let wide panels float, or fasten with "
             "slotted/expansion hardware.", ids, category=category))
     elif float_panel:
-        extra.append(_step(
+        extra.append(step(
             n0 + 5, "Leave the panel floating",
             "Glue the frame corners only — leave the centre panel floating in "
             "its groove so it can move cross-grain without splitting the frame.",
@@ -280,10 +280,10 @@ def _cabinet_plan(spec: CabinetSpec, cl) -> list[SubAssembly]:
     prep = SubAssembly("Preparation", "Mill and drill every part before glue-up",
                        part_ids=all_ids, category="prep")
     prep.steps = [
-        _step(1, "Mill & label all parts",
+        step(1, "Mill & label all parts",
               "Cut every panel to the cut-list sizes and label each with its ID; "
               "check the grain runs as marked.", all_ids, category="prep"),
-        _step(2, "Drill the flat panels first",
+        step(2, "Drill the flat panels first",
               "Bore the 32mm shelf-pin lines, hinge cups and slide/plate holes "
               "while the panels are flat — before any assembly.",
               sorted(set(sides + door_parts)),
@@ -295,21 +295,21 @@ def _cabinet_plan(spec: CabinetSpec, cl) -> list[SubAssembly]:
     carc = SubAssembly("Carcass", "The box: sides, bottom, top/stretchers, back",
                        part_ids=sorted(set(carcass + back + toe)), category="carcass")
     carc.steps = [
-        _step(1, "Cut the carcass joinery",
+        step(1, "Cut the carcass joinery",
               "Run the dados/rabbets and the back housing per the joinery sheet; "
               "dry-fit and check for square.", sides, category="joinery"),
-        _step(2, "Glue & clamp the carcass",
+        step(2, "Glue & clamp the carcass",
               "Assemble the bottom and top/stretchers between the sides, glue and "
               "clamp, and check the diagonals are equal.", carcass,
               category="carcass"),
     ]
     if back:
-        carc.steps.append(_step(
+        carc.steps.append(step(
             len(carc.steps) + 1, "Fit the back",
             "Seat the back in its rabbet/groove (or apply it) to square and "
             "stiffen the box.", back, ["Back panel screw 4×16"], "carcass"))
     if toe:
-        carc.steps.append(_step(
+        carc.steps.append(step(
             len(carc.steps) + 1, "Attach the toe kick",
             "Fix the toe kick to the cabinet base.", toe, category="carcass"))
     # A solid-wood (edge-glued) carcass has wide cross-grain panels to watch.
@@ -324,10 +324,10 @@ def _cabinet_plan(spec: CabinetSpec, cl) -> list[SubAssembly]:
         ff = SubAssembly("Face frame", "Solid stiles and rails over the carcass "
                          "front", part_ids=frame, category="carcass")
         ff.steps = [
-            _step(1, "Join the frame",
+            step(1, "Join the frame",
                   "Pocket-screw or Domino the stiles and rails into a flat frame; "
                   "check it sits square.", frame, category="joinery"),
-            _step(2, "Attach to the carcass",
+            step(2, "Attach to the carcass",
                   "Glue/screw the frame to the carcass front and flush-trim the "
                   "overhang.", frame, category="carcass"),
         ]
@@ -342,10 +342,10 @@ def _cabinet_plan(spec: CabinetSpec, cl) -> list[SubAssembly]:
         sub = SubAssembly(f"Drawer box {i}", "Four sides and a captured bottom",
                           part_ids=box_ids, category="drawer")
         sub.steps = [
-            _step(1, "Cut the corner joints & bottom groove",
+            step(1, "Cut the corner joints & bottom groove",
                   "Cut the drawer-corner joint and the groove for the bottom per "
                   "the joinery sheet.", box_ids, category="joinery"),
-            _step(2, "Glue up the box",
+            step(2, "Glue up the box",
                   "Glue and clamp the box square, slide the bottom into its "
                   "groove, and check it is flat and not in wind.", box_ids,
                   category="drawer"),
@@ -364,11 +364,11 @@ def _cabinet_plan(spec: CabinetSpec, cl) -> list[SubAssembly]:
                               "Five-piece frame around a floating panel",
                               part_ids=leaf_ids, category="door")
             sub.steps = [
-                _step(1, "Cope-and-stick the frame",
+                step(1, "Cope-and-stick the frame",
                       "Stick the inner edges of the stiles and rails and cope the "
                       "rail ends to match; cut the panel groove.", leaf_ids,
                       category="joinery"),
-                _step(2, "Glue the frame around the panel",
+                step(2, "Glue the frame around the panel",
                       "Dry-fit, then glue the frame corners only — leave the panel "
                       "floating so it can move — and clamp flat.", leaf_ids,
                       category="door"),
@@ -385,7 +385,7 @@ def _cabinet_plan(spec: CabinetSpec, cl) -> list[SubAssembly]:
     def fstep(title, detail, ids=None, hardware=None, category="fronts"):
         nonlocal n
         n += 1
-        final.steps.append(_step(n, title, detail, ids or [], hardware or [],
+        final.steps.append(step(n, title, detail, ids or [], hardware or [],
                                  category))
 
     if boxed:
@@ -427,17 +427,17 @@ def _table_plan(spec: TableSpec, cl) -> list[SubAssembly]:
     base = SubAssembly("Base", "Four legs joined by aprons",
                        part_ids=sorted(set(legs + aprons)), category="carcass")
     base.steps = [
-        _step(1, "Cut the leg-to-apron joints",
+        step(1, "Cut the leg-to-apron joints",
               "Mortise the legs and tenon the aprons (or Domino/dowel) per the "
               "joinery sheet.", legs + aprons, category="joinery"),
-        _step(2, "Glue up the base",
+        step(2, "Glue up the base",
               "Glue the two end assemblies, then join with the long aprons; check "
               "for square and wind.", legs + aprons, category="carcass"),
     ]
     _augment_glue_up(base, by_id, legs + aprons, category="carcass")
     top_sub = SubAssembly("Top", "The tabletop", part_ids=top, category="carcass")
     top_sub.steps = [
-        _step(1, "Prepare the top",
+        step(1, "Prepare the top",
               "Edge-glue the boards into a flat panel (or dimension the sheet) and "
               "sand level.", top, category="carcass"),
     ]
@@ -449,11 +449,11 @@ def _table_plan(spec: TableSpec, cl) -> list[SubAssembly]:
     final = SubAssembly("Final assembly", "Join top to base and finish",
                         category="final")
     final.steps = [
-        _step(1, "Attach the top",
+        step(1, "Attach the top",
               "Fasten the top to the base with a method that allows seasonal "
               "movement (figure-8 fasteners / Z-clips).", top,
               ["Tabletop fastener"], "hardware"),
-        _step(2, "Sand & finish", "Final-sand and apply the finish.",
+        step(2, "Sand & finish", "Final-sand and apply the finish.",
               category="finish"),
     ]
     return [base, top_sub, final]
@@ -473,16 +473,16 @@ def assembly_plan(spec) -> AssemblyPlan:
                     name=f"[{tag}] {sub.name}", detail=sub.detail,
                     part_ids=[f"{tag}-{pid}" for pid in sub.part_ids],
                     category=sub.category,
-                    steps=[_step(s.number, s.title, s.detail,
+                    steps=[step(s.number, s.title, s.detail,
                                  [f"{tag}-{pid}" for pid in s.part_ids],
                                  s.hardware, s.category) for s in sub.steps]))
         run = SubAssembly("Set & join the run",
                           "Install the cabinets as a run", category="install")
         run.steps = [
-            _step(1, "Set & level the cabinets",
+            step(1, "Set & level the cabinets",
                   "Level each cabinet, shim to the floor, and clamp the faces "
                   "flush.", category="install"),
-            _step(2, "Join & scribe",
+            step(2, "Join & scribe",
                   "Screw the cabinets together and scribe the end panels/fillers "
                   "to the walls.", category="install"),
         ]
