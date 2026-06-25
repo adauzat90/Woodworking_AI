@@ -7,6 +7,31 @@ cut-from-stock, skill+time planning, finishing/glue-up depth). It turns the
 impact order. It uses a **G-series** id (G = "great") to avoid colliding with the
 H-series.
 
+## Delivery status (this branch)
+
+| # | Item | Status |
+|---|---|---|
+| **G7** | Fix STEP / per-part export tests | ✅ done — suite green (915 passed) |
+| **G1** | Picture frame | ✅ done (`tests/test_frame.py`) |
+| **G1** | Knock-down bed | ✅ done (`tests/test_bed.py`) |
+| **G1** | Cutting / charcuterie board | ✅ done (`tests/test_cutting_board.py`) |
+| **G1** | Nightstand · workbench · desk | ⬜ remaining (same leaf path) |
+| **G2a** | Exploded stepwise assembly walkthrough | ✅ done (caption + ▶ Walk + Show-in-3D) |
+| **G2b** | Edit dimensions on the model | ✅ click-to-edit overlay; ⬜ drag-handles (browser-QA follow-up) |
+| **G3** | Starter-project gallery | ✅ done (`templates.py`, `/api/templates`) |
+| **G4** | Consumables + sourcing in the PO | ✅ done (`sources.py`, `tests/test_purchasing.py`) |
+| **G5** | Responsive layout + print stylesheet | ✅ done |
+| **G6a** | 1:1 templates (scale-check cover page) + UI button | ✅ done |
+| **G6b** | Imperial-first default (CLI `WOODAI_UNITS`) | ✅ done |
+
+The home-shop furniture set is now: cabinets (7) · table · wall shelf · box/chest
+· bench/stool · **picture frame** · **bed** · **cutting board**. Each new type
+went in through the leaf-furniture registry with **no generic-stage edits**, the
+golden tests stayed green, and every addition runs without an API key or
+`build123d`.
+
+---
+
 Every phase keeps the invariants this codebase already holds, and these are
 **non-negotiable**:
 
