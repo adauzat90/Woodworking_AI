@@ -17,6 +17,8 @@ Types:
   glazing, art/mirror, and backer.
 * **bed** — a knock-down bed: a headboard and footboard joined by two side rails
   with bed-bolt / hook-plate hardware, carrying a deck of cross slats.
+* **cutting_board** — a glued-up cutting / charcuterie board: N edge-glued
+  strips (optionally two alternating species), edge/end/long grain.
 
 No CAD dependency.
 """
@@ -26,10 +28,10 @@ from __future__ import annotations
 import math
 
 from . import furniture
-from .dispatch import WALL_SHELF, BOX, BENCH, FRAME, BED
+from .dispatch import WALL_SHELF, BOX, BENCH, FRAME, BED, CUTTING_BOARD
 from .dsl import (
-    WallShelfSpec, BoxSpec, BenchSpec, FrameSpec, BedSpec, ShelfFixing,
-    FrameJoint, FrameHanger, FrameContents, BedConnector,
+    WallShelfSpec, BoxSpec, BenchSpec, FrameSpec, BedSpec, CuttingBoardSpec,
+    ShelfFixing, FrameJoint, FrameHanger, FrameContents, BedConnector, GrainStyle,
 )
 from .geometry import PanelBox
 from .cutlist import CutList, Part, Hardware, assign_ids, resolve_part_stock
@@ -38,6 +40,7 @@ from .validator import Issue
 from .joinery import JoineryOp
 from .assembly_steps import SubAssembly, step
 from . import engineering
+from . import species
 from . import hardware as hw
 
 
@@ -1194,4 +1197,193 @@ furniture.register(
     validate=_bed_validate,
     joinery_ops=_bed_joinery,
     assembly=_bed_assembly,
+)
+
+
+# ===========================================================================
+# Cutting / charcuterie board (edge-glued strip panel)
+# ===========================================================================
+
+_FOOD_SAFE_FINISHES = {"oil", "none", ""}        # film finishes aren't food-safe
+
+
+def _board_panels(spec: CuttingBoardSpec) -> list[PanelBox]:
+    """The board modelled as its edge-glued strips, side by side across X.
+
+    X = width (strips tile it), Y = length, Z = thickness (board on the bench).
+    """
+    n, sw = spec.strip_count, spec.strip_width
+    L, t, W = spec.length, spec.thickness, spec.width
+    panels: list[PanelBox] = []
+    for i in range(n):
+        x = -W / 2 + (i + 0.5) * sw
+        panels.append(PanelBox(
+            f"Strip {i + 1}", (sw, L, t), (x, L / 2, t / 2), "top",
+            subassembly="Board"))
+    return panels
+
+
+def _board_cutlist(spec: CuttingBoardSpec) -> CutList:
+    cl = CutList(spec_name=spec.name)
+    n = spec.strip_count
+    two = bool(spec.species_b)
+    end = spec.grain_style == GrainStyle.END_GRAIN
+    # A little length for trimming the glued blank square; end grain needs more.
+    allow = 40.0 if end else 25.0
+    note = "edge-glued strip" + ("; crosscut & re-glue for end grain" if end else "")
+
+    if two:
+        n_a = (n + 1) // 2
+        n_b = n // 2
+        cl.parts.append(Part(
+            f"Strip — {spec.species}", n_a, length=spec.length + allow,
+            width=spec.strip_width, thickness=spec.thickness, material=MAT_SOLID,
+            grain="length", notes=note))
+        cl.parts.append(Part(
+            f"Strip — {spec.species_b}", n_b, length=spec.length + allow,
+            width=spec.strip_width, thickness=spec.thickness, material=MAT_SOLID,
+            grain="length", notes=note))
+    else:
+        cl.parts.append(Part(
+            "Strip", n, length=spec.length + allow, width=spec.strip_width,
+            thickness=spec.thickness, material=MAT_SOLID, grain="length",
+            notes=note))
+
+    if spec.feet:
+        cl.hardware.append(Hardware(
+            hw.BOARD_FOOT.name, 4, hw.BOARD_FOOT.note, sku=hw.BOARD_FOOT.sku,
+            category="hardware"))
+    cl.hardware.append(Hardware(
+        hw.BOARD_OIL.name, 1, hw.BOARD_OIL.note, sku=hw.BOARD_OIL.sku,
+        category="finish"))
+
+    resolve_part_stock(cl.parts, spec)
+    assign_ids(cl.parts)
+    return cl
+
+
+def _board_validate(spec: CuttingBoardSpec) -> list[Issue]:
+    issues: list[Issue] = []
+
+    def err(f, m):
+        issues.append(Issue("error", f, m))
+
+    def warn(f, m):
+        issues.append(Issue("warning", f, m))
+
+    for name in ("length", "width", "thickness"):
+        if not _finite_positive(getattr(spec, name)):
+            err(name, f"must be a positive, finite number, got {getattr(spec, name)!r}")
+    if any(i.severity == "error" for i in issues):
+        return issues
+
+    end = spec.grain_style == GrainStyle.END_GRAIN
+    if end and spec.thickness < 32:
+        warn("thickness",
+             "an end-grain board under ~32mm is fragile and prone to splitting; "
+             "go thicker")
+    elif not end and spec.thickness < 18:
+        warn("thickness",
+             "a board under ~18mm cups and feels flimsy; aim for 18-40mm")
+    if spec.juice_groove and spec.thickness < 25:
+        warn("juice_groove",
+             "too thin for a juice groove without weakening the board; thicken it "
+             "or drop the groove")
+    if str(spec.finish).strip().lower() not in _FOOD_SAFE_FINISHES:
+        warn("finish",
+             "use a food-safe finish (mineral oil / board butter), not a film "
+             "finish like paint or polyurethane")
+    # Open-pore species trap food/bacteria; steer to tight-grain woods.
+    if species.finishing_category(spec.species) == species.FINISH_OPEN_PORE:
+        warn("species",
+             f"{spec.species} is open-pored — it traps food and bacteria; prefer "
+             "tight-grain maple, walnut, cherry, or beech for a board")
+    return issues
+
+
+def _board_joinery(spec: CuttingBoardSpec, cl) -> list[JoineryOp]:
+    pid = cl.part_id_for_label
+    label = cl.parts[0].name if cl.parts else "Strip"
+    ops = [JoineryOp(
+        part="Strips", operation="edge glue-up", tool="jointer + clamps",
+        width=0.0, depth=round(spec.thickness, 1), reference="strip to strip",
+        part_id=pid(label), note="alternate the grain/colour; cauls keep it flat")]
+    if spec.grain_style == GrainStyle.END_GRAIN:
+        ops.append(JoineryOp(
+            part="Blank", operation="crosscut & re-glue (end grain)",
+            tool="crosscut sled + clamps", width=0.0, depth=round(spec.thickness, 1),
+            reference="rotate the strips 90° end-up", part_id=pid(label),
+            note="second glue-up brings the end grain to the surface"))
+    if spec.juice_groove:
+        ops.append(JoineryOp(
+            part="Board", operation="rout juice groove", tool="router + round-nose bit",
+            width=8.0, depth=6.0, reference="~20mm in from the perimeter",
+            part_id=pid(label), note="catches juices; keep clear of the edge"))
+    if spec.chamfer > 0:
+        ops.append(JoineryOp(
+            part="Board", operation="ease the edges", tool="router / block plane",
+            width=round(spec.chamfer, 1), depth=round(spec.chamfer, 1),
+            reference="all top & bottom edges", part_id=pid(label),
+            note="a chamfer or round-over is kinder on the hands"))
+    return ops
+
+
+def _board_assembly(spec: CuttingBoardSpec, cl) -> list[SubAssembly]:
+    ids = [p.id for p in cl.parts if p.id]
+    hw_names = [h.name for h in cl.hardware]
+    end = spec.grain_style == GrainStyle.END_GRAIN
+
+    glue = SubAssembly("Glue-up", "Edge-glue the strips into a panel",
+                       part_ids=ids, category="carcass")
+    glue.steps = [
+        step(1, "Mill & arrange the strips",
+              "Dimension the strips, joint a clean edge on each, and lay out the "
+              "pattern (alternate species/grain).", ids, category="prep"),
+        step(2, "Glue up the panel",
+              "Glue and clamp the strips with cauls to keep the panel flat; "
+              "don't starve the joints.", ids, category="carcass"),
+    ]
+    subs = [glue]
+    if end:
+        eg = SubAssembly("End grain", "Crosscut and re-glue end-up",
+                         category="carcass")
+        eg.steps = [
+            step(1, "Crosscut & re-glue",
+                  "Flatten the blank, crosscut it into strips across the glue "
+                  "lines, rotate each 90° so the end grain faces up, and glue up "
+                  "again.", category="carcass"),
+        ]
+        subs.append(eg)
+    final = SubAssembly("Flatten & finish", "Flatten, shape, and oil the board",
+                        category="final")
+    fsteps = [
+        step(1, "Flatten & ease the edges",
+              "Flatten both faces (plane/sand or a router sled), then chamfer or "
+              "round-over the edges.", category="finish"),
+    ]
+    if spec.juice_groove:
+        fsteps.append(step(2, "Rout the juice groove",
+                           "Rout the perimeter juice groove with a round-nose bit.",
+                           category="finish"))
+    fsteps.append(step(len(fsteps) + 1, "Sand & oil",
+                       "Sand to ~220, raise the grain with water, knock it back, "
+                       "then flood with food-safe oil and finish with board "
+                       "butter.", [], hw_names, "finish"))
+    if spec.feet:
+        fsteps.append(step(len(fsteps) + 1, "Add the feet",
+                           "Fit non-slip feet to the underside for grip and "
+                           "airflow.", [], ["Rubber / silicone board feet"],
+                           "hardware"))
+    final.steps = fsteps
+    subs.append(final)
+    return subs
+
+
+furniture.register(
+    CUTTING_BOARD,
+    panels=_board_panels,
+    cut_parts=_board_cutlist,
+    validate=_board_validate,
+    joinery_ops=_board_joinery,
+    assembly=_board_assembly,
 )

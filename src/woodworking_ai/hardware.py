@@ -191,6 +191,12 @@ BED_HOOK_PLATE = Fastener("Bed-rail hook plate (pair)", "BED-HOOK",
 BED_BOLT_COVER = Fastener("Bed-bolt cover cap", "BED-BOLT-CAP",
                           "hides the bolt counterbore on the post face")
 
+# Cutting-board hardware.
+BOARD_FOOT = Fastener("Rubber / silicone board feet", "BOARD-FOOT",
+                      "non-slip feet + airflow under the board")
+BOARD_OIL = Fastener("Food-safe board oil + butter", "BOARD-OIL",
+                     "mineral oil / beeswax board butter — re-oil regularly")
+
 
 def select_hinge(brand: str, overlay: str = "overlay") -> HingeSpec:
     h = _HINGES[normalize_brand(brand)]

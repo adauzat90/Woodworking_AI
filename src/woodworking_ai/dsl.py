@@ -149,6 +149,13 @@ class BedConnector(StrEnum):
     HOOK_PLATE = "hook_plate"       # interlocking bed-rail hook brackets
 
 
+class GrainStyle(StrEnum):
+    """Glue-up grain orientation for a cutting / charcuterie board."""
+    EDGE_GRAIN = "edge_grain"       # strips on edge — the everyday board
+    END_GRAIN = "end_grain"         # end grain up — a butcher block, knife-kind
+    LONG_GRAIN = "long_grain"       # face grain — a serving/charcuterie board
+
+
 class ApplianceType(StrEnum):
     SINK = "sink"             # drop-in/undermount, hosted by a countertop cutout
     COOKTOP = "cooktop"       # surface unit, also a countertop cutout
@@ -1171,6 +1178,83 @@ class BedSpec:
         return cls.from_dict(json.loads(text))
 
 
+@dataclass
+class CuttingBoardSpec:
+    """A glued-up cutting / charcuterie board: N strips edge-glued into a panel.
+
+    The board is one edge-glued panel of ``strips`` strips; ``species`` (and an
+    optional ``species_b``) drive an alternating pattern. End-grain boards are a
+    two-stage glue-up (glue strips, crosscut, rotate 90°, re-glue) — modelled as
+    the same finished panel with the extra steps called out. Coordinates match
+    the shared frame: X = width (strips run across it), Y = length, Z = thickness.
+    """
+
+    kind: str = "cutting_board"
+    units: str = "mm"
+    name: str = "Cutting board"
+    length: float = 450.0          # Y (long dimension)
+    width: float = 300.0           # X (across the strips)
+    thickness: float = 38.0        # Z (board thickness)
+    grain_style: GrainStyle = GrainStyle.EDGE_GRAIN
+    strips: int = 0                # strip count (0 = auto from width)
+    juice_groove: bool = False     # a routed perimeter groove to catch juices
+    feet: bool = False             # rubber/silicone feet on the underside
+    chamfer: float = 4.0           # eased edge / chamfer
+
+    # --- material/finish (food-safe by default) -------------------------------
+    species: str = "hard_maple"    # primary strip species
+    species_b: str = ""            # optional alternating species (e.g. walnut)
+    finish: str = "oil"            # food-safe oil/board butter by default
+    finish_sheen: str = "satin"
+    material_form: str = "solid"
+
+    def __post_init__(self) -> None:
+        self.grain_style = _coerce_enum(GrainStyle, self.grain_style)
+
+    @property
+    def strip_count(self) -> int:
+        if self.strips > 0:
+            return self.strips
+        # ~ one strip per 38mm of width, at least three for a glue-up.
+        return max(int(self.width // 38), 3)
+
+    @property
+    def strip_width(self) -> float:
+        return self.width / self.strip_count
+
+    # Placement aliases (a board can sit in a Project like any leaf).
+    @property
+    def height(self) -> float:
+        return self.thickness
+
+    @property
+    def depth(self) -> float:
+        return self.length
+
+    def to_dict(self) -> dict[str, Any]:
+        d = asdict(self)
+        if isinstance(self.grain_style, Enum):
+            d["grain_style"] = self.grain_style.value
+        d["schema_version"] = SCHEMA_VERSION
+        return d
+
+    def to_json(self, indent: int = 2) -> str:
+        return json.dumps(self.to_dict(), indent=indent)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "CuttingBoardSpec":
+        data = dict(data)
+        if normalize_unit(data.get("units")) == IMPERIAL:
+            _to_mm(data, ("length", "width", "thickness", "chamfer"))
+            data["units"] = "mm"
+        known = {f for f in cls.__dataclass_fields__}
+        return cls(**{k: v for k, v in data.items() if k in known})
+
+    @classmethod
+    def from_json(cls, text: str) -> "CuttingBoardSpec":
+        return cls.from_dict(json.loads(text))
+
+
 # ---------------------------------------------------------------------------
 # Assemblies. A component group places child specs in one frame:
 #   * Project  — the top-level run / built-in (e.g. a whole kitchen).
@@ -1400,7 +1484,8 @@ def place_run(specs, *, start: tuple[float, float] = (0.0, 0.0),
 # surfaces as a repairable error in the designer loop.
 KNOWN_KINDS = frozenset({
     "cabinet", "table", "wall_shelf", "box", "chest", "bench", "stool",
-    "frame", "bed", "project", "assembly", "appliance_void",
+    "frame", "bed", "cutting_board", "board", "project", "assembly",
+    "appliance_void",
 })
 
 # Stamped onto every serialized spec (see ``to_dict``) so a future breaking
@@ -1468,6 +1553,8 @@ def _spec_from_dict(data: dict[str, Any], defs: "_Defs | None", stack: frozenset
         return FrameSpec.from_dict(data)
     if kind == "bed":
         return BedSpec.from_dict(data)
+    if kind == "cutting_board" or kind == "board":
+        return CuttingBoardSpec.from_dict(data)
     if kind == "table":
         return TableSpec.from_dict(data)
     if kind == "cabinet":
@@ -1512,6 +1599,7 @@ STEP 1 — choose the "kind" first, then fill in that type's fields below:
   "bench"       a seat on legs (a low table; "stool" too)
   "frame"       a picture / mirror frame (four mitered rails + a rabbet)
   "bed"         a knock-down bed (headboard + footboard + rails + slats)
+  "cutting_board" a glued-up cutting / charcuterie board (edge/end grain)
   "project"     more than one piece — a run / built-in (place components)
 
 STEP 2 — copy the matching MINIMAL example, then adjust. Every field not shown
@@ -1536,6 +1624,9 @@ to override a default.
  "molding_width": 40, "corner_joint": "splined_miter"}}
 -- minimal bed -----------------------------------------------------------------
 {{"kind": "bed", "name": "Bed", "size": "queen", "connector": "bed_bolt"}}
+-- minimal cutting board -------------------------------------------------------
+{{"kind": "cutting_board", "name": "Board", "length": 450, "width": 300,
+ "thickness": 38, "grain_style": "edge_grain", "species": "hard_maple"}}
 -- minimal project (a row of two cabinets via a declarative run) ----------------
 {{"kind": "project", "name": "Run", "runs": [
   {{"start": [0, 0], "angle": 0, "gap": 0, "items": [
@@ -1738,6 +1829,27 @@ Beds must come apart to move, so the rails join the posts with knock-down
 hardware (bed bolts / hook plates), never glue. Size from a standard mattress or
 set "custom" with explicit mattress dimensions; the deck takes enough slats to
 support the mattress.
+
+== CUTTING BOARD ==
+A glued-up cutting / charcuterie board: N strips edge-glued into one panel.
+{{
+  "kind": "cutting_board",
+  "name": "Maple & Walnut Board",
+  "units": "mm",
+  "length": <long dimension, e.g. 450>,
+  "width": <across the strips, e.g. 300>,
+  "thickness": <board thickness, e.g. 38>,
+  "grain_style": {_opts(GrainStyle)},  // end_grain = butcher block (knife-kind)
+  "strips": <strip count, 0 = auto (~1 per 38mm)>,
+  "juice_groove": true | false,
+  "feet": true | false,
+  "species": "hard_maple" | "walnut" | "cherry" | ...,   // primary strip
+  "species_b": "walnut" | "",          // optional alternating second species
+  "finish": "oil"                       // food-safe oil / board butter
+}}
+End-grain boards are a two-stage glue-up (glue strips, crosscut, rotate, re-glue)
+and want a thicker blank. Use a food-safe finish (mineral oil / board butter),
+not a film finish. Avoid very open-pore woods (oak) for a board.
 
 == PROJECT / ASSEMBLY (multi-part) ==
 For anything with more than one piece — a kitchen run, a built-in, a wall of

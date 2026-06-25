@@ -17,7 +17,7 @@ from dataclasses import dataclass
 
 from .dsl import (
     CabinetSpec, CabinetType, TableSpec, WallShelfSpec, BoxSpec, BenchSpec,
-    FrameSpec, BedSpec, Drawer,
+    FrameSpec, BedSpec, CuttingBoardSpec, Drawer,
 )
 
 
@@ -91,6 +91,12 @@ def _templates() -> list[Template]:
             "A dovetailed six-board chest with a hinged lid.",
             BoxSpec(name="Blanket chest", width=900, depth=450, height=500,
                     thickness=18, species="cherry").to_dict()),
+        Template(
+            "cutting_board", "Cutting board", CAT_TABLES,
+            "A maple & walnut edge-grain board — a perfect weekend gift.",
+            CuttingBoardSpec(name="Cutting board", length=450, width=300,
+                             thickness=38, species="hard_maple",
+                             species_b="walnut").to_dict()),
         Template(
             "queen_bed", "Queen bed", CAT_BEDROOM,
             "A knock-down platform bed — frame-and-panel head and footboard.",
