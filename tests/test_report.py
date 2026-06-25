@@ -15,6 +15,14 @@ def _cab():
                        drawers=[Drawer(front_height=140)], hardware_brand="blum")
 
 
+def _sink_cab():
+    return CabinetSpec(name="Sink Base", width=900, height=720, depth=600,
+                       doors=2, hardware_brand="blum", accessories=[
+                           {"kind": "countertop", "depth": 600},
+                           {"kind": "appliance", "type": "sink",
+                            "cutout_w": 700, "cutout_d": 450}])
+
+
 def test_package_is_a_pdf():
     data = build_package_pdf(_cab())
     assert data[:5] == b"%PDF-", "output must be a PDF document"
@@ -70,3 +78,18 @@ def test_shopping_list_is_the_first_section():
     assert shop < overview < cut
     # It lists hardware to buy with SKUs and the sheet count.
     assert "Hardware & fasteners" in text or "Hardware" in text
+
+
+# --- B4: appliance schedule renders in the PDF only when present ---------
+
+def test_package_shows_appliance_section_only_when_present():
+    fitz = pytest.importorskip("fitz")
+
+    def _text(spec):
+        doc = fitz.open(stream=build_package_pdf(spec), filetype="pdf")
+        return "\n".join(p.get_text() for p in doc)
+
+    with_app = _text(_sink_cab())
+    assert "Appliance schedule" in with_app
+    without = _text(_cab())
+    assert "Appliance schedule" not in without

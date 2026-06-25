@@ -12,7 +12,10 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-from .dsl import TableSpec, ComponentGroup, CabinetType, Joinery
+from .dsl import (
+    TableSpec, ComponentGroup, CabinetType, Joinery, ApplianceVoid,
+    APPLIANCE_VOID_TOLERANCE,
+)
 from . import engineering, stock, proportion
 from .geometry import front_plan, footprints_overlap, component_tag
 
@@ -188,6 +191,33 @@ def _validate_table(spec: TableSpec) -> ValidationResult:
     return ValidationResult(issues)
 
 
+def _validate_void(void: ApplianceVoid) -> ValidationResult:
+    """Sanity-check a reserved appliance gap: positive size, sensible width.
+
+    A void carries no carcass, so the only checks are that it has a positive
+    footprint and that its width is close to the standard opening for its
+    appliance type (a mis-sized gap means the appliance won't slot in, or leaves
+    an ugly margin to fill).
+    """
+    issues: list[Issue] = []
+    if not _finite_positive(void.width):
+        issues.append(Issue("error", "width",
+                            f"appliance gap width must be positive, got {void.width!r}"))
+    if not _finite_positive(void.depth):
+        issues.append(Issue("error", "depth",
+                            f"appliance gap depth must be positive, got {void.depth!r}"))
+    nominal = void.nominal_width
+    atype = void.type.value if hasattr(void.type, "value") else str(void.type)
+    if nominal is not None and _finite_positive(void.width):
+        if abs(void.width - nominal) > APPLIANCE_VOID_TOLERANCE:
+            issues.append(Issue(
+                "warning", "width",
+                f"a {atype} gap is usually ~{nominal:.0f}mm; {void.width:.0f}mm is "
+                f"off by {abs(void.width - nominal):.0f}mm — the appliance may not "
+                "fit or will leave a margin to fill"))
+    return ValidationResult(issues)
+
+
 def _validate_project(project: ComponentGroup) -> ValidationResult:
     """Validate every component and check the group for placement overlaps."""
     issues: list[Issue] = []
@@ -311,6 +341,8 @@ def _joinery_feasibility(spec) -> list[Issue]:
 
 
 def validate(spec) -> ValidationResult:
+    if isinstance(spec, ApplianceVoid):
+        return _validate_void(spec)
     if isinstance(spec, ComponentGroup):
         return _validate_project(spec)
     if isinstance(spec, TableSpec):

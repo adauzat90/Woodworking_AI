@@ -249,6 +249,69 @@ class Appliance:
         return cls(**{k: v for k, v in data.items() if k in known})
 
 
+# Nominal cabinetry gap(s) an appliance needs, by type (mm). A run reserves this
+# as an :class:`ApplianceVoid`; the validator warns when a void is mis-sized. A
+# type may list several standard widths (e.g. a 760mm slide-in or a 900mm pro
+# range); the closest one is used for the fit check.
+APPLIANCE_VOID_WIDTHS: dict[str, tuple[float, ...]] = {
+    "dishwasher": (600.0,),
+    "range": (760.0, 900.0),   # standard slide-in / freestanding, or a pro range
+    "fridge": (915.0,),        # 36in standard-depth refrigerator opening
+}
+# How far a void width may stray from the nearest nominal before it's flagged.
+APPLIANCE_VOID_TOLERANCE = 25.0
+
+
+@dataclass
+class ApplianceVoid:
+    """A reserved GAP in a run for a free-standing appliance — a SPACE, not a box.
+
+    A dishwasher, range, or fridge is slotted into an opening between cabinets; it
+    needs run width and floor footprint but no carcass is built for it. Placed as
+    a component's ``spec`` inside a :class:`Project`, it occupies its width on the
+    wall and its footprint in plan (so the overlap check treats it as filled), and
+    drives finished end panels on the cabinets either side. It adds **no** part to
+    the cut list and **no** holes to drill.
+    """
+    type: ApplianceType = ApplianceType.DISHWASHER
+    width: float = 600.0
+    depth: float = 600.0
+    name: str = "Appliance gap"
+    kind: str = "appliance_void"   # tags the component spec on (de)serialisation
+
+    def __post_init__(self) -> None:
+        self.type = _coerce_enum(ApplianceType, self.type)
+
+    @property
+    def nominal_widths(self) -> tuple[float, ...]:
+        """The standard opening width(s) for this appliance type (mm); () if any."""
+        t = self.type.value if isinstance(self.type, Enum) else str(self.type)
+        return APPLIANCE_VOID_WIDTHS.get(t.lower(), ())
+
+    @property
+    def nominal_width(self) -> float | None:
+        """The standard opening width closest to this gap's width (mm), if known."""
+        widths = self.nominal_widths
+        if not widths:
+            return None
+        return min(widths, key=lambda n: abs(n - self.width))
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "kind": "appliance_void",
+            "type": self.type.value if isinstance(self.type, Enum) else self.type,
+            "width": self.width, "depth": self.depth, "name": self.name,
+        }
+
+    def to_json(self, indent: int = 2) -> str:
+        return json.dumps(self.to_dict(), indent=indent)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "ApplianceVoid":
+        known = {f for f in cls.__dataclass_fields__}
+        return cls(**{k: v for k, v in data.items() if k in known})
+
+
 def appliances_of(spec) -> list[Appliance]:
     """Yield the typed :class:`Appliance` objects on *spec*'s accessories.
 
@@ -708,6 +771,8 @@ def place_run(specs, *, start: tuple[float, float] = (0.0, 0.0),
 def _spec_from_dict(data: dict[str, Any], defs: "_Defs | None", stack: frozenset):
     """Pick the right spec, threading the definition registry into groups."""
     kind = str(data.get("kind", "")).lower()
+    if kind == "appliance_void":
+        return ApplianceVoid.from_dict(data)
     if kind == "assembly":
         return Assembly.from_dict(data, parent_defs=defs, _stack=stack)
     if kind == "project" or "components" in data:

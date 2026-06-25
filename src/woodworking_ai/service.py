@@ -270,6 +270,11 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
     from .finishing import finishing_schedule
     result["finishing"] = finishing_schedule(spec)
 
+    # Appliance schedule — present only when the design has appliances, so the
+    # web bundle can show the section conditionally (mirrors the report).
+    from .appliances import appliance_schedule
+    result["appliances"] = appliance_schedule(spec)
+
     plan = assembly_plan(spec)
     result["assembly"] = [
         {"name": sub.name, "detail": sub.detail, "part_ids": sub.part_ids,

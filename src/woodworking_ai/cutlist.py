@@ -16,7 +16,7 @@ import math
 from dataclasses import dataclass, field, replace
 
 from .dsl import (CabinetSpec, TableSpec, ComponentGroup, BackStyle,
-                  Construction, CabinetType)
+                  Construction, CabinetType, ApplianceVoid)
 from .geometry import front_plan, component_tag
 # Construction constants now live in one neutral module shared with geometry.
 from .constants import (
@@ -53,11 +53,23 @@ class Part:
     # (both optional; "" = generic / inherited). Drives the BOM and the quote.
     form: str = ""             # plywood|mdf|particleboard|melamine|hardboard|solid
     species: str = ""          # wood species, e.g. oak | maple | pine
+    # Rectangular openings cut OUT of the part face, ``(x, y, w, d)`` in the
+    # part's own frame (a sink/cooktop cutout in a countertop). The blank is
+    # still cut from a full rectangle, but the finishable/quoted area drops by
+    # the cut-out area — see :pyattr:`area_m2`.
+    openings: list = field(default_factory=list)
+
+    @property
+    def opening_area_m2(self) -> float:
+        """Total cut-out face area removed from this part (m²)."""
+        return sum((w / 1000.0) * (d / 1000.0)
+                   for (_x, _y, w, d) in self.openings)
 
     @property
     def area_m2(self) -> float:
-        """Single-part face area in m² (assumes mm input)."""
-        return (self.length / 1000.0) * (self.width / 1000.0)
+        """Single-part face area in m², net of any cut-outs (assumes mm input)."""
+        gross = (self.length / 1000.0) * (self.width / 1000.0)
+        return max(gross - self.opening_area_m2, 0.0)
 
     @property
     def stock_label(self) -> str:
@@ -513,6 +525,8 @@ def _project_cutlist(project: ComponentGroup) -> CutList:
 
 def generate_cutlist(spec) -> CutList:
     """Derive the full parts + hardware list for a cabinet, table, or group."""
+    if isinstance(spec, ApplianceVoid):
+        return CutList(spec_name=spec.name)   # a reserved gap adds no parts
     if isinstance(spec, ComponentGroup):
         return _project_cutlist(spec)
     if isinstance(spec, TableSpec):
