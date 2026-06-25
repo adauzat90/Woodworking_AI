@@ -133,6 +133,11 @@ def export_bytes(spec, fmt: str,
         data = build_package_pdf(spec, units=units)
         return data, "application/pdf", f"{base}_build_package.pdf"
 
+    if fmt == "proposal":
+        from .proposal import build_proposal_pdf
+        data = build_proposal_pdf(spec, units=units)
+        return data, "application/pdf", f"{base}_proposal.pdf"
+
     if fmt in ("step", "stl", "glb"):
         from .builder import build_model
         from . import exporters

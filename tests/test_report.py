@@ -7,6 +7,7 @@ from woodworking_ai.dsl import CabinetSpec, Drawer, Project, Component
 reportlab = pytest.importorskip("reportlab")
 
 from woodworking_ai.report import build_package_pdf  # noqa: E402
+from woodworking_ai.proposal import build_proposal_pdf  # noqa: E402
 from woodworking_ai.service import export_bytes  # noqa: E402
 
 
@@ -70,3 +71,51 @@ def test_shopping_list_is_the_first_section():
     assert shop < overview < cut
     # It lists hardware to buy with SKUs and the sheet count.
     assert "Hardware & fasteners" in text or "Hardware" in text
+
+
+# --- customer proposal (D3) ----------------------------------------------
+
+def test_proposal_is_a_pdf():
+    data = build_proposal_pdf(_cab())
+    assert data[:5] == b"%PDF-", "proposal must be a PDF document"
+    assert len(data) > 1500
+
+
+def test_proposal_via_export_bytes():
+    data, mime, fname = export_bytes(_cab(), "proposal")
+    assert mime == "application/pdf"
+    assert fname.endswith("_proposal.pdf")
+    assert data[:5] == b"%PDF-"
+
+
+def _pdf_text(data):
+    import pytest
+    fitz = pytest.importorskip("fitz")
+    doc = fitz.open(stream=data, filetype="pdf")
+    return "\n".join(p.get_text() for p in doc)
+
+
+def test_proposal_has_price_dimensions_and_signoff():
+    text = _pdf_text(build_proposal_pdf(_cab()))
+    assert "Proposal" in text
+    assert "Price" in text
+    assert "Approval" in text
+    assert "signature" in text.lower()
+    # Overall dimensions are surfaced for the customer.
+    assert "Width" in text and "Height" in text
+
+
+def test_proposal_omits_shop_floor_detail():
+    """The customer document must NOT carry joinery/drilling/cut-list/bench detail."""
+    text = _pdf_text(build_proposal_pdf(_cab())).lower()
+    for banned in ("joinery", "drilling", "cut list", "cut & label",
+                   "process all parts", "32mm"):
+        assert banned not in text, f"proposal leaked shop detail: {banned!r}"
+
+
+def test_shop_package_still_includes_shop_floor_detail():
+    """The shop build package is unchanged — it keeps joinery/drilling/assembly."""
+    text = _pdf_text(build_package_pdf(_cab())).lower()
+    assert "joinery" in text
+    assert "drilling" in text
+    assert "process all parts" in text
