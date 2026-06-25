@@ -14,7 +14,7 @@ placed in a run, so a single cabinet *or* a whole :class:`~dsl.Project` works.
 
 from __future__ import annotations
 
-from .dsl import appliances_of, APPLIANCE_VOID_WIDTHS
+from .dsl import ApplianceVoid, appliances_of, APPLIANCE_VOID_WIDTHS
 from .dispatch import spec_kind, is_group, VOID
 from .geometry import component_tag
 

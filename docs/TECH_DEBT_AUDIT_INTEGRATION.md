@@ -6,7 +6,24 @@
 > current code** (`file:line` quoted). Findings are graded **HIGH / MED / LOW**
 > by risk × effort-to-fix.
 >
-> This audit targets the **`integration` branch**, which is the superset of the
+> > **Remediation status (update):** every finding below has since been addressed
+> on this branch. Highlights: critic now surfaces B-Rep kernel failures as a
+> warning (§9); the `web.py` parse-error info leak is closed (§11); the duplicate
+> `_project_cutlist` is gone — purchasing reuses `cutlist.project_hardware` (§2);
+> the residual `isinstance` ladders route through `dispatch` (§3); the three
+> joinery if/elif chains are lookup tables and validator compares enum members
+> (§4); a `Part.category` field centralises the role heuristic (§4); the
+> material-usage-label vocabulary is centralised in `materials.py` with
+> drift-guard tests (§5); cross-module private imports are promoted to public
+> APIs and a shared `place_rect`/`trailing_index`/`GEOMETRY_EPSILON` removed the
+> copied transforms (§6, §11); an `LLMClient` protocol + `get_model()` make the
+> LLM layer injectable and runtime-configurable (§8); `profile` serde moved to
+> field metadata (§10); export wrappers collapsed, dead params/aliases removed,
+> colours share one palette (+drawer_box), SPA HTML cached (§11); the two
+> leaf-registration conventions are now documented and `_cabinet_cutlist`'s
+> fronts block is extracted (§1, §7). Full suite: 827 passed, 25 skipped.
+
+This audit targets the **`integration` branch**, which is the superset of the
 > feature branches and is materially ahead of the branch the earlier
 > `docs/TECH_DEBT_AUDIT.md` was written against. Several of that document's
 > headline issues are **already fixed here** (see §0); this audit re-baselines on
