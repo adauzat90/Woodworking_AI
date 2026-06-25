@@ -113,3 +113,70 @@ def test_clean_cabinet_with_drawers_no_collision():
     spec = cab(width=600, height=720, depth=560, shelves=0, doors=0,
                drawers=[Drawer(front_height=180), Drawer(front_height=180)])
     assert _joinery_feasibility(spec) == []
+
+
+# --- 5) CAD cross-check: no negative remaining-material regions ------------
+# These build the real A2 machine-honest B-Rep, so they need build123d and
+# skip cleanly without it (same guard as tests/test_joinery_geometry.py).
+import pytest  # noqa: E402
+
+
+def test_machined_cabinet_has_no_negative_material():
+    """A normal cabinet machines cleanly: every panel keeps its stock."""
+    pytest.importorskip("build123d")
+    spec = cab(shelves=2, doors=2, drawers=[Drawer(front_height=140)])
+    crit = critique(spec, joinery_geometry=True)
+    assert crit.report.get("negative_material_count") == 0
+    assert not [i for i in crit.errors if i.kind == "geometry"]
+
+
+def test_over_machined_panel_is_flagged(monkeypatch):
+    """A cut deeper than the stock (panel reduced to a sliver) is an error.
+
+    We can't author an over-cut through the normal schedules — the builder is
+    degrade-safe and falls back to the un-cut slab on a boolean that engulfs a
+    panel. So we stub the machined model to shrink one panel to a 1mm cube,
+    standing in for a housing/bore cut clean through the part, and assert the
+    cross-check catches the negative remaining-material region.
+    """
+    pytest.importorskip("build123d")
+    from build123d import Box, Compound
+    from woodworking_ai import builder
+
+    spec = cab(shelves=1, doors=2)
+    real_build = builder.build_model
+
+    def stub_build(s, **kw):
+        model = real_build(s, **kw)
+        if not kw.get("joinery_geometry"):
+            return model
+        kids = list(model.children)
+        sliver = Box(1, 1, 1)
+        sliver.label = kids[0].label
+        out = Compound(children=[sliver] + kids[1:])
+        out.label = model.label
+        return out
+
+    monkeypatch.setattr(builder, "build_model", stub_build)
+    crit = critique(spec, joinery_geometry=True)
+    assert not crit.ok
+    geo = [i for i in crit.errors if i.kind == "geometry"]
+    assert geo and "over-machined" in geo[0].message
+    assert crit.report.get("negative_material_count") == 1
+
+
+def test_negative_material_check_skips_without_build123d(monkeypatch):
+    """Without build123d the cross-check degrades to one warning, never raises."""
+    from woodworking_ai import builder
+
+    def no_cad():
+        raise RuntimeError("build123d is required for geometry/export.")
+
+    monkeypatch.setattr(builder, "_require_build123d", no_cad)
+    spec = cab(shelves=1, doors=2)
+    crit = critique(spec, joinery_geometry=True)
+    # The spec is otherwise clean, so the only finding is the skipped cross-check
+    # warning — and it must not be promoted to an error.
+    assert crit.ok
+    assert any(i.kind == "geometry" and "could not build machined model"
+               in i.message for i in crit.warnings)

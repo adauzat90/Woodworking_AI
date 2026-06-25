@@ -163,6 +163,47 @@ def _brep_interferences(model: Any, eps_volume: float = 1.0,
     return hits
 
 
+def _negative_material_regions(spec: Any, b3d: Any
+                               ) -> list[tuple[str, float, float]]:
+    """Panels whose machined solid lost (almost) all its stock — A3 CAD check.
+
+    Builds the *plain slab* model and the *machine-honest* model
+    (``joinery_geometry=True``) and compares each panel's volume. A correctly
+    machined part keeps most of its stock; a cut deeper than the panel (a dado
+    sunk past the back face, a through-pocket sized to the whole panel) drives
+    the remaining volume to ~zero or makes the boolean disappear. Those are the
+    "negative remaining-material" regions the slab/envelope checks cannot see.
+
+    Returns ``(label, slab_volume, machined_volume)`` for each offending panel.
+    The builder's per-part cutting is degrade-safe (it falls back to the un-cut
+    slab on an OpenCascade error), so a part that *vanished* or shrank to almost
+    nothing is an unambiguous over-cut, not a transient boolean failure.
+    """
+    from ..builder import build_model
+
+    slab = {c.label: c for c in build_model(spec).children}
+    cut = {c.label: c for c in
+           build_model(spec, joinery_geometry=True).children}
+    bad: list[tuple[str, float, float]] = []
+    for label, slab_solid in slab.items():
+        slab_vol = float(getattr(slab_solid, "volume", 0.0) or 0.0)
+        if slab_vol <= 0.0:
+            continue
+        machined = cut.get(label)
+        if machined is None:
+            # The part dropped out of the machined compound entirely — its
+            # boolean removed the whole solid (remaining material went negative).
+            bad.append((label, slab_vol, 0.0))
+            continue
+        mach_vol = float(getattr(machined, "volume", 0.0) or 0.0)
+        # A cut deeper than the stock removes the whole panel: nothing (or a
+        # numerically-negligible sliver) remains. Real joinery removes only a
+        # fraction, so a part down to <1% of its stock has been over-cut.
+        if mach_vol <= 0.0 or mach_vol < 0.01 * slab_vol:
+            bad.append((label, slab_vol, max(mach_vol, 0.0)))
+    return bad
+
+
 def _span(group: list[PanelBox], axis: int) -> float:
     if not group:
         return 0.0
@@ -238,7 +279,8 @@ def _buildability_issues(spec: CabinetSpec, tools=DEFAULT_TOOLS
 
 
 def _critique_project(project: ComponentGroup, *, use_cad: bool = False,
-                      brep: bool = False, model: Any = None) -> CritiqueResult:
+                      brep: bool = False, joinery_geometry: bool = False,
+                      model: Any = None) -> CritiqueResult:
     """Verify an assembled group: envelope, and component-to-component collisions.
 
     The decisive check is interference *between* cabinets — a class of error
@@ -296,19 +338,46 @@ def _critique_project(project: ComponentGroup, *, use_cad: bool = False,
         except RuntimeError as exc:
             result.issues.append(CritiqueIssue(
                 "warning", "geometry", f"could not build B-Rep for cross-check: {exc}"))
+
+    # A2/A3 machine-honest cross-check: no negative remaining-material region.
+    if joinery_geometry:
+        try:
+            from ..builder import _require_build123d
+            b3d = _require_build123d()
+            bad = _negative_material_regions(project, b3d)
+            result.report["negative_material_count"] = len(bad)
+            for label, slab_vol, mach_vol in bad:
+                pct = 100.0 * mach_vol / slab_vol if slab_vol else 0.0
+                result.issues.append(CritiqueIssue(
+                    "error", "geometry",
+                    f"'{label}' is over-machined: only {pct:.1f}% of its "
+                    f"{slab_vol / 1000:.0f} cm³ of stock remains after joinery — "
+                    "a cut is deeper than the panel (negative remaining material)"))
+        except RuntimeError as exc:
+            result.issues.append(CritiqueIssue(
+                "warning", "geometry",
+                f"could not build machined model for cross-check: {exc}"))
     return result
 
 
-def critique(spec, *, use_cad: bool = False,
-             brep: bool = False, model: Any = None) -> CritiqueResult:
+def critique(spec, *, use_cad: bool = False, brep: bool = False,
+             joinery_geometry: bool = False, model: Any = None
+             ) -> CritiqueResult:
     """Verify the geometry implied by *spec* (cabinet, table, or group).
 
     Set ``use_cad=True`` (or pass a pre-built ``model``) to additionally measure
     the real build123d B-Rep and cross-check it. Set ``brep=True`` to also run
     exact solid-boolean interference (needs build123d).
+
+    Set ``joinery_geometry=True`` to additionally build the A2 machine-honest
+    model and assert no panel has a *negative remaining-material region* — a
+    housing or bore cut deeper than the stock that removes the whole part. This
+    needs build123d; without it the cross-check is skipped with one warning
+    rather than raising, so a CAD-free caller is never blocked.
     """
     if isinstance(spec, ComponentGroup):
-        return _critique_project(spec, use_cad=use_cad, brep=brep, model=model)
+        return _critique_project(spec, use_cad=use_cad, brep=brep,
+                                 joinery_geometry=joinery_geometry, model=model)
     panels = panel_layout(spec)
     result = CritiqueResult()
     is_cabinet = isinstance(spec, CabinetSpec)
@@ -424,6 +493,27 @@ def critique(spec, *, use_cad: bool = False,
                         f"B-Rep: '{a}' and '{b}' intersect (~{vol/1000:.1f} cm³)")
         except RuntimeError as exc:
             warn("geometry", f"could not build B-Rep for cross-check: {exc}")
+
+    # --- A2/A3 machine-honest cross-check: no negative remaining material ----
+    # Build the cut model and confirm no panel was over-machined (a cut deeper
+    # than the stock that removes the whole part). Guarded so it skips cleanly
+    # when build123d is absent — same degrade-safe contract as the checks above.
+    if joinery_geometry:
+        try:
+            from ..builder import _require_build123d
+            b3d = _require_build123d()
+            bad = _negative_material_regions(spec, b3d)
+            result.report["negative_material_count"] = len(bad)
+            for label, slab_vol, mach_vol in bad:
+                pct = 100.0 * mach_vol / slab_vol if slab_vol else 0.0
+                err("geometry",
+                    f"'{label}' is over-machined: only {pct:.1f}% of its "
+                    f"{slab_vol / 1000:.0f} cm³ of stock remains after joinery — "
+                    "a cut is deeper than the panel (negative remaining "
+                    "material); reduce the housing/bore depth or thicken the stock")
+        except RuntimeError as exc:
+            warn("geometry",
+                 f"could not build machined model for cross-check: {exc}")
 
     return result
 
