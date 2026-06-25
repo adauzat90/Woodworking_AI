@@ -4,6 +4,21 @@ This plan turns the woodworker's review into concrete engineering work. It is
 written **against the merged `main` line** (post PR #6), so it credits what is
 already done and only specifies what is genuinely missing.
 
+## Status — ✅ COMPLETE
+
+**All four workstreams are implemented and merged.** Every item below (A1–A3,
+B1–B4, C1–C3, D1–D3) ships on the integration line, with the test suite green
+(**616 passing**) and `ruff` clean. Geometry is machine-honest in both the DXF
+nest and the STEP (single cabinets *and* multi-component projects), the Critic
+catches joinery-level failures, kitchens model appliances / voids / counter
+cutouts, the numbers snap to purchasable stock, and the shop gets a supplier-
+grouped purchase order, surfaced revisions, and a customer proposal.
+
+Most recent landings: A2 joinery-in-STEP (#13) + project-machining fix (#14),
+A3 CAD cross-check (#16), DXF dados/rabbets (#15), and D1 purchase order (#12).
+Earlier items (A1, B1–B4, C1–C3, D2, D3) landed in prior merges. Each ✅ below
+marks a shipped item.
+
 ## What the merge already delivered (do not re-build)
 
 The build-manual work that merged in PR #6 retired most of the "paperwork" gaps:
@@ -51,7 +66,7 @@ realities. Those are what this plan implements.
 schedule, joinery setup sheet) becomes *geometry* a shop can cut from, and the
 Critic can verify it.
 
-### A1 — Emit bores into the nested DXF and per-part drawings  ★ quick win
+### A1 — Emit bores into the nested DXF and per-part drawings  ★ quick win — ✅ Done
 
 The drilling schedule already produces every hole with `(u, v, dia, depth)` per
 part. The DXF nest draws only outlines. Wire the holes in.
@@ -76,7 +91,7 @@ part. The DXF nest draws only outlines. Wire the holes in.
   hinge cups on the correct parts, keyed to the cut-list IDs.
 - **Effort:** S. **Risk:** low. **Depends on:** nothing. **Do first.**
 
-### A2 — Cut joinery + bores into the build123d model (real STEP)
+### A2 — Cut joinery + bores into the build123d model (real STEP) — ✅ Done (#13, project fix #14)
 
 Make the B-Rep honest: subtract dados, rabbets, grooves, hinge cups, shelf-pin
 and slide-pilot holes from the solids, so the STEP is machine-meaningful.
@@ -104,7 +119,7 @@ and slide-pilot holes from the solids, so the STEP is machine-meaningful.
 - **Effort:** L. **Risk:** med (OCC boolean robustness/perf). **Depends on:** A1
   (shared hole→frame transform). **Behind a flag** so it never blocks shipping.
 
-### A3 — Critic verifies joinery feasibility (not just envelopes)
+### A3 — Critic verifies joinery feasibility (not just envelopes) — ✅ Done (CAD cross-check #16)
 
 Once joinery is modeled, the Critic should catch joinery-level failures the
 slab model structurally cannot.
@@ -136,7 +151,7 @@ slab model structurally cannot.
 out, a dishwasher void, a range gap, finished ends — and produce an appliance
 schedule.
 
-### B1 — A first-class appliance model in the DSL
+### B1 — A first-class appliance model in the DSL — ✅ Done
 
 Promote `appliance` from a loose accessory dict to a typed, validated concept.
 
@@ -156,7 +171,7 @@ Promote `appliance` from a loose accessory dict to a typed, validated concept.
   300 mm base errors; a panel-ready dishwasher with no panel warns.
 - **Effort:** M. **Risk:** low. **Depends on:** nothing.
 
-### B2 — Subtract appliance cutouts from the countertop (cut list + geometry + DXF)
+### B2 — Subtract appliance cutouts from the countertop (cut list + geometry + DXF) — ✅ Done
 
 Today the countertop is a full rectangle and the cutout is validation-only.
 
@@ -173,7 +188,7 @@ Today the countertop is a full rectangle and the cutout is validation-only.
   contains the cutout polyline; the STEP counter has the opening when A2 is on.
 - **Effort:** M. **Risk:** low. **Depends on:** B1; A1/A2 for DXF/STEP cutouts.
 
-### B3 — Appliance voids and gaps in a run
+### B3 — Appliance voids and gaps in a run — ✅ Done
 
 A dishwasher/range is a *space*, not a cabinet, and the run must reserve it.
 
@@ -193,7 +208,7 @@ A dishwasher/range is a *space*, not a cabinet, and the run must reserve it.
 - **Effort:** M. **Risk:** med (touches the run/placement math). **Depends on:**
   B1.
 
-### B4 — Appliance schedule in the build package
+### B4 — Appliance schedule in the build package — ✅ Done
 
 - **Files:** new `appliance_schedule()` (in `accessories.py` or a small
   `appliances.py`), `report.py`, `service.py`, web bundle.
@@ -210,7 +225,7 @@ A dishwasher/range is a *space*, not a cabinet, and the run must reserve it.
 
 **Goal:** the numbers the app emits match what a shop can actually buy and cut.
 
-### C1 — Auto-snap drawer-box depth to a real slide length  ★ quick win
+### C1 — Auto-snap drawer-box depth to a real slide length  ★ quick win — ✅ Done
 
 Slides ship in discrete lengths; box depth should target one.
 
@@ -228,7 +243,7 @@ Slides ship in discrete lengths; box depth should target one.
   and box depth ≈ 500; the chosen length appears in the hardware BOM.
 - **Effort:** S. **Risk:** low. **Depends on:** nothing.
 
-### C2 — Per-edge edge-banding
+### C2 — Per-edge edge-banding — ✅ Done
 
 Replace the single rough running-length line with which edges of which parts get
 banded, and metres by banding material.
@@ -245,7 +260,7 @@ banded, and metres by banding material.
   the summed edge lengths.
 - **Effort:** M. **Risk:** low.
 
-### C3 — Real stock thickness (nominal vs. actual) and grain-locked nesting check
+### C3 — Real stock thickness (nominal vs. actual) and grain-locked nesting check — ✅ Done
 
 - **Files:** `stock.py`, `materials.py`, `profile.py`, `packing.py`.
 - **Tasks:**
@@ -267,7 +282,7 @@ banded, and metres by banding material.
 **Goal:** the outputs a shop *acts on* — what to buy and from whom — and the
 job/revision workflow around a real customer.
 
-### D1 — Supplier-grouped purchase order
+### D1 — Supplier-grouped purchase order — ✅ Done (#12)
 
 - **Files:** new `purchasing.py`, building on `estimator` + `hardware` catalog;
   `report.py`, `service.py`, web.
@@ -280,7 +295,7 @@ job/revision workflow around a real customer.
   hardware lines carry SKUs; sheet count matches the estimator.
 - **Effort:** M. **Risk:** low. **Depends on:** C1/C2 for accurate quantities.
 
-### D2 — Surface revisions in the web app
+### D2 — Surface revisions in the web app — ✅ Done
 
 `diffing.py` already computes field-level spec diffs; expose it.
 
@@ -292,7 +307,7 @@ job/revision workflow around a real customer.
   expected `{path, from, to}` rows and a price delta.
 - **Effort:** M. **Risk:** low. **Depends on:** nothing (diffing exists).
 
-### D3 — Customer-facing proposal / approval drawing
+### D3 — Customer-facing proposal / approval drawing — ✅ Done
 
 - **Files:** `report.py` (a second, customer-mode document), `drawings.py`,
   `service.py`, web "Proposal" download.
@@ -307,19 +322,19 @@ job/revision workflow around a real customer.
 
 ## Sequencing & milestones
 
-**Milestone 1 — "Honest outputs" (highest leverage, lowest risk).**
+**Milestone 1 — "Honest outputs" (highest leverage, lowest risk).** ✅ Done
 A1 (bores in DXF) · C1 (slide snapping) · A3 analytic checks · B1 (appliance
 model). All small/medium, no OCC risk, immediately more shop-usable.
 
-**Milestone 2 — "Real kitchens."**
+**Milestone 2 — "Real kitchens."** ✅ Done
 B2 (counter cutouts) · B3 (voids/gaps) · B4 (appliance schedule) · C2 (per-edge
 banding). The unit of design becomes a room.
 
-**Milestone 3 — "Machine-ready geometry."**
+**Milestone 3 — "Machine-ready geometry."** ✅ Done
 A2 (joinery in STEP, behind a flag) · A3 CAD cross-check · B2/B-cutouts in STEP.
 Highest effort; gated so it never blocks shipping.
 
-**Milestone 4 — "Shop product."**
+**Milestone 4 — "Shop product."** ✅ Done
 D1 (purchase order) · D2 (revisions) · D3 (proposal) · C3 (stock realism).
 
 ## Guardrails (keep what makes this good)
