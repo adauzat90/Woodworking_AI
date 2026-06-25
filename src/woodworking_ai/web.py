@@ -184,15 +184,25 @@ def api_diff(payload: dict[str, Any]) -> dict[str, Any]:
 
     Body: ``{"from": <spec>, "to": <spec>}``. Specs are normalised through the
     DSL first so cosmetic differences (defaults, key order) don't show up.
+
+    The response also carries a "what changed since last quote" view: the parts
+    added/removed/changed and the **price delta** (the estimate re-run on each
+    spec and the totals differenced). Optional ``prices``/``sheet``/``profile``
+    in the body apply to both sides, so the delta reflects only the design change.
     """
-    from .diffing import spec_diff, diff_summary
+    from .diffing import spec_diff, diff_summary, quote_diff
     try:
-        a = spec_from_dict(payload.get("from") or {}).to_dict()
-        b = spec_from_dict(payload.get("to") or {}).to_dict()
+        spec_a = spec_from_dict(payload.get("from") or {})
+        spec_b = spec_from_dict(payload.get("to") or {})
     except (TypeError, ValueError, AttributeError) as exc:
         raise HTTPException(status_code=400, detail=f"bad spec: {exc}")
-    changes = spec_diff(a, b)
-    return {"changes": changes, "summary": diff_summary(changes)}
+    changes = spec_diff(spec_a.to_dict(), spec_b.to_dict())
+    prices, sheet = _pricing_overrides(payload)
+    try:
+        quote = quote_diff(spec_a, spec_b, prices=prices, sheet=sheet)
+    except Exception:  # costing is best-effort; never fail the field diff
+        quote = None
+    return {"changes": changes, "summary": diff_summary(changes), "quote": quote}
 
 
 @app.post("/api/room/plan")
