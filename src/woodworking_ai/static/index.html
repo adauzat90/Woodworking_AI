@@ -42,6 +42,16 @@
   .buildcap ul { color:var(--muted); }
   .step-show { cursor:pointer; }
   .step-show:hover { text-decoration:underline; }
+  /* Click-to-edit dimension overlay on the 3D view (G2b). */
+  .dimoverlay { position:absolute; top:10px; right:10px; display:flex;
+    align-items:center; gap:6px; background:rgba(28,26,23,.82);
+    border:1px solid var(--line); border-radius:8px; padding:5px 8px;
+    backdrop-filter:blur(4px); font-size:12px; flex-wrap:wrap; max-width:60%; }
+  .dim-chip { cursor:pointer; padding:1px 6px; border-radius:5px;
+    border:1px solid transparent; color:var(--text); }
+  .dim-chip:hover { border-color:var(--wood); background:var(--bg); }
+  .dim-chip b { color:var(--wood); }
+  .dim-unit { font-size:10px; }
   .results { height:42%; border-top:1px solid var(--line); display:flex;
              flex-direction:column; }
   fieldset { border:1px solid var(--line); border-radius:8px; margin:0 0 14px;
@@ -727,6 +737,7 @@ function render(d) {
   } else if (d.render_png) {
     $("stage").innerHTML = `<img src="${d.render_png}" style="object-fit:contain" />`;
   } else $("stage").innerHTML = '<div class="ph">No preview available</div>';
+  addDimOverlay(d);
 
   // status
   const e = d.estimate, cr = d.critique;
@@ -788,6 +799,54 @@ function setBuildCaption(sections, step) {
     if (steps) h += `<ul style="margin:3px 0 0;padding-left:16px;font-size:11.5px">${steps}</ul>`;
   }
   cap.innerHTML = h;
+}
+
+// Dimension overlay on the 3D view (G2b): show W/H/D and let a click edit the
+// value in place and rebuild. Editable only for the literal dimension fields a
+// spec actually carries (cabinet/table/box/bench/shelf); derived-dimension kinds
+// (frame/bed/board) show read-only so an edit can't write a non-existent field.
+const DIM_FIELDS = [
+  {key: "width", label: "W"},
+  {key: "height", label: "H"},
+  {key: "depth", label: "D"},
+  {key: "length", label: "L"},
+  {key: "thickness", label: "T"},
+];
+function addDimOverlay(d) {
+  const stage = $("stage"); if (!stage || !d || !d.spec) return;
+  const spec = d.spec;
+  const chips = DIM_FIELDS.filter(f => typeof spec[f.key] === "number")
+    .map(f => {
+      const disp = roundDisp(dispFromMM(spec[f.key]));
+      return `<span class="dim-chip" data-key="${f.key}" title="Click to edit ${f.key}">` +
+        `${f.label} <b>${disp}</b></span>`;
+    });
+  if (!chips.length) return;
+  const el = document.createElement("div");
+  el.className = "dimoverlay";
+  el.innerHTML = `<span class="muted" style="font-size:10px">edit ✎</span>` +
+    chips.join("") + `<span class="dim-unit muted">${unitLabel()}</span>`;
+  stage.appendChild(el);
+  el.querySelectorAll(".dim-chip").forEach(chip => {
+    chip.onclick = () => editDimension(chip.dataset.key);
+  });
+}
+async function editDimension(key) {
+  if (!last || !last.spec || typeof last.spec[key] !== "number") return;
+  const cur = roundDisp(dispFromMM(last.spec[key]));
+  const ans = prompt(`New ${key} (${unitLabel()}):`, cur);
+  if (ans == null) return;
+  const v = parseFloat(ans);
+  if (!isFinite(v) || v <= 0) { showError("Enter a positive number."); return; }
+  const spec = {...last.spec};
+  spec[key] = mmFromDisp(v);
+  setBusy(true);
+  try {
+    if (FORM_KINDS.has(spec.kind || "cabinet") && $(key)) syncForm(spec);
+    render(await post("/api/build",
+      {spec, ...currentPricing(), profile: currentProfile()}));
+  } catch (e) { showError(e.message); }
+  finally { setBusy(false); }
 }
 
 // Drive the 3D stepper to a given section (used by the Build-steps tab).
