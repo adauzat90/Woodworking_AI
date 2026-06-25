@@ -7,7 +7,8 @@ a flat project, and a nested+reused assembly.
 
 from woodworking_ai import (
     CabinetSpec, CabinetType, Construction, ToeKick, Drawer, TableSpec,
-    WallShelfSpec, BoxSpec, Component, Assembly, Project, spec_from_dict,
+    WallShelfSpec, BoxSpec, BenchSpec, Component, Assembly, Project,
+    spec_from_dict,
 )
 
 
@@ -81,6 +82,12 @@ def golden_specs() -> dict:
         "box_open": BoxSpec(
             name="Open box", width=400, depth=300, height=200, thickness=12,
             corner_joint="box", lid=False),
+        "bench": BenchSpec(
+            name="Dining bench", width=1200, depth=350, height=450, leg=45,
+            species="ash"),
+        "stool": BenchSpec(
+            name="Shop stool", width=350, depth=350, height=650, leg=40,
+            stretchers=True),
         "project_nested": kitchen,
         "project_reuse": reuse,
     }

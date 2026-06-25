@@ -11,6 +11,8 @@ Types:
 * **wall_shelf** — one board fixed to the wall by a French cleat or brackets.
 * **box / chest** — a six-board box (4 sides + bottom + lid) with a selectable
   corner joint reusing the drawer-box :class:`~dsl.CornerJoint` vocabulary.
+* **bench / stool** — a seat on four legs joined by aprons and lower stretchers
+  (a low table superset; the shared LeggedSpec base is a follow-up).
 
 No CAD dependency.
 """
@@ -20,8 +22,8 @@ from __future__ import annotations
 import math
 
 from . import furniture
-from .dispatch import WALL_SHELF, BOX
-from .dsl import WallShelfSpec, BoxSpec, ShelfFixing, CornerJoint
+from .dispatch import WALL_SHELF, BOX, BENCH
+from .dsl import WallShelfSpec, BoxSpec, BenchSpec, ShelfFixing, CornerJoint
 from .geometry import PanelBox
 from .cutlist import CutList, Part, Hardware, assign_ids, _resolve_part_stock
 from .validator import Issue
@@ -418,4 +420,202 @@ furniture.register(
     validate=_box_validate,
     joinery_ops=_box_joinery,
     assembly=_box_assembly,
+)
+
+
+# ===========================================================================
+# Bench / stool
+# ===========================================================================
+
+def _bench_leg_offsets(spec: BenchSpec) -> tuple[float, float]:
+    """Leg-centre offsets (lx, ly) from the seat centre, like the table."""
+    lx = spec.width / 2 - spec.leg_inset - spec.leg / 2
+    ly = spec.depth / 2 - spec.leg_inset - spec.leg / 2
+    return lx, ly
+
+
+def _bench_panels(spec: BenchSpec) -> list[PanelBox]:
+    """A seat, four legs, four aprons, and (optionally) lower stretchers.
+
+    Mirrors the table layout (top + legs + aprons) and adds a stretcher along
+    each long side between the leg pairs, set low for a seat that takes a
+    sitting load. X = length, Y = depth, Z = height (seat top at ``height``).
+    """
+    W, D, H = spec.width, spec.depth, spec.height
+    tt, leg = spec.top_thickness, spec.leg
+    ah, at, li = spec.apron_height, spec.apron_thickness, spec.leg_inset
+    panels: list[PanelBox] = []
+
+    def add(label, size, center, category, unit=""):
+        panels.append(PanelBox(label, size, center, category,
+                               subassembly=unit or "Base"))
+
+    add("Seat", (W, D, tt), (0, 0, H - tt / 2), "top", "Seat")
+
+    leg_h = H - tt
+    lx, ly = _bench_leg_offsets(spec)
+    for i, sx in enumerate((-1, 1)):
+        for j, sy in enumerate((-1, 1)):
+            add(f"Leg {2 * i + j + 1}", (leg, leg, leg_h),
+                (sx * lx, sy * ly, leg_h / 2), "leg")
+
+    az = H - tt - ah / 2               # apron centre height
+    apron_x = 2 * lx - leg             # long apron length (between legs, X)
+    apron_y = 2 * ly - leg             # short apron length (between legs, Y)
+    for sy in (-1, 1):
+        add("Apron long", (apron_x, at, ah), (0, sy * ly, az), "apron")
+    for sx in (-1, 1):
+        add("Apron short", (at, apron_y, ah), (sx * lx, 0, az), "apron")
+
+    if spec.stretchers:
+        sh, st = spec.stretcher_height, spec.stretcher_thickness
+        sz = spec.stretcher_setback
+        # One stretcher along each long side, between the front/back legs.
+        for sy in (-1, 1):
+            add("Stretcher", (apron_x, st, sh), (0, sy * ly, sz), "stretcher",
+                "Stretchers")
+    return panels
+
+
+def _bench_cutlist(spec: BenchSpec) -> CutList:
+    cl = CutList(spec_name=spec.name)
+    leg_h = spec.height - spec.top_thickness
+    lx, ly = _bench_leg_offsets(spec)
+    apron_x = 2 * lx - spec.leg
+    apron_y = 2 * ly - spec.leg
+
+    cl.parts.append(Part(
+        "Seat", 1, length=spec.width, width=spec.depth,
+        thickness=spec.top_thickness, material="top", notes="solid/sheet seat"))
+    cl.parts.append(Part(
+        "Leg", 4, length=leg_h, width=spec.leg, thickness=spec.leg,
+        material="leg", notes="square stock"))
+    cl.parts.append(Part(
+        "Apron (long)", 2, length=apron_x, width=spec.apron_height,
+        thickness=spec.apron_thickness, material="apron"))
+    cl.parts.append(Part(
+        "Apron (short)", 2, length=apron_y, width=spec.apron_height,
+        thickness=spec.apron_thickness, material="apron"))
+    if spec.stretchers:
+        cl.parts.append(Part(
+            "Stretcher", 2, length=apron_x, width=spec.stretcher_height,
+            thickness=spec.stretcher_thickness, material="apron",
+            notes="lower rail, resists racking"))
+    cl.hardware.append(Hardware("Corner bracket", 4, "leg-to-apron"))
+    cl.hardware.append(Hardware("Seat fastener", 6, "expansion clip"))
+    _resolve_part_stock(cl.parts, spec)
+    assign_ids(cl.parts)
+    return cl
+
+
+def _bench_validate(spec: BenchSpec) -> list[Issue]:
+    issues: list[Issue] = []
+
+    def err(f, m):
+        issues.append(Issue("error", f, m))
+
+    def warn(f, m):
+        issues.append(Issue("warning", f, m))
+
+    for name in ("width", "depth", "height", "top_thickness", "leg",
+                 "apron_height", "apron_thickness", "leg_inset"):
+        if not _finite_positive(getattr(spec, name)):
+            err(name, f"must be a positive, finite number, got {getattr(spec, name)!r}")
+    if any(i.severity == "error" for i in issues):
+        return issues
+
+    if spec.height <= spec.top_thickness + spec.apron_height:
+        err("height", "too short for the seat plus an apron")
+    if 2 * spec.leg_inset + spec.leg >= min(spec.width, spec.depth):
+        err("leg_inset", "legs do not fit within the seat with this inset")
+    if spec.height < 300 or spec.height > 800:
+        warn("height", "unusual seat height (benches ~400-460mm, stools ~600-760mm)")
+
+    # Leg-to-apron joinery vs. racking — a seat takes a real load.
+    joint = str(spec.joinery).strip().lower()
+    if joint in ("pocket", "butt", "screw"):
+        warn("joinery",
+             f"a {joint.replace('_', ' ')} leg-to-apron joint racks under a "
+             "sitting load; prefer mortise & tenon or domino, and keep the "
+             "stretchers")
+    if not spec.stretchers and spec.height > 500:
+        warn("stretchers",
+             "a tall stool without stretchers racks; add lower rails between "
+             "the legs")
+    return issues
+
+
+def _bench_joinery(spec: BenchSpec, cl) -> list[JoineryOp]:
+    pid = cl.part_id_for_label
+    j = str(spec.joinery).strip().lower()
+    if j == "mortise_tenon":
+        tool, w, d, note = ("mortiser / saw", round(spec.apron_thickness / 3, 1),
+                            round(spec.leg * 0.6, 1), "haunched M&T into the leg")
+    elif j == "domino":
+        tool, w, d, note = ("Festool Domino (10mm)", 10.0, 28.0,
+                            "two 10×50 Dominoes per leg-apron joint")
+    elif j == "dowel":
+        tool, w, d, note = ("doweling jig (10mm)", 10.0, 30.0,
+                            "two 10mm dowels per joint + corner block")
+    else:
+        tool, w, d, note = ("pocket-hole jig", 0.0, 0.0,
+                            "pocket screws + glue blocks (racks more than M&T)")
+    ops = [JoineryOp(
+        part="Leg / apron", operation="leg-to-apron joint", tool=tool,
+        width=w, depth=d, reference="apron into leg", part_id=pid("Leg"),
+        note=note)]
+    if spec.stretchers:
+        ops.append(JoineryOp(
+            part="Leg / stretcher", operation="leg-to-stretcher joint",
+            tool=tool, width=w, depth=d, reference="stretcher into leg",
+            part_id=pid("Stretcher"), note="lower rail tenons into the leg"))
+    return ops
+
+
+def _bench_assembly(spec: BenchSpec, cl) -> list[SubAssembly]:
+    parts = cl.parts
+    legs = [p.id for p in parts if p.id and "leg" in p.name.lower()]
+    aprons = [p.id for p in parts if p.id and "apron" in p.name.lower()]
+    stretchers = [p.id for p in parts if p.id and "stretcher" in p.name.lower()]
+    seat = [p.id for p in parts if p.id and p.name.lower() == "seat"]
+    base_ids = sorted(set(legs + aprons + stretchers))
+
+    base = SubAssembly("Base", "Four legs joined by aprons and stretchers",
+                       part_ids=base_ids, category="carcass")
+    base.steps = [
+        _step(1, "Cut the leg joints",
+              "Mortise the legs and tenon the aprons and stretchers (or Domino/"
+              "dowel) per the joinery sheet.", base_ids, category="joinery"),
+        _step(2, "Glue up the base",
+              "Glue the two end assemblies (legs + short aprons + stretchers), "
+              "then join with the long rails; check for square and wind.",
+              base_ids, category="carcass"),
+    ]
+    seat_sub = SubAssembly("Seat", "The seat top", part_ids=seat,
+                           category="carcass")
+    seat_sub.steps = [
+        _step(1, "Prepare the seat",
+              "Edge-glue the boards into a flat panel (or dimension the sheet) "
+              "and sand level.", seat, category="carcass"),
+    ]
+    final = SubAssembly("Final assembly", "Join seat to base and finish",
+                        category="final")
+    final.steps = [
+        _step(1, "Attach the seat",
+              "Fasten the seat to the base allowing for seasonal movement "
+              "(figure-8 fasteners / Z-clips).", seat, ["Seat fastener"],
+              "hardware"),
+        _step(2, "Sand & finish", "Final-sand and apply the finish.",
+              category="finish"),
+    ]
+    return [base, seat_sub, final]
+
+
+furniture.register(
+    BENCH,
+    panels=_bench_panels,
+    cut_parts=_bench_cutlist,
+    validate=_bench_validate,
+    joinery_ops=_bench_joinery,
+    assembly=_bench_assembly,
 )

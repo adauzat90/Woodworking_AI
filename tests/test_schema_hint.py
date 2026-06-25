@@ -26,11 +26,13 @@ def test_hint_describes_both_cabinet_and_table():
     assert '"kind": "table"' in DSL_SCHEMA_HINT
 
 
-def test_hint_describes_wall_shelf_and_box():
+def test_hint_describes_wall_shelf_box_and_bench():
     assert "== WALL SHELF ==" in DSL_SCHEMA_HINT
     assert '"kind": "wall_shelf"' in DSL_SCHEMA_HINT
     assert "== BOX / CHEST ==" in DSL_SCHEMA_HINT
     assert '"kind": "box"' in DSL_SCHEMA_HINT
+    assert "== BENCH / STOOL ==" in DSL_SCHEMA_HINT
+    assert '"kind": "bench"' in DSL_SCHEMA_HINT
 
 
 def test_hint_mentions_imperial_units():

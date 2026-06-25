@@ -19,7 +19,7 @@ Pure data — no CAD dependency.
 from __future__ import annotations
 
 from .dsl import (
-    ApplianceVoid, ComponentGroup, TableSpec, WallShelfSpec, BoxSpec,
+    ApplianceVoid, ComponentGroup, TableSpec, WallShelfSpec, BoxSpec, BenchSpec,
 )
 
 # Canonical pipeline kinds. ``GROUP`` covers Project and Assembly (and any
@@ -30,6 +30,7 @@ GROUP = "group"
 TABLE = "table"
 WALL_SHELF = "wall_shelf"
 BOX = "box"
+BENCH = "bench"
 CABINET = "cabinet"
 
 
@@ -50,6 +51,8 @@ def spec_kind(spec) -> str:
         return WALL_SHELF
     if isinstance(spec, BoxSpec):
         return BOX
+    if isinstance(spec, BenchSpec):
+        return BENCH
     return CABINET
 
 

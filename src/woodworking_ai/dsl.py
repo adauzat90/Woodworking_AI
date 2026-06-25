@@ -725,6 +725,78 @@ class BoxSpec:
         return cls.from_dict(json.loads(text))
 
 
+@dataclass
+class BenchSpec:
+    """A bench / stool: a seat on four legs joined by aprons and stretchers.
+
+    Largely a low :class:`TableSpec` with leg stretchers added for a piece that
+    takes a sitting load. Kept a standalone leaf (rather than refactoring a
+    shared ``LeggedSpec`` base under TableSpec) so the existing table outputs are
+    untouched; the shared base is a follow-up. Coordinates match the shared
+    frame: X = length, Y = depth (seat width), Z = height (floor to seat top).
+    """
+
+    kind: str = "bench"
+    units: str = "mm"
+    name: str = "Bench"
+    width: float = 1200.0        # length of the seat (X)
+    depth: float = 350.0         # depth of the seat (Y)
+    height: float = 450.0        # floor to seat surface (Z); ~450 bench, ~750 stool
+    top_thickness: float = 30.0
+    leg: float = 45.0            # square leg cross-section
+    apron_height: float = 70.0
+    apron_thickness: float = 20.0
+    leg_inset: float = 35.0      # leg outer face set in from the seat edge
+    stretchers: bool = True      # lower rails between the legs (rack resistance)
+    stretcher_height: float = 30.0     # stretcher cross-section (Z)
+    stretcher_thickness: float = 20.0  # stretcher cross-section (Y/X)
+    stretcher_setback: float = 120.0   # stretcher centre height off the floor
+
+    # --- material/movement (optional; defaults describe a well-built seat) -----
+    solid_top: bool = True
+    top_fixing: TopFixing = TopFixing.FLOATING
+    grain: Grain = Grain.FLATSAWN
+    joinery: Joinery = Joinery.MORTISE_TENON
+    finish: str = "none"
+    finish_sheen: str = "satin"
+    material_form: str = ""      # usually "solid"
+    species: str = ""            # wood species, e.g. oak | maple | ash
+
+    def __post_init__(self) -> None:
+        self.top_fixing = _coerce_enum(TopFixing, self.top_fixing)
+        self.grain = _coerce_enum(
+            Grain, self.grain, aliases={"quarter": "quartersawn",
+                                        "quarter_sawn": "quartersawn",
+                                        "flat": "flatsawn", "flat_sawn": "flatsawn"})
+        self.joinery = _coerce_enum(Joinery, self.joinery)
+
+    def to_dict(self) -> dict[str, Any]:
+        d = asdict(self)
+        for k in ("top_fixing", "grain", "joinery"):
+            if isinstance(getattr(self, k), Enum):
+                d[k] = getattr(self, k).value
+        return d
+
+    def to_json(self, indent: int = 2) -> str:
+        return json.dumps(self.to_dict(), indent=indent)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "BenchSpec":
+        data = dict(data)
+        if normalize_unit(data.get("units")) == IMPERIAL:
+            _to_mm(data, ("width", "depth", "height", "top_thickness", "leg",
+                          "apron_height", "apron_thickness", "leg_inset",
+                          "stretcher_height", "stretcher_thickness",
+                          "stretcher_setback"))
+            data["units"] = "mm"
+        known = {f for f in cls.__dataclass_fields__}
+        return cls(**{k: v for k, v in data.items() if k in known})
+
+    @classmethod
+    def from_json(cls, text: str) -> "BenchSpec":
+        return cls.from_dict(json.loads(text))
+
+
 # ---------------------------------------------------------------------------
 # Assemblies. A component group places child specs in one frame:
 #   * Project  — the top-level run / built-in (e.g. a whole kitchen).
@@ -936,6 +1008,8 @@ def _spec_from_dict(data: dict[str, Any], defs: "_Defs | None", stack: frozenset
         return WallShelfSpec.from_dict(data)
     if kind == "box" or kind == "chest":
         return BoxSpec.from_dict(data)
+    if kind == "bench" or kind == "stool":
+        return BenchSpec.from_dict(data)
     if kind == "table" or "leg" in data or "top_thickness" in data:
         return TableSpec.from_dict(data)
     return CabinetSpec.from_dict(data)
@@ -964,7 +1038,7 @@ def _opts(enum_cls: type[Enum]) -> str:
 
 DSL_SCHEMA_HINT = f"""\
 Output ONE furniture spec as a JSON object. It is a CABINET, a TABLE, a WALL
-SHELF, or a BOX/CHEST (or a multi-part PROJECT of these). Set "units" to "mm"
+SHELF, a BOX/CHEST, or a BENCH/STOOL (or a multi-part PROJECT of these). Set "units" to "mm"
 (default) or "in"; give every dimension in that unit and do not mix — inches are
 converted to millimetres on load.
 
@@ -1085,6 +1159,29 @@ A six-board box: four sides, a captured bottom, and an optional hinged lid.
 Box corners should be "dovetail", "box", or a locking rabbet (a "butt" corner is
 weak and pulls apart); the bottom rides in a groove. A hinged lid takes butt
 hinges (and usually a lid stay).
+
+== BENCH / STOOL ==
+A seat on four legs joined by aprons and (for rack resistance) lower stretchers.
+A low table superset — use for a dining bench (~430mm) or a stool (~650mm).
+{{
+  "kind": "bench",
+  "name": "Dining Bench",
+  "units": "mm",
+  "width": <length of the seat>,
+  "depth": <depth of the seat, e.g. 350>,
+  "height": <floor to seat surface; bench ~430, stool ~650>,
+  "top_thickness": 30,
+  "leg": <square leg cross-section, e.g. 45>,
+  "apron_height": 70,
+  "apron_thickness": 20,
+  "leg_inset": <leg outer face set in from the seat edge, e.g. 35>,
+  "stretchers": true | false,        // lower rails between the legs
+  "joinery": {_opts(Joinery)},       // mortise_tenon / domino resist racking
+  "material_form": "solid" | ...,    // optional
+  "species": "oak" | "maple" | "ash" | ...   // optional wood species
+}}
+Keep mortise_tenon or domino leg joints and the stretchers for a seat that takes
+a sitting load; a tall stool without stretchers racks.
 
 == PROJECT / ASSEMBLY (multi-part) ==
 For anything with more than one piece — a kitchen run, a built-in, a wall of
