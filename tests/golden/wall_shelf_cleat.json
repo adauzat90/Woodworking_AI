@@ -21,6 +21,7 @@
     "parts": [
       {
         "banded_edges": "",
+        "category": "shelf",
         "form": "solid",
         "grain": "length",
         "id": "C1",
@@ -36,6 +37,7 @@
       },
       {
         "banded_edges": "",
+        "category": "carcass",
         "form": "solid",
         "grain": "length",
         "id": "A1",

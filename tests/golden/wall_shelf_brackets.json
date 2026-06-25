@@ -21,6 +21,7 @@
     "parts": [
       {
         "banded_edges": "",
+        "category": "shelf",
         "form": "solid",
         "grain": "length",
         "id": "C1",

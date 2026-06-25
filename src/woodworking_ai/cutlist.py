@@ -51,6 +51,10 @@ class Part:
     grain: str = "length"      # grain direction runs along `length`
     notes: str = ""
     id: str = ""               # stable part code (e.g. "A1"), set by assign_ids
+    # Broad role used for the ID prefix and stock-area lookup. Stamped once by
+    # part_category() (cached here) so downstream surfaces read the role off the
+    # part instead of re-deriving it from the name/material string.
+    category: str = ""
     # Which faces get edge banding, as a string of edge characters: "L" = a long
     # edge (runs along `length`), "S" = a short edge (runs along `width`). So ""
     # = none, "L" = one long edge, "LS" = one long + one short, "LLSS" = all four.
@@ -135,7 +139,18 @@ _CATEGORY_PREFIX = {
 }
 
 
-def _part_category(p: "Part") -> str:
+def part_category(p: "Part") -> str:
+    """The broad role of *p* — its stamped ``category`` if set, else derived.
+
+    Single source of the role taxonomy: ID prefixing (:func:`assign_ids`) and
+    stock-area resolution (:func:`resolve_part_stock`) both call this and cache
+    the result on ``p.category``, so the name/material heuristic runs once and
+    every later surface reads the field rather than re-deriving it.
+    """
+    return p.category or _derive_category(p)
+
+
+def _derive_category(p: "Part") -> str:
     """Broad category key for *p*, used to pick its ID prefix."""
     n = p.name.lower()
     if "box" in n and "drawer" in n:
@@ -155,7 +170,7 @@ def _part_category(p: "Part") -> str:
     return "carcass"
 
 
-# Cut-list category (from _part_category) → the spec `stock` override area.
+# Cut-list category (from part_category) → the spec `stock` override area.
 _CATEGORY_TO_AREA = {
     "carcass": "carcass", "back": "back", "shelf": "shelf", "front": "front",
     "drawer_box": "drawer_box", "frame": "frame", "solid": "solid",
@@ -173,7 +188,7 @@ def resolve_part_stock(parts: list["Part"], spec) -> None:
     from .materials import resolve
     table = getattr(spec, "stock", None) or {}
     for p in parts:
-        cat = _part_category(p)
+        cat = p.category = part_category(p)
         if cat == "accessory":
             if "accessory" in table:
                 p.form, p.species = resolve(spec, "accessory")
@@ -191,7 +206,7 @@ def assign_ids(parts: list["Part"], prefix: str = "") -> None:
     """
     counters: dict[str, int] = {}
     for p in parts:
-        cat = _part_category(p)
+        cat = p.category = part_category(p)
         letter = _CATEGORY_PREFIX[cat]
         counters[letter] = counters.get(letter, 0) + 1
         code = f"{letter}{counters[letter]}"

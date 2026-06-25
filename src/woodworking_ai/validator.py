@@ -14,7 +14,7 @@ from dataclasses import dataclass
 
 from .dsl import (
     TableSpec, ComponentGroup, CabinetType, Joinery, ApplianceVoid,
-    APPLIANCE_VOID_TOLERANCE,
+    CornerJoint, DovetailTails, SlideType, APPLIANCE_VOID_TOLERANCE,
 )
 from .dispatch import spec_kind, VOID, GROUP, TABLE, CABINET
 from . import engineering, stock, proportion, furniture
@@ -538,8 +538,8 @@ def _validate_cabinet(spec) -> list[Issue]:
         interior_depth = spec.interior_depth
 
         # Corner joints — dedupe so N identical drawers don't spam N warnings.
-        for cj in {str(d.corner_joint).strip().lower() for d in boxed}:
-            if cj == "butt":
+        for cj in {d.corner_joint for d in boxed}:
+            if cj == CornerJoint.BUTT:
                 warn("drawers",
                      "drawer corners use a butt joint (end-grain glue, weak and "
                      "pulls apart when opened); use dovetail, box, or a locking "
@@ -551,9 +551,9 @@ def _validate_cabinet(spec) -> list[Issue]:
 
         # STRUCT-012: a front dovetail must have its tails on the drawer SIDES
         # so the interlock resists the front being pulled off when opened.
-        for tails in {str(d.dovetail_tails).strip().lower() for d in boxed
-                      if str(d.corner_joint).strip().lower() == "dovetail"}:
-            if tails not in ("sides", "side"):
+        for tails in {d.dovetail_tails for d in boxed
+                      if d.corner_joint == CornerJoint.DOVETAIL}:
+            if tails != DovetailTails.SIDES:
                 err("drawers",
                     f"dovetail tails are on the '{tails}'; put the tails on the "
                     "drawer sides (pins on the front) so the front can't pull "
@@ -561,7 +561,7 @@ def _validate_cabinet(spec) -> list[Issue]:
 
         # Side-mount slide clearance (HW-001) + resulting box width.
         for clr in {round(d.slide_clearance, 2) for d in boxed
-                    if str(d.slide_type).strip().lower() == "side_mount"}:
+                    if d.slide_type == SlideType.SIDE_MOUNT}:
             if not (10.0 <= clr <= 14.0):
                 warn("drawers",
                      f"side-mount slides need ~{SIDE_MOUNT_CLEARANCE:.1f}mm "

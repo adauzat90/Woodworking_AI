@@ -205,6 +205,7 @@
     "parts": [
       {
         "banded_edges": "L",
+        "category": "carcass",
         "form": "",
         "grain": "length",
         "id": "BANK-DB1-A1",
@@ -220,6 +221,7 @@
       },
       {
         "banded_edges": "L",
+        "category": "carcass",
         "form": "",
         "grain": "none",
         "id": "BANK-DB1-A2",
@@ -235,6 +237,7 @@
       },
       {
         "banded_edges": "L",
+        "category": "carcass",
         "form": "",
         "grain": "none",
         "id": "BANK-DB1-A3",
@@ -250,6 +253,7 @@
       },
       {
         "banded_edges": "",
+        "category": "back",
         "form": "",
         "grain": "none",
         "id": "BANK-DB1-B1",
@@ -265,6 +269,7 @@
       },
       {
         "banded_edges": "L",
+        "category": "shelf",
         "form": "",
         "grain": "none",
         "id": "BANK-DB1-C1",
@@ -280,6 +285,7 @@
       },
       {
         "banded_edges": "",
+        "category": "carcass",
         "form": "",
         "grain": "none",
         "id": "BANK-DB1-A4",
@@ -295,6 +301,7 @@
       },
       {
         "banded_edges": "LLSS",
+        "category": "front",
         "form": "",
         "grain": "length",
         "id": "BANK-DB1-D1",
@@ -310,6 +317,7 @@
       },
       {
         "banded_edges": "",
+        "category": "drawer_box",
         "form": "",
         "grain": "none",
         "id": "BANK-DB1-E1",
@@ -325,6 +333,7 @@
       },
       {
         "banded_edges": "",
+        "category": "drawer_box",
         "form": "",
         "grain": "none",
         "id": "BANK-DB1-E2",
@@ -340,6 +349,7 @@
       },
       {
         "banded_edges": "",
+        "category": "drawer_box",
         "form": "",
         "grain": "none",
         "id": "BANK-DB1-E3",
@@ -355,6 +365,7 @@
       },
       {
         "banded_edges": "LLSS",
+        "category": "front",
         "form": "",
         "grain": "length",
         "id": "BANK-DB1-D2",
@@ -370,6 +381,7 @@
       },
       {
         "banded_edges": "",
+        "category": "drawer_box",
         "form": "",
         "grain": "none",
         "id": "BANK-DB1-E4",
@@ -385,6 +397,7 @@
       },
       {
         "banded_edges": "",
+        "category": "drawer_box",
         "form": "",
         "grain": "none",
         "id": "BANK-DB1-E5",
@@ -400,6 +413,7 @@
       },
       {
         "banded_edges": "",
+        "category": "drawer_box",
         "form": "",
         "grain": "none",
         "id": "BANK-DB1-E6",
@@ -415,6 +429,7 @@
       },
       {
         "banded_edges": "LLSS",
+        "category": "front",
         "form": "",
         "grain": "length",
         "id": "BANK-DB1-D3",
@@ -430,6 +445,7 @@
       },
       {
         "banded_edges": "L",
+        "category": "carcass",
         "form": "",
         "grain": "length",
         "id": "BANK-DB2-A1",
@@ -445,6 +461,7 @@
       },
       {
         "banded_edges": "L",
+        "category": "carcass",
         "form": "",
         "grain": "none",
         "id": "BANK-DB2-A2",
@@ -460,6 +477,7 @@
       },
       {
         "banded_edges": "L",
+        "category": "carcass",
         "form": "",
         "grain": "none",
         "id": "BANK-DB2-A3",
@@ -475,6 +493,7 @@
       },
       {
         "banded_edges": "",
+        "category": "back",
         "form": "",
         "grain": "none",
         "id": "BANK-DB2-B1",
@@ -490,6 +509,7 @@
       },
       {
         "banded_edges": "L",
+        "category": "shelf",
         "form": "",
         "grain": "none",
         "id": "BANK-DB2-C1",
@@ -505,6 +525,7 @@
       },
       {
         "banded_edges": "",
+        "category": "carcass",
         "form": "",
         "grain": "none",
         "id": "BANK-DB2-A4",
@@ -520,6 +541,7 @@
       },
       {
         "banded_edges": "LLSS",
+        "category": "front",
         "form": "",
         "grain": "length",
         "id": "BANK-DB2-D1",
@@ -535,6 +557,7 @@
       },
       {
         "banded_edges": "L",
+        "category": "carcass",
         "form": "",
         "grain": "length",
         "id": "SINK-A1",
@@ -550,6 +573,7 @@
       },
       {
         "banded_edges": "L",
+        "category": "carcass",
         "form": "",
         "grain": "none",
         "id": "SINK-A2",
@@ -565,6 +589,7 @@
       },
       {
         "banded_edges": "L",
+        "category": "carcass",
         "form": "",
         "grain": "none",
         "id": "SINK-A3",
@@ -580,6 +605,7 @@
       },
       {
         "banded_edges": "",
+        "category": "back",
         "form": "",
         "grain": "none",
         "id": "SINK-B1",
@@ -595,6 +621,7 @@
       },
       {
         "banded_edges": "L",
+        "category": "shelf",
         "form": "",
         "grain": "none",
         "id": "SINK-C1",
@@ -610,6 +637,7 @@
       },
       {
         "banded_edges": "",
+        "category": "carcass",
         "form": "",
         "grain": "none",
         "id": "SINK-A4",
@@ -625,6 +653,7 @@
       },
       {
         "banded_edges": "LLSS",
+        "category": "front",
         "form": "",
         "grain": "length",
         "id": "SINK-D1",

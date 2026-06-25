@@ -4,6 +4,7 @@
     "parts": [
       {
         "banded_edges": "",
+        "category": "carcass",
         "form": "solid",
         "grain": "length",
         "id": "A1",
@@ -19,6 +20,7 @@
       },
       {
         "banded_edges": "",
+        "category": "carcass",
         "form": "solid",
         "grain": "length",
         "id": "A2",
@@ -34,6 +36,7 @@
       },
       {
         "banded_edges": "",
+        "category": "carcass",
         "form": "solid",
         "grain": "length",
         "id": "A3",
