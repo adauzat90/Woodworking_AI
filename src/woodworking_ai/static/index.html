@@ -717,9 +717,9 @@ function paint() {
   const d = last; let h = "";
   const u = unitLabel();
   if (tab === "cutlist") {
-    h = table([`ID`,`Part`,`Qty`,`L (${u})`,`W (${u})`,`Thk (${u})`,`Material`,`Notes`],
+    h = table([`ID`,`Part`,`Qty`,`L (${u})`,`W (${u})`,`Thk (${u})`,`From stock`,`Notes`],
       d.cutlist.map(p => [p.id||"",p.name,p.qty,fmtLen(p.length),fmtLen(p.width),
-                          fmtLen(p.thickness),p.material,p.notes]));
+                          fmtLen(p.thickness),p.stock||p.material,p.notes]));
     const panels = d.cutlist.reduce((n,p)=>n+p.qty,0);
     const hw = (d.hardware||[]).reduce((n,x)=>n+x.qty,0);
     const area = d.cutlist.reduce((a,p)=>a+(p.length/1000)*(p.width/1000)*p.qty,0);
@@ -745,14 +745,14 @@ function paint() {
       + `<div class="total">Total</div><div class="total">${m(e.total)}</div></div>`;
     if (e.groups.length) {
       h += "<h4>Sheets</h4>" +
-        table(["Material", `Thk (${u})`, "Parts", "Sheets", "Used"],
-          e.groups.map(g => [g.material, fmtLen(g.thickness), g.parts, g.sheets,
+        table(["Stock", `Thk (${u})`, "Parts", "Sheets", "Used"],
+          e.groups.map(g => [g.stock || g.material, fmtLen(g.thickness), g.parts, g.sheets,
                              Math.round(g.utilization * 100) + "%"]));
     }
     if (lumberGroups.length) {
       h += "<h4>Solid lumber (board feet)</h4>" +
-        table(["Material", `Thk (${u})`, "Parts", "Board feet", "Cost"],
-          lumberGroups.map(g => [g.material, fmtLen(g.thickness), g.parts,
+        table(["Stock", `Thk (${u})`, "Parts", "Board feet", "Cost"],
+          lumberGroups.map(g => [g.stock || g.material, fmtLen(g.thickness), g.parts,
                                  g.board_feet.toFixed(2) + " bd ft", m(g.cost)]));
     }
   } else if (tab === "drilling") {

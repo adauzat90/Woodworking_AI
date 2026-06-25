@@ -175,14 +175,18 @@ def _nest_flowables(cl, avail_w, unit):
     from reportlab.platypus import Flowable
     from .estimator import SheetSize
     from .packing import pack
-    from .cutlist import SOLID_LUMBER_MATERIALS
 
     sheet = SheetSize()
+    # Group by physical stock so same-material parts share a sheet, then title
+    # each sheet by the stock you actually bought (matches the shopping list).
     groups: dict = {}
+    meta: dict = {}
     for p in cl.parts:
-        if p.material in SOLID_LUMBER_MATERIALS:
+        if p.is_solid_lumber:
             continue
-        items = groups.setdefault((p.material, p.thickness), [])
+        key = (p.form or p.material, p.form, p.species, p.thickness)
+        items = groups.setdefault(key, [])
+        meta[key] = (p.material, p.form, p.species)
         for i in range(p.qty):
             lbl = p.id if p.qty == 1 else f"{p.id}.{i + 1}"
             seq = "front" if p.material == "door/front" else ""
@@ -219,12 +223,16 @@ def _nest_flowables(cl, avail_w, unit):
                 c.drawString(rx + 2, ry + wid * scale / 2 - 3, label)
 
     from .stock import stock_label
+    from .materials import stock_name
     flows = []
-    for (mat, thk), items in sorted(groups.items()):
+    for key, items in sorted(groups.items()):
+        thk = key[-1]
+        mat, form, species = meta[key]
+        name = stock_name(form, species, solid=False, fallback=stock_label(mat))
         sheets, _oversize = pack(items, sheet)
         for si, placements in enumerate(sheets):
             flows.append(_SheetFlow(
-                f"{stock_label(mat)} {thk:.0f}mm — sheet {si + 1}/{len(sheets)}",
+                f"{name} {thk:.0f}mm — sheet {si + 1}/{len(sheets)}",
                 placements))
     return flows
 
@@ -320,6 +328,7 @@ def build_package_pdf(spec, units: str = "metric") -> bytes:
     # 1 · Shopping list — buy everything first ---------------------------
     from .finishing import finishing_schedule
     from .stock import stock_label, stock_product
+    from .materials import stock_name, product_hint
     heading("Shopping list — buy this first")
     story.append(Paragraph(
         "Everything to buy and have on hand before you start. The stock below is "
@@ -327,14 +336,17 @@ def build_package_pdf(spec, units: str = "metric") -> bytes:
     story.append(Paragraph("Sheet goods (full sheets to buy)", mini))
     story.append(tbl(
         ["Stock to buy", "Typical product", "Thickness", "Sheets"],
-        [[stock_label(g.material), stock_product(g.material), fl(g.thickness),
+        [[stock_name(g.form, g.species, fallback=stock_label(g.material)),
+          product_hint(g.form, stock_product(g.material)), fl(g.thickness),
           g.sheets] for g in est.groups] or [["—", "", "", ""]]))
     if est.lumber_groups:
         story.append(Spacer(1, 6))
         story.append(Paragraph("Solid lumber (by the board foot)", mini))
         story.append(tbl(
             ["Stock to buy", "Typical product", "Thickness", "Board feet"],
-            [[stock_label(g.material), stock_product(g.material), fl(g.thickness),
+            [[stock_name(g.form, g.species, solid=True,
+                         fallback=stock_label(g.material)),
+              product_hint(g.form, stock_product(g.material)), fl(g.thickness),
               f"{g.board_feet:.1f}"] for g in est.lumber_groups]))
     extras = []
     if est.edge_banding_m:
@@ -372,6 +384,13 @@ def build_package_pdf(spec, units: str = "metric") -> bytes:
         small))
     story.append(Paragraph("Sub-assemblies, in build order: " + ", ".join(names)
                            + " → Final assembly.", small))
+    from .materials import build_hints
+    hints = build_hints(spec)
+    if hints:
+        story.append(Spacer(1, 4))
+        story.append(Paragraph("Material notes", mini))
+        for _sev, _f, msg in hints:
+            story.append(Paragraph("• " + msg, small))
     story.append(Spacer(1, 6))
     story.append(Paragraph("Dimensioned drawings", mini))
     story.append(_drawings_flowable(spec, unit, avail_w))
@@ -398,7 +417,9 @@ def build_package_pdf(spec, units: str = "metric") -> bytes:
     story.append(tbl(
         ["ID", "Part", "Qty", f"L ({unit[:3]})", "W", "Thk", "From stock", "Grain"],
         [[p.id, p.name, p.qty, fl(p.length), fl(p.width), fl(p.thickness),
-          stock_label(p.material), p.grain] for p in cl.parts]))
+          stock_name(p.form, p.species, solid=p.is_solid_lumber,
+                     fallback=stock_label(p.material)), p.grain]
+         for p in cl.parts]))
     story.append(PageBreak())
 
     # 3 · Process all parts ----------------------------------------------

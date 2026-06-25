@@ -119,6 +119,65 @@ class Material:
     door_panel: float = 6.0      # centre panel of a 5-piece (stile-and-rail) door
 
 
+# Physical material forms a shop can actually buy. Sheet goods are sold by the
+# sheet; "solid" is dimensional / hardwood lumber sold by the board foot. Both a
+# part's form and its species are *optional* — see :class:`Stock`.
+SHEET_FORMS = ("plywood", "mdf", "particleboard", "melamine", "hardboard")
+SOLID_FORMS = ("solid",)
+MATERIAL_FORMS = SHEET_FORMS + SOLID_FORMS
+
+
+@dataclass
+class Stock:
+    """An optional material choice for one *area* of a piece.
+
+    ``form`` is the physical material (``plywood`` | ``mdf`` | ``particleboard``
+    | ``melamine`` | ``hardboard`` | ``solid``); ``species`` is the wood (``oak``,
+    ``maple``, ``pine``, ...). Both are optional — an empty value inherits the
+    spec's global default (``material_form`` / ``species``), and when nothing is
+    declared anywhere the area is treated as a generic sheet good. Used to drive
+    the shopping list grouping, the cost estimate, and material build hints.
+    """
+    form: str = ""
+    species: str = ""
+
+    def __post_init__(self) -> None:
+        self.form = str(self.form or "").strip().lower()
+        self.species = str(self.species or "").strip()
+
+    def to_dict(self) -> dict[str, str]:
+        d: dict[str, str] = {}
+        if self.form:
+            d["form"] = self.form
+        if self.species:
+            d["species"] = self.species
+        return d
+
+
+def _stock_map(raw: Any) -> dict[str, "Stock"]:
+    """Parse a ``{area: {form, species}}`` mapping into :class:`Stock` values.
+
+    Accepts a Stock, a dict, or a bare string (treated as the species), so the
+    language stays forgiving for hand-written specs. Empty entries are dropped.
+    """
+    if not isinstance(raw, dict):
+        return {}
+    out: dict[str, Stock] = {}
+    for area, v in raw.items():
+        if isinstance(v, Stock):
+            s = v
+        elif isinstance(v, dict):
+            s = Stock(form=str(v.get("form", "") or ""),
+                      species=str(v.get("species", "") or ""))
+        elif isinstance(v, str):
+            s = Stock(species=v)          # shorthand: "oak" == {"species": "oak"}
+        else:
+            continue
+        if s.form or s.species:
+            out[str(area).strip().lower()] = s
+    return out
+
+
 @dataclass
 class ToeKick:
     height: float = 100.0
@@ -199,6 +258,15 @@ class CabinetSpec:
     finish: str = "none"         # none | oil | clear | paint | stain_clear
     finish_sheen: str = "satin"  # matte | satin | semi_gloss | gloss
 
+    # --- material make-up (all optional; feed the BOM, cost, and build hints) -
+    # Global defaults for the whole piece; override any area through `stock`.
+    # Leave empty and the piece is treated as a single generic sheet good.
+    material_form: str = ""      # plywood|mdf|particleboard|melamine|hardboard|solid
+    species: str = ""            # wood species, e.g. oak | maple | pine (free text)
+    # Per-area overrides keyed by area: carcass | back | shelf | front (doors &
+    # drawer fronts) | door_panel | drawer_box | frame (face frame) | accessory.
+    stock: dict[str, Stock] = field(default_factory=dict)
+
     @property
     def has_full_top(self) -> bool:
         """Enclosed-top units; base/corner cabinets use top rails instead."""
@@ -246,6 +314,11 @@ class CabinetSpec:
             for k in ("corner_joint", "dovetail_tails", "slide_type"):
                 if isinstance(dr.get(k), Enum):
                     dr[k] = dr[k].value
+        # Material overrides round-trip as a terse {area: {form, species}} map.
+        if self.stock:
+            d["stock"] = {a: s.to_dict() for a, s in self.stock.items()}
+        else:
+            d.pop("stock", None)
         return d
 
     def to_json(self, indent: int = 2) -> str:
@@ -270,6 +343,10 @@ class CabinetSpec:
 
         if "material" in data and isinstance(data["material"], dict):
             data["material"] = Material(**data["material"])
+        if "stock" in data and not isinstance(data["stock"], dict):
+            data.pop("stock")
+        elif "stock" in data:
+            data["stock"] = _stock_map(data["stock"])
         if data.get("toe_kick") is not None and isinstance(data["toe_kick"], dict):
             data["toe_kick"] = ToeKick(**data["toe_kick"])
         if "drawers" in data and data["drawers"]:
@@ -331,6 +408,10 @@ class TableSpec:
     joinery: Joinery = Joinery.MORTISE_TENON    # leg-to-apron; drives racking
     finish: str = "none"         # none | oil | clear | paint | stain_clear
     finish_sheen: str = "satin"
+
+    # --- material make-up (optional; feed the BOM, cost, and build hints) -----
+    material_form: str = ""      # usually "solid"; "" treats the top as a sheet
+    species: str = ""            # wood species, e.g. oak | maple | walnut
 
     def __post_init__(self) -> None:
         self.top_fixing = _coerce_enum(TopFixing, self.top_fixing)
@@ -635,6 +716,17 @@ not mix — inches are converted to millimetres on load.
   "hardware_brand": "generic" | "blum" | "hettich" | "grass",
   "hinge_overlay": "overlay" | "half" | "inset",
   "finish": "none" | "oil" | "clear" | "paint" | "stain_clear",
+  // --- material make-up (ALL OPTIONAL) -------------------------------------
+  // Declare what the piece is made of to drive the shopping list, the quote,
+  // and build hints. Omit everything and it's treated as one generic sheet good.
+  "material_form": "plywood" | "mdf" | "particleboard" | "melamine" |
+                   "hardboard" | "solid",   // whole-piece default form
+  "species": "oak" | "maple" | "pine" | "birch" | "walnut" | ...,  // wood species
+  "stock": {{     // optional per-area overrides (each form?/species?); areas:
+                 // carcass | back | shelf | front | door_panel | drawer_box | frame
+    "front": {{"form": "solid", "species": "oak"}},
+    "frame": {{"form": "solid", "species": "oak"}}
+  }},
   "accessories": [        // optional countertop / appliance / filler / molding
     {{"kind": "countertop", "depth": 640, "thickness": 38,
       "material": "butcher_block", "overhang": 25}},
@@ -661,7 +753,9 @@ not mix — inches are converted to millimetres on load.
   "solid_top": true | false,
   "top_fixing": {_opts(TopFixing)},
   "grain": {_opts(Grain)},
-  "joinery": {_opts(Joinery)}
+  "joinery": {_opts(Joinery)},
+  "material_form": "solid" | "plywood" | ...,   // optional; default treats top as sheet
+  "species": "walnut" | "oak" | ...             // optional wood species
 }}
 
 == PROJECT / ASSEMBLY (multi-part) ==
@@ -711,6 +805,17 @@ drawers keep their tails on the sides so the front can't pull off. Cabinets
 with adjustable shelves need a box tall and deep enough for the 32mm drilling
 system. A solid table top must use a "floating" top_fixing so it can move
 seasonally; mortise_tenon or domino leg-to-apron joints resist racking best.
+
+Material make-up is optional and feeds the shopping list, the cost, and build
+hints. Set "material_form"/"species" for the whole piece and override any area
+with "stock". With nothing set, all sheet parts are bought as one generic sheet
+good; set just a form (e.g. "plywood") to group by form; add a "species" (e.g.
+"oak") and the BOM reads "Oak plywood" / "Oak solid lumber" and prices per
+species. A face frame, table legs and aprons are always solid lumber, so a
+sheet "material_form" never turns them into plywood — give them their own
+"species". Typical: a plywood carcass with solid-wood doors and face frame —
+set material_form "plywood" and species "birch", then under stock give "front"
+and "frame" a form of "solid" and species "oak".
 
 Rules of thumb by cabinet_type:
 - base: floor cabinet, ~720mm box + ~100mm toe kick, 560-600mm deep. Has a toe

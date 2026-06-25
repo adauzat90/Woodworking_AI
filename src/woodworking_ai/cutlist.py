@@ -45,10 +45,14 @@ class Part:
     length: float
     width: float
     thickness: float
-    material: str = "sheet"
+    material: str = "sheet"    # internal *usage* label (role), not the product
     grain: str = "length"      # grain direction runs along `length`
     notes: str = ""
     id: str = ""               # stable part code (e.g. "A1"), set by assign_ids
+    # Physical make-up, resolved from the spec's material/species declaration
+    # (both optional; "" = generic / inherited). Drives the BOM and the quote.
+    form: str = ""             # plywood|mdf|particleboard|melamine|hardboard|solid
+    species: str = ""          # wood species, e.g. oak | maple | pine
 
     @property
     def area_m2(self) -> float:
@@ -57,8 +61,12 @@ class Part:
 
     @property
     def is_solid_lumber(self) -> bool:
-        """True when this part is cut from solid stock (bought by the board foot)."""
-        return self.material in SOLID_LUMBER_MATERIALS
+        """True when this part is cut from solid stock (bought by the board foot).
+
+        Either an intrinsically-solid usage label (frame/leg/apron/top) or an
+        explicit ``form == "solid"`` declared on the spec.
+        """
+        return self.material in SOLID_LUMBER_MATERIALS or self.form == "solid"
 
     @property
     def board_feet(self) -> float:
@@ -102,6 +110,34 @@ def _part_category(p: "Part") -> str:
     if "shelf" in n:
         return "shelf"
     return "carcass"
+
+
+# Cut-list category (from _part_category) → the spec `stock` override area.
+_CATEGORY_TO_AREA = {
+    "carcass": "carcass", "back": "back", "shelf": "shelf", "front": "front",
+    "drawer_box": "drawer_box", "frame": "frame", "solid": "solid",
+}
+
+
+def _resolve_part_stock(parts: list["Part"], spec) -> None:
+    """Stamp each part's physical ``form``/``species`` from *spec*, in place.
+
+    The role→material declaration lives on the spec (global default + per-area
+    ``stock`` overrides); this resolves it once per part so every downstream
+    surface (BOM, quote, drawings) reads the same physical stock. Accessories
+    keep their own material unless an ``accessory`` override is given.
+    """
+    from .materials import resolve
+    table = getattr(spec, "stock", None) or {}
+    for p in parts:
+        cat = _part_category(p)
+        if cat == "accessory":
+            if "accessory" in table:
+                p.form, p.species = resolve(spec, "accessory")
+            continue
+        area = "door_panel" if p.material == "door panel" else \
+            _CATEGORY_TO_AREA.get(cat, "carcass")
+        p.form, p.species = resolve(spec, area)
 
 
 def assign_ids(parts: list["Part"], prefix: str = "") -> None:
@@ -221,12 +257,14 @@ class CutList:
         a shop can order solid stock the way it actually buys it: legs and
         aprons by the linear metre/foot, tops and frames by the board foot.
         """
-        groups: dict[tuple[str, float], dict] = {}
+        groups: dict[tuple[str, float, str, str], dict] = {}
         for p in self.parts:
             if not p.is_solid_lumber:
                 continue
-            g = groups.setdefault((p.material, p.thickness), {
+            key = (p.material, p.thickness, p.form, p.species)
+            g = groups.setdefault(key, {
                 "material": p.material, "thickness": p.thickness,
+                "form": p.form, "species": p.species,
                 "parts": 0, "board_feet": 0.0, "length_mm": 0.0,
             })
             g["parts"] += p.qty
@@ -404,6 +442,7 @@ def _diagonal_cutlist(spec: CabinetSpec) -> CutList:
     cl.hardware.append(Hardware("Door pull", 1))
     if spec.edge_banding:
         cl.hardware.append(Hardware("Edge banding", 1, "match carcass front edges"))
+    _resolve_part_stock(cl.parts, spec)
     assign_ids(cl.parts)
     return cl
 
@@ -434,6 +473,7 @@ def _table_cutlist(spec: TableSpec) -> CutList:
                          thickness=spec.apron_thickness, material="apron"))
     cl.hardware.append(Hardware("Corner bracket", 4, "leg-to-apron"))
     cl.hardware.append(Hardware("Tabletop fastener", 8, "expansion clip"))
+    _resolve_part_stock(cl.parts, spec)
     assign_ids(cl.parts)
     return cl
 
@@ -627,8 +667,12 @@ def generate_cutlist(spec) -> CutList:
             "Edge banding", 1, "match carcass front edges (see estimate for run)",
         ))
 
-    # Solid-wood carcass: edge-glue the sheet panels from boards.
-    if str(getattr(spec, "panel_construction", "sheet")).lower() == "glue_up":
+    # Solid-wood carcass: edge-glue the sheet panels from boards. Triggered by an
+    # explicit panel_construction, or by declaring the carcass form as "solid".
+    from .materials import resolve as _resolve_area
+    carcass_form, _ = _resolve_area(spec, "carcass")
+    if (str(getattr(spec, "panel_construction", "sheet")).lower() == "glue_up"
+            or carcass_form == "solid"):
         _expand_glue_ups(cl)
 
     # Accessories: countertop, filler, end panel, moldings.
@@ -636,5 +680,6 @@ def generate_cutlist(spec) -> CutList:
         from .accessories import add_accessory_parts
         add_accessory_parts(cl, spec)
 
+    _resolve_part_stock(cl.parts, spec)
     assign_ids(cl.parts)
     return cl
