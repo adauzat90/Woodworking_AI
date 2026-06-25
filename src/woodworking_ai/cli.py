@@ -19,118 +19,56 @@ import sys
 from pathlib import Path
 
 from .dsl import spec_from_dict, ComponentGroup
-from .validator import validate
-from .cutlist import generate_cutlist
-from . import exporters
-
-
-def _emit_project(project: ComponentGroup, args) -> int:
-    """Emit a whole group: aggregate validation, combined cut list, one quote."""
-    unit = "imperial" if getattr(args, "imperial", False) else "metric"
-    result = validate(project)
-    print(project.to_json())
-    print()
-    if result.warnings:
-        print("Warnings:")
-        for w in result.warnings:
-            print(f"  {w}")
-    if not result.ok:
-        print("Errors (project is not buildable):", file=sys.stderr)
-        for e in result.errors:
-            print(f"  {e}", file=sys.stderr)
-        return 1
-
-    # Critic: verify the assembled run — cabinets must not collide.
-    from .agents.critic import critique
-    crit = critique(project)
-    r = crit.report
-    print(f"\nAssembled run: {r.get('component_count', 0)} components, "
-          f"{r.get('panel_count', 0)} panels, "
-          f"{r.get('interference_count', 0)} interference(s)")
-    if not crit.ok:
-        print("\nCritic found assembly errors:", file=sys.stderr)
-        for e in crit.errors:
-            print(f"  {e}", file=sys.stderr)
-        return 1
-
-    cutlist = generate_cutlist(project)
-    print("\nCombined cut list:")
-    print(cutlist.to_csv(unit))
-    print("\nHardware:")
-    print(cutlist.hardware_csv())
-    print("\n" + cutlist.summary(unit))
-
-    if args.estimate:
-        from .estimator import estimate
-        print("\n" + estimate(project).report_text(unit))
-
-    if args.drill:
-        from .drilling import drilling_schedule
-        print("\n" + drilling_schedule(project).report_text())
-
-    if args.out:
-        out = Path(args.out)
-        out.mkdir(parents=True, exist_ok=True)
-        exporters.write_cutlist_csv(cutlist, out / "cutlist.csv", unit)
-        exporters.write_hardware_csv(cutlist, out / "hardware.csv")
-        (out / "project.json").write_text(project.to_json() + "\n", encoding="utf-8")
-        print(f"\nWrote project.json, cutlist.csv, hardware.csv to {out}/")
-        if args.drill:
-            from .drilling import drilling_schedule
-            (out / "drilling.csv").write_text(
-                drilling_schedule(project).to_csv() + "\n", encoding="utf-8")
-            print("Wrote drilling.csv")
-        if args.dxf:
-            exporters.export_cutlayout_dxf(project, out / "cutlayout.dxf",
-                                           cutlist=cutlist)
-            print("Wrote cutlayout.dxf")
-        if args.step or args.stl or args.glb:
-            from .builder import build_project, measure
-            model = build_project(
-                project,
-                joinery_geometry=getattr(args, "joinery_geometry", False))
-            print(f"Assembled geometry: {measure(model)}")
-            if args.step:
-                exporters.export_step(model, out / "project.step")
-                print("Wrote project.step")
-            if args.stl:
-                exporters.export_stl(model, out / "project.stl")
-                print("Wrote project.stl")
-            if args.glb:
-                exporters.export_glb(model, out / "project.glb")
-                print("Wrote project.glb")
-    return 0
+from . import service
 
 
 def _emit(spec, args) -> int:
-    if isinstance(spec, ComponentGroup):
-        return _emit_project(spec, args)
+    """Validate, critique, and report a spec (cabinet/table or whole project).
+
+    Runs the design pipeline exactly once through :func:`service.assemble` and
+    writes every requested export through :func:`service.export_bytes`; this
+    function only does presentation (stdout text/CSV and choosing filenames).
+    A :class:`ComponentGroup` is reported as one aggregated run; the few places
+    the two paths read differently are gated on ``is_group``.
+    """
+    is_group = isinstance(spec, ComponentGroup)
+    noun = "project" if is_group else "design"
     unit = "imperial" if getattr(args, "imperial", False) else "metric"
-    result = validate(spec)
+
+    asm = service.assemble(spec)
+
     print(spec.to_json())
     print()
+    result = asm.validation
     if result.warnings:
         print("Warnings:")
         for w in result.warnings:
             print(f"  {w}")
     if not result.ok:
-        print("Errors (design is not buildable):", file=sys.stderr)
+        print(f"Errors ({noun} is not buildable):", file=sys.stderr)
         for e in result.errors:
             print(f"  {e}", file=sys.stderr)
         return 1
 
     # Critic: verify the geometry the spec produces (analytical, no CAD needed).
-    from .agents.critic import critique
-    crit = critique(spec)
-    print("\n" + crit.report_text(unit))
+    crit = asm.critique
+    if is_group:
+        r = crit.report
+        print(f"\nAssembled run: {r.get('component_count', 0)} components, "
+              f"{r.get('panel_count', 0)} panels, "
+              f"{r.get('interference_count', 0)} interference(s)")
+    else:
+        print("\n" + crit.report_text(unit))
     if not crit.ok:
-        print("\nCritic found geometry errors:", file=sys.stderr)
+        label = "assembly errors" if is_group else "geometry errors"
+        print(f"\nCritic found {label}:", file=sys.stderr)
         for e in crit.errors:
             print(f"  {e}", file=sys.stderr)
         return 1
 
-    # Render-based review: snapshot the model and optionally let Claude inspect it.
-    if args.render or args.visual_review:
+    # Render-based review: snapshot the model and optionally let Claude inspect
+    # it (single specs only — a whole run is reviewed analytically above).
+    if not is_group and (args.render or args.visual_review):
         render_path = (Path(args.out) / "render.png") if args.out else None
         if args.visual_review:
             from .agents.critic import visual_review
@@ -139,7 +77,8 @@ def _emit(spec, args) -> int:
                 print(f"\nRendered snapshot: {vis.report['render_path']}")
             notes = vis.report.get("visual_notes")
             if notes:
-                verdict = "looks correct" if vis.report.get("looks_correct") else "issues found"
+                verdict = ("looks correct" if vis.report.get("looks_correct")
+                           else "issues found")
                 print(f"Visual review ({verdict}): {notes}")
             for v in vis.issues:
                 print(f"  {v}")
@@ -149,69 +88,75 @@ def _emit(spec, args) -> int:
             render_cabinet(spec, target)
             print(f"\nRendered snapshot: {target}")
 
-    cutlist = generate_cutlist(spec)
-    print("\nCut list:")
+    cutlist = asm.cutlist
+    print("\nCombined cut list:" if is_group else "\nCut list:")
     print(cutlist.to_csv(unit))
     print("\nHardware:")
     print(cutlist.hardware_csv())
     print("\n" + cutlist.summary(unit))
 
     if args.estimate:
-        from .estimator import estimate
-        print("\n" + estimate(spec, cutlist=cutlist).report_text(unit))
+        print("\n" + asm.estimate.report_text(unit))
 
     if args.drill:
-        from .drilling import drilling_schedule
-        print("\n" + drilling_schedule(spec).report_text())
+        print("\n" + asm.drilling.report_text())
 
-    if args.joinery:
-        from .joinery import joinery_schedule
-        print("\n" + joinery_schedule(spec).report_text())
+    if not is_group and args.joinery:
+        print("\n" + asm.joinery.report_text())
 
-    if args.assembly:
-        from .assembly_steps import assembly_plan
-        print("\n" + assembly_plan(spec).report_text())
+    if not is_group and args.assembly:
+        print("\n" + asm.assembly.report_text())
 
     if args.out:
-        out = Path(args.out)
-        out.mkdir(parents=True, exist_ok=True)
-        exporters.write_cutlist_csv(cutlist, out / "cutlist.csv", unit)
-        exporters.write_hardware_csv(cutlist, out / "hardware.csv")
-        (out / "spec.json").write_text(spec.to_json() + "\n", encoding="utf-8")
-        print(f"\nWrote spec.json, cutlist.csv, hardware.csv to {out}/")
-        if args.drill:
-            from .drilling import drilling_schedule
-            (out / "drilling.csv").write_text(
-                drilling_schedule(spec).to_csv() + "\n", encoding="utf-8")
-            print("Wrote drilling.csv")
-        if args.dxf:
-            exporters.export_cutlayout_dxf(spec, out / "cutlayout.dxf", cutlist=cutlist)
-            print("Wrote cutlayout.dxf")
-        if args.drawings:
-            from .drawings import write_drawings_svg
-            write_drawings_svg(spec, out / "drawings.svg", unit)
-            print("Wrote drawings.svg")
-        if getattr(args, "package", False):
-            from .report import build_package_pdf
-            (out / "build_package.pdf").write_bytes(build_package_pdf(spec, unit))
-            print("Wrote build_package.pdf")
-
-        if args.step or args.stl or args.glb:
-            from .builder import build_model, measure
-            model = build_model(
-                spec, joinery_geometry=getattr(args, "joinery_geometry", False))
-            dims = measure(model)
-            print(f"Geometry built: {dims}")
-            if args.step:
-                exporters.export_step(model, out / "cabinet.step")
-                print("Wrote cabinet.step")
-            if args.stl:
-                exporters.export_stl(model, out / "cabinet.stl")
-                print("Wrote cabinet.stl")
-            if args.glb:
-                exporters.export_glb(model, out / "cabinet.glb")
-                print("Wrote cabinet.glb")
+        _write_outputs(spec, asm, args, unit, is_group=is_group)
     return 0
+
+
+def _write_outputs(spec, asm, args, unit: str, *, is_group: bool) -> None:
+    """Write the requested export files via the service export layer."""
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+
+    def write(fmt: str, filename: str) -> None:
+        data, _mime, _name = service.export_bytes(spec, fmt, units=unit)
+        (out / filename).write_bytes(data)
+
+    write("cutlist", "cutlist.csv")
+    write("hardware", "hardware.csv")
+    spec_file = "project.json" if is_group else "spec.json"
+    (out / spec_file).write_text(spec.to_json() + "\n", encoding="utf-8")
+    print(f"\nWrote {spec_file}, cutlist.csv, hardware.csv to {out}/")
+
+    if args.drill:
+        write("drilling", "drilling.csv")
+        print("Wrote drilling.csv")
+    if args.dxf:
+        write("dxf", "cutlayout.dxf")
+        print("Wrote cutlayout.dxf")
+    if not is_group and args.drawings:
+        write("drawings", "drawings.svg")
+        print("Wrote drawings.svg")
+    if not is_group and getattr(args, "package", False):
+        write("package", "build_package.pdf")
+        print("Wrote build_package.pdf")
+
+    if args.step or args.stl or args.glb:
+        from .builder import build_model, measure
+        joinery_geometry = getattr(args, "joinery_geometry", False)
+        model = build_model(spec, joinery_geometry=joinery_geometry)
+        verb = "Assembled geometry" if is_group else "Geometry built"
+        print(f"{verb}: {measure(model)}")
+        base = "project" if is_group else "cabinet"
+        from . import exporters
+        if args.step:
+            exporters.export_step(model, out / f"{base}.step")
+            print(f"Wrote {base}.step")
+        if args.stl:
+            exporters.export_stl(model, out / f"{base}.stl")
+            print(f"Wrote {base}.stl")
+        if args.glb:
+            exporters.export_glb(model, out / f"{base}.glb")
+            print(f"Wrote {base}.glb")
 
 
 def main(argv: list[str] | None = None) -> int:

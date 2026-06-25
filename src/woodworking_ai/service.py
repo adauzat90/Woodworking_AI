@@ -11,6 +11,8 @@ from __future__ import annotations
 import base64
 import math
 import tempfile
+from dataclasses import dataclass
+from functools import cached_property
 from pathlib import Path
 from typing import Any
 
@@ -164,6 +166,63 @@ def export_bytes(spec, fmt: str,
     raise ValueError(f"unknown export format: {fmt}")
 
 
+@dataclass
+class Assembly:
+    """The pipeline run for one spec, computed once and shared.
+
+    Holds the live domain objects (validation result, critique, cut list, and
+    the on-demand estimate/drilling/joinery/assembly schedules) so a front end
+    can render them however it likes. The web bundle (:func:`build_result`) and
+    the CLI both flow through here instead of each re-running the pipeline.
+
+    The always-needed stages (validate, critique, cut list) are computed eagerly;
+    the rest are :class:`cached_property` so callers pay only for what they show.
+    """
+
+    spec: Any
+    prices: Any = None
+    sheet: Any = None
+
+    @cached_property
+    def validation(self):
+        return validate(self.spec)
+
+    @cached_property
+    def critique(self):
+        return critique(self.spec)
+
+    @cached_property
+    def cutlist(self):
+        return generate_cutlist(self.spec)
+
+    @cached_property
+    def estimate(self):
+        return estimate(self.spec, cutlist=self.cutlist,
+                        prices=self.prices, sheet=self.sheet)
+
+    @cached_property
+    def drilling(self):
+        return drilling_schedule(self.spec)
+
+    @cached_property
+    def joinery(self):
+        return joinery_schedule(self.spec)
+
+    @cached_property
+    def assembly(self):
+        return assembly_plan(self.spec)
+
+
+def assemble(spec, *, prices=None, sheet=None) -> Assembly:
+    """Run (lazily) the design pipeline for *spec* once, returning live objects.
+
+    The single entry point both the CLI and :func:`build_result` use so the two
+    front ends can never drift on defaults or skip a stage. ``prices``/``sheet``
+    override the costing defaults when supplied.
+    """
+    return Assembly(spec, prices=prices, sheet=sheet)
+
+
 def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
                  prices=None, sheet=None) -> dict[str, Any]:
     """Full design bundle for *spec* — a cabinet, table, or whole project.
@@ -173,7 +232,8 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
     run bundle. ``prices`` (a :class:`PriceBook`) and ``sheet`` (a
     :class:`SheetSize`) override the costing defaults when supplied.
     """
-    v = validate(spec)
+    asm = assemble(spec, prices=prices, sheet=sheet)
+    v = asm.validation
     result: dict[str, Any] = {
         "spec": spec.to_dict(),
         "valid": v.ok,
@@ -185,7 +245,7 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
         # A broken spec: report the errors, skip the expensive downstream work.
         return _clean(result)
 
-    crit = critique(spec)
+    crit = asm.critique
     result["critique"] = {
         "ok": crit.ok,
         "report": crit.report,
@@ -193,7 +253,7 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
                    for i in crit.issues],
     }
 
-    cl = generate_cutlist(spec)
+    cl = asm.cutlist
     result["cutlist"] = [
         {"id": p.id, "name": p.name, "qty": p.qty, "length": round(p.length, 1),
          "width": round(p.width, 1), "thickness": p.thickness,
@@ -226,7 +286,7 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
         ],
     }
 
-    est = estimate(spec, cutlist=cl, prices=prices, sheet=sheet)
+    est = asm.estimate
     result["estimate"] = {
         "currency": est.currency,
         "total": round(est.total, 2),
@@ -281,7 +341,7 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
         ],
     }
 
-    drill = drilling_schedule(spec)
+    drill = asm.drilling
     result["drilling"] = {
         "total_holes": drill.total_holes,
         "ops": [{"part": o.part, "part_id": o.part_id, "operation": o.operation,
@@ -296,7 +356,7 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
                 for o in drill.ops],
     }
 
-    joint = joinery_schedule(spec)
+    joint = asm.joinery
     result["joinery"] = [
         {"part": o.part, "part_id": o.part_id, "operation": o.operation,
          "tool": o.tool, "width": round(o.width, 1), "depth": round(o.depth, 1),
@@ -312,7 +372,7 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
     from .appliances import appliance_schedule
     result["appliances"] = appliance_schedule(spec)
 
-    plan = assembly_plan(spec)
+    plan = asm.assembly
     result["assembly"] = [
         {"name": sub.name, "detail": sub.detail, "part_ids": sub.part_ids,
          "category": sub.category,
