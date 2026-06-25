@@ -33,3 +33,6 @@ convex/_generated/
 .DS_Store
 .idea/
 .vscode/
+
+# Claude Code harness scratch (agent worktrees, transcripts)
+.claude/
