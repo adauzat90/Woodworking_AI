@@ -1,5 +1,33 @@
 # Tech Debt Cleanup — Implementation Plan
 
+> **Execution status (2026-06-25).** The epic has been executed on
+> `claude/app-tech-debt-audit-vu56yw`. All phases shipped, each gated by
+> `make check` (ruff + 615 tests) and a golden-output safety net; the only
+> intended output change was the slide-clearance correctness fix.
+>
+> | Phase | Status |
+> |---|---|
+> | 0 Safety net (golden fixtures + `make check`) | ✅ done |
+> | 1 Correctness (slide clearance, XSS, critic logging, dead code, clamps) | ✅ done |
+> | 2 Unify constants | ✅ done |
+> | 3 Shared dimension helpers (`partmath.py`) | ✅ done |
+> | 4 IO/coupling + web hardening (a/b/c) | ✅ done |
+> | 5 PDF dedup (`pdf_common.py`) | ✅ done |
+> | 6 Typed dispatch (`_digits`, float sentinel) | ✅ done |
+> | 7 Data-driven catalogs (profile, pulls) | ✅ done (joinery/appliance tables deferred — see note) |
+> | 8 Spec dispatch (`dispatch.spec_kind`) | ✅ done |
+> | 9 God-functions (service, drilling, assembly classifier) | ✅ done (`designer.design_from_prompt` deferred) |
+>
+> **Deliberately deferred** (low value / not safely verifiable in this
+> environment): the `_housed_joint`/appliance lookup-table conversions (the
+> if/elif chains are readable and a static table would add complexity given the
+> per-joint `mating_thickness` dependency), and decomposing
+> `designer.design_from_prompt` (needs the `anthropic` extra, which isn't
+> installed, so the change can't be test-verified here).
+
+---
+
+
 > Companion to [`TECH_DEBT_AUDIT.md`](./TECH_DEBT_AUDIT.md). Sequenced into 9
 > independently-shippable phases. Each phase keeps the test suite green, leaves
 > `main` releasable, and is sized as one reviewable PR (the big ones note where
