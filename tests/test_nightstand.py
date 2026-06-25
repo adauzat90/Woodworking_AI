@@ -1,0 +1,92 @@
+"""Nightstand (G1) — a small legged cabinet with a drawer and a lower shelf."""
+
+import pytest
+
+from woodworking_ai import (
+    NightstandSpec, Project, Component,
+    validate, generate_cutlist, estimate, spec_from_dict,
+)
+from woodworking_ai.dsl import MM_PER_IN
+from woodworking_ai.dispatch import spec_kind, NIGHTSTAND
+from woodworking_ai.geometry import panel_layout
+from woodworking_ai.joinery import joinery_schedule
+from woodworking_ai.assembly_steps import assembly_plan
+
+
+def _ns(**kw) -> NightstandSpec:
+    base = dict(name="Nightstand", width=450, depth=400, height=600,
+                species="walnut")
+    base.update(kw)
+    return NightstandSpec(**base)
+
+
+def test_dispatch_and_spec_from_dict():
+    assert spec_kind(_ns()) == NIGHTSTAND
+    assert isinstance(spec_from_dict({"kind": "nightstand", "width": 400}),
+                      NightstandSpec)
+
+
+def test_roundtrip_and_imperial():
+    again = NightstandSpec.from_dict(_ns(drawers=2, pull="bar").to_dict())
+    assert again == _ns(drawers=2, pull="bar")
+    imp = NightstandSpec.from_dict({"units": "in", "width": 18, "height": 24})
+    assert imp.units == "mm" and imp.width == pytest.approx(18 * MM_PER_IN)
+
+
+def test_panels_have_top_legs_apron_drawer_shelf():
+    starts = {p.label.split()[0] for p in panel_layout(_ns())}
+    assert {"Top", "Leg", "Apron", "Front", "Drawer", "Shelf"} <= starts
+
+
+def test_no_drawer_no_shelf_variants():
+    assert not any("Drawer" in p.label for p in panel_layout(_ns(drawers=0)))
+    assert not any(p.label == "Shelf" for p in panel_layout(_ns(shelf=False)))
+
+
+def test_cutlist_drawer_box_and_hardware():
+    cl = generate_cutlist(_ns(drawers=1))
+    names = [p.name for p in cl.parts]
+    for n in ("Top", "Leg", "Drawer front", "Drawer side", "Drawer bottom",
+              "Shelf"):
+        assert n in names
+    hw = " ".join(h.name.lower() for h in cl.hardware)
+    assert "slide" in hw and "pull" in hw
+
+
+def test_pull_none_drops_pull():
+    cl = generate_cutlist(_ns(pull="none"))
+    assert not any("pull" in h.name.lower() for h in cl.hardware)
+
+
+def test_validate_passes_and_racking_warning():
+    assert validate(_ns()).ok
+    assert any(i.field == "joinery" for i in validate(_ns(joinery="pocket")).warnings)
+
+
+def test_validate_rejects_bad_dims():
+    assert not validate(_ns(width=0)).ok
+    assert not validate(_ns(leg_inset=300)).ok      # legs don't fit
+
+
+def test_joinery_and_assembly():
+    ops = " ".join(o.operation for o in joinery_schedule(_ns()).ops).lower()
+    assert "leg-to-apron" in ops
+    names = [s.name for s in assembly_plan(_ns()).subassemblies]
+    assert "Base" in names and "Drawer" in names
+
+
+def test_estimate_and_project():
+    assert estimate(_ns()).total > 0
+    proj = Project(name="Pair", components=[
+        Component(spec=_ns(name="A"), x=0, label="A"),
+        Component(spec=_ns(name="B"), x=600, label="B")])
+    assert validate(proj).ok and estimate(proj).total > 0
+
+
+def test_built_envelope_matches_spec():
+    pytest.importorskip("build123d")
+    from woodworking_ai.builder import build_model, measure
+    s = _ns()
+    d = measure(build_model(s))
+    assert d["width"] == pytest.approx(s.width, abs=1.0)
+    assert d["height"] == pytest.approx(s.height, abs=1.0)

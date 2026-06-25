@@ -197,6 +197,21 @@ BOARD_FOOT = Fastener("Rubber / silicone board feet", "BOARD-FOOT",
 BOARD_OIL = Fastener("Food-safe board oil + butter", "BOARD-OIL",
                      "mineral oil / beeswax board butter — re-oil regularly")
 
+# Legged-furniture (nightstand / desk) drawer + leg hardware.
+DRAWER_SLIDE = Fastener("Drawer slide (pair)", "SLIDE-BB",
+                        "ball-bearing full-extension, per drawer")
+DRAWER_PULL = Fastener("Drawer pull / knob", "PULL", "one per drawer front")
+LEG_BRACKET = Fastener("Leg-to-apron bracket", "BRKT-LEG",
+                       "corner bracket + hanger bolt at each leg")
+TABLETOP_FASTENER = Fastener("Tabletop fastener", "FAST-TOP",
+                             "figure-8 / Z-clip; lets a solid top move")
+DESK_GROMMET = Fastener("Cable grommet", "GROMMET",
+                        "plastic/metal ring for the top cable hole")
+
+# Workbench hardware.
+BENCH_VISE = Fastener("Bench vise", "VISE", "front/end vise with screw + guide bars")
+BENCH_DOG = Fastener("Bench dog", "DOG", "round dog for the dog-hole row")
+
 
 def select_hinge(brand: str, overlay: str = "overlay") -> HingeSpec:
     h = _HINGES[normalize_brand(brand)]

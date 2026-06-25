@@ -19,6 +19,10 @@ Types:
   with bed-bolt / hook-plate hardware, carrying a deck of cross slats.
 * **cutting_board** — a glued-up cutting / charcuterie board: N edge-glued
   strips (optionally two alternating species), edge/end/long grain.
+* **nightstand** / **desk** — legged pieces (top + four legs + aprons) carrying
+  apron-hung drawer(s) and a lower shelf / back modesty panel.
+* **workbench** — a heavy bench: a thick laminated top on a leg-and-stretcher
+  base, with bench-dog holes, a vise, and a tool shelf.
 
 No CAD dependency.
 """
@@ -28,14 +32,21 @@ from __future__ import annotations
 import math
 
 from . import furniture
-from .dispatch import WALL_SHELF, BOX, BENCH, FRAME, BED, CUTTING_BOARD
+from .dispatch import (
+    WALL_SHELF, BOX, BENCH, FRAME, BED, CUTTING_BOARD,
+    NIGHTSTAND, DESK, WORKBENCH,
+)
 from .dsl import (
     WallShelfSpec, BoxSpec, BenchSpec, FrameSpec, BedSpec, CuttingBoardSpec,
+    NightstandSpec, DeskSpec, WorkbenchSpec,
     ShelfFixing, FrameJoint, FrameHanger, FrameContents, BedConnector, GrainStyle,
 )
 from .geometry import PanelBox
 from .cutlist import CutList, Part, Hardware, assign_ids, resolve_part_stock
-from .materials import MAT_TOP, MAT_LEG, MAT_APRON, MAT_SOLID, MAT_SOLID_PANEL
+from .materials import (
+    MAT_TOP, MAT_LEG, MAT_APRON, MAT_SOLID, MAT_SOLID_PANEL,
+    MAT_DOOR_FRONT, MAT_DRAWER_BOX,
+)
 from .validator import Issue
 from .joinery import JoineryOp
 from .assembly_steps import SubAssembly, step
@@ -1386,4 +1397,692 @@ furniture.register(
     validate=_board_validate,
     joinery_ops=_board_joinery,
     assembly=_board_assembly,
+)
+
+
+# ===========================================================================
+# Shared helpers for legged furniture (nightstand / desk / workbench)
+# ===========================================================================
+
+def _legged_offsets(width: float, depth: float, leg_inset: float,
+                    leg: float) -> tuple[float, float]:
+    """Leg-centre offsets (lx, ly) from the top centre — front is at -Y."""
+    lx = width / 2 - leg_inset - leg / 2
+    ly = depth / 2 - leg_inset - leg / 2
+    return lx, ly
+
+
+def _drawer_cut_parts(cl: CutList, n: int, opening_w: float, box_depth: float,
+                      front_h: float, *, pull: str = "knob") -> None:
+    """Append cut-list parts + hardware for *n* identical apron-hung drawers.
+
+    A simple four-side box (sides + front/back + a captured ply bottom) on a
+    ball-bearing slide pair per drawer, behind an overlay/inset drawer front.
+    """
+    if n <= 0:
+        return
+    bt = 12.0                       # box wall thickness
+    bottom_t = 6.0
+    clear = 13.0                    # side-mount slide clearance each side
+    box_h = max(front_h - 25.0, 60.0)
+    box_w = max(opening_w - 2 * clear, 80.0)
+    cl.parts.append(Part(
+        "Drawer front", n, length=opening_w, width=front_h, thickness=18.0,
+        material=MAT_DOOR_FRONT, grain="length", notes="drawer face"))
+    cl.parts.append(Part(
+        "Drawer side", 2 * n, length=box_depth, width=box_h, thickness=bt,
+        material=MAT_DRAWER_BOX, notes="box side, grooved for the bottom"))
+    cl.parts.append(Part(
+        "Drawer end", 2 * n, length=max(box_w - 2 * bt, 40.0), width=box_h,
+        thickness=bt, material=MAT_DRAWER_BOX, notes="box front & back"))
+    cl.parts.append(Part(
+        "Drawer bottom", n, length=max(box_w - 2 * bt, 40.0),
+        width=max(box_depth - bt, 40.0), thickness=bottom_t,
+        material=MAT_DRAWER_BOX, grain="width", notes="ply bottom in a groove"))
+    cl.hardware.append(Hardware(
+        hw.DRAWER_SLIDE.name, n, hw.DRAWER_SLIDE.note, sku=hw.DRAWER_SLIDE.sku,
+        category="hardware"))
+    if str(pull).strip().lower() != "none":
+        cl.hardware.append(Hardware(
+            hw.DRAWER_PULL.name, n, f"{pull} pull", sku=hw.DRAWER_PULL.sku,
+            category="hardware"))
+
+
+def _legged_validate_common(spec, issues, dims) -> bool:
+    """Shared positive-dimension + leg-fit checks. Returns True if it can continue."""
+    def err(f, m):
+        issues.append(Issue("error", f, m))
+
+    for name in dims:
+        if not _finite_positive(getattr(spec, name)):
+            err(name, f"must be a positive, finite number, got {getattr(spec, name)!r}")
+    if any(i.severity == "error" for i in issues):
+        return False
+    if 2 * spec.leg_inset + spec.leg >= min(spec.width, spec.depth):
+        err("leg_inset", "legs do not fit within the top with this inset")
+        return False
+    return True
+
+
+def _leg_apron_joinery(spec, cl, leg_label="Leg") -> JoineryOp:
+    """The leg-to-apron joint op, by joinery family (shared with bench logic)."""
+    pid = cl.part_id_for_label
+    j = str(spec.joinery).strip().lower()
+    if j == "mortise_tenon":
+        tool, w, d, note = ("mortiser / saw", round(spec.apron_thickness / 3, 1),
+                            round(spec.leg * 0.6, 1), "haunched M&T into the leg")
+    elif j == "domino":
+        tool, w, d, note = ("Festool Domino (10mm)", 10.0, 28.0,
+                            "two 10×50 Dominoes per leg-apron joint")
+    elif j == "dowel":
+        tool, w, d, note = ("doweling jig (10mm)", 10.0, 30.0,
+                            "two 10mm dowels per joint + corner block")
+    else:
+        tool, w, d, note = ("pocket-hole jig", 0.0, 0.0,
+                            "pocket screws + glue blocks (racks more than M&T)")
+    return JoineryOp(
+        part="Leg / apron", operation="leg-to-apron joint", tool=tool,
+        width=w, depth=d, reference="apron into leg", part_id=pid(leg_label),
+        note=note)
+
+
+# ===========================================================================
+# Nightstand
+# ===========================================================================
+
+def _nightstand_drawer_count(spec: NightstandSpec) -> int:
+    return max(0, min(int(spec.drawers), 2))
+
+
+def _nightstand_panels(spec: NightstandSpec) -> list[PanelBox]:
+    W, D, H = spec.width, spec.depth, spec.height
+    tt, leg = spec.top_thickness, spec.leg
+    ah, at = spec.apron_height, spec.apron_thickness
+    lx, ly = _legged_offsets(W, D, spec.leg_inset, leg)
+    apron_x, apron_y = 2 * lx - leg, 2 * ly - leg
+    az = H - tt - ah / 2
+    panels: list[PanelBox] = []
+
+    def add(label, size, center, cat, unit="Base"):
+        panels.append(PanelBox(label, size, center, cat, subassembly=unit))
+
+    add("Top", (W, D, tt), (0, 0, H - tt / 2), "top", "Top")
+    leg_h = H - tt
+    for i, sx in enumerate((-1, 1)):
+        for j, sy in enumerate((-1, 1)):
+            add(f"Leg {2 * i + j + 1}", (leg, leg, leg_h),
+                (sx * lx, sy * ly, leg_h / 2), "leg")
+    for sx in (-1, 1):
+        add("Apron side", (at, apron_y, ah), (sx * lx, 0, az), "apron")
+    add("Apron back", (apron_x, at, ah), (0, ly, az), "apron")
+
+    # Front: a top rail above the drawer stack; the drawers hang below it.
+    rail_h = 30.0
+    add("Front rail", (apron_x, at, rail_h), (0, -ly, H - tt - rail_h / 2), "apron")
+
+    n = _nightstand_drawer_count(spec)
+    front_face_y = -(D / 2 - spec.leg_inset)
+    dft = 18.0
+    fh = spec.drawer_front_height
+    gap = 3.0
+    zone_top = H - tt - rail_h
+    for k in range(n):
+        z_center = zone_top - gap - fh / 2 - k * (fh + gap)
+        add(f"Drawer front {k + 1}", (apron_x, dft, fh),
+            (0, front_face_y + dft / 2, z_center), "drawer", "Drawer")
+
+    if spec.shelf:
+        st = spec.shelf_thickness
+        add("Shelf", (apron_x, apron_y, st), (0, 0, spec.shelf_setback + st / 2),
+            "shelf", "Shelf")
+    return panels
+
+
+def _nightstand_cutlist(spec: NightstandSpec) -> CutList:
+    cl = CutList(spec_name=spec.name)
+    W, D, H = spec.width, spec.depth, spec.height
+    lx, ly = _legged_offsets(W, D, spec.leg_inset, spec.leg)
+    apron_x, apron_y = 2 * lx - spec.leg, 2 * ly - spec.leg
+    leg_h = H - spec.top_thickness
+
+    cl.parts.append(Part(
+        "Top", 1, length=W, width=D, thickness=spec.top_thickness,
+        material=MAT_TOP, notes="solid or sheet top"))
+    cl.parts.append(Part(
+        "Leg", 4, length=leg_h, width=spec.leg, thickness=spec.leg,
+        material=MAT_LEG, notes="square stock"))
+    cl.parts.append(Part(
+        "Apron side", 2, length=apron_y, width=spec.apron_height,
+        thickness=spec.apron_thickness, material=MAT_APRON))
+    cl.parts.append(Part(
+        "Apron back", 1, length=apron_x, width=spec.apron_height,
+        thickness=spec.apron_thickness, material=MAT_APRON))
+    cl.parts.append(Part(
+        "Front rail", 1, length=apron_x, width=30.0,
+        thickness=spec.apron_thickness, material=MAT_APRON,
+        notes="rail above the drawer"))
+
+    n = _nightstand_drawer_count(spec)
+    box_depth = max(D - spec.leg_inset - 40.0, 100.0)
+    _drawer_cut_parts(cl, n, apron_x, box_depth, spec.drawer_front_height,
+                      pull=spec.pull)
+
+    if spec.shelf:
+        cl.parts.append(Part(
+            "Shelf", 1, length=apron_x, width=apron_y,
+            thickness=spec.shelf_thickness, material=MAT_SOLID,
+            notes="lower shelf on cleats"))
+    cl.hardware.append(Hardware(
+        hw.TABLETOP_FASTENER.name, 6, hw.TABLETOP_FASTENER.note,
+        sku=hw.TABLETOP_FASTENER.sku, category="fastener"))
+    resolve_part_stock(cl.parts, spec)
+    assign_ids(cl.parts)
+    return cl
+
+
+def _nightstand_validate(spec: NightstandSpec) -> list[Issue]:
+    issues: list[Issue] = []
+    if not _legged_validate_common(
+            spec, issues, ("width", "depth", "height", "top_thickness", "leg",
+                           "apron_height", "apron_thickness", "leg_inset")):
+        return issues
+
+    def warn(f, m):
+        issues.append(Issue("warning", f, m))
+
+    if spec.height < 400 or spec.height > 800:
+        warn("height", "unusual nightstand height (typically ~500-700mm)")
+    n = _nightstand_drawer_count(spec)
+    if n:
+        stack = n * (spec.drawer_front_height + 3) + 30
+        if stack > spec.height - spec.top_thickness:
+            warn("drawers",
+                 "the drawer stack is taller than the apron zone; reduce the "
+                 "drawer count/height or raise the nightstand")
+    if spec.shelf and spec.shelf_setback >= spec.height - spec.top_thickness:
+        warn("shelf_setback", "the shelf sits above the apron; lower it")
+    j = str(spec.joinery).strip().lower()
+    if j in ("pocket", "butt", "screw"):
+        warn("joinery",
+             f"a {j} leg-to-apron joint racks; prefer mortise & tenon or domino")
+    return issues
+
+
+def _nightstand_joinery(spec: NightstandSpec, cl) -> list[JoineryOp]:
+    pid = cl.part_id_for_label
+    ops = [_leg_apron_joinery(spec, cl)]
+    if _nightstand_drawer_count(spec):
+        ops.append(JoineryOp(
+            part="Drawer box", operation="groove + slide bore",
+            tool="dado / drill", width=6.0, depth=6.0,
+            reference="bottom groove; slide screw holes",
+            part_id=pid("Drawer side"), note="ball-bearing slides need side clearance"))
+    if spec.shelf:
+        ops.append(JoineryOp(
+            part="Shelf / legs", operation="shelf cleats / dado",
+            tool="router / drill", width=round(spec.shelf_thickness, 1), depth=6.0,
+            reference="between the legs", part_id=pid("Shelf"),
+            note="cleats or a stopped dado carry the shelf"))
+    return ops
+
+
+def _nightstand_assembly(spec: NightstandSpec, cl) -> list[SubAssembly]:
+    parts = cl.parts
+
+    def ids(*subs):
+        return [p.id for p in parts
+                if p.id and any(s in p.name.lower() for s in subs)]
+
+    base_ids = ids("leg", "apron", "front rail", "shelf")
+    drawer_ids = ids("drawer")
+    top_ids = ids("top")
+    hw_names = [h.name for h in cl.hardware]
+
+    base = SubAssembly("Base", "Legs, aprons, front rail, and shelf",
+                       part_ids=base_ids, category="carcass")
+    base.steps = [
+        step(1, "Cut the leg joinery",
+              "Mortise the legs and tenon the aprons/rail (or Domino) per the "
+              "joinery sheet; add the shelf cleats.", base_ids, category="joinery"),
+        step(2, "Glue up the base",
+              "Glue the two ends, then the long rails; check for square and wind, "
+              "and drop in the shelf.", base_ids, category="carcass"),
+    ]
+    subs = [base]
+    if drawer_ids:
+        dr = SubAssembly("Drawer", "Drawer box on slides",
+                         part_ids=drawer_ids, category="fronts")
+        dr.steps = [
+            step(1, "Build & fit the drawer",
+                  "Joint the box, groove for the bottom, glue it up square, then "
+                  "mount it on its slides and fit the front with an even reveal.",
+                  drawer_ids, hw_names, "hardware"),
+        ]
+        subs.append(dr)
+    final = SubAssembly("Top & finish", "Attach the top and finish",
+                        part_ids=top_ids, category="final")
+    final.steps = [
+        step(1, "Attach the top",
+              "Fasten the top to the base with figure-8s / Z-clips so a solid top "
+              "can move.", top_ids, ["Tabletop fastener"], "hardware"),
+        step(2, "Sand & finish", "Final-sand and apply the finish.",
+              category="finish"),
+    ]
+    subs.append(final)
+    return subs
+
+
+furniture.register(
+    NIGHTSTAND,
+    panels=_nightstand_panels,
+    cut_parts=_nightstand_cutlist,
+    validate=_nightstand_validate,
+    joinery_ops=_nightstand_joinery,
+    assembly=_nightstand_assembly,
+)
+
+
+# ===========================================================================
+# Desk
+# ===========================================================================
+
+def _desk_drawer_count(spec: DeskSpec) -> int:
+    return max(0, min(int(spec.drawers), 3))
+
+
+def _desk_panels(spec: DeskSpec) -> list[PanelBox]:
+    W, D, H = spec.width, spec.depth, spec.height
+    tt, leg = spec.top_thickness, spec.leg
+    ah, at = spec.apron_height, spec.apron_thickness
+    lx, ly = _legged_offsets(W, D, spec.leg_inset, leg)
+    apron_x, apron_y = 2 * lx - leg, 2 * ly - leg
+    az = H - tt - ah / 2
+    panels: list[PanelBox] = []
+
+    def add(label, size, center, cat, unit="Base"):
+        panels.append(PanelBox(label, size, center, cat, subassembly=unit))
+
+    add("Top", (W, D, tt), (0, 0, H - tt / 2), "top", "Top")
+    leg_h = H - tt
+    for i, sx in enumerate((-1, 1)):
+        for j, sy in enumerate((-1, 1)):
+            add(f"Leg {2 * i + j + 1}", (leg, leg, leg_h),
+                (sx * lx, sy * ly, leg_h / 2), "leg")
+    for sx in (-1, 1):
+        add("Apron side", (at, apron_y, ah), (sx * lx, 0, az), "apron")
+    add("Apron back", (apron_x, at, ah), (0, ly, az), "apron")
+
+    # Drawers sit side by side across the front, just under the top.
+    n = _desk_drawer_count(spec)
+    if n == 0:
+        add("Apron front", (apron_x, at, ah), (0, -ly, az), "apron")
+    else:
+        front_face_y = -(D / 2 - spec.leg_inset)
+        dft, gap = 18.0, 4.0
+        fh = spec.drawer_front_height
+        seg = apron_x / n
+        for k in range(n):
+            cx = -apron_x / 2 + (k + 0.5) * seg
+            add(f"Drawer front {k + 1}", (seg - gap, dft, fh),
+                (cx, front_face_y + dft / 2, H - tt - gap - fh / 2),
+                "drawer", "Drawer")
+
+    if spec.modesty_panel:
+        mt = 18.0
+        top_z = H - tt - ah
+        mz = top_z - spec.modesty_height / 2
+        add("Modesty panel", (apron_x, mt, spec.modesty_height),
+            (0, ly - at, mz), "carcass", "Modesty")
+    return panels
+
+
+def _desk_cutlist(spec: DeskSpec) -> CutList:
+    cl = CutList(spec_name=spec.name)
+    W, D, H = spec.width, spec.depth, spec.height
+    lx, ly = _legged_offsets(W, D, spec.leg_inset, spec.leg)
+    apron_x, apron_y = 2 * lx - spec.leg, 2 * ly - spec.leg
+    leg_h = H - spec.top_thickness
+    n = _desk_drawer_count(spec)
+
+    cl.parts.append(Part(
+        "Top", 1, length=W, width=D, thickness=spec.top_thickness,
+        material=MAT_TOP, notes="solid or sheet top" +
+        ("; bore a cable grommet" if spec.grommet else "")))
+    cl.parts.append(Part(
+        "Leg", 4, length=leg_h, width=spec.leg, thickness=spec.leg,
+        material=MAT_LEG, notes="square stock"))
+    cl.parts.append(Part(
+        "Apron side", 2, length=apron_y, width=spec.apron_height,
+        thickness=spec.apron_thickness, material=MAT_APRON))
+    cl.parts.append(Part(
+        "Apron back", 1, length=apron_x, width=spec.apron_height,
+        thickness=spec.apron_thickness, material=MAT_APRON))
+    if n == 0:
+        cl.parts.append(Part(
+            "Apron front", 1, length=apron_x, width=spec.apron_height,
+            thickness=spec.apron_thickness, material=MAT_APRON))
+    else:
+        seg = apron_x / n
+        box_depth = max(D - spec.leg_inset - 40.0, 100.0)
+        _drawer_cut_parts(cl, n, seg - 4.0, box_depth, spec.drawer_front_height,
+                          pull=spec.pull)
+    if spec.modesty_panel:
+        cl.parts.append(Part(
+            "Modesty panel", 1, length=apron_x, width=spec.modesty_height,
+            thickness=18.0, material=MAT_SOLID_PANEL, grain="width",
+            notes="back privacy panel"))
+    if spec.grommet:
+        cl.hardware.append(Hardware(
+            hw.DESK_GROMMET.name, 1, f"{spec.grommet_dia:.0f}mm",
+            sku=hw.DESK_GROMMET.sku, category="hardware"))
+    cl.hardware.append(Hardware(
+        hw.TABLETOP_FASTENER.name, 8, hw.TABLETOP_FASTENER.note,
+        sku=hw.TABLETOP_FASTENER.sku, category="fastener"))
+    resolve_part_stock(cl.parts, spec)
+    assign_ids(cl.parts)
+    return cl
+
+
+def _desk_validate(spec: DeskSpec) -> list[Issue]:
+    issues: list[Issue] = []
+    if not _legged_validate_common(
+            spec, issues, ("width", "depth", "height", "top_thickness", "leg",
+                           "apron_height", "apron_thickness", "leg_inset")):
+        return issues
+
+    def warn(f, m):
+        issues.append(Issue("warning", f, m))
+
+    if spec.height < 680 or spec.height > 800:
+        warn("height", "unusual desk height (writing desks are ~720-760mm)")
+    n = _desk_drawer_count(spec)
+    if n:
+        lx, _ = _legged_offsets(spec.width, spec.depth, spec.leg_inset, spec.leg)
+        apron_x = 2 * lx - spec.leg
+        if apron_x / n < 120:
+            warn("drawers",
+                 "the drawers are very narrow for this width; use fewer or a wider top")
+    if spec.modesty_panel and spec.modesty_height > spec.height - spec.top_thickness - spec.apron_height:
+        warn("modesty_height", "the modesty panel is taller than the leg room below the apron")
+    j = str(spec.joinery).strip().lower()
+    if j in ("pocket", "butt", "screw"):
+        warn("joinery",
+             f"a {j} leg-to-apron joint racks on a desk; prefer mortise & tenon "
+             "or domino")
+    return issues
+
+
+def _desk_joinery(spec: DeskSpec, cl) -> list[JoineryOp]:
+    pid = cl.part_id_for_label
+    ops = [_leg_apron_joinery(spec, cl)]
+    if _desk_drawer_count(spec):
+        ops.append(JoineryOp(
+            part="Drawer box", operation="groove + slide bore",
+            tool="dado / drill", width=6.0, depth=6.0,
+            reference="bottom groove; slide screw holes",
+            part_id=pid("Drawer side"), note="full-extension slides for a desk drawer"))
+    if spec.grommet:
+        ops.append(JoineryOp(
+            part="Top", operation="bore cable grommet",
+            tool="hole saw / Forstner", width=round(spec.grommet_dia, 1),
+            depth=round(spec.top_thickness, 1), reference="rear of the top",
+            part_id=pid("Top"), note="fit the grommet ring after finishing"))
+    return ops
+
+
+def _desk_assembly(spec: DeskSpec, cl) -> list[SubAssembly]:
+    parts = cl.parts
+
+    def ids(*subs):
+        return [p.id for p in parts
+                if p.id and any(s in p.name.lower() for s in subs)]
+
+    base_ids = ids("leg", "apron", "modesty")
+    drawer_ids = ids("drawer")
+    top_ids = ids("top")
+    hw_names = [h.name for h in cl.hardware]
+
+    base = SubAssembly("Base", "Legs, aprons, and modesty panel",
+                       part_ids=base_ids, category="carcass")
+    base.steps = [
+        step(1, "Cut the leg joinery",
+              "Mortise the legs and tenon the aprons (or Domino); groove for the "
+              "modesty panel if used.", base_ids, category="joinery"),
+        step(2, "Glue up the base",
+              "Glue the ends, then the long aprons with the modesty panel "
+              "floating in its grooves; check for square.", base_ids,
+              category="carcass"),
+    ]
+    subs = [base]
+    if drawer_ids:
+        dr = SubAssembly("Drawers", "Drawer boxes on slides",
+                         part_ids=drawer_ids, category="fronts")
+        dr.steps = [
+            step(1, "Build & hang the drawers",
+                  "Build each box, mount it on full-extension slides, and fit the "
+                  "fronts with even gaps.", drawer_ids, hw_names, "hardware"),
+        ]
+        subs.append(dr)
+    final = SubAssembly("Top & finish", "Bore the grommet, attach the top, finish",
+                        part_ids=top_ids, category="final")
+    fsteps = []
+    if spec.grommet:
+        fsteps.append(step(1, "Bore the cable grommet",
+                           "Bore the grommet hole at the rear of the top.",
+                           top_ids, category="prep"))
+    fsteps.append(step(len(fsteps) + 1, "Attach the top",
+                       "Fasten the top with figure-8s / Z-clips for movement.",
+                       top_ids, ["Tabletop fastener"], "hardware"))
+    fsteps.append(step(len(fsteps) + 1, "Sand & finish",
+                       "Final-sand and apply the finish.", category="finish"))
+    final.steps = fsteps
+    subs.append(final)
+    return subs
+
+
+furniture.register(
+    DESK,
+    panels=_desk_panels,
+    cut_parts=_desk_cutlist,
+    validate=_desk_validate,
+    joinery_ops=_desk_joinery,
+    assembly=_desk_assembly,
+)
+
+
+# ===========================================================================
+# Workbench
+# ===========================================================================
+
+def _workbench_panels(spec: WorkbenchSpec) -> list[PanelBox]:
+    W, D, H = spec.width, spec.depth, spec.height
+    tt, leg = spec.top_thickness, spec.leg
+    ah, at = spec.apron_height, spec.apron_thickness
+    lx, ly = _legged_offsets(W, D, spec.leg_inset, leg)
+    apron_x, apron_y = 2 * lx - leg, 2 * ly - leg
+    az = H - tt - ah / 2
+    panels: list[PanelBox] = []
+
+    def add(label, size, center, cat, unit="Base"):
+        panels.append(PanelBox(label, size, center, cat, subassembly=unit))
+
+    add("Top", (W, D, tt), (0, 0, H - tt / 2), "top", "Top")
+    leg_h = H - tt
+    for i, sx in enumerate((-1, 1)):
+        for j, sy in enumerate((-1, 1)):
+            add(f"Leg {2 * i + j + 1}", (leg, leg, leg_h),
+                (sx * lx, sy * ly, leg_h / 2), "leg")
+    for sx in (-1, 1):
+        add("Apron side", (at, apron_y, ah), (sx * lx, 0, az), "apron")
+    for sy in (-1, 1):
+        add("Apron long", (apron_x, at, ah), (0, sy * ly, az), "apron")
+
+    if spec.stretchers:
+        sh, st = spec.stretcher_height, spec.stretcher_thickness
+        sz = spec.stretcher_setback
+        for sy in (-1, 1):
+            add("Stretcher", (apron_x, st, sh), (0, sy * ly, sz), "stretcher",
+                "Stretchers")
+        if spec.shelf:
+            add("Shelf", (apron_x, apron_y, spec.shelf_thickness),
+                (0, 0, sz + sh / 2 + spec.shelf_thickness / 2), "shelf", "Shelf")
+    # The vise jaw is a small bolt-on part — kept in the cut list + joinery, not
+    # the geometry, so it never distorts the bench envelope or clashes an apron.
+    return panels
+
+
+def _workbench_cutlist(spec: WorkbenchSpec) -> CutList:
+    cl = CutList(spec_name=spec.name)
+    W, D, H = spec.width, spec.depth, spec.height
+    lx, ly = _legged_offsets(W, D, spec.leg_inset, spec.leg)
+    apron_x, apron_y = 2 * lx - spec.leg, 2 * ly - spec.leg
+    leg_h = H - spec.top_thickness
+
+    cl.parts.append(Part(
+        "Top lamination", spec.lamination_count, length=W, width=spec.top_thickness,
+        thickness=max(spec.depth / spec.lamination_count, 25.0), material=MAT_SOLID,
+        grain="length",
+        notes=f"laminate {spec.lamination_count} strips on edge into the {spec.top_thickness:.0f}mm top"))
+    cl.parts.append(Part(
+        "Leg", 4, length=leg_h, width=spec.leg, thickness=spec.leg,
+        material=MAT_LEG, notes="heavy square stock"))
+    cl.parts.append(Part(
+        "Apron long", 2, length=apron_x, width=spec.apron_height,
+        thickness=spec.apron_thickness, material=MAT_APRON))
+    cl.parts.append(Part(
+        "Apron side", 2, length=apron_y, width=spec.apron_height,
+        thickness=spec.apron_thickness, material=MAT_APRON))
+    if spec.stretchers:
+        cl.parts.append(Part(
+            "Stretcher", 2, length=apron_x, width=spec.stretcher_height,
+            thickness=spec.stretcher_thickness, material=MAT_APRON,
+            notes="lower rail, draw-bored"))
+        if spec.shelf:
+            cl.parts.append(Part(
+                "Shelf", 1, length=apron_x, width=apron_y,
+                thickness=spec.shelf_thickness, material=MAT_SOLID,
+                notes="tool shelf on the stretchers"))
+    if str(spec.vise_side).strip().lower() in ("left", "right", "front"):
+        cl.parts.append(Part(
+            "Vise jaw", 1, length=min(250.0, W * 0.3), width=spec.apron_height,
+            thickness=spec.apron_thickness, material=MAT_SOLID,
+            notes="wooden jaw faced onto the vise"))
+
+    if spec.vise:
+        cl.hardware.append(Hardware(
+            hw.BENCH_VISE.name, 1, f"{spec.vise_side} vise", sku=hw.BENCH_VISE.sku,
+            category="hardware"))
+    cl.hardware.append(Hardware(
+        hw.BENCH_DOG.name, max(2, spec.dog_hole_count // 2), hw.BENCH_DOG.note,
+        sku=hw.BENCH_DOG.sku, category="hardware"))
+    cl.hardware.append(Hardware(
+        hw.LEG_BRACKET.name, 4, "draw-bore pins / bolts", sku=hw.LEG_BRACKET.sku,
+        category="fastener"))
+    resolve_part_stock(cl.parts, spec)
+    assign_ids(cl.parts)
+    return cl
+
+
+def _workbench_validate(spec: WorkbenchSpec) -> list[Issue]:
+    issues: list[Issue] = []
+    if not _legged_validate_common(
+            spec, issues, ("width", "depth", "height", "top_thickness", "leg",
+                           "apron_height", "apron_thickness", "leg_inset")):
+        return issues
+
+    def warn(f, m):
+        issues.append(Issue("warning", f, m))
+
+    if spec.height < 800 or spec.height > 1000:
+        warn("height", "unusual bench height (typically ~850-950mm; near hip)")
+    if spec.top_thickness < 50:
+        warn("top_thickness",
+             "a workbench top under ~50mm flexes and dents; laminate it thicker")
+    if not spec.stretchers:
+        warn("stretchers",
+             "a bench without stretchers racks under planing; add lower rails")
+    j = str(spec.joinery).strip().lower()
+    if j in ("pocket", "butt", "screw", "dowel"):
+        warn("joinery",
+             f"a {j} base joint racks under bench loads; use draw-bored mortise & "
+             "tenon")
+    if str(spec.vise_side).strip().lower() not in ("left", "right", "front", "none"):
+        warn("vise_side", "vise_side should be left, right, front, or none")
+    return issues
+
+
+def _workbench_joinery(spec: WorkbenchSpec, cl) -> list[JoineryOp]:
+    pid = cl.part_id_for_label
+    ops = [JoineryOp(
+        part="Leg / apron", operation="draw-bored mortise & tenon",
+        tool="mortiser / saw + drawbore pins", width=round(spec.apron_thickness / 3, 1),
+        depth=round(spec.leg * 0.7, 1), reference="aprons & stretchers into legs",
+        part_id=pid("Leg"), note="offset-bored pins pull the joints tight without clamps")]
+    ops.append(JoineryOp(
+        part="Top", operation=f"bore {spec.dog_hole_count} dog holes",
+        tool=f"{spec.dog_hole_dia:.0f}mm auger / Forstner", width=round(spec.dog_hole_dia, 1),
+        depth=round(spec.top_thickness, 1), reference="a row along the front edge",
+        part_id=pid("Top lamination"),
+        note="space ~150mm; align with the vise for clamping with dogs"))
+    if str(spec.vise_side).strip().lower() in ("left", "right", "front"):
+        ops.append(JoineryOp(
+            part="Top / leg", operation="mount the vise",
+            tool="drill / driver", width=0.0, depth=round(spec.top_thickness, 1),
+            reference=f"{spec.vise_side} corner under the top", part_id=pid("Vise jaw"),
+            note="face the metal vise with a wooden jaw flush to the benchtop"))
+    return ops
+
+
+def _workbench_assembly(spec: WorkbenchSpec, cl) -> list[SubAssembly]:
+    parts = cl.parts
+
+    def ids(*subs):
+        return [p.id for p in parts
+                if p.id and any(s in p.name.lower() for s in subs)]
+
+    top_ids = ids("top lamination")
+    base_ids = ids("leg", "apron", "stretcher", "shelf")
+    vise_ids = ids("vise")
+    hw_names = [h.name for h in cl.hardware]
+
+    top = SubAssembly("Top", "The thick laminated benchtop",
+                      part_ids=top_ids, category="carcass")
+    top.steps = [
+        step(1, "Laminate the top",
+              "Glue the strips on edge in stages, flatten the slab, then bore the "
+              "dog-hole row aligned to the vise.", top_ids, category="carcass"),
+    ]
+    base = SubAssembly("Base", "Legs, aprons, stretchers, and shelf",
+                       part_ids=base_ids, category="carcass")
+    base.steps = [
+        step(1, "Cut the base joinery",
+              "Mortise the legs and tenon the aprons and stretchers; drawbore the "
+              "pin holes offset for a tight pull.", base_ids, category="joinery"),
+        step(2, "Assemble the base",
+              "Glue and drawbore the two ends, then join with the long rails; "
+              "check for square and add the tool shelf.", base_ids, category="carcass"),
+    ]
+    final = SubAssembly("Mount & finish", "Join top to base, fit the vise, finish",
+                        part_ids=vise_ids, category="final")
+    final.steps = [
+        step(1, "Attach the top",
+              "Fasten the slab to the base (lag bolts in slotted holes for "
+              "movement).", top_ids, ["Leg-to-apron bracket"], "hardware"),
+        step(2, "Fit the vise & dogs",
+              "Mount the vise, fit and trim its wooden jaw flush, and drop in the "
+              "bench dogs.", vise_ids, hw_names, "hardware"),
+        step(3, "Finish",
+              "A wiping oil/varnish finish — easy to renew and won't make the top "
+              "slick.", category="finish"),
+    ]
+    return [top, base, final]
+
+
+furniture.register(
+    WORKBENCH,
+    panels=_workbench_panels,
+    cut_parts=_workbench_cutlist,
+    validate=_workbench_validate,
+    joinery_ops=_workbench_joinery,
+    assembly=_workbench_assembly,
 )

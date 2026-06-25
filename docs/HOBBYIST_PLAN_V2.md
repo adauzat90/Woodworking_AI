@@ -15,7 +15,9 @@ H-series.
 | **G1** | Picture frame | ✅ done (`tests/test_frame.py`) |
 | **G1** | Knock-down bed | ✅ done (`tests/test_bed.py`) |
 | **G1** | Cutting / charcuterie board | ✅ done (`tests/test_cutting_board.py`) |
-| **G1** | Nightstand · workbench · desk | ⬜ remaining (same leaf path) |
+| **G1** | Nightstand | ✅ done (`tests/test_nightstand.py`) |
+| **G1** | Desk | ✅ done (`tests/test_desk.py`) |
+| **G1** | Workbench | ✅ done (`tests/test_workbench.py`) |
 | **G2a** | Exploded stepwise assembly walkthrough | ✅ done (caption + ▶ Walk + Show-in-3D) |
 | **G2b** | Edit dimensions on the model | ✅ click-to-edit overlay; ⬜ drag-handles (browser-QA follow-up) |
 | **G3** | Starter-project gallery | ✅ done (`templates.py`, `/api/templates`) |
@@ -25,10 +27,12 @@ H-series.
 | **G6b** | Imperial-first default (CLI `WOODAI_UNITS`) | ✅ done |
 
 The home-shop furniture set is now: cabinets (7) · table · wall shelf · box/chest
-· bench/stool · **picture frame** · **bed** · **cutting board**. Each new type
-went in through the leaf-furniture registry with **no generic-stage edits**, the
-golden tests stayed green, and every addition runs without an API key or
-`build123d`.
+· bench/stool · **picture frame** · **bed** · **cutting board** · **nightstand**
+· **desk** · **workbench** — 11 leaf types. Each new type went in through the
+leaf-furniture registry with **no generic-stage edits** (the only shared-code
+touch was making the `drawers` field tolerate a plain count as well as a list,
+which is additive and leaves cabinet output byte-for-byte identical), the golden
+tests stayed green, and every addition runs without an API key or `build123d`.
 
 ---
 

@@ -1255,6 +1255,229 @@ class CuttingBoardSpec:
         return cls.from_dict(json.loads(text))
 
 
+@dataclass
+class NightstandSpec:
+    """A small legged cabinet: a top on four legs/aprons with a drawer + shelf.
+
+    A table superset carrying one or two apron-hung drawers and an optional lower
+    shelf. Coordinates match the shared frame: X = width, Y = depth (front at
+    -Y), Z = height (top surface at ``height``).
+    """
+
+    kind: str = "nightstand"
+    units: str = "mm"
+    name: str = "Nightstand"
+    width: float = 450.0
+    depth: float = 400.0
+    height: float = 600.0
+    top_thickness: float = 20.0
+    leg: float = 40.0              # square leg cross-section
+    leg_inset: float = 25.0        # leg outer face in from the top edge
+    apron_height: float = 90.0
+    apron_thickness: float = 20.0
+    drawers: int = 1               # stacked apron-hung drawers (0-2)
+    drawer_front_height: float = 130.0
+    shelf: bool = True             # a lower shelf between the legs
+    shelf_thickness: float = 18.0
+    shelf_setback: float = 120.0   # shelf height off the floor
+    joinery: Joinery = Joinery.MORTISE_TENON
+    pull: str = "knob"             # knob | bar | none
+
+    solid_top: bool = True
+    top_fixing: TopFixing = TopFixing.FLOATING
+    grain: Grain = Grain.FLATSAWN
+    finish: str = "none"
+    finish_sheen: str = "satin"
+    material_form: str = ""
+    species: str = ""
+
+    def __post_init__(self) -> None:
+        self.joinery = _coerce_enum(Joinery, self.joinery)
+        self.top_fixing = _coerce_enum(TopFixing, self.top_fixing)
+        self.grain = _coerce_enum(
+            Grain, self.grain, aliases={"quarter": "quartersawn",
+                                        "flat": "flatsawn"})
+
+    def to_dict(self) -> dict[str, Any]:
+        d = asdict(self)
+        for k in ("joinery", "top_fixing", "grain"):
+            if isinstance(getattr(self, k), Enum):
+                d[k] = getattr(self, k).value
+        d["schema_version"] = SCHEMA_VERSION
+        return d
+
+    def to_json(self, indent: int = 2) -> str:
+        return json.dumps(self.to_dict(), indent=indent)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "NightstandSpec":
+        data = dict(data)
+        if normalize_unit(data.get("units")) == IMPERIAL:
+            _to_mm(data, ("width", "depth", "height", "top_thickness", "leg",
+                          "leg_inset", "apron_height", "apron_thickness",
+                          "drawer_front_height", "shelf_thickness",
+                          "shelf_setback"))
+            data["units"] = "mm"
+        known = {f for f in cls.__dataclass_fields__}
+        return cls(**{k: v for k, v in data.items() if k in known})
+
+    @classmethod
+    def from_json(cls, text: str) -> "NightstandSpec":
+        return cls.from_dict(json.loads(text))
+
+
+@dataclass
+class DeskSpec:
+    """A writing desk: a top on four legs/aprons with apron-hung drawer(s).
+
+    A wider legged piece with an optional back **modesty panel** and a **cable
+    grommet** in the top. Coordinates match the shared frame: X = width (length),
+    Y = depth, Z = height (top at ``height``); the front is at -Y.
+    """
+
+    kind: str = "desk"
+    units: str = "mm"
+    name: str = "Desk"
+    width: float = 1200.0
+    depth: float = 600.0
+    height: float = 740.0
+    top_thickness: float = 25.0
+    leg: float = 60.0
+    leg_inset: float = 40.0
+    apron_height: float = 90.0
+    apron_thickness: float = 20.0
+    drawers: int = 1               # apron-hung drawers across the front (0-3)
+    drawer_front_height: float = 100.0
+    modesty_panel: bool = True     # a back privacy panel between the legs
+    modesty_height: float = 250.0
+    grommet: bool = True           # a cable grommet bored in the top
+    grommet_dia: float = 60.0
+    joinery: Joinery = Joinery.MORTISE_TENON
+    pull: str = "bar"
+
+    solid_top: bool = True
+    top_fixing: TopFixing = TopFixing.FLOATING
+    grain: Grain = Grain.FLATSAWN
+    finish: str = "none"
+    finish_sheen: str = "satin"
+    material_form: str = ""
+    species: str = ""
+
+    def __post_init__(self) -> None:
+        self.joinery = _coerce_enum(Joinery, self.joinery)
+        self.top_fixing = _coerce_enum(TopFixing, self.top_fixing)
+        self.grain = _coerce_enum(
+            Grain, self.grain, aliases={"quarter": "quartersawn",
+                                        "flat": "flatsawn"})
+
+    def to_dict(self) -> dict[str, Any]:
+        d = asdict(self)
+        for k in ("joinery", "top_fixing", "grain"):
+            if isinstance(getattr(self, k), Enum):
+                d[k] = getattr(self, k).value
+        d["schema_version"] = SCHEMA_VERSION
+        return d
+
+    def to_json(self, indent: int = 2) -> str:
+        return json.dumps(self.to_dict(), indent=indent)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "DeskSpec":
+        data = dict(data)
+        if normalize_unit(data.get("units")) == IMPERIAL:
+            _to_mm(data, ("width", "depth", "height", "top_thickness", "leg",
+                          "leg_inset", "apron_height", "apron_thickness",
+                          "drawer_front_height", "modesty_height", "grommet_dia"))
+            data["units"] = "mm"
+        known = {f for f in cls.__dataclass_fields__}
+        return cls(**{k: v for k, v in data.items() if k in known})
+
+    @classmethod
+    def from_json(cls, text: str) -> "DeskSpec":
+        return cls.from_dict(json.loads(text))
+
+
+@dataclass
+class WorkbenchSpec:
+    """A heavy workbench: a thick laminated top on a stout leg-and-stretcher base.
+
+    A beefed-up bench with a row of bench-dog holes, an optional vise, and a
+    tool shelf between the stretchers. Coordinates match the shared frame:
+    X = width (length), Y = depth, Z = height (top surface at ``height``).
+    """
+
+    kind: str = "workbench"
+    units: str = "mm"
+    name: str = "Workbench"
+    width: float = 1500.0          # bench length (X)
+    depth: float = 600.0
+    height: float = 900.0          # working height to the top surface
+    top_thickness: float = 75.0    # thick laminated top
+    top_laminations: int = 0       # strips in the top glue-up (0 = auto)
+    leg: float = 90.0              # heavy square legs
+    leg_inset: float = 60.0
+    apron_height: float = 120.0
+    apron_thickness: float = 30.0
+    stretchers: bool = True
+    stretcher_height: float = 100.0
+    stretcher_thickness: float = 30.0
+    stretcher_setback: float = 200.0   # stretcher height off the floor
+    dog_holes: int = 0             # bench-dog holes along the front (0 = auto)
+    dog_hole_dia: float = 19.0     # 3/4in round dogs
+    vise: bool = True
+    vise_side: str = "left"        # left | right | front | none
+    shelf: bool = True             # tool shelf on the stretchers
+    shelf_thickness: float = 18.0
+    joinery: Joinery = Joinery.MORTISE_TENON
+    finish: str = "oil"
+    finish_sheen: str = "satin"
+    material_form: str = "solid"
+    species: str = "beech"         # a hard, tough bench wood
+
+    def __post_init__(self) -> None:
+        self.joinery = _coerce_enum(Joinery, self.joinery)
+
+    @property
+    def dog_hole_count(self) -> int:
+        if self.dog_holes > 0:
+            return self.dog_holes
+        # ~ one dog hole every 150mm along the usable front, at least four.
+        return max(int((self.width - 2 * self.leg_inset) // 150), 4)
+
+    @property
+    def lamination_count(self) -> int:
+        if self.top_laminations > 0:
+            return self.top_laminations
+        # Laminate ~38mm strips on edge across the depth.
+        return max(int(self.depth // 38), 4)
+
+    def to_dict(self) -> dict[str, Any]:
+        d = asdict(self)
+        if isinstance(self.joinery, Enum):
+            d["joinery"] = self.joinery.value
+        d["schema_version"] = SCHEMA_VERSION
+        return d
+
+    def to_json(self, indent: int = 2) -> str:
+        return json.dumps(self.to_dict(), indent=indent)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "WorkbenchSpec":
+        data = dict(data)
+        if normalize_unit(data.get("units")) == IMPERIAL:
+            _to_mm(data, ("width", "depth", "height", "top_thickness", "leg",
+                          "leg_inset", "apron_height", "apron_thickness",
+                          "stretcher_height", "stretcher_thickness",
+                          "stretcher_setback", "dog_hole_dia", "shelf_thickness"))
+            data["units"] = "mm"
+        known = {f for f in cls.__dataclass_fields__}
+        return cls(**{k: v for k, v in data.items() if k in known})
+
+    @classmethod
+    def from_json(cls, text: str) -> "WorkbenchSpec":
+        return cls.from_dict(json.loads(text))
+
+
 # ---------------------------------------------------------------------------
 # Assemblies. A component group places child specs in one frame:
 #   * Project  — the top-level run / built-in (e.g. a whole kitchen).
@@ -1484,8 +1707,8 @@ def place_run(specs, *, start: tuple[float, float] = (0.0, 0.0),
 # surfaces as a repairable error in the designer loop.
 KNOWN_KINDS = frozenset({
     "cabinet", "table", "wall_shelf", "box", "chest", "bench", "stool",
-    "frame", "bed", "cutting_board", "board", "project", "assembly",
-    "appliance_void",
+    "frame", "bed", "cutting_board", "board", "nightstand", "desk",
+    "workbench", "project", "assembly", "appliance_void",
 })
 
 # Stamped onto every serialized spec (see ``to_dict``) so a future breaking
@@ -1555,6 +1778,12 @@ def _spec_from_dict(data: dict[str, Any], defs: "_Defs | None", stack: frozenset
         return BedSpec.from_dict(data)
     if kind == "cutting_board" or kind == "board":
         return CuttingBoardSpec.from_dict(data)
+    if kind == "nightstand":
+        return NightstandSpec.from_dict(data)
+    if kind == "desk":
+        return DeskSpec.from_dict(data)
+    if kind == "workbench":
+        return WorkbenchSpec.from_dict(data)
     if kind == "table":
         return TableSpec.from_dict(data)
     if kind == "cabinet":
@@ -1600,6 +1829,9 @@ STEP 1 — choose the "kind" first, then fill in that type's fields below:
   "frame"       a picture / mirror frame (four mitered rails + a rabbet)
   "bed"         a knock-down bed (headboard + footboard + rails + slats)
   "cutting_board" a glued-up cutting / charcuterie board (edge/end grain)
+  "nightstand"  a small legged cabinet with a drawer + lower shelf
+  "desk"        a writing desk (legs + apron drawer + modesty panel)
+  "workbench"   a heavy bench: thick top, stretchers, dog holes, a vise
   "project"     more than one piece — a run / built-in (place components)
 
 STEP 2 — copy the matching MINIMAL example, then adjust. Every field not shown
@@ -1627,6 +1859,15 @@ to override a default.
 -- minimal cutting board -------------------------------------------------------
 {{"kind": "cutting_board", "name": "Board", "length": 450, "width": 300,
  "thickness": 38, "grain_style": "edge_grain", "species": "hard_maple"}}
+-- minimal nightstand ----------------------------------------------------------
+{{"kind": "nightstand", "name": "Nightstand", "width": 450, "depth": 400,
+ "height": 600, "drawers": 1}}
+-- minimal desk ----------------------------------------------------------------
+{{"kind": "desk", "name": "Desk", "width": 1200, "depth": 600, "height": 740,
+ "drawers": 1}}
+-- minimal workbench -----------------------------------------------------------
+{{"kind": "workbench", "name": "Workbench", "width": 1500, "depth": 600,
+ "height": 900, "vise": true}}
 -- minimal project (a row of two cabinets via a declarative run) ----------------
 {{"kind": "project", "name": "Run", "runs": [
   {{"start": [0, 0], "angle": 0, "gap": 0, "items": [
@@ -1850,6 +2091,63 @@ A glued-up cutting / charcuterie board: N strips edge-glued into one panel.
 End-grain boards are a two-stage glue-up (glue strips, crosscut, rotate, re-glue)
 and want a thicker blank. Use a food-safe finish (mineral oil / board butter),
 not a film finish. Avoid very open-pore woods (oak) for a board.
+
+== NIGHTSTAND ==
+A small legged cabinet: a top on four legs/aprons with apron-hung drawer(s) and
+an optional lower shelf.
+{{
+  "kind": "nightstand",
+  "name": "Walnut Nightstand",
+  "units": "mm",
+  "width": <e.g. 450>, "depth": <e.g. 400>, "height": <e.g. 600>,
+  "top_thickness": 20,
+  "leg": <square leg, e.g. 40>, "leg_inset": <from the top edge, e.g. 25>,
+  "apron_height": 90, "apron_thickness": 20,
+  "drawers": <0-2 stacked drawers>,
+  "drawer_front_height": 130,
+  "shelf": true | false, "shelf_setback": <shelf height off floor, e.g. 120>,
+  "joinery": {_opts(Joinery)},      // leg-to-apron: mortise_tenon/domino resist racking
+  "pull": "knob" | "bar" | "none",
+  "species": "walnut" | "maple" | ..., "finish": "none" | "oil" | ...
+}}
+
+== DESK ==
+A writing desk: a top on four legs/aprons with apron-hung drawer(s), an optional
+back modesty panel and a cable grommet.
+{{
+  "kind": "desk",
+  "name": "Oak Desk",
+  "units": "mm",
+  "width": <length, e.g. 1200>, "depth": <e.g. 600>, "height": <~740>,
+  "top_thickness": 25,
+  "leg": 60, "leg_inset": 40, "apron_height": 90, "apron_thickness": 20,
+  "drawers": <0-3 across the front>, "drawer_front_height": 100,
+  "modesty_panel": true | false, "modesty_height": 250,
+  "grommet": true | false, "grommet_dia": 60,
+  "joinery": {_opts(Joinery)}, "pull": "bar" | "knob" | "none",
+  "species": "white_oak" | ..., "finish": "none" | "oil" | ...
+}}
+
+== WORKBENCH ==
+A heavy bench: a thick laminated top on a stout leg-and-stretcher base, with a
+row of bench-dog holes, an optional vise, and a tool shelf.
+{{
+  "kind": "workbench",
+  "name": "Roubo-style Bench",
+  "units": "mm",
+  "width": <length, e.g. 1500>, "depth": <e.g. 600>, "height": <~900>,
+  "top_thickness": <thick, e.g. 75>, "top_laminations": <0 = auto>,
+  "leg": <heavy, e.g. 90>, "leg_inset": 60,
+  "apron_height": 120, "apron_thickness": 30,
+  "stretchers": true, "stretcher_setback": 200,
+  "dog_holes": <0 = auto row along the front>, "dog_hole_dia": 19,
+  "vise": true | false, "vise_side": "left" | "right" | "front" | "none",
+  "shelf": true | false,
+  "joinery": {_opts(Joinery)},      // mortise_tenon / domino for a bench that won't rack
+  "species": "beech" | "maple" | "ash" | ..., "finish": "oil"
+}}
+A bench wants hard, tough wood (beech/maple/ash), draw-bored or pinned M&T joints
+that won't rack under planing, and a thick top laminated from strips on edge.
 
 == PROJECT / ASSEMBLY (multi-part) ==
 For anything with more than one piece — a kitchen run, a built-in, a wall of

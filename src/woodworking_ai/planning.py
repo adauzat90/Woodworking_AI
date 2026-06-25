@@ -194,13 +194,19 @@ def _glue_up_count(spec) -> int:
         return sum(_glue_up_count(c.spec) for c in spec.components)
     if kind == TABLE:
         return 1   # the leg/apron/top assembly
-    # A cabinet.
-    n = 1          # the carcass case
+    # A cabinet (and, by fall-through, the other leaf furniture types).
+    n = 1          # the carcass case / base
     if str(getattr(spec, "panel_construction", "sheet")).lower() == "glue_up":
         n += 1     # edge-gluing solid stock into panels
-    for dr in getattr(spec, "drawers", []) or []:
-        if not getattr(dr, "false_front", False):
-            n += 1
+    # ``drawers`` is a list of Drawer on a cabinet but a plain count on the
+    # legged types (nightstand/desk); each non-false drawer box is a glue-up.
+    drawers = getattr(spec, "drawers", []) or []
+    if isinstance(drawers, int):
+        n += drawers
+    else:
+        for dr in drawers:
+            if not getattr(dr, "false_front", False):
+                n += 1
     return n
 
 
@@ -211,7 +217,9 @@ def _front_count(spec) -> int:
         return sum(_front_count(c.spec) for c in spec.components)
     if kind in (VOID, TABLE):
         return 0
-    return int(getattr(spec, "doors", 0) or 0) + len(getattr(spec, "drawers", []) or [])
+    drawers = getattr(spec, "drawers", []) or []
+    n_drawers = drawers if isinstance(drawers, int) else len(drawers)
+    return int(getattr(spec, "doors", 0) or 0) + n_drawers
 
 
 def skill(spec) -> dict:
