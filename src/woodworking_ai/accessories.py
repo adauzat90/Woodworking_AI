@@ -26,6 +26,10 @@ def _num(d: dict, key: str, default: float) -> float:
     return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else default
 
 
+def _bool(d: dict, key: str, default: bool = False) -> bool:
+    return bool(d.get(key, default))
+
+
 def add_accessory_parts(cl, spec) -> None:
     """Append cut-list parts for every accessory on *spec* (in place)."""
     from .cutlist import Part   # local import avoids a cycle
@@ -71,6 +75,13 @@ def accessory_issues(spec) -> list:
     """Return (severity, field, message) tuples for accessory sanity checks."""
     out = []
     interior = spec.interior_width
+    has_counter = any(
+        isinstance(a, dict) and str(a.get("kind", "")).lower() == "countertop"
+        for a in getattr(spec, "accessories", None) or [])
+    has_panel = any(
+        isinstance(a, dict)
+        and str(a.get("kind", "")).lower() in ("end_panel", "door_panel")
+        for a in getattr(spec, "accessories", None) or [])
     for a in getattr(spec, "accessories", None) or []:
         if not isinstance(a, dict):
             continue
@@ -78,7 +89,7 @@ def accessory_issues(spec) -> list:
         if kind == "appliance":
             cw = _num(a, "cutout_w", 0.0)
             cd = _num(a, "cutout_d", 0.0)
-            atype = str(a.get("type", "appliance"))
+            atype = str(a.get("type", "appliance")).lower()
             if cw and cw > interior:
                 out.append((
                     "error", "appliance",
@@ -93,6 +104,22 @@ def accessory_issues(spec) -> list:
                     "warning", "appliance",
                     f"{atype} cutout {cd:.0f}mm deep leaves little counter at "
                     "front/back"))
+            # --- per-type rules (additive) -------------------------------
+            if atype in ("sink", "cooktop") and not has_counter:
+                out.append((
+                    "warning", "appliance",
+                    f"a {atype} cutout needs a countertop accessory to host it; "
+                    "add a \"countertop\" accessory"))
+            if _bool(a, "panel_ready") and not has_panel:
+                out.append((
+                    "warning", "appliance",
+                    f"panel-ready {atype} needs a finish panel; add an "
+                    "\"end_panel\" or door panel accessory"))
+            if atype in ("range", "dishwasher", "fridge"):
+                out.append((
+                    "info", "appliance",
+                    f"a {atype} occupies a GAP in the run, not a cabinet; leave "
+                    "an opening rather than building a box for it"))
         elif kind == "filler":
             if _num(a, "width", 75.0) <= 0:
                 out.append(("error", "filler", "filler width must be positive"))
