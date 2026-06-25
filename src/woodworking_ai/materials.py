@@ -52,6 +52,17 @@ def _attr(ov, name: str) -> str:
     return str(getattr(ov, name, "") or "")
 
 
+def _spec_globals(spec) -> tuple[str, str]:
+    """The spec's global ``(material_form, species)``, normalised.
+
+    Form is lower-cased (it keys the form tables); species keeps its casing for
+    display and is title-cased only where a label needs it.
+    """
+    form = str(getattr(spec, "material_form", "") or "").strip().lower()
+    species = str(getattr(spec, "species", "") or "").strip()
+    return form, species
+
+
 def resolve(spec, area: str) -> tuple[str, str]:
     """Resolve ``(form, species)`` for *area* of *spec*.
 
@@ -70,8 +81,7 @@ def resolve(spec, area: str) -> tuple[str, str]:
 
     own_form = _attr(ov, "form").strip().lower()
     own_species = _attr(ov, "species").strip()
-    g_form = str(getattr(spec, "material_form", "") or "").strip().lower()
-    g_species = str(getattr(spec, "species", "") or "").strip()
+    g_form, g_species = _spec_globals(spec)
 
     form = own_form or g_form
     species = own_species or g_species
@@ -148,8 +158,7 @@ def declared_materials(spec) -> tuple[set[str], set[str]]:
     """
     forms: set[str] = set()
     species: set[str] = set()
-    g_form = str(getattr(spec, "material_form", "") or "").strip().lower()
-    g_species = str(getattr(spec, "species", "") or "").strip()
+    g_form, g_species = _spec_globals(spec)
     if g_form:
         forms.add(g_form)
     if g_species:

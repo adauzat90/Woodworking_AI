@@ -310,8 +310,7 @@ def estimate(spec, *, cutlist: CutList | None = None,
     for p in cl.parts:
         if p.is_solid_lumber:
             continue
-        label = p.form or p.material
-        key = (label, p.form, p.species, p.thickness)
+        key = p.stock_key
         groups.setdefault(key, [])
         # Door/drawer fronts cut from one sheet in sequence for a grain/colour
         # match; grain locks each part's orientation on the sheet.

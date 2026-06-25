@@ -184,7 +184,7 @@ def _nest_flowables(cl, avail_w, unit):
     for p in cl.parts:
         if p.is_solid_lumber:
             continue
-        key = (p.form or p.material, p.form, p.species, p.thickness)
+        key = p.stock_key
         items = groups.setdefault(key, [])
         meta[key] = (p.material, p.form, p.species)
         for i in range(p.qty):

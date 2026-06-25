@@ -41,6 +41,20 @@ def _clean(obj: Any) -> Any:
     return obj
 
 
+def _stock_fields(form: str, species: str, material: str,
+                  *, solid: bool) -> dict[str, str]:
+    """Buyer-facing ``stock``/``product`` names for a cost/lumber group.
+
+    Falls back to the legacy usage-label naming when no form/species is declared,
+    so every group surfaces the same physical-stock vocabulary as the report.
+    """
+    return {
+        "stock": _stock_name(form, species, solid=solid,
+                             fallback=_stock_label(material)),
+        "product": _product_hint(form, _stock_product(material)),
+    }
+
+
 def _b64_file(path: Path, mime: str) -> str:
     data = base64.standard_b64encode(path.read_bytes()).decode("ascii")
     return f"data:{mime};base64,{data}"
@@ -186,9 +200,8 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
         "board_feet": round(cl.total_board_feet, 2),
         "groups": [
             {"material": g["material"],
-             "stock": _stock_name(g.get("form", ""), g.get("species", ""),
-                                  solid=True, fallback=_stock_label(g["material"])),
-             "product": _product_hint(g.get("form",""), _stock_product(g["material"])),
+             **_stock_fields(g.get("form", ""), g.get("species", ""),
+                             g["material"], solid=True),
              "thickness": g["thickness"],
              "form": g.get("form", ""), "species": g.get("species", ""),
              "parts": g["parts"], "board_feet": round(g["board_feet"], 2),
@@ -213,9 +226,7 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
         "total_sheets": est.total_sheets,
         "groups": [
             {"material": g.material,
-             "stock": _stock_name(g.form, g.species, solid=False,
-                                  fallback=_stock_label(g.material)),
-             "product": _product_hint(g.form, _stock_product(g.material)),
+             **_stock_fields(g.form, g.species, g.material, solid=False),
              "thickness": g.thickness,
              "form": g.form, "species": g.species,
              "parts": g.part_count, "sheets": g.sheets,
@@ -224,9 +235,7 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
         ],
         "lumber_groups": [
             {"material": g.material,
-             "stock": _stock_name(g.form, g.species, solid=True,
-                                  fallback=_stock_label(g.material)),
-             "product": _product_hint(g.form, _stock_product(g.material)),
+             **_stock_fields(g.form, g.species, g.material, solid=True),
              "thickness": g.thickness,
              "form": g.form, "species": g.species,
              "parts": g.part_count, "board_feet": round(g.board_feet, 2),

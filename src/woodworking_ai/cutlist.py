@@ -60,6 +60,21 @@ class Part:
         return (self.length / 1000.0) * (self.width / 1000.0)
 
     @property
+    def stock_label(self) -> str:
+        """Display name of the physical stock: declared form, else usage label."""
+        return self.form or self.material
+
+    @property
+    def stock_key(self) -> tuple[str, str, str, float]:
+        """Merge key for parts that buy as one stock.
+
+        ``(stock_label, form, species, thickness)`` — parts sharing a declared
+        form+species+thickness nest as one buyable sheet; legacy parts fall back
+        to their usage label, keeping distinct products apart.
+        """
+        return (self.stock_label, self.form, self.species, self.thickness)
+
+    @property
     def is_solid_lumber(self) -> bool:
         """True when this part is cut from solid stock (bought by the board foot).
 
