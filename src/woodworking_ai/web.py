@@ -153,6 +153,21 @@ def api_design(payload: dict[str, Any]) -> JSONResponse:
     return JSONResponse(bundle)
 
 
+@app.post("/api/room/plan")
+def api_room_plan(payload: dict[str, Any]) -> dict[str, Any]:
+    """Fit a run to a wall: filler sizing + scribe allowances.
+
+    Body: ``{"widths": [600, 600, 900], "wall": {"length": 3658, ...},
+    "room": {"floor_drop": 8, "out_of_square": 6, ...}}``.
+    """
+    from .room import Wall, Room, plan_wall
+    widths = [float(w) for w in payload.get("widths", [])
+              if isinstance(w, (int, float))]
+    wall = Wall.from_dict(payload.get("wall") or {})
+    room = Room.from_dict(payload["room"]) if payload.get("room") else None
+    return plan_wall(widths, wall, room)
+
+
 @app.post("/api/export/{fmt}")
 def api_export(fmt: str, payload: dict[str, Any]) -> Response:
     """Return a downloadable file (STEP/STL/GLB/DXF/cut list/drilling) for a spec."""

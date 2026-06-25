@@ -208,6 +208,19 @@
       <textarea id="projectJson"
         style="height:220px;font-family:ui-monospace,Menlo,monospace;font-size:11px"></textarea>
     </fieldset>
+    <fieldset>
+      <legend>Wall planner</legend>
+      <p class="muted" style="font-size:11px;margin:0 0 6px">
+        Fit this run to a real wall: get the filler width and scribe notes for an
+        out-of-square / out-of-level room.</p>
+      <div class="row">
+        <div><label>Wall length (mm)</label><input id="wall_len" type="number" value="3658" /></div>
+        <div><label>Floor drop (mm)</label><input id="floor_drop" type="number" value="0" /></div>
+        <div><label>Out of square (mm)</label><input id="out_sq" type="number" value="0" /></div>
+      </div>
+      <button id="planWallBtn" class="secondary" type="button">📐 Plan run to wall</button>
+      <div id="wallPlan" class="muted" style="font-size:11.5px;margin-top:6px"></div>
+    </fieldset>
     </div><!-- /projectFields -->
     <button id="buildBtn">🔨 Build design</button>
     <div class="check"><input id="auto" type="checkbox" /><label style="margin:0">Live update as I change values</label></div>
@@ -1066,6 +1079,35 @@ $("formatJson").onclick = () => {
   try { $("projectJson").value =
     JSON.stringify(JSON.parse($("projectJson").value), null, 2); }
   catch (e) { showError("Project JSON: " + e.message); }
+};
+
+// Collect the run's cabinet widths from the project JSON (top-level components).
+function projectWidths() {
+  let p; try { p = JSON.parse($("projectJson").value); } catch (e) { return []; }
+  return (p.components || []).map(c =>
+    (c.spec && c.spec.width) || 0).filter(w => w > 0);
+}
+$("planWallBtn").onclick = async () => {
+  const widths = projectWidths();
+  if (!widths.length) { $("wallPlan").textContent =
+    "Add components with a width to the project JSON first."; return; }
+  const body = {widths,
+    wall: {length: +$("wall_len").value},
+    room: {floor_drop: +$("floor_drop").value, out_of_square: +$("out_sq").value}};
+  try {
+    const r = await post("/api/room/plan", body);
+    const f = r.fit;
+    let h = f.fits
+      ? `Run ${f.total}mm into a ${f.wall_length}mm wall — ` +
+        (f.filler_width > 0 ? `<b>${f.filler_width}mm filler</b> needed.`
+                            : "fills the wall exactly.")
+      : `<b style="color:#e7b6b6">Over by ${f.overrun}mm</b> — drop a cabinet.`;
+    const notes = ((r.scribe && r.scribe.notes) || []).concat(
+      (r.issues || []).map(i => i[2]));
+    if (notes.length) h += "<ul style='margin:4px 0 0;padding-left:16px'>" +
+      notes.map(n => `<li>${n}</li>`).join("") + "</ul>";
+    $("wallPlan").innerHTML = h;
+  } catch (e) { $("wallPlan").textContent = e.message; }
 };
 
 // Initialise the form to the default display unit (inches for US shops): the
