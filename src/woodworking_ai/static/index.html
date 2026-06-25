@@ -286,6 +286,14 @@
           <div><label>Reveal (mm)</label><input id="std_reveal" type="number" value="3" step="0.5" /></div>
           <div><label>Carcass thk (mm)</label><input id="std_carcass" type="number" value="18" step="1" /></div>
         </div>
+        <div class="row">
+          <div><label>Default units</label>
+            <select id="std_units" title="The display unit cut lists & reports open in (the engine stays millimetre-native)">
+              <option value="mm">Millimetres</option>
+              <option value="in">Inches (fractional)</option>
+            </select></div>
+          <div></div>
+        </div>
       </details>
     </fieldset>
     <fieldset style="margin-top:14px">
@@ -365,6 +373,7 @@
         <button data-t="drilling">Drilling</button>
         <button data-t="joinery">Joinery</button>
         <button data-t="tools">Tools</button>
+        <button data-t="plan">Plan</button>
         <button data-t="hardware">Hardware</button>
         <button data-t="cost">Cost</button>
         <label class="units-toggle" title="Display units for the cut list and reports (the engine is millimetre-native)">
@@ -819,8 +828,39 @@ function paint() {
       : '<p class="muted">No joinery operations for this design.</p>';
   } else if (tab === "tools") {
     h = toolsPane(d);
+  } else if (tab === "plan") {
+    h = planPane(d);
   }
   $("pane").innerHTML = h;
+}
+
+// --- Plan tab: skill level + method-aware build time -------------------------
+// The time breakdown reflects the shop tooling (hand vs. jig vs. machine); with
+// no tooling declared it assumes a well-equipped default.
+function planPane(d) {
+  const p = d.plan || {}, skill = p.skill || {}, time = p.time || {};
+  if (!skill.level && !time.total)
+    return '<p class="muted">No build plan for this design.</p>';
+  const phases = time.hours_by_phase || {};
+  const order = ["mill", "joinery", "assembly", "finish", "hardware"];
+  let h = `<div class="headline" style="gap:28px">
+      <div><div class="big" style="text-transform:capitalize">${esc(skill.level || "—")}</div>
+        <div class="sub">skill level</div></div>
+      <div><div class="big">${(time.total || 0).toFixed(1)}h</div>
+        <div class="sub">estimated build time
+          <div class="muted">reflects your tooling (hand vs. machine)</div></div></div>
+    </div>`;
+  h += table(["Phase", "Hours"],
+    order.filter(k => phases[k]).map(k => [k, (phases[k] || 0).toFixed(2) + " h"]));
+  if ((skill.drivers || []).length)
+    h += "<h4>What sets the skill level</h4><ul class='muted' style='font-size:12px;"
+       + "margin:4px 0;padding-left:18px'>"
+       + skill.drivers.map(x => `<li>${esc(x)}</li>`).join("") + "</ul>";
+  if ((time.drivers || []).length)
+    h += "<h4>Time drivers</h4><ul class='muted' style='font-size:12px;"
+       + "margin:4px 0;padding-left:18px'>"
+       + time.drivers.map(x => `<li>${esc(x)}</li>`).join("") + "</ul>";
+  return h;
 }
 
 // --- Tools tab: the tool/jig checklist a design needs ------------------------
@@ -1101,12 +1141,21 @@ $("resetPricing").onclick = () => {
 // design leaves unset (AI output, project JSON, API) inherits the shop's way.
 const STANDARDS_LS = "woodai_standards";
 const STD_FIELDS = ["construction", "back", "joinery", "hardware_brand",
-                    "reveal", "carcass"];
+                    "reveal", "carcass", "units"];
 function loadStandards() {
   let saved = null;
   try { saved = JSON.parse(localStorage.getItem(STANDARDS_LS) || "null"); } catch (e) {}
   if (saved) for (const f of STD_FIELDS) if (saved[f] != null && $("std_" + f))
     $("std_" + f).value = saved[f];
+  // Open the cut list / reports in the shop's default unit ('in' -> imperial).
+  const su = $("std_units");
+  if (su) {
+    const syncUnits = () => {
+      $("units").value = su.value === "in" ? "imperial" : "metric";
+    };
+    syncUnits();                                  // initial display unit
+    su.addEventListener("change", () => { syncUnits(); applyUnitChange(); });
+  }
   for (const f of STD_FIELDS) {
     const el = $("std_" + f);
     if (el) el.addEventListener("input", () => { saveStandards(); maybeAuto(); });
@@ -1127,6 +1176,7 @@ function currentProfile() {
     hardware_brand: $("std_hardware_brand").value,
     reveal: parseFloat($("std_reveal").value) || 3,
     carcass_thickness: parseFloat($("std_carcass").value) || 18,
+    units: ($("std_units") && $("std_units").value) || "mm",
     prices: p.prices, sheet: p.sheet,
     tooling: currentTooling(),   // null = unconstrained (any joinery)
   };

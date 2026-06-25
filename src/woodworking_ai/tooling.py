@@ -177,6 +177,7 @@ JOINT_LABEL = {
     "locking_rabbet": "a locking-rabbet joint", "biscuit": "biscuit joints",
     "cope_stick": "cope-and-stick (5-piece) doors",
     "hinge_cup": "35mm concealed-hinge cups", "shelf_pins": "shelf-pin holes",
+    "bevel_rip": "a bevel-ripped French cleat", "butt_hinge": "butt-hinge screws",
 }
 
 # Each joint/operation → the ways it can be made. A way is a tuple of
@@ -199,6 +200,8 @@ JOINT_WAYS: dict[str, list[tuple]] = {
     "cope_stick":     [("router_table",), ("router",)],
     "hinge_cup":      [("forstner_35",), ("drill_press",)],
     "shelf_pins":     [("shelf_pin_jig",), ("drill_press",), ("drill",)],
+    "bevel_rip":      [("table_saw",), ("hand_tools",)],   # 45° cleat bevel
+    "butt_hinge":     [("drill",), ("hand_tools",)],       # screwed (opt. mortised)
 }
 
 # When a joint can't be made, what to switch to — by the role it plays.
@@ -266,7 +269,7 @@ def required_operations(spec) -> list[Requirement]:
     inspection — mirrors what :func:`joinery.joinery_schedule` and
     :func:`drilling.drilling_schedule` actually emit.
     """
-    from .dispatch import spec_kind, GROUP, TABLE, VOID
+    from .dispatch import spec_kind, GROUP, TABLE, VOID, WALL_SHELF, BOX, BENCH
 
     kind = spec_kind(spec)
     if kind == VOID:
@@ -278,9 +281,27 @@ def required_operations(spec) -> list[Requirement]:
             for r in required_operations(comp.spec):
                 out.append(Requirement(r.role, r.joint, f"{tag}: {r.where}"))
         return out
-    if kind == TABLE:
-        return [Requirement("frame", _norm(getattr(spec, "joinery", "mortise_tenon")),
-                            "leg-to-apron joints")]
+    # A legged piece (table or bench): one frame joint for legs↔aprons/stretchers.
+    if kind in (TABLE, BENCH):
+        where = ("leg-to-apron/stretcher joints" if kind == BENCH
+                 else "leg-to-apron joints")
+        return [Requirement("frame",
+                            _norm(getattr(spec, "joinery", "mortise_tenon")), where)]
+    # A box / chest: corner joints (drawer-corner vocabulary) + optional lid hinges.
+    if kind == BOX:
+        reqs = [Requirement("drawer",
+                            _norm(getattr(spec, "corner_joint", "dovetail")),
+                            "box corners")]
+        if getattr(spec, "lid", False):
+            reqs.append(Requirement("fab", "butt_hinge", "lid hinges"))
+        return reqs
+    # A wall shelf: a French cleat is bevel-ripped; everything mounts with screws.
+    if kind == WALL_SHELF:
+        reqs: list[Requirement] = []
+        if _norm(getattr(spec, "fixing", "")) == "french_cleat":
+            reqs.append(Requirement("fab", "bevel_rip", "French-cleat bevel"))
+        reqs.append(Requirement("fab", "screw", "wall mounting"))
+        return reqs
 
     # A cabinet. ------------------------------------------------------------
     reqs: list[Requirement] = []
