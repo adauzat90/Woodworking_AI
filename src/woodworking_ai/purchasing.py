@@ -24,8 +24,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .cutlist import CutList, generate_cutlist
-from .dsl import ComponentGroup
+from .cutlist import CutList, generate_cutlist, project_hardware
 from .dispatch import is_group
 from .estimator import (
     Estimate, PriceBook, SheetSize, sheet_price, estimate,
@@ -244,7 +243,9 @@ def purchase_order(spec, *, prices: PriceBook | None = None,
     est = estimate(spec, cutlist=cutlist, prices=prices, sheet=sheet)
 
     if is_group(spec):
-        cl = _project_cutlist(spec)
+        # A group's PO needs only merged hardware here; sheet/lumber/banding
+        # come from the aggregated estimate above.
+        cl = CutList(spec_name=spec.name, hardware=project_hardware(spec))
     else:
         cl = cutlist or generate_cutlist(spec)
 
@@ -266,24 +267,3 @@ def purchase_order(spec, *, prices: PriceBook | None = None,
     return PurchaseOrder(name=est.spec_name, lines=lines, currency=est.currency)
 
 
-def _project_cutlist(project: ComponentGroup) -> CutList:
-    """Merge every component's hardware into one cut list for the PO.
-
-    Like hardware (same name+brand+sku) sums its quantity, so a run's drawer
-    pulls land on a single order line. Parts aren't needed here (sheet/lumber/
-    banding come from the aggregated estimate), so the merged list carries
-    hardware only.
-    """
-    merged: dict[tuple, "object"] = {}
-    from .cutlist import Hardware
-    for comp in project.components:
-        for h in generate_cutlist(comp.spec).hardware:
-            key = (h.name, h.brand, h.sku, h.category, h.notes)
-            if key in merged:
-                merged[key].qty += h.qty
-            else:
-                merged[key] = Hardware(
-                    h.name, h.qty, h.notes, sku=h.sku, brand=h.brand,
-                    category=h.category)
-    return CutList(spec_name=project.name, parts=[],
-                   hardware=list(merged.values()))

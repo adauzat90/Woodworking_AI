@@ -590,6 +590,26 @@ def _project_cutlist(project: ComponentGroup) -> CutList:
     return cl
 
 
+def project_hardware(project: ComponentGroup) -> list["Hardware"]:
+    """Every component's hardware merged into one list for a group order.
+
+    Like hardware (same name + brand + sku + category + notes) sums its
+    quantity, so a run's drawer pulls land on a single line. This is the
+    purchasing view of a group (parts come from the aggregated estimate),
+    kept here next to :func:`_project_cutlist` so the two project-level
+    aggregations share one home rather than being re-walked in another module.
+    """
+    merged: dict[tuple, Hardware] = {}
+    for comp in project.components:
+        for h in generate_cutlist(comp.spec).hardware:
+            key = (h.name, h.brand, h.sku, h.category, h.notes)
+            if key in merged:
+                merged[key] = replace(merged[key], qty=merged[key].qty + h.qty)
+            else:
+                merged[key] = replace(h)
+    return list(merged.values())
+
+
 def generate_cutlist(spec) -> CutList:
     """Derive the full parts + hardware list for a leaf, or aggregate a group.
 

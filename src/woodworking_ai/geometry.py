@@ -226,8 +226,8 @@ def _placement(comp: Component):
     at its local origin (0, 0) and ``x``/``y``/``rotation`` translate and rotate
     that whole frame.
     """
-    is_group = isinstance(comp.spec, ComponentGroup)
-    w = 0.0 if is_group else float(getattr(comp.spec, "width", 0.0) or 0.0)
+    grp = is_group(comp.spec)
+    w = 0.0 if grp else float(getattr(comp.spec, "width", 0.0) or 0.0)
     a = math.radians(comp.rotation)
     ca, sa = math.cos(a), math.sin(a)
 

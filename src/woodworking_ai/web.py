@@ -234,8 +234,11 @@ def _parse_spec(body: _SpecBody) -> CabinetSpec | TableSpec | ComponentGroup:
         spec_data = prof.apply_defaults(spec_data)
     try:
         return spec_from_dict(spec_data)
-    except (TypeError, ValueError, AttributeError) as exc:
-        raise HTTPException(status_code=400, detail=f"bad spec: {exc}")
+    except (TypeError, ValueError, AttributeError):
+        # Log the detail server-side; the parse error is built from
+        # user-influenced spec data, so do not echo it back to the client.
+        logger.exception("spec parse failed")
+        raise HTTPException(status_code=400, detail="invalid spec")
 
 
 @app.post("/api/build")
@@ -318,8 +321,9 @@ def api_diff(body: DiffRequest) -> dict[str, Any]:
     try:
         spec_a = spec_from_dict(body.from_ or {})
         spec_b = spec_from_dict(body.to or {})
-    except (TypeError, ValueError, AttributeError) as exc:
-        raise HTTPException(status_code=400, detail=f"bad spec: {exc}")
+    except (TypeError, ValueError, AttributeError):
+        logger.exception("diff spec parse failed")
+        raise HTTPException(status_code=400, detail="invalid spec")
     changes = spec_diff(spec_a.to_dict(), spec_b.to_dict())
     prices, sheet = _pricing_overrides(body)
     try:
