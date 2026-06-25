@@ -221,6 +221,19 @@ def _buildability_issues(spec: CabinetSpec, tools=DEFAULT_TOOLS
                  f"face-frame drawers: the frame overhangs the carcass side by "
                  f"{lip:.0f}mm, so side-mount slides won't reach the box — add "
                  "slide build-out blocks (or use undermount)")
+
+    # --- joinery / machining feasibility (A3, analytic) ------------------
+    # Fold the validator's joinery-feasibility findings (hinge-cup blow-through,
+    # housed-joint short grain, slide-vs-pin collision, grooved-back interference)
+    # into the Critic's structured findings so they flow into the repair note too.
+    from ..validator import _joinery_feasibility, validate
+    for iss in _joinery_feasibility(spec):
+        out.append(CritiqueIssue(iss.severity, "joinery", iss.message))
+    # The hinge-cup blow-through is a hard depth-axis error raised in validate();
+    # promote it here so a Critic-only review still gates on it.
+    for iss in validate(spec).errors:
+        if iss.field == "material.door" and "blows through" in iss.message:
+            out.append(CritiqueIssue("error", "joinery", iss.message))
     return out
 
 
