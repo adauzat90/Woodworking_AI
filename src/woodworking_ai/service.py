@@ -225,14 +225,71 @@ def assemble(spec, *, prices=None, sheet=None, tooling=None) -> Assembly:
     return Assembly(spec, prices=prices, sheet=sheet, tooling=tooling)
 
 
+def cutplan_result(spec, boards, *, cutlist=None, kerf: float = 3.0) -> dict[str, Any]:
+    """JSON-serialisable "cut from my stock" plan for *spec* given owned *boards*.
+
+    *boards* is a list of :class:`~woodworking_ai.cutplan.StockBoard` (or dicts).
+    Returns per-board placements + offcuts + yield and a shortfall list — the
+    parts that did not fit any owned board (what still to buy). Pure-math; no CAD
+    dependency. Returned standalone and (optionally) embedded by
+    :func:`build_result` when boards are supplied.
+    """
+    from .cutplan import cut_plan, boards_from_dicts, StockBoard
+    if boards and isinstance(boards[0], dict):
+        boards = boards_from_dicts(boards)
+    plan = cut_plan(spec, list(boards), cutlist=cutlist, kerf=kerf)
+    return {
+        "spec_name": plan.spec_name,
+        "complete": plan.complete,
+        "kerf": plan.kerf,
+        "placed_count": plan.placed_count,
+        "boards_used": plan.boards_used,
+        "yield": round(plan.yield_pct, 3),
+        "used_area_m2": round(plan.used_area_m2, 4),
+        "offcut_area_m2": round(plan.offcut_area_m2, 4),
+        "boards": [
+            {
+                "id": bp.board.id or "",
+                "length": bp.board.length, "width": bp.board.width,
+                "thickness": bp.board.thickness,
+                "form": bp.board.form, "species": bp.board.species,
+                "instance": bp.instance,
+                "part_count": bp.part_count,
+                "yield": round(bp.yield_pct, 3),
+                "offcut_area_m2": round(bp.offcut_area_m2, 4),
+                "placements": [
+                    {"part_id": p.part_id, "label": p.label,
+                     "x": round(p.x, 1), "y": round(p.y, 1),
+                     "length": round(p.length, 1), "width": round(p.width, 1)}
+                    for p in bp.placements
+                ],
+            }
+            for bp in plan.boards if bp.placements
+        ],
+        "shortfall": [
+            {"part_id": s.part_id, "label": s.label,
+             "length": round(s.length, 1), "width": round(s.width, 1),
+             "thickness": s.thickness, "form": s.form, "species": s.species,
+             "reason": s.reason}
+            for s in plan.shortfall
+        ],
+    }
+
+
 def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
-                 prices=None, sheet=None, tooling=None) -> dict[str, Any]:
+                 prices=None, sheet=None, tooling=None,
+                 boards=None) -> dict[str, Any]:
     """Full design bundle for *spec* — a cabinet, table, or whole project.
 
     Always JSON-serialisable; aggregate stages (cut list, cost, drilling,
     critic, render) dispatch on the spec type, so a Project returns the combined
     run bundle. ``prices`` (a :class:`PriceBook`) and ``sheet`` (a
     :class:`SheetSize`) override the costing defaults when supplied.
+
+    ``boards`` (a list of :class:`~woodworking_ai.cutplan.StockBoard` or dicts),
+    when supplied, adds an OPTIONAL ``cutplan`` section assigning the parts to
+    the owned stock. Omitted entirely when no boards are given, so the bundle is
+    fully backward compatible.
     """
     asm = assemble(spec, prices=prices, sheet=sheet, tooling=tooling)
     v = asm.validation
@@ -279,6 +336,11 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
          "category": h.category, "notes": h.notes} for h in cl.hardware
     ]
     result["cutlist_summary"] = cl.summary()
+
+    # Optional "cut from my stock" plan — only when the caller supplied owned
+    # boards, so the bundle is unchanged for every existing caller.
+    if boards:
+        result["cutplan"] = cutplan_result(spec, boards, cutlist=cl)
 
     # Solid-lumber requirement in board feet / running length. Empty for an
     # all-sheet-goods cabinet; populated for tables, face frames, etc.
