@@ -91,6 +91,13 @@ class TopFixing(StrEnum):
     FIXED = "fixed"           # rigid — cracks a solid top across the grain
 
 
+class ShelfFixing(StrEnum):
+    """How a wall shelf attaches to the wall."""
+    FRENCH_CLEAT = "french_cleat"   # a 45deg-bevel cleat pair (wall + shelf)
+    BRACKETS = "brackets"           # a pair (or more) of L-brackets
+    HIDDEN = "hidden"               # concealed rod/blind-shelf hardware
+
+
 class ApplianceType(StrEnum):
     SINK = "sink"             # drop-in/undermount, hosted by a countertop cutout
     COOKTOP = "cooktop"       # surface unit, also a countertop cutout
@@ -571,6 +578,153 @@ class TableSpec:
         return cls.from_dict(json.loads(text))
 
 
+@dataclass
+class WallShelfSpec:
+    """A wall-mounted shelf: one board fixed to the wall by a cleat or brackets.
+
+    The simplest leaf furniture — a board plus its fixing — so it is the proving
+    ground for the H0 leaf-furniture path. Coordinates match the shared frame:
+    X = length, Y = depth (front to wall), Z = height (the mounting height).
+    """
+
+    kind: str = "wall_shelf"
+    units: str = "mm"
+    name: str = "Wall shelf"
+    length: float = 800.0        # along the wall (X)
+    depth: float = 200.0         # out from the wall (Y)
+    thickness: float = 25.0      # board thickness (Z)
+    mount_height: float = 1400.0  # where the shelf top hangs off the floor (install)
+    fixing: ShelfFixing = ShelfFixing.FRENCH_CLEAT
+    brackets: int = 2            # bracket count (fixing="brackets")
+
+    # --- engineering inputs (optional; drive the deflection check) ------------
+    load_kg_per_m: float = 15.0  # distributed load along the shelf (books ~20-40)
+
+    # --- finishing / material (optional; feed the BOM, cost, build hints) -----
+    finish: str = "none"
+    finish_sheen: str = "satin"
+    material_form: str = "solid"   # a shelf board is usually solid stock
+    species: str = ""              # wood species, e.g. oak | pine | walnut
+
+    def __post_init__(self) -> None:
+        self.fixing = _coerce_enum(ShelfFixing, self.fixing)
+
+    @property
+    def width(self) -> float:
+        """Alias for the placement layer: a shelf's plan width is its length.
+
+        The project frame anchors a leaf by its front-left corner over ``width``
+        (X) × ``depth`` (Y); a shelf is centred on X over its ``length`` with its
+        front at Y=0 — the same convention — so exposing ``width`` lets a shelf
+        place and overlap-check inside a Project with no special case.
+        """
+        return self.length
+
+    @property
+    def cleat_height(self) -> float:
+        """Height (Z) of each French-cleat strip — a fraction of the depth."""
+        return min(max(self.depth * 0.4, 40.0), 100.0)
+
+    @property
+    def bracket_height(self) -> float:
+        """Height (Z) of a wall bracket below the board."""
+        return min(max(self.depth * 0.6, 60.0), max(self.mount_height, 60.0))
+
+    @property
+    def height(self) -> float:
+        """The built artifact's own Z-extent (board + the fixing that hangs below).
+
+        Distinct from ``mount_height`` (where it sits on the wall). Equals the
+        Z-span of the panels, so the Critic's envelope check measures the real
+        object — the single source of truth holds for this leaf too.
+        """
+        if self.fixing == ShelfFixing.FRENCH_CLEAT:
+            return self.thickness + self.cleat_height
+        if self.fixing == ShelfFixing.BRACKETS:
+            return self.thickness + self.bracket_height
+        return self.thickness
+
+    def to_dict(self) -> dict[str, Any]:
+        d = asdict(self)
+        if isinstance(self.fixing, Enum):
+            d["fixing"] = self.fixing.value
+        return d
+
+    def to_json(self, indent: int = 2) -> str:
+        return json.dumps(self.to_dict(), indent=indent)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "WallShelfSpec":
+        data = dict(data)
+        if normalize_unit(data.get("units")) == IMPERIAL:
+            _to_mm(data, ("length", "depth", "thickness", "mount_height"))
+            data["units"] = "mm"
+        known = {f for f in cls.__dataclass_fields__}
+        return cls(**{k: v for k, v in data.items() if k in known})
+
+    @classmethod
+    def from_json(cls, text: str) -> "WallShelfSpec":
+        return cls.from_dict(json.loads(text))
+
+
+@dataclass
+class BoxSpec:
+    """A six-board box / chest: four sides, a bottom, and a lid.
+
+    The corner joint reuses the drawer-box :class:`CornerJoint` vocabulary
+    (dovetail / box / locking_rabbet / rabbet / butt). An optional hinged lid
+    adds hinges. Coordinates match the shared frame: X = width, Y = depth,
+    Z = height; the box sits on the floor (Z=0 at its base).
+    """
+
+    kind: str = "box"
+    units: str = "mm"
+    name: str = "Box"
+    width: float = 600.0         # X (left-right)
+    depth: float = 400.0         # Y (front-back)
+    height: float = 350.0        # Z (overall, including lid)
+    thickness: float = 18.0      # side/bottom/lid board thickness
+    corner_joint: CornerJoint = CornerJoint.DOVETAIL
+    lid: bool = True             # a hinged lid on top (vs. an open box)
+    hinges: int = 2              # lid hinge count (lid only)
+
+    # --- finishing / material (optional) --------------------------------------
+    finish: str = "none"
+    finish_sheen: str = "satin"
+    material_form: str = "solid"
+    species: str = ""
+
+    def __post_init__(self) -> None:
+        self.corner_joint = _coerce_enum(CornerJoint, self.corner_joint)
+
+    @property
+    def body_height(self) -> float:
+        """Height of the box body below the lid (Z)."""
+        return self.height - (self.thickness if self.lid else 0.0)
+
+    def to_dict(self) -> dict[str, Any]:
+        d = asdict(self)
+        if isinstance(self.corner_joint, Enum):
+            d["corner_joint"] = self.corner_joint.value
+        return d
+
+    def to_json(self, indent: int = 2) -> str:
+        return json.dumps(self.to_dict(), indent=indent)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "BoxSpec":
+        data = dict(data)
+        if normalize_unit(data.get("units")) == IMPERIAL:
+            _to_mm(data, ("width", "depth", "height", "thickness"))
+            data["units"] = "mm"
+        known = {f for f in cls.__dataclass_fields__}
+        return cls(**{k: v for k, v in data.items() if k in known})
+
+    @classmethod
+    def from_json(cls, text: str) -> "BoxSpec":
+        return cls.from_dict(json.loads(text))
+
+
 # ---------------------------------------------------------------------------
 # Assemblies. A component group places child specs in one frame:
 #   * Project  — the top-level run / built-in (e.g. a whole kitchen).
@@ -778,6 +932,10 @@ def _spec_from_dict(data: dict[str, Any], defs: "_Defs | None", stack: frozenset
         return Assembly.from_dict(data, parent_defs=defs, _stack=stack)
     if kind == "project" or "components" in data:
         return Project.from_dict(data, parent_defs=defs, _stack=stack)
+    if kind == "wall_shelf":
+        return WallShelfSpec.from_dict(data)
+    if kind == "box" or kind == "chest":
+        return BoxSpec.from_dict(data)
     if kind == "table" or "leg" in data or "top_thickness" in data:
         return TableSpec.from_dict(data)
     return CabinetSpec.from_dict(data)
@@ -805,9 +963,10 @@ def _opts(enum_cls: type[Enum]) -> str:
 
 
 DSL_SCHEMA_HINT = f"""\
-Output ONE furniture spec as a JSON object. It is either a CABINET or a TABLE.
-Set "units" to "mm" (default) or "in"; give every dimension in that unit and do
-not mix — inches are converted to millimetres on load.
+Output ONE furniture spec as a JSON object. It is a CABINET, a TABLE, a WALL
+SHELF, or a BOX/CHEST (or a multi-part PROJECT of these). Set "units" to "mm"
+(default) or "in"; give every dimension in that unit and do not mix — inches are
+converted to millimetres on load.
 
 == CABINET ==
 {{
@@ -884,6 +1043,48 @@ not mix — inches are converted to millimetres on load.
   "material_form": "solid" | "plywood" | ...,   // optional; default treats top as sheet
   "species": "walnut" | "oak" | ...             // optional wood species
 }}
+
+== WALL SHELF ==
+A single board fixed to the wall by a French cleat or a pair of brackets.
+{{
+  "kind": "wall_shelf",
+  "name": "Oak Shelf",
+  "units": "mm",
+  "length": <along the wall>,
+  "depth": <out from the wall, e.g. 200>,
+  "thickness": <board thickness, e.g. 25>,
+  "mount_height": <where the shelf top hangs off the floor, e.g. 1400>,
+  "fixing": {_opts(ShelfFixing)},
+  "brackets": <bracket count when fixing="brackets", >=2>,
+  "load_kg_per_m": <expected load along the shelf, e.g. 15 (books ~20-40)>,
+  "material_form": "solid" | "plywood" | ...,   // optional
+  "species": "oak" | "pine" | "walnut" | ...,   // optional wood species
+  "finish": "none" | "oil" | "clear" | "paint" | "stain_clear"
+}}
+The validator checks the shelf for sag (deflection vs span/360) from the length,
+depth, thickness, species and load — thicken the board, use a stiffer species,
+or add a center bracket for a long or heavily-loaded shelf.
+
+== BOX / CHEST ==
+A six-board box: four sides, a captured bottom, and an optional hinged lid.
+{{
+  "kind": "box",
+  "name": "Blanket Chest",
+  "units": "mm",
+  "width": <left-right>,
+  "depth": <front-back>,
+  "height": <overall, including the lid>,
+  "thickness": <side/bottom/lid board thickness, e.g. 18>,
+  "corner_joint": {_opts(CornerJoint)},
+  "lid": true | false,
+  "hinges": <lid hinge count when lid=true, >=2>,
+  "material_form": "solid" | "plywood" | ...,   // optional
+  "species": "walnut" | "oak" | "pine" | ...,   // optional wood species
+  "finish": "none" | "oil" | "clear" | "paint" | "stain_clear"
+}}
+Box corners should be "dovetail", "box", or a locking rabbet (a "butt" corner is
+weak and pulls apart); the bottom rides in a groove. A hinged lid takes butt
+hinges (and usually a lid stay).
 
 == PROJECT / ASSEMBLY (multi-part) ==
 For anything with more than one piece — a kitchen run, a built-in, a wall of
