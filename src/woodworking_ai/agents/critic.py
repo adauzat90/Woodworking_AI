@@ -31,6 +31,7 @@ from typing import Any
 _log = logging.getLogger(__name__)
 
 from ..dsl import CabinetSpec, ComponentGroup, Construction, Joinery
+from ..dispatch import is_group
 from ..geometry import (
     PanelBox, panel_layout, project_layout, footprints_overlap, component_tag,
 )
@@ -384,7 +385,7 @@ def critique(spec, *, use_cad: bool = False, brep: bool = False,
     needs build123d; without it the cross-check is skipped with one warning
     rather than raising, so a CAD-free caller is never blocked.
     """
-    if isinstance(spec, ComponentGroup):
+    if is_group(spec):
         return _critique_project(spec, use_cad=use_cad, brep=brep,
                                  joinery_geometry=joinery_geometry, model=model)
     panels = panel_layout(spec)

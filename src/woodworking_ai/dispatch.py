@@ -1,0 +1,49 @@
+"""Single definition of the pipeline's spec-type dispatch.
+
+Every stage — validator, cut list, estimator, drilling, joinery, geometry,
+assembly steps, … — used to re-implement the *same* ``isinstance`` ladder to
+decide what kind of spec it was handed:
+
+    if isinstance(spec, ApplianceVoid): ...
+    elif isinstance(spec, ComponentGroup): ...   # Project / Assembly
+    elif isinstance(spec, TableSpec): ...
+    else:  # a cabinet
+
+That ladder is the codebase's biggest extensibility tax: adding a furniture
+type meant finding and editing a dozen copies in lockstep. It now lives here,
+so the type taxonomy is defined once and each stage dispatches on the result.
+
+Pure data — no CAD dependency.
+"""
+
+from __future__ import annotations
+
+from .dsl import ApplianceVoid, ComponentGroup, TableSpec
+
+# Canonical pipeline kinds. ``GROUP`` covers Project and Assembly (and any
+# future ComponentGroup subclass); ``CABINET`` is the default leaf.
+VOID = "void"
+GROUP = "group"
+TABLE = "table"
+CABINET = "cabinet"
+
+
+def spec_kind(spec) -> str:
+    """The pipeline category of *spec* — one of VOID / GROUP / TABLE / CABINET.
+
+    Order matters: an ``ApplianceVoid`` is a leaf placeholder, a
+    ``ComponentGroup`` aggregates components, a ``TableSpec`` is a leaf table,
+    and everything else is treated as a cabinet.
+    """
+    if isinstance(spec, ApplianceVoid):
+        return VOID
+    if isinstance(spec, ComponentGroup):
+        return GROUP
+    if isinstance(spec, TableSpec):
+        return TABLE
+    return CABINET
+
+
+def is_group(spec) -> bool:
+    """True for a Project/Assembly (any :class:`ComponentGroup`)."""
+    return isinstance(spec, ComponentGroup)

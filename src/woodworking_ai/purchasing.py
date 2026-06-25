@@ -26,6 +26,7 @@ from dataclasses import dataclass, field
 
 from .cutlist import CutList, generate_cutlist
 from .dsl import ComponentGroup
+from .dispatch import is_group
 from .estimator import (
     Estimate, PriceBook, SheetSize, sheet_price, estimate,
 )
@@ -242,7 +243,7 @@ def purchase_order(spec, *, prices: PriceBook | None = None,
     sheet = sheet or SheetSize()
     est = estimate(spec, cutlist=cutlist, prices=prices, sheet=sheet)
 
-    if isinstance(spec, ComponentGroup):
+    if is_group(spec):
         cl = _project_cutlist(spec)
     else:
         cl = cutlist or generate_cutlist(spec)

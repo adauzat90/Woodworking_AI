@@ -17,8 +17,9 @@ from dataclasses import dataclass
 
 from .dsl import (
     CabinetSpec, TableSpec, ComponentGroup, Component, BackStyle,
-    Construction, CabinetType, ApplianceVoid,
+    Construction, CabinetType,
 )
+from .dispatch import spec_kind, is_group, VOID, GROUP, TABLE
 
 # Construction constants shared with the cut list (neutral module, no cycle).
 from .constants import (
@@ -245,7 +246,7 @@ def local_plan_bounds(spec) -> tuple[float, float, float, float]:
     panels' footprints, so a placed group is overlap-checked by its real outline
     rather than a missing ``width``.
     """
-    if isinstance(spec, ComponentGroup):
+    if is_group(spec):
         xs: list[float] = []
         ys: list[float] = []
         for p in project_layout(spec):
@@ -324,11 +325,12 @@ def project_layout(project: ComponentGroup) -> list[PanelBox]:
 
 def panel_layout(spec) -> list[PanelBox]:
     """Return every panel of *spec* placed in the shared coordinate frame."""
-    if isinstance(spec, ApplianceVoid):
+    kind = spec_kind(spec)
+    if kind == VOID:
         return []                      # a reserved gap builds no carcass
-    if isinstance(spec, ComponentGroup):
+    if kind == GROUP:
         return project_layout(spec)
-    if isinstance(spec, TableSpec):
+    if kind == TABLE:
         return _table_layout(spec)
     if spec.cabinet_type == CabinetType.CORNER_DIAGONAL:
         return _diagonal_layout(spec)

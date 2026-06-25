@@ -16,7 +16,8 @@ import math
 from dataclasses import dataclass, field, replace
 
 from .dsl import (CabinetSpec, TableSpec, ComponentGroup, BackStyle,
-                  Construction, CabinetType, ApplianceVoid)
+                  Construction, CabinetType)
+from .dispatch import spec_kind, VOID, GROUP, TABLE
 from .geometry import front_plan, component_tag
 # Construction constants now live in one neutral module shared with geometry.
 from .partmath import drawer_box_dims
@@ -590,11 +591,12 @@ def _project_cutlist(project: ComponentGroup) -> CutList:
 
 def generate_cutlist(spec) -> CutList:
     """Derive the full parts + hardware list for a cabinet, table, or group."""
-    if isinstance(spec, ApplianceVoid):
+    kind = spec_kind(spec)
+    if kind == VOID:
         return CutList(spec_name=spec.name)   # a reserved gap adds no parts
-    if isinstance(spec, ComponentGroup):
+    if kind == GROUP:
         return _project_cutlist(spec)
-    if isinstance(spec, TableSpec):
+    if kind == TABLE:
         return _table_cutlist(spec)
     if spec.cabinet_type == CabinetType.CORNER_DIAGONAL:
         return _diagonal_cutlist(spec)

@@ -16,7 +16,8 @@ import dataclasses
 import math
 from dataclasses import dataclass, field
 
-from .dsl import CabinetSpec, ComponentGroup, ApplianceVoid
+from .dsl import CabinetSpec, ComponentGroup
+from .dispatch import spec_kind, VOID, GROUP
 from .cutlist import CutList, generate_cutlist
 from .packing import pack
 
@@ -316,7 +317,8 @@ def estimate(spec, *, cutlist: CutList | None = None,
     """Produce a cost estimate for a cabinet, table, or group."""
     prices = prices or PriceBook()
     sheet = sheet or SheetSize()
-    if isinstance(spec, ApplianceVoid):
+    kind = spec_kind(spec)
+    if kind == VOID:
         # A reserved gap buys nothing and builds nothing.
         est = Estimate(
             spec_name=spec.name, groups=[], material_cost=0.0,
@@ -324,7 +326,7 @@ def estimate(spec, *, cutlist: CutList | None = None,
             labour_hours=0.0, labour_cost=0.0)
         est._rate = prices.shop_rate_per_hour
         return est
-    if isinstance(spec, ComponentGroup):
+    if kind == GROUP:
         return _estimate_project(spec, prices, sheet)
     cl = cutlist or generate_cutlist(spec)
 

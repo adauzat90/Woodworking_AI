@@ -16,8 +16,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .dsl import (CabinetSpec, TableSpec, ComponentGroup, Construction,
-                  ApplianceVoid)
+from .dsl import (CabinetSpec, TableSpec, Construction)
+from .dispatch import spec_kind, VOID, GROUP, TABLE
 from .cutlist import generate_cutlist
 from .geometry import component_tag
 
@@ -309,9 +309,10 @@ def _table_plan(spec: TableSpec, cl) -> list[SubAssembly]:
 
 def assembly_plan(spec) -> AssemblyPlan:
     """Decompose *spec* into sub-assemblies, each with its own build steps."""
-    if isinstance(spec, ApplianceVoid):
+    kind = spec_kind(spec)
+    if kind == VOID:
         return AssemblyPlan(spec.name)   # a reserved gap is built by nobody
-    if isinstance(spec, ComponentGroup):
+    if kind == GROUP:
         plan = AssemblyPlan(spec.name)
         for i, comp in enumerate(spec.components, start=1):
             tag = component_tag(comp, i)
@@ -336,7 +337,7 @@ def assembly_plan(spec) -> AssemblyPlan:
         plan.subassemblies.append(run)
         return plan
     cl = generate_cutlist(spec)
-    if isinstance(spec, TableSpec):
+    if kind == TABLE:
         return AssemblyPlan(spec.name, _table_plan(spec, cl))
     return AssemblyPlan(spec.name, _cabinet_plan(spec, cl))
 

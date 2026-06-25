@@ -12,7 +12,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from .dsl import CabinetSpec, ComponentGroup
+from .dsl import CabinetSpec
+from .dispatch import is_group
 from .geometry import PanelBox, panel_layout
 
 # Wood-ish palette by panel role.
@@ -127,7 +128,7 @@ def _isometric(ax, panels: list[PanelBox], spec: CabinetSpec) -> None:
 
 def _title(spec, panels: list[PanelBox]) -> str:
     """A one-line caption that works for a cabinet, a table, or a whole group."""
-    if isinstance(spec, ComponentGroup):
+    if is_group(spec):
         def span(axis):
             cs = [c for p in panels for c in p.bounds()[axis]]
             return (max(cs) - min(cs)) if cs else 0.0

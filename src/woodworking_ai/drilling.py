@@ -17,7 +17,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .dsl import ComponentGroup, ApplianceVoid
+from .dsl import ComponentGroup
+from .dispatch import spec_kind, VOID, GROUP
 from .geometry import panel_layout, component_tag
 from .cutlist import generate_cutlist
 from .hardware import hinge_count, select_slide, PLATE_SCREW_INSET
@@ -148,9 +149,10 @@ def _project_drilling(project: ComponentGroup) -> DrillingSchedule:
 
 
 def drilling_schedule(spec) -> DrillingSchedule:
-    if isinstance(spec, ApplianceVoid):
+    kind = spec_kind(spec)
+    if kind == VOID:
         return DrillingSchedule(spec_name=spec.name)   # a gap bores nothing
-    if isinstance(spec, ComponentGroup):
+    if kind == GROUP:
         return _project_drilling(spec)
     panels = panel_layout(spec)
     sched = DrillingSchedule(spec_name=spec.name)

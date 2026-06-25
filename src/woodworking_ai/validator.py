@@ -16,6 +16,7 @@ from .dsl import (
     TableSpec, ComponentGroup, CabinetType, Joinery, ApplianceVoid,
     APPLIANCE_VOID_TOLERANCE,
 )
+from .dispatch import spec_kind, VOID, GROUP, TABLE
 from . import engineering, stock, proportion
 from .hardware import longest_slide_for
 from .geometry import front_plan, footprints_overlap, component_tag
@@ -344,11 +345,12 @@ def joinery_feasibility(spec) -> list[Issue]:
 
 
 def validate(spec) -> ValidationResult:
-    if isinstance(spec, ApplianceVoid):
+    kind = spec_kind(spec)
+    if kind == VOID:
         return _validate_void(spec)
-    if isinstance(spec, ComponentGroup):
+    if kind == GROUP:
         return _validate_project(spec)
-    if isinstance(spec, TableSpec):
+    if kind == TABLE:
         return _validate_table(spec)
     issues: list[Issue] = []
 

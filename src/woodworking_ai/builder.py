@@ -26,6 +26,7 @@ import logging
 from typing import Any
 
 from .dsl import CabinetSpec, ComponentGroup
+from .dispatch import is_group
 from .geometry import panel_layout, project_layout, explode_panels
 
 log = logging.getLogger(__name__)
@@ -279,7 +280,7 @@ def build_model(spec: CabinetSpec, *, factor: float = 0.0,
     the solids from the joinery/drilling schedules — the exported STEP is then
     machine honest. Off, the output is byte-for-byte the plain slab model.
     """
-    if isinstance(spec, ComponentGroup):
+    if is_group(spec):
         return build_project(spec, factor=factor, include=include,
                              joinery_geometry=joinery_geometry)
     panels = (explode_panels(spec, factor, include)
