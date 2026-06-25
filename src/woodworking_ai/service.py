@@ -66,6 +66,18 @@ def _glb(spec: CabinetSpec) -> str | None:
         return None
 
 
+def model_glb_bytes(spec, *, factor: float = 0.0,
+                    include: set | None = None) -> bytes:
+    """GLB bytes for *spec* — assembled, exploded (``factor`` > 0), or a
+    progressive subset (``include`` = sub-assembly names). Needs build123d."""
+    from .builder import build_model
+    from .exporters import export_glb
+    with tempfile.TemporaryDirectory() as d:
+        model = build_model(spec, factor=factor, include=include)
+        p = export_glb(model, Path(d) / "m.glb")
+        return p.read_bytes()
+
+
 def export_bytes(spec, fmt: str,
                  units: str = "metric") -> tuple[bytes, str, str]:
     """Return (data, media_type, filename) for a downloadable export.
@@ -240,6 +252,14 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
              for s in sub.steps]}
         for sub in plan.subassemblies
     ]
+
+    # The 3D model's sub-assemblies, in build order — drives the build-view
+    # stepper and the exploded view (always available, even without build123d).
+    try:
+        from .geometry import panels_by_subassembly
+        result["model_sections"] = list(panels_by_subassembly(spec).keys())
+    except Exception:
+        result["model_sections"] = []
 
     try:
         from .drawings import render_svg

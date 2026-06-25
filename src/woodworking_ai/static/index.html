@@ -24,6 +24,16 @@
            justify-content:center; min-height:240px; position:relative; }
   model-viewer, .stage img { width:100%; height:100%; }
   .stage .ph { color:var(--muted); }
+  .buildbar { position:absolute; left:50%; bottom:12px; transform:translateX(-50%);
+    display:flex; align-items:center; gap:12px; background:rgba(28,26,23,.86);
+    border:1px solid var(--line); border-radius:10px; padding:8px 14px;
+    backdrop-filter:blur(4px); max-width:92%; }
+  .buildbar label { margin:0; color:var(--text); font-size:12px; display:flex;
+    align-items:center; gap:6px; white-space:nowrap; }
+  .buildbar input[type=range] { width:160px; accent-color:var(--accent); }
+  .buildbar .sec { color:var(--wood); font-weight:600; font-size:12px;
+    min-width:120px; }
+  .buildbar input[type=checkbox] { width:auto; accent-color:var(--accent); }
   .results { height:42%; border-top:1px solid var(--line); display:flex;
              flex-direction:column; }
   fieldset { border:1px solid var(--line); border-radius:8px; margin:0 0 14px;
@@ -592,9 +602,12 @@ function render(d) {
   }
   // 3D / image stage
   if (d.glb) {
+    const sections = d.model_sections || [];
+    const bar = sections.length > 1 ? buildBarHtml(sections) : "";
     $("stage").innerHTML =
-      `<model-viewer camera-controls auto-rotate shadow-intensity="1"
-        exposure="1.1" src="${d.glb}"></model-viewer>`;
+      `<model-viewer id="mv" camera-controls auto-rotate shadow-intensity="1"
+        exposure="1.1" src="${d.glb}"></model-viewer>${bar}`;
+    if (sections.length > 1) wireBuildBar(sections);
   } else if (d.render_png) {
     $("stage").innerHTML = `<img src="${d.render_png}" style="object-fit:contain" />`;
   } else $("stage").innerHTML = '<div class="ph">No preview available</div>';
@@ -611,6 +624,44 @@ function render(d) {
   $("status").innerHTML = bits.join("");
   $("downloads").style.display = "flex";
   paint();
+}
+
+// --- 3D build view: explode + step through the sub-assemblies ----------------
+function buildBarHtml(sections) {
+  const n = sections.length;
+  return `<div class="buildbar">
+    <label title="Separate the sub-assemblies to see how it goes together">
+      <input type="checkbox" id="explodeChk"> Exploded</label>
+    <label>Build
+      <input type="range" id="buildStep" min="1" max="${n}" value="${n}"></label>
+    <span class="sec" id="buildSec">Assembled (${n})</span>
+  </div>`;
+}
+// Load a GLB variant (exploded factor + the sub-assemblies up to the step).
+let _mvBlob = null;
+async function loadModel(sections) {
+  const mv = $("mv"); if (!mv || !last) return;
+  const factor = $("explodeChk") && $("explodeChk").checked ? 1.0 : 0.0;
+  const step = $("buildStep") ? +$("buildStep").value : sections.length;
+  const include = step >= sections.length ? null : sections.slice(0, step);
+  if ($("buildSec")) $("buildSec").textContent = include
+    ? `+ ${sections[step - 1]} (${step}/${sections.length})`
+    : `Assembled (${sections.length})`;
+  try {
+    const r = await fetch("/api/model", {method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({spec: last.spec, factor, include})});
+    if (!r.ok) return;
+    const blob = await r.blob();
+    if (_mvBlob) URL.revokeObjectURL(_mvBlob);
+    _mvBlob = URL.createObjectURL(blob);
+    mv.src = _mvBlob;
+  } catch (e) { /* keep the current model on error */ }
+}
+function wireBuildBar(sections) {
+  const go = () => loadModel(sections);
+  if ($("explodeChk")) $("explodeChk").onchange = go;
+  if ($("buildStep")) $("buildStep").oninput = go;
 }
 
 async function download(fmt) {

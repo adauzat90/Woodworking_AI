@@ -109,10 +109,11 @@ def _overlap(a: PanelBox, b: PanelBox) -> tuple[float, float, float]:
     )
 
 
-# Applied trim (countertop, filler, end panel, moldings) is surface-mounted, not
-# a structural carcass part; it legitimately abuts the box and other trim, so it
-# is excluded from the hard structural-interference error.
-_APPLIED_CATEGORIES = {"counter", "filler", "endpanel", "molding"}
+# Applied trim (countertop, filler, end panel, moldings) is surface-mounted and
+# a drawer box is an inserted sub-assembly that rides on slides — neither is a
+# fixed carcass part, so both legitimately abut the box/other parts and are
+# excluded from the hard structural-interference error.
+_APPLIED_CATEGORIES = {"counter", "filler", "endpanel", "molding", "drawer_box"}
 
 
 def _interferences(panels: list[PanelBox]) -> list[tuple[str, str, float]]:

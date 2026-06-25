@@ -25,6 +25,7 @@ from .constants import (
     STRETCHER_WIDTH, SHELF_SIDE_CLEARANCE, SHELF_SETBACK,
     FRAME_WIDTH, FRAME_THICKNESS, MULLION_WIDTH,
     DOOR_STILE_WIDTH, DOOR_RAIL_WIDTH,
+    SLIDE_SIDE_CLEARANCE, DRAWER_BOX_HEIGHT_DROP, DRAWER_BOX_DEPTH_GAP,
 )
 
 
@@ -42,10 +43,16 @@ class PanelBox:
     category: str = "carcass"   # carcass | back | shelf | toe | front | frame
     rot_z: float = 0.0
     oversized: bool = False     # a blank trimmed to shape on site (corner units)
+    subassembly: str = ""       # which buildable unit this panel belongs to
 
     @property
     def is_front(self) -> bool:
         return self.category == "front"
+
+    @property
+    def unit(self) -> str:
+        """The sub-assembly this panel belongs to ('Carcass' by default)."""
+        return self.subassembly or "Carcass"
 
     @property
     def is_rotated(self) -> bool:
@@ -305,7 +312,7 @@ def project_layout(project: ComponentGroup) -> list[PanelBox]:
             out.append(PanelBox(
                 label=f"{tag} · {p.label}", size=p.size, center=(wx, wy, cz),
                 category=p.category, rot_z=p.rot_z + comp.rotation,
-                oversized=p.oversized))
+                oversized=p.oversized, subassembly=tag))   # a run sections by cabinet
     return out
 
 
@@ -329,8 +336,9 @@ def panel_layout(spec) -> list[PanelBox]:
 
     panels: list[PanelBox] = []
 
-    def add(label, size, center, category="carcass", rot_z=0.0):
-        panels.append(PanelBox(label, size, center, category, rot_z))
+    def add(label, size, center, category="carcass", rot_z=0.0, unit="Carcass"):
+        panels.append(PanelBox(label, size, center, category, rot_z,
+                               subassembly=unit))
 
     z_box = toe_h + box_h / 2
     y_center = spec.depth / 2
@@ -387,35 +395,144 @@ def panel_layout(spec) -> list[PanelBox]:
         y_frame = -FRAME_THICKNESS / 2
         x_stile = spec.width / 2 - FRAME_WIDTH / 2
         add("Stile L", (FRAME_WIDTH, FRAME_THICKNESS, box_h),
-            (-x_stile, y_frame, z_box), category="frame")
+            (-x_stile, y_frame, z_box), category="frame", unit="Face frame")
         add("Stile R", (FRAME_WIDTH, FRAME_THICKNESS, box_h),
-            (x_stile, y_frame, z_box), category="frame")
+            (x_stile, y_frame, z_box), category="frame", unit="Face frame")
         rail_w = spec.width - 2 * FRAME_WIDTH
         add("Rail top", (rail_w, FRAME_THICKNESS, FRAME_WIDTH),
-            (0, y_frame, toe_h + box_h - FRAME_WIDTH / 2), category="frame")
+            (0, y_frame, toe_h + box_h - FRAME_WIDTH / 2), category="frame",
+            unit="Face frame")
         add("Rail bottom", (rail_w, FRAME_THICKNESS, FRAME_WIDTH),
-            (0, y_frame, toe_h + FRAME_WIDTH / 2), category="frame")
+            (0, y_frame, toe_h + FRAME_WIDTH / 2), category="frame",
+            unit="Face frame")
 
     # --- fronts: doors, drawers, mullion, blind filler (shared layout) ---
     # The same plan the cut list consumes, so panels and parts never disagree.
-    for it in front_plan(spec).items:
+    plan = front_plan(spec)
+    for it in plan.items:
         if it.kind == "door":
             # Slab or 5-piece (stile-and-rail) depending on door_style.
             panels.extend(_door_panels(it, spec))
             continue
         if it.kind == "mullion":
-            label, category = ("Center stile" if is_ff else "Mullion"), "frame"
+            label, category, unit = (
+                "Center stile" if is_ff else "Mullion"), "frame", "Face frame"
+            add(label, (it.width, it.thickness, it.height), (it.x, it.y, it.z),
+                category=category, unit=unit)
         elif it.kind == "drawer":
-            label, category = f"Drawer front {it.index}", "front"
+            unit = f"Drawer {it.index}"
+            add(f"Drawer front {it.index}", (it.width, it.thickness, it.height),
+                (it.x, it.y, it.z), category="front", unit=unit)
+            if not it.false_front:
+                panels.extend(_drawer_box_panels(it, spec, plan))
         else:  # blind filler
-            label, category = "Blind filler", "front"
-        add(label, (it.width, it.thickness, it.height), (it.x, it.y, it.z),
-            category=category)
+            add("Blind filler", (it.width, it.thickness, it.height),
+                (it.x, it.y, it.z), category="front", unit="Carcass")
 
     # --- accessories: countertop, filler, end panel, molding -------------
     panels.extend(_accessory_panels(spec))
 
     return panels
+
+    # --- accessories: countertop, filler, end panel, molding -------------
+    panels.extend(_accessory_panels(spec))
+
+    return panels
+
+
+def _unit_sort_key(name: str) -> tuple:
+    """Canonical build order for sub-assemblies (Carcass first, trim last)."""
+    n = name.lower()
+    if n == "carcass":
+        return (0, 0, name)
+    if n == "face frame":
+        return (1, 0, name)
+    if n.startswith("drawer"):
+        digits = "".join(c for c in n if c.isdigit())
+        return (2, int(digits) if digits else 0, name)
+    if n.startswith("door"):
+        return (3, 0, name)
+    if n == "countertop":
+        return (4, 0, name)
+    if n == "trim":
+        return (5, 0, name)
+    return (6, 0, name)   # project cabinets / anything else
+
+
+def subassembly_order(panels: list[PanelBox]) -> list[str]:
+    """Distinct sub-assembly names in *panels*, in canonical build order."""
+    return sorted({p.unit for p in panels}, key=_unit_sort_key)
+
+
+def panels_by_subassembly(spec) -> dict:
+    """``{sub-assembly name: [panels]}`` for *spec*, in build order."""
+    panels = panel_layout(spec)
+    groups: dict[str, list[PanelBox]] = {}
+    for p in panels:
+        groups.setdefault(p.unit, []).append(p)
+    return {name: groups[name] for name in subassembly_order(panels)}
+
+
+def _explode_offset(p: PanelBox, dims: tuple[float, float, float],
+                    factor: float) -> tuple[float, float, float]:
+    """How far to move panel *p* in an exploded view (mm), scaled by *factor*."""
+    W, D, H = dims
+    u, cat, f = p.unit, p.category, factor
+    if cat == "back":
+        return (0.0, D * 0.7 * f, 0.0)            # back lifts off rearward
+    if u == "Face frame":
+        return (0.0, -D * 0.5 * f, 0.0)           # face frame floats forward
+    if u.startswith("Door"):
+        hx = -W * 0.4 * f if u.endswith(" L") else (
+            W * 0.4 * f if u.endswith(" R") else -W * 0.25 * f)
+        return (hx, -D * 0.95 * f, 0.0)           # doors swing off the front
+    if u.startswith("Drawer"):
+        digits = "".join(c for c in u if c.isdigit())
+        i = int(digits) if digits else 1
+        return (0.0, -D * (0.45 + 0.4 * i) * f, 0.0)   # drawers pull forward
+    if cat == "shelf":
+        digits = "".join(c for c in p.label if c.isdigit())
+        i = int(digits) if digits else 1
+        return (0.0, -D * 0.2 * f, H * 0.18 * i * f)   # shelves lift + forward
+    if cat == "toe":
+        return (0.0, -D * 0.2 * f, -H * 0.3 * f)
+    if u == "Countertop":
+        return (0.0, 0.0, H * 0.45 * f)
+    if u == "Trim":
+        sx = 1.0 if p.center[0] >= 0 else -1.0
+        return (sx * W * 0.45 * f, 0.0, H * 0.15 * f)
+    return (0.0, 0.0, 0.0)                         # carcass stays put
+
+
+def explode_panels(spec, factor: float = 1.0,
+                   include: set | None = None) -> list[PanelBox]:
+    """Panels of *spec* offset by sub-assembly to show how it goes together.
+
+    ``factor`` 0 = assembled, 1 = fully separated. ``include`` optionally keeps
+    only the named sub-assemblies (for a progressive build view). Each cabinet
+    of a project explodes within its own placement.
+    """
+    panels = panel_layout(spec)
+    if include is not None:
+        panels = [p for p in panels if p.unit in include]
+    W = float(getattr(spec, "width", 0.0) or 0.0)
+    D = float(getattr(spec, "depth", 0.0) or 0.0)
+    H = float(getattr(spec, "height", 0.0) or 0.0)
+    if not (W and D and H):   # tables / groups: fall back to the panel bounds
+        xs = [b for p in panels for b in p.bounds()[0]]
+        ys = [b for p in panels for b in p.bounds()[1]]
+        zs = [b for p in panels for b in p.bounds()[2]]
+        W = (max(xs) - min(xs)) if xs else 600.0
+        D = (max(ys) - min(ys)) if ys else 560.0
+        H = (max(zs) - min(zs)) if zs else 720.0
+    dims = (W, D, H)
+    out: list[PanelBox] = []
+    for p in panels:
+        ox, oy, oz = _explode_offset(p, dims, factor)
+        cx, cy, cz = p.center
+        out.append(PanelBox(p.label, p.size, (cx + ox, cy + oy, cz + oz),
+                            p.category, p.rot_z, p.oversized, p.subassembly))
+    return out
 
 
 def _door_panels(it: "FrontItem", spec: CabinetSpec) -> list[PanelBox]:
@@ -429,10 +546,11 @@ def _door_panels(it: "FrontItem", spec: CabinetSpec) -> list[PanelBox]:
     checks are unaffected.
     """
     label = "Door" if not it.hand else f"Door {it.hand}"
+    unit = label                         # the door leaf is its own sub-assembly
     style = str(getattr(spec, "door_style", "slab")).lower()
     if style == "slab":
         return [PanelBox(label, (it.width, it.thickness, it.height),
-                         (it.x, it.y, it.z), "front")]
+                         (it.x, it.y, it.z), "front", subassembly=unit)]
 
     w, h, t = it.width, it.height, it.thickness
     pt = getattr(spec.material, "door_panel", 6.0)
@@ -445,16 +563,52 @@ def _door_panels(it: "FrontItem", spec: CabinetSpec) -> list[PanelBox]:
     inner_h = max(h - 2 * rail, 10.0)
     # Centre panel recessed: thinner stock, set flush to the frame's back face.
     panel_y = it.y + t / 2 - pt / 2
+
+    def db(lbl, size, center):
+        return PanelBox(lbl, size, center, "front", subassembly=unit)
+
     return [
-        PanelBox(label, (stile, t, h), (it.x + sign * edge, it.y, it.z), "front"),
-        PanelBox(f"Stile{suf} latch", (stile, t, h),
-                 (it.x - sign * edge, it.y, it.z), "front"),
-        PanelBox(f"Rail{suf} top", (inner_w, t, rail),
-                 (it.x, it.y, it.z + h / 2 - rail / 2), "front"),
-        PanelBox(f"Rail{suf} bottom", (inner_w, t, rail),
-                 (it.x, it.y, it.z - h / 2 + rail / 2), "front"),
-        PanelBox(f"Panel{suf}", (inner_w, pt, inner_h),
-                 (it.x, panel_y, it.z), "front"),
+        db(label, (stile, t, h), (it.x + sign * edge, it.y, it.z)),
+        db(f"Stile{suf} latch", (stile, t, h), (it.x - sign * edge, it.y, it.z)),
+        db(f"Rail{suf} top", (inner_w, t, rail),
+           (it.x, it.y, it.z + h / 2 - rail / 2)),
+        db(f"Rail{suf} bottom", (inner_w, t, rail),
+           (it.x, it.y, it.z - h / 2 + rail / 2)),
+        db(f"Panel{suf}", (inner_w, pt, inner_h), (it.x, panel_y, it.z)),
+    ]
+
+
+def _drawer_box_panels(it: "FrontItem", spec: CabinetSpec, plan) -> list[PanelBox]:
+    """The four box walls + bottom of one drawer, placed behind its front.
+
+    Sized like the cut list (opening less slide clearance, dropped below the
+    front, set back from the interior), so the 3D model shows the real box that
+    rides on the slides. Tagged to the ``Drawer N`` sub-assembly.
+    """
+    m = spec.material
+    t = m.drawer_box
+    unit = f"Drawer {it.index}"
+    box_w = max(plan.opening_w - 2 * SLIDE_SIDE_CLEARANCE, 80.0)
+    box_h = max(it.height - DRAWER_BOX_HEIGHT_DROP, 60.0)
+    box_d = max(spec.interior_depth - DRAWER_BOX_DEPTH_GAP, 100.0)
+    cx = it.x
+    cy = box_d / 2 + 8.0          # just behind the drawer front
+    cz = it.z                     # aligned with the front's centre height
+
+    def db(lbl, size, center):
+        return PanelBox(lbl, size, center, "drawer_box", subassembly=unit)
+
+    return [
+        db(f"Drawer {it.index} box side L", (t, box_d, box_h),
+           (cx - box_w / 2 + t / 2, cy, cz)),
+        db(f"Drawer {it.index} box side R", (t, box_d, box_h),
+           (cx + box_w / 2 - t / 2, cy, cz)),
+        db(f"Drawer {it.index} box front", (box_w - 2 * t, t, box_h),
+           (cx, cy - box_d / 2 + t / 2, cz)),
+        db(f"Drawer {it.index} box back", (box_w - 2 * t, t, box_h),
+           (cx, cy + box_d / 2 - t / 2, cz)),
+        db(f"Drawer {it.index} box bottom", (box_w - 2 * t, box_d - 2 * t, m.back),
+           (cx, cy, cz - box_h / 2 + m.back / 2)),
     ]
 
 
@@ -477,7 +631,8 @@ def _accessory_panels(spec: CabinetSpec) -> list[PanelBox]:
             total_d = spec.depth + overhang
             out.append(PanelBox(
                 "Countertop", (spec.width + 2 * overhang, total_d, ct),
-                (0.0, spec.depth / 2 - overhang / 2, box_top + ct / 2), "counter"))
+                (0.0, spec.depth / 2 - overhang / 2, box_top + ct / 2), "counter",
+                subassembly="Countertop"))
         elif kind == "filler":
             fw = float(a.get("width", 75.0))
             right = str(a.get("side", "")).lower() == "right"
@@ -485,20 +640,23 @@ def _accessory_panels(spec: CabinetSpec) -> list[PanelBox]:
             out.append(PanelBox(
                 "Filler", (fw, spec.depth, spec.box_height),
                 (sign * (spec.width / 2 + fw / 2), spec.depth / 2,
-                 spec.toe_kick_height + spec.box_height / 2), "filler"))
+                 spec.toe_kick_height + spec.box_height / 2), "filler",
+                subassembly="Trim"))
         elif kind == "end_panel":
             right = str(a.get("side", "")).lower() == "right"
             sign = 1.0 if right else -1.0
             out.append(PanelBox(
                 "End panel", (m.door, spec.depth, spec.box_height),
                 (sign * (spec.width / 2 + m.door / 2), spec.depth / 2,
-                 spec.toe_kick_height + spec.box_height / 2), "endpanel"))
+                 spec.toe_kick_height + spec.box_height / 2), "endpanel",
+                subassembly="Trim"))
         elif kind == "molding":
             mtype = str(a.get("type", "crown"))
             mh = float(a.get("height", 90.0 if mtype == "crown" else 40.0))
             out.append(PanelBox(
                 f"{mtype.title()} molding", (spec.width, m.carcass, mh),
-                (0.0, m.carcass / 2, box_top + mh / 2), "molding"))
+                (0.0, m.carcass / 2, box_top + mh / 2), "molding",
+                subassembly="Trim"))
     return out
 
 

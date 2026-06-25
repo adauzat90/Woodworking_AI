@@ -153,6 +153,31 @@ def api_design(payload: dict[str, Any]) -> JSONResponse:
     return JSONResponse(bundle)
 
 
+@app.post("/api/model")
+def api_model(payload: dict[str, Any]) -> Response:
+    """A GLB of the model — assembled, exploded, or a progressive subset.
+
+    Body: ``{"spec": ..., "factor": 0..1, "include": ["Carcass", ...]}``.
+    ``factor`` > 0 explodes the sub-assemblies; ``include`` keeps only those
+    named sub-assemblies (for the build-view stepper). Needs build123d.
+    """
+    spec = _parse_spec(payload)
+    v = validate(spec)
+    if not v.ok:
+        raise HTTPException(status_code=422, detail=v.as_feedback())
+    from .service import model_glb_bytes
+    factor = float(payload.get("factor", 0.0) or 0.0)
+    inc = payload.get("include")
+    include = set(inc) if inc else None
+    try:
+        data = model_glb_bytes(spec, factor=factor, include=include)
+    except RuntimeError as exc:   # build123d missing
+        raise HTTPException(status_code=503, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"model build failed: {exc}")
+    return Response(content=data, media_type="model/gltf-binary")
+
+
 @app.post("/api/diff")
 def api_diff(payload: dict[str, Any]) -> dict[str, Any]:
     """Field-level diff between two specs (e.g. an earlier revision vs current).

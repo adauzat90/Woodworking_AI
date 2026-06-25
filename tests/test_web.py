@@ -295,3 +295,23 @@ def test_build_rejects_cyclic_subassembly():
            "components": [{"ref": "a"}]}
     r = client.post("/api/build", json={"spec": bad, "glb": False})
     assert r.status_code == 400          # bad spec, surfaced not 500'd
+
+
+def test_build_bundle_lists_model_sections():
+    d = client.post("/api/build", json={"spec": VALID_SPEC}).json()
+    assert "model_sections" in d
+    assert "Carcass" in d["model_sections"]
+
+
+def test_model_endpoint_degrades_without_build123d():
+    # Returns a GLB (200) when build123d is present, else a clean 503 — never 500.
+    r = client.post("/api/model", json={"spec": VALID_SPEC, "factor": 1.0})
+    assert r.status_code in (200, 503)
+    if r.status_code == 200:
+        assert r.headers["content-type"].startswith("model/gltf-binary")
+
+
+def test_model_endpoint_rejects_invalid_spec():
+    bad = dict(VALID_SPEC, width=-5)
+    r = client.post("/api/model", json={"spec": bad})
+    assert r.status_code == 422

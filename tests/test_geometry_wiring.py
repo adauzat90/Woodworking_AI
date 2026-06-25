@@ -77,3 +77,61 @@ def test_accessories_do_not_distort_the_carcass_envelope():
     # The measured carcass shell (width/height/depth) is unchanged by trim.
     for k in ("width", "height", "depth"):
         assert plain.report[k] == withacc.report[k]
+
+
+# --- 3D sub-assemblies, drawer boxes, exploded + progressive views --------
+
+from woodworking_ai.geometry import (  # noqa: E402
+    panels_by_subassembly, subassembly_order, explode_panels)
+
+
+def test_drawer_box_is_modelled_in_3d():
+    spec = _cab(doors=0, drawers=[__import__("woodworking_ai.dsl",
+                fromlist=["Drawer"]).Drawer(150)])
+    labels = _labels(spec)
+    assert any("box side" in l for l in labels)
+    assert any("box bottom" in l for l in labels)
+
+
+def test_sections_are_grouped_in_build_order():
+    from woodworking_ai.dsl import Drawer
+    spec = _cab(door_style="shaker", drawers=[Drawer(140)],
+                accessories=[{"kind": "countertop", "depth": 600}])
+    order = subassembly_order(panel_layout(spec))
+    assert order[0] == "Carcass"
+    assert "Drawer 1" in order and "Door L" in order and "Countertop" in order
+    # Carcass before drawers before doors before countertop.
+    assert order.index("Carcass") < order.index("Drawer 1") < order.index("Door L")
+    assert order.index("Door L") < order.index("Countertop")
+
+
+def test_each_panel_belongs_to_exactly_one_section():
+    spec = _cab(door_style="shaker")
+    groups = panels_by_subassembly(spec)
+    total = sum(len(v) for v in groups.values())
+    assert total == len(panel_layout(spec))
+
+
+def test_explode_moves_panels_but_keeps_count():
+    spec = _cab(door_style="shaker", accessories=[{"kind": "countertop"}])
+    base = panel_layout(spec)
+    ex = explode_panels(spec, 1.0)
+    assert len(ex) == len(base)
+    # At least the doors and countertop have moved from their assembled centre.
+    moved = sum(1 for a, b in zip(base, ex) if a.center != b.center)
+    assert moved > 0
+
+
+def test_explode_factor_zero_is_assembled():
+    spec = _cab()
+    base = panel_layout(spec)
+    ex = explode_panels(spec, 0.0)
+    for a, b in zip(base, ex):
+        assert a.center == b.center
+
+
+def test_include_filters_to_named_sections():
+    spec = _cab(doors=2, drawers=[__import__("woodworking_ai.dsl",
+                fromlist=["Drawer"]).Drawer(140)])
+    only = explode_panels(spec, 0.0, include={"Carcass"})
+    assert {p.unit for p in only} == {"Carcass"}
