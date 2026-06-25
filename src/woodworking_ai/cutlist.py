@@ -28,7 +28,7 @@ from .constants import (
 )
 from .hardware import (
     select_hinge, select_slide, select_pull, hinge_count,
-    CONFIRMAT, ASSEMBLY_SCREW,
+    longest_slide_for, CONFIRMAT, ASSEMBLY_SCREW,
 )
 
 # Materials cut from solid/dimensional lumber rather than sheet goods. A shop
@@ -337,16 +337,31 @@ def _expand_glue_ups(cl: "CutList", board_width: float = GLUE_UP_BOARD_WIDTH) ->
 
 def _add_drawer_box(cl: "CutList", spec: CabinetSpec, index: int,
                     opening_w: float, front_height: float,
-                    interior_depth: float) -> None:
-    """Append the four box panels + bottom for one drawer."""
+                    interior_depth: float, slide_length: float = 0.0) -> float:
+    """Append the four box panels + bottom for one drawer.
+
+    When *slide_length* is 0 the box depth is snapped to the longest standard
+    slide that fits the interior depth (less the box/slide clearance), because a
+    shop buys a real slide length — not an arbitrary one. Returns the chosen
+    slide length (mm), or 0.0 when no fitting decision was made (an explicit
+    slide_length, or nothing standard fits).
+    """
     m = spec.material
     t = m.drawer_box
     box_w = opening_w - 2 * SLIDE_SIDE_CLEARANCE          # outer box width
     box_h = max(front_height - DRAWER_BOX_HEIGHT_DROP, 60.0)
     box_d = max(interior_depth - DRAWER_BOX_DEPTH_GAP, 100.0)
+    side_note = "grooved for bottom"
+    chosen = 0.0
+    if slide_length <= 0:
+        # Snap to a real slide: the longest standard length that fits the space.
+        chosen = longest_slide_for(interior_depth - DRAWER_BOX_DEPTH_GAP)
+        if chosen > 0:
+            box_d = chosen
+            side_note = f"grooved for bottom; sized for {chosen:.0f}mm slide"
     cl.parts.append(Part(
         f"Drawer {index} box side", 2, length=box_d, width=box_h, thickness=t,
-        material="drawer box", grain="none", notes="grooved for bottom",
+        material="drawer box", grain="none", notes=side_note,
     ))
     cl.parts.append(Part(
         f"Drawer {index} box front/back", 2, length=box_w - 2 * t, width=box_h,
@@ -357,6 +372,7 @@ def _add_drawer_box(cl: "CutList", spec: CabinetSpec, index: int,
         thickness=m.back, material="back panel", grain="none",
         notes="captured in groove",
     ))
+    return chosen
 
 
 def _add_door_parts(cl: "CutList", spec: CabinetSpec, doors, front_note: str) -> None:
@@ -618,15 +634,20 @@ def generate_cutlist(spec) -> CutList:
         ))
         if dr.false_front:
             continue  # fixed panel: no box, no slides
-        # The drawer box itself, sized for slide and depth clearance.
-        _add_drawer_box(cl, spec, dr.index, plan.opening_w, dr.height,
-                        interior_depth)
         sdr = spec.drawers[dr.index - 1] if dr.index - 1 < len(spec.drawers) else None
+        spec_slide_len = float(getattr(sdr, "slide_length", 0.0) or 0.0)
+        # The drawer box itself, sized for slide and depth clearance. When no
+        # slide length is given, the box depth snaps to a real (orderable) slide.
+        chosen = _add_drawer_box(cl, spec, dr.index, plan.opening_w, dr.height,
+                                 interior_depth, spec_slide_len)
+        slide_len = spec_slide_len or chosen
         slide = select_slide(
-            brand, str(getattr(sdr, "slide_type", "side_mount")),
-            float(getattr(sdr, "slide_length", 0.0) or 0.0))
+            brand, str(getattr(sdr, "slide_type", "side_mount")), slide_len)
+        slide_note = (f"{slide.name} — {slide.length:.0f}mm"
+                      if slide.length else slide.name)
         cl.hardware.append(Hardware(
-            "Drawer slide (pair)", 1, slide.name, sku=slide.sku, brand=slide.brand))
+            "Drawer slide (pair)", 1, slide_note, sku=slide.sku,
+            brand=slide.brand))
         if slide.locking_holes:
             cl.hardware.append(Hardware(
                 "Drawer slide locking device (pair)", 1,

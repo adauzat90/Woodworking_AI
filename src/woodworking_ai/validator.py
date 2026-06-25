@@ -14,6 +14,7 @@ from dataclasses import dataclass
 
 from .dsl import TableSpec, ComponentGroup, CabinetType, Joinery
 from . import engineering, stock, proportion
+from .hardware import longest_slide_for
 from .geometry import front_plan, footprints_overlap, component_tag
 
 # ASTM F2057 scope: clothing storage units >= 27in (686mm) tall fall under the
@@ -24,6 +25,10 @@ KCMA_TOE_MIN_SETBACK = 50.0  # ~2 in deep
 
 SIDE_MOUNT_CLEARANCE = 12.7  # ½in nominal per-side gap for side-mount slides
 MIN_DRAWER_BOX_WIDTH = 150.0 # below this a box is barely usable
+DRAWER_BOX_DEPTH_GAP = 25.0  # box shallower than the interior (matches cutlist)
+# Depth left unused beyond the largest fitting standard slide before it's worth
+# flagging: a deeper cabinet could take the next 50mm slide size.
+SLIDE_DEPTH_WASTE_MM = 60.0
 
 # 35mm concealed (Euro) hinge cup geometry (matches drilling.py).
 HINGE_CUP_DIA = 35.0
@@ -417,6 +422,18 @@ def validate(spec) -> ValidationResult:
                 err("drawers",
                     f"drawer slide length {sl:.0f}mm exceeds the {interior_depth:.0f}mm "
                     "interior depth; it won't fit")
+
+        # HW-003: depth that wastes a slide size. When the box is auto-sized to
+        # the longest standard slide that fits, a deep cabinet may leave enough
+        # room for the next 50mm size up — flag it so the depth isn't wasted.
+        if any(d.slide_length <= 0 for d in boxed):
+            usable = interior_depth - DRAWER_BOX_DEPTH_GAP
+            fit = longest_slide_for(usable)
+            if fit > 0 and usable - fit > SLIDE_DEPTH_WASTE_MM:
+                warn("depth",
+                     f"interior depth allows only a {fit:.0f}mm slide but leaves "
+                     f"~{usable - fit:.0f}mm unused; a slightly deeper cabinet "
+                     "would take the next standard slide size and a deeper box")
 
     # --- concealed hinge bore vs. door (HW-005) --------------------------
     has_door = spec.doors > 0 or spec.cabinet_type == CabinetType.CORNER_DIAGONAL

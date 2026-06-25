@@ -63,3 +63,29 @@ def test_estimate_includes_drawer_box_material():
 def test_roundtrip_preserves_false_front():
     s = spec([Drawer(200, false_front=True)])
     assert CabinetSpec.from_json(s.to_json()).drawers[0].false_front is True
+
+
+# --- C1: snap box depth to a real, orderable slide length -------------------
+
+def test_box_depth_snaps_to_standard_slide():
+    # 560mm deep, 6mm back -> interior 554, usable 529 -> longest fitting = 500.
+    cl = generate_cutlist(spec([Drawer(140)], depth=560))
+    side = next(p for p in cl.parts if p.name == "Drawer 1 box side")
+    assert side.length == pytest.approx(500)
+    assert "500mm slide" in side.notes
+
+
+def test_chosen_slide_length_appears_in_hardware_bom():
+    cl = generate_cutlist(spec([Drawer(140)], depth=560))
+    slide = next(h for h in cl.hardware if h.name == "Drawer slide (pair)")
+    assert "500" in slide.notes
+
+
+def test_explicit_slide_length_is_respected():
+    # An explicit slide length is not overridden by the snap logic.
+    cl = generate_cutlist(spec([Drawer(140, slide_length=450)], depth=560))
+    side = next(p for p in cl.parts if p.name == "Drawer 1 box side")
+    # Box depth keeps the clearance-based size, not snapped to a standard slide.
+    assert "slide" not in side.notes
+    slide = next(h for h in cl.hardware if h.name == "Drawer slide (pair)")
+    assert "450" in slide.notes
