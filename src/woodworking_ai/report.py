@@ -218,12 +218,14 @@ def _nest_flowables(cl, avail_w, unit):
                 c.setFont("Helvetica-Bold", 6.5)
                 c.drawString(rx + 2, ry + wid * scale / 2 - 3, label)
 
+    from .stock import stock_label
     flows = []
     for (mat, thk), items in sorted(groups.items()):
         sheets, _oversize = pack(items, sheet)
         for si, placements in enumerate(sheets):
             flows.append(_SheetFlow(
-                f"{mat} {thk:.0f}mm — sheet {si + 1}/{len(sheets)}", placements))
+                f"{stock_label(mat)} {thk:.0f}mm — sheet {si + 1}/{len(sheets)}",
+                placements))
     return flows
 
 
@@ -394,9 +396,9 @@ def build_package_pdf(spec, units: str = "metric") -> bytes:
     story.append(Spacer(1, 6))
     story.append(Paragraph("Cut list", mini))
     story.append(tbl(
-        ["ID", "Part", "Qty", f"L ({unit[:3]})", "W", "Thk", "Material", "Grain"],
+        ["ID", "Part", "Qty", f"L ({unit[:3]})", "W", "Thk", "From stock", "Grain"],
         [[p.id, p.name, p.qty, fl(p.length), fl(p.width), fl(p.thickness),
-          p.material, p.grain] for p in cl.parts]))
+          stock_label(p.material), p.grain] for p in cl.parts]))
     story.append(PageBreak())
 
     # 3 · Process all parts ----------------------------------------------
