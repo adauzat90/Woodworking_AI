@@ -249,3 +249,74 @@ def drilling_schedule(spec) -> DrillingSchedule:
             sched.ops.append(pop)
 
     return sched
+
+
+# --- placing bores into a part's outline ------------------------------------
+# A hole is local to its panel face: ``v`` runs up the part's *length* (the
+# longer cut-list dimension), ``u`` across its *width* (see the module docstring
+# and ``Hole``). The nester may lay a part either way round on the sheet, so a
+# consumer drawing the bores must map (u, v) into the placed rectangle honouring
+# that rotation. These helpers do that once, so the nest DXF and the per-part
+# shop drawings project bores identically.
+
+def _placement_rotated(part_length: float, part_width: float,
+                       rect_l: float, rect_w: float) -> bool:
+    """True if the part was laid width-along-the-sheet (rotated) when nested.
+
+    Decided from the placed rectangle: ``rect_l`` (along the sheet length) maps
+    to whichever part dimension it matches more closely.
+    """
+    return abs(rect_l - part_length) > abs(rect_l - part_width)
+
+
+def place_holes(holes, part_length: float, part_width: float,
+                ox: float, oy: float, rect_l: float, rect_w: float
+                ) -> list[tuple[float, float, "Hole"]]:
+    """Map local ``(u, v)`` *holes* into a placed rectangle at origin (ox, oy).
+
+    The rectangle ``rect_l`` x ``rect_w`` is a nest placement (length along the
+    sheet x-axis). Returns ``(cx, cy, hole)`` absolute centres. When the part is
+    nested unrotated, ``v`` runs along the sheet x-axis and ``u`` along y; when
+    rotated the two swap — so a bore always lands inside its part outline.
+    """
+    rotated = _placement_rotated(part_length, part_width, rect_l, rect_w)
+    out: list[tuple[float, float, Hole]] = []
+    for h in holes:
+        if rotated:                       # part.width runs along the sheet x-axis
+            cx, cy = ox + h.u, oy + h.v
+        else:                             # part.length runs along the sheet x-axis
+            cx, cy = ox + h.v, oy + h.u
+        out.append((cx, cy, h))
+    return out
+
+
+def holes_by_part_id(sched: "DrillingSchedule") -> dict[str, list["DrillOp"]]:
+    """Group a schedule's ops by their shared cut-list ``part_id``."""
+    out: dict[str, list[DrillOp]] = {}
+    for op in sched.ops:
+        if op.part_id:
+            out.setdefault(op.part_id, []).append(op)
+    return out
+
+
+def ops_for_instance(ops: list["DrillOp"], instance: int, qty: int
+                     ) -> list["DrillOp"]:
+    """Pick the drilling ops belonging to one placed instance of a part.
+
+    A part with qty>1 (two sides, a pair of doors) is bored per hand: the
+    schedule carries one op-set per distinct ``op.part`` identity (e.g. "Side L"
+    / "Side R"). When the number of identities equals the part qty we pair the
+    1-based *instance* to the i-th identity; with a single identity every
+    instance shares it. Any other shape is genuinely ambiguous from the nest
+    label alone, so we skip it rather than risk boring the wrong hand.
+    """
+    identities: list[str] = []
+    for op in ops:
+        if op.part not in identities:
+            identities.append(op.part)
+    if len(identities) == 1:
+        return list(ops)
+    if len(identities) == qty and 1 <= instance <= qty:
+        want = identities[instance - 1]
+        return [op for op in ops if op.part == want]
+    return []                              # ambiguous instance->hand mapping

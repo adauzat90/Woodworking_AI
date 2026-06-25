@@ -18,6 +18,7 @@ from dataclasses import dataclass
 
 from .geometry import panel_layout
 from .cutlist import generate_cutlist
+from .drilling import drilling_schedule, place_holes
 from .units import format_length
 
 # Axis index per view: (horizontal_axis, vertical_axis) into (x, y, z).
@@ -33,7 +34,13 @@ def _esc(s: str) -> str:
 
 @dataclass
 class _Box:
-    """A projected panel rectangle in one view (mm), plus its label/category."""
+    """A projected panel rectangle in one view (mm), plus its label/category.
+
+    ``bores`` are the panel's drilled holes projected into this view as
+    ``(h, v, dia)`` mm centres — populated only where the projection is
+    unambiguous (door hinge cups on the front elevation), so a shop drawing
+    shows the holes a CNC will bore.
+    """
     h0: float
     v0: float
     h1: float
@@ -41,12 +48,33 @@ class _Box:
     label: str
     category: str
     part_id: str
+    bores: list[tuple[float, float, float]] = None  # (h, v, dia)
 
 
-def _project(panels, h_ax: int, v_ax: int, label_for) -> tuple[list[_Box], tuple]:
+def _door_bores_front(panel, h0: float, v0: float, holes_for
+                      ) -> list[tuple[float, float, float]]:
+    """Project a door's hinge-cup bores into the front elevation.
+
+    A door's bores are local to its face — ``u`` across the width, ``v`` up from
+    the bottom — which is exactly the front view's (h, v). We reuse the shared
+    :func:`place_holes` transform (width along the view's h-axis) so the math
+    matches the nest DXF. Only doors are handled; other parts' faces don't show
+    their bores in these three orthographic views, so they are left empty.
+    """
+    holes, plen, pwid = holes_for(panel.label)
+    if not holes:
+        return []
+    placed = place_holes(holes, plen, pwid, h0, v0,
+                         rect_l=pwid, rect_w=plen)   # width -> h, length -> v
+    return [(cx, cy, h.dia) for (cx, cy, h) in placed]
+
+
+def _project(panels, h_ax: int, v_ax: int, label_for,
+             bores_for=None) -> tuple[list[_Box], tuple]:
     boxes: list[_Box] = []
     hs: list[float] = []
     vs: list[float] = []
+    front_view = (h_ax, v_ax) == (0, 2)
     for p in panels:
         (xb, yb, zb) = p.bounds()
         axes = (xb, yb, zb)
@@ -54,10 +82,34 @@ def _project(panels, h_ax: int, v_ax: int, label_for) -> tuple[list[_Box], tuple
         v0, v1 = axes[v_ax]
         hs += [h0, h1]
         vs += [v0, v1]
+        bores: list[tuple[float, float, float]] = []
+        if (front_view and bores_for is not None
+                and p.category == "front" and p.label.startswith("Door")):
+            bores = _door_bores_front(p, h0, v0, bores_for)
         boxes.append(_Box(h0, v0, h1, v1, p.label, p.category,
-                          label_for(p.label)))
+                          label_for(p.label), bores))
     bounds = (min(hs), max(hs), min(vs), max(vs)) if hs else (0, 0, 0, 0)
     return boxes, bounds
+
+
+def _bores_lookup(spec, cl):
+    """Return ``holes_for(label) -> (holes, part_length, part_width)``.
+
+    Resolves a panel label to its drilling ops (matched by ``op.part``) and the
+    door part's flat dimensions, so the projection knows the part's outline.
+    """
+    sched = drilling_schedule(spec)
+    by_part: dict[str, list] = {}
+    for op in sched.ops:
+        by_part.setdefault(op.part, []).extend(op.holes)
+    door = next((p for p in cl.parts if p.name == "Door"), None)
+
+    def holes_for(label: str):
+        if door is None or not label.startswith("Door"):
+            return [], 0.0, 0.0
+        return by_part.get(label, []), door.length, door.width
+
+    return holes_for
 
 
 def _svg_view(title: str, boxes: list[_Box], bounds: tuple, scale: float,
@@ -95,6 +147,9 @@ def _svg_view(title: str, boxes: list[_Box], bounds: tuple, scale: float,
             tag = b.part_id or ""
             out.append(f'<text x="{x + bw / 2:.1f}" y="{y + bh / 2 + 3:.1f}" '
                        f'class="lbl">{_esc(tag)}</text>')
+        for (bh_, bv_, dia) in (b.bores or ()):
+            out.append(f'<circle cx="{sx(bh_):.1f}" cy="{sy(bv_):.1f}" '
+                       f'r="{dia / 2 * scale:.1f}" class="bore"/>')
 
     # Overall dimensions: width along the bottom, height up the left side.
     by = oy + _MARGIN + h_px + 16
@@ -129,6 +184,7 @@ _STYLE = """
 .lbl{font:600 10px system-ui,sans-serif;fill:#5a4632;text-anchor:middle}
 .dim{stroke:#6b8aa5;stroke-width:0.7}
 .dimtext{font:10px system-ui,sans-serif;fill:#3f5468;text-anchor:middle}
+.bore{fill:none;stroke:#9c6b43;stroke-width:0.7}
 """
 
 
@@ -137,8 +193,9 @@ def render_svg(spec, unit: str = "metric") -> str:
     panels = panel_layout(spec)
     cl = generate_cutlist(spec)
     label_for = cl.part_id_for_label
+    bores_for = _bores_lookup(spec, cl)
 
-    projected = [(_project(panels, h, v, label_for), name, h, v)
+    projected = [(_project(panels, h, v, label_for, bores_for), name, h, v)
                  for (name, h, v) in _VIEWS]
     # One shared scale so the three views read at the same size.
     extent = 1.0
@@ -196,6 +253,7 @@ def projected_views(spec):
     panels = panel_layout(spec)
     cl = generate_cutlist(spec)
     label_for = cl.part_id_for_label
+    bores_for = _bores_lookup(spec, cl)
 
     def nominal(axis: int, lo: float, hi: float) -> float:
         attr = ("width", "depth", "height")[axis]
@@ -204,7 +262,7 @@ def projected_views(spec):
 
     out = []
     for (name, h, v) in _VIEWS:
-        boxes, bounds = _project(panels, h, v, label_for)
+        boxes, bounds = _project(panels, h, v, label_for, bores_for)
         label_dims = (nominal(h, bounds[0], bounds[1]),
                       nominal(v, bounds[2], bounds[3]))
         out.append((name, h, v, boxes, bounds, label_dims))
