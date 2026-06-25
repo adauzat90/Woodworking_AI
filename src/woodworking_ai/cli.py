@@ -126,6 +126,11 @@ def _emit(spec, args, tooling=None) -> int:
     if not is_group and args.assembly:
         print("\n" + asm.assembly.report_text())
 
+    # Build plan: skill rating + method-aware phase time breakdown. The time
+    # model reflects the supplied tooling (hand vs. jig vs. machine); with no
+    # --shop/--tools it uses a stable well-equipped default.
+    _print_plan(asm.plan)
+
     if tooling is not None or getattr(args, "tools_list", False):
         from .tooling import tools_needed
         print("\nTools needed:")
@@ -137,6 +142,24 @@ def _emit(spec, args, tooling=None) -> int:
     if args.out:
         _write_outputs(spec, asm, args, unit, is_group=is_group)
     return 0
+
+
+def _print_plan(plan: dict) -> None:
+    """Print the skill rating and the method-aware phase time breakdown."""
+    skill = plan.get("skill", {})
+    time = plan.get("time", {})
+    print("\nBuild plan:")
+    print(f"  skill level: {skill.get('level', '?')}")
+    for d in skill.get("drivers", []):
+        print(f"    - {d}")
+    phases = time.get("hours_by_phase", {})
+    print(f"  estimated time: {time.get('total', 0):.1f} h")
+    for phase in ("mill", "joinery", "assembly", "finish", "hardware"):
+        hrs = phases.get(phase, 0.0)
+        if hrs:
+            print(f"    {phase:<10} {hrs:5.2f} h")
+    for d in time.get("drivers", []):
+        print(f"    · {d}")
 
 
 def _write_outputs(spec, asm, args, unit: str, *, is_group: bool) -> None:
