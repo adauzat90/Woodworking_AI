@@ -5,6 +5,7 @@ parametric design language and compile it to machinable geometry + cut lists.
 from .dsl import (
     CabinetSpec, CabinetType, TableSpec, WallShelfSpec, BoxSpec, BenchSpec,
     FrameSpec, FrameJoint, FrameHanger, FrameContents,
+    BedSpec, BedSize, BedConnector,
     ShelfFixing, spec_from_dict, Material, ToeKick,
     Drawer, Construction, BackStyle, Joinery,
     CornerJoint, DovetailTails, SlideType, Grain, TopFixing,
@@ -37,6 +38,9 @@ __all__ = [
     "FrameJoint",
     "FrameHanger",
     "FrameContents",
+    "BedSpec",
+    "BedSize",
+    "BedConnector",
     "ShelfFixing",
     "furniture",
     "spec_from_dict",

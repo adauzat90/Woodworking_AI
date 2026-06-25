@@ -183,6 +183,14 @@ FRAME_GLAZING = Fastener("Frame glazing (glass/acrylic)", "FRAME-GLAZING",
 FRAME_BACKER = Fastener("Frame backer board", "FRAME-BACKER",
                         "foam-core / hardboard behind the art")
 
+# Knock-down bed hardware.
+BED_BOLT = Fastener("Bed bolt + cross-dowel nut", "BED-BOLT",
+                    "through the post into a cross-dowel in the rail; comes apart")
+BED_HOOK_PLATE = Fastener("Bed-rail hook plate (pair)", "BED-HOOK",
+                          "interlocking knock-down rail bracket, no tools")
+BED_BOLT_COVER = Fastener("Bed-bolt cover cap", "BED-BOLT-CAP",
+                          "hides the bolt counterbore on the post face")
+
 
 def select_hinge(brand: str, overlay: str = "overlay") -> HingeSpec:
     h = _HINGES[normalize_brand(brand)]

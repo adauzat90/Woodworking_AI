@@ -20,7 +20,7 @@ from __future__ import annotations
 
 from .dsl import (
     ApplianceVoid, ComponentGroup, TableSpec, WallShelfSpec, BoxSpec, BenchSpec,
-    FrameSpec,
+    FrameSpec, BedSpec,
 )
 
 # Canonical pipeline kinds. ``GROUP`` covers Project and Assembly (and any
@@ -33,6 +33,7 @@ WALL_SHELF = "wall_shelf"
 BOX = "box"
 BENCH = "bench"
 FRAME = "frame"
+BED = "bed"
 CABINET = "cabinet"
 
 
@@ -57,6 +58,8 @@ def spec_kind(spec) -> str:
         return BENCH
     if isinstance(spec, FrameSpec):
         return FRAME
+    if isinstance(spec, BedSpec):
+        return BED
     return CABINET
 
 

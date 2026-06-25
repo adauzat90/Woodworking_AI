@@ -120,6 +120,35 @@ class FrameContents(StrEnum):
     NONE = "none"                   # an empty / open frame
 
 
+class BedSize(StrEnum):
+    """Standard mattress sizes; map to a mattress W×L in :data:`MATTRESS_SIZES`."""
+    TWIN = "twin"
+    TWIN_XL = "twin_xl"
+    FULL = "full"
+    QUEEN = "queen"
+    KING = "king"
+    CAL_KING = "cal_king"
+    CUSTOM = "custom"               # use explicit mattress_w / mattress_l
+
+
+# Nominal mattress sizes (mm), converted from the US inch standards. A real
+# mattress runs a little under these, so the rails add a clearance gap.
+MATTRESS_SIZES = {
+    BedSize.TWIN:    (38 * MM_PER_IN, 75 * MM_PER_IN),
+    BedSize.TWIN_XL: (38 * MM_PER_IN, 80 * MM_PER_IN),
+    BedSize.FULL:    (54 * MM_PER_IN, 75 * MM_PER_IN),
+    BedSize.QUEEN:   (60 * MM_PER_IN, 80 * MM_PER_IN),
+    BedSize.KING:    (76 * MM_PER_IN, 80 * MM_PER_IN),
+    BedSize.CAL_KING: (72 * MM_PER_IN, 84 * MM_PER_IN),
+}
+
+
+class BedConnector(StrEnum):
+    """Knock-down hardware joining the side rails to the head/foot posts."""
+    BED_BOLT = "bed_bolt"           # a through-bolt into a cross-dowel nut
+    HOOK_PLATE = "hook_plate"       # interlocking bed-rail hook brackets
+
+
 class ApplianceType(StrEnum):
     SINK = "sink"             # drop-in/undermount, hosted by a countertop cutout
     COOKTOP = "cooktop"       # surface unit, also a countertop cutout
@@ -1032,6 +1061,116 @@ class FrameSpec:
         return cls.from_dict(json.loads(text))
 
 
+@dataclass
+class BedSpec:
+    """A knock-down bed: a headboard and footboard joined by two side rails.
+
+    The headboard and footboard are post-and-panel frames (a frame-and-panel
+    infill, reusing the door engine's vocabulary, or a slab/open panel); two
+    side rails connect them with knock-down hardware (bed bolts or hook plates)
+    and carry a ledger that supports a deck of cross slats. Coordinates match the
+    shared frame: X = width (across the bed, centred), Y = length (head at 0,
+    foot at +Y), Z = height (floor at 0).
+    """
+
+    kind: str = "bed"
+    units: str = "mm"
+    name: str = "Bed"
+    size: BedSize = BedSize.QUEEN
+    mattress_w: float = 0.0        # explicit mattress width (size="custom" or override)
+    mattress_l: float = 0.0        # explicit mattress length
+    clearance: float = 6.0         # gap each side between mattress and rail
+
+    post: float = 75.0             # square post cross-section
+    head_height: float = 1100.0    # head post height off the floor (Z)
+    foot_height: float = 500.0     # foot post height off the floor (Z)
+    deck_height: float = 250.0     # top of the side rail / slat deck off the floor
+
+    rail_height: float = 150.0     # side-rail face height (Z)
+    rail_thickness: float = 30.0   # side-rail thickness (X)
+    panel: bool = True             # frame-and-panel head/foot infill (else open)
+    slats: int = 0                 # cross-slat count (0 = auto from the length)
+
+    connector: BedConnector = BedConnector.BED_BOLT
+
+    # --- finishing / material (optional) --------------------------------------
+    finish: str = "none"
+    finish_sheen: str = "satin"
+    material_form: str = "solid"
+    species: str = ""              # wood species, e.g. oak | walnut | maple
+
+    def __post_init__(self) -> None:
+        self.size = _coerce_enum(BedSize, self.size)
+        self.connector = _coerce_enum(BedConnector, self.connector)
+
+    def _mattress(self) -> tuple[float, float]:
+        if self.size in MATTRESS_SIZES:
+            return MATTRESS_SIZES[self.size]
+        return (self.mattress_w, self.mattress_l)
+
+    @property
+    def mattress_width(self) -> float:
+        return self._mattress()[0]
+
+    @property
+    def mattress_length(self) -> float:
+        return self._mattress()[1]
+
+    @property
+    def inner_width(self) -> float:
+        """Clear width between the side rails (mattress + clearance each side)."""
+        return self.mattress_width + 2 * self.clearance
+
+    @property
+    def width(self) -> float:
+        """Overall outside width (X): inner clear + a rail and post each side."""
+        return self.inner_width + 2 * self.rail_thickness
+
+    @property
+    def depth(self) -> float:
+        """Overall length head-to-foot (Y): mattress length + post depths."""
+        return self.mattress_length + 2 * self.post
+
+    @property
+    def height(self) -> float:
+        """Overall height (Z) — the head post is the tallest part."""
+        return self.head_height
+
+    @property
+    def slat_count(self) -> int:
+        if self.slats > 0:
+            return self.slats
+        # ~ one slat every 100mm of mattress length keeps a foam/spring mattress
+        # supported; round to a sensible minimum.
+        return max(int(self.mattress_length // 100), 3)
+
+    def to_dict(self) -> dict[str, Any]:
+        d = asdict(self)
+        for k in ("size", "connector"):
+            if isinstance(getattr(self, k), Enum):
+                d[k] = getattr(self, k).value
+        d["schema_version"] = SCHEMA_VERSION
+        return d
+
+    def to_json(self, indent: int = 2) -> str:
+        return json.dumps(self.to_dict(), indent=indent)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "BedSpec":
+        data = dict(data)
+        if normalize_unit(data.get("units")) == IMPERIAL:
+            _to_mm(data, ("mattress_w", "mattress_l", "clearance", "post",
+                          "head_height", "foot_height", "deck_height",
+                          "rail_height", "rail_thickness"))
+            data["units"] = "mm"
+        known = {f for f in cls.__dataclass_fields__}
+        return cls(**{k: v for k, v in data.items() if k in known})
+
+    @classmethod
+    def from_json(cls, text: str) -> "BedSpec":
+        return cls.from_dict(json.loads(text))
+
+
 # ---------------------------------------------------------------------------
 # Assemblies. A component group places child specs in one frame:
 #   * Project  — the top-level run / built-in (e.g. a whole kitchen).
@@ -1261,7 +1400,7 @@ def place_run(specs, *, start: tuple[float, float] = (0.0, 0.0),
 # surfaces as a repairable error in the designer loop.
 KNOWN_KINDS = frozenset({
     "cabinet", "table", "wall_shelf", "box", "chest", "bench", "stool",
-    "frame", "project", "assembly", "appliance_void",
+    "frame", "bed", "project", "assembly", "appliance_void",
 })
 
 # Stamped onto every serialized spec (see ``to_dict``) so a future breaking
@@ -1327,6 +1466,8 @@ def _spec_from_dict(data: dict[str, Any], defs: "_Defs | None", stack: frozenset
         return BenchSpec.from_dict(data)
     if kind == "frame":
         return FrameSpec.from_dict(data)
+    if kind == "bed":
+        return BedSpec.from_dict(data)
     if kind == "table":
         return TableSpec.from_dict(data)
     if kind == "cabinet":
@@ -1370,6 +1511,7 @@ STEP 1 — choose the "kind" first, then fill in that type's fields below:
   "box"         a six-board box / chest
   "bench"       a seat on legs (a low table; "stool" too)
   "frame"       a picture / mirror frame (four mitered rails + a rabbet)
+  "bed"         a knock-down bed (headboard + footboard + rails + slats)
   "project"     more than one piece — a run / built-in (place components)
 
 STEP 2 — copy the matching MINIMAL example, then adjust. Every field not shown
@@ -1392,6 +1534,8 @@ to override a default.
 -- minimal frame ---------------------------------------------------------------
 {{"kind": "frame", "name": "Frame", "opening_w": 400, "opening_h": 500,
  "molding_width": 40, "corner_joint": "splined_miter"}}
+-- minimal bed -----------------------------------------------------------------
+{{"kind": "bed", "name": "Bed", "size": "queen", "connector": "bed_bolt"}}
 -- minimal project (a row of two cabinets via a declarative run) ----------------
 {{"kind": "project", "name": "Run", "runs": [
   {{"start": [0, 0], "angle": 0, "gap": 0, "items": [
@@ -1567,6 +1711,33 @@ The outer size is the opening plus a rail face all around
 prefer "splined_miter" or "half_lap", especially on larger frames; the rabbet
 must be shallower than the molding is thick. A mirror is heavy: hang it with
 D-rings + wire or a cleat into a stud, not a single sawtooth.
+
+== BED ==
+A knock-down bed: a headboard and footboard (post-and-panel) joined by two side
+rails with bed bolts or hook plates, carrying a deck of cross slats.
+{{
+  "kind": "bed",
+  "name": "Walnut Platform Bed",
+  "units": "mm",
+  "size": {_opts(BedSize)},   // "custom" => give mattress_w + mattress_l
+  "mattress_w": <custom mattress width>,   "mattress_l": <custom mattress length>,
+  "clearance": <gap each side, mattress to rail, e.g. 6>,
+  "post": <square post cross-section, e.g. 75>,
+  "head_height": <head post height off the floor, e.g. 1100>,
+  "foot_height": <foot post height off the floor, e.g. 500>,
+  "deck_height": <slat-deck height off the floor, e.g. 250>,
+  "rail_height": 150, "rail_thickness": 30,
+  "panel": true | false,             // frame-and-panel head/foot infill
+  "slats": <cross-slat count, 0 = auto (~every 100mm)>,
+  "connector": {_opts(BedConnector)},  // knock-down rail joinery
+  "material_form": "solid",
+  "species": "walnut" | "oak" | "maple" | ...,
+  "finish": "none" | "oil" | "clear" | "paint" | "stain_clear"
+}}
+Beds must come apart to move, so the rails join the posts with knock-down
+hardware (bed bolts / hook plates), never glue. Size from a standard mattress or
+set "custom" with explicit mattress dimensions; the deck takes enough slats to
+support the mattress.
 
 == PROJECT / ASSEMBLY (multi-part) ==
 For anything with more than one piece — a kitchen run, a built-in, a wall of

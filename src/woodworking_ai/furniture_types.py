@@ -15,6 +15,8 @@ Types:
   (a low table superset; the shared LeggedSpec base is a follow-up).
 * **frame** — a picture / mirror frame: four mitered rails with a rabbet for the
   glazing, art/mirror, and backer.
+* **bed** — a knock-down bed: a headboard and footboard joined by two side rails
+  with bed-bolt / hook-plate hardware, carrying a deck of cross slats.
 
 No CAD dependency.
 """
@@ -24,14 +26,14 @@ from __future__ import annotations
 import math
 
 from . import furniture
-from .dispatch import WALL_SHELF, BOX, BENCH, FRAME
+from .dispatch import WALL_SHELF, BOX, BENCH, FRAME, BED
 from .dsl import (
-    WallShelfSpec, BoxSpec, BenchSpec, FrameSpec, ShelfFixing,
-    FrameJoint, FrameHanger, FrameContents,
+    WallShelfSpec, BoxSpec, BenchSpec, FrameSpec, BedSpec, ShelfFixing,
+    FrameJoint, FrameHanger, FrameContents, BedConnector,
 )
 from .geometry import PanelBox
 from .cutlist import CutList, Part, Hardware, assign_ids, resolve_part_stock
-from .materials import MAT_TOP, MAT_LEG, MAT_APRON, MAT_SOLID
+from .materials import MAT_TOP, MAT_LEG, MAT_APRON, MAT_SOLID, MAT_SOLID_PANEL
 from .validator import Issue
 from .joinery import JoineryOp
 from .assembly_steps import SubAssembly, step
@@ -895,4 +897,301 @@ furniture.register(
     validate=_frame_validate,
     joinery_ops=_frame_joinery,
     assembly=_frame_assembly,
+)
+
+
+# ===========================================================================
+# Bed (knock-down: headboard + footboard + side rails + slat deck)
+# ===========================================================================
+
+def _bed_dims(spec: BedSpec) -> dict:
+    """Shared bed geometry so panels and the cut list never disagree.
+
+    X = width (centred), Y = length (head at 0, foot at +depth), Z = height.
+    The posts and rails share an outer face at ``outer_x``; the head/foot infill
+    spans between the posts' inner faces.
+    """
+    iw = spec.inner_width
+    rt = spec.rail_thickness
+    p = spec.post
+    outer_x = iw / 2 + rt
+    depth = spec.depth
+    post_cx = outer_x - p / 2          # post outer face flush with the rail
+    rail_cx = outer_x - rt / 2
+    inner_post_span = max(2 * (outer_x - p), 0.0)
+    head_cap = min(80.0, spec.head_height * 0.2)
+    foot_cap = min(80.0, spec.foot_height * 0.2)
+    return {
+        "iw": iw, "rt": rt, "p": p, "outer_x": outer_x, "depth": depth,
+        "post_cx": post_cx, "rail_cx": rail_cx, "inner_post_span": inner_post_span,
+        "rail_len_y": depth - 2 * p, "head_cap": head_cap, "foot_cap": foot_cap,
+        "slat_w": 65.0, "slat_t": 18.0, "ledger": 25.0, "panel_t": 18.0,
+    }
+
+
+def _bed_panels(spec: BedSpec) -> list[PanelBox]:
+    g = _bed_dims(spec)
+    p, depth = g["p"], g["depth"]
+    dh, rh = spec.deck_height, spec.rail_height
+    panels: list[PanelBox] = []
+
+    def add(label, size, center, category, unit):
+        panels.append(PanelBox(label, size, center, category, subassembly=unit))
+
+    # Four posts (head pair tall, foot pair short).
+    for sx in (-1, 1):
+        add("Post head", (p, p, spec.head_height),
+            (sx * g["post_cx"], p / 2, spec.head_height / 2), "leg", "Headboard")
+        add("Post foot", (p, p, spec.foot_height),
+            (sx * g["post_cx"], depth - p / 2, spec.foot_height / 2),
+            "leg", "Footboard")
+
+    # Head / foot top rails between the posts.
+    add("Rail head", (g["inner_post_span"], p, g["head_cap"]),
+        (0.0, p / 2, spec.head_height - g["head_cap"] / 2), "apron", "Headboard")
+    add("Rail foot", (g["inner_post_span"], p, g["foot_cap"]),
+        (0.0, depth - p / 2, spec.foot_height - g["foot_cap"] / 2),
+        "apron", "Footboard")
+
+    # Head / foot infill panels (frame-and-panel modelled as a recessed slab).
+    if spec.panel:
+        ph_head = spec.head_height - g["head_cap"] - dh
+        if ph_head > 0:
+            add("Headboard panel", (g["inner_post_span"], g["panel_t"], ph_head),
+                (0.0, p / 2, dh + ph_head / 2), "carcass", "Headboard")
+        ph_foot = spec.foot_height - g["foot_cap"] - dh
+        if ph_foot > 0:
+            add("Footboard panel", (g["inner_post_span"], g["panel_t"], ph_foot),
+                (0.0, depth - p / 2, dh + ph_foot / 2), "carcass", "Footboard")
+
+    # Two side rails between the posts, tops at the deck height.
+    for sx in (-1, 1):
+        add("Side rail", (g["rt"], g["rail_len_y"], rh),
+            (sx * g["rail_cx"], depth / 2, dh - rh / 2), "apron", "Rails")
+
+    # Slat deck spanning between the rail inner faces, distributed along Y.
+    n = spec.slat_count
+    sw, st = g["slat_w"], g["slat_t"]
+    y0, y1 = p, depth - p
+    if n > 1:
+        for i in range(n):
+            frac = i / (n - 1)
+            y = y0 + sw / 2 + frac * (y1 - y0 - sw)
+            add(f"Slat {i + 1}", (g["iw"], sw, st), (0.0, y, dh - st / 2),
+                "shelf", "Slats")
+    return panels
+
+
+def _bed_cutlist(spec: BedSpec) -> CutList:
+    cl = CutList(spec_name=spec.name)
+    g = _bed_dims(spec)
+    p = g["p"]
+
+    cl.parts.append(Part(
+        "Post (head)", 2, length=spec.head_height, width=p, thickness=p,
+        material=MAT_LEG, notes="square head post, mortised for rail + panel"))
+    cl.parts.append(Part(
+        "Post (foot)", 2, length=spec.foot_height, width=p, thickness=p,
+        material=MAT_LEG, notes="square foot post"))
+    cl.parts.append(Part(
+        "Side rail", 2, length=g["rail_len_y"], width=spec.rail_height,
+        thickness=spec.rail_thickness, material=MAT_APRON, grain="length",
+        notes="knock-down to the posts; carries the slat ledger"))
+    cl.parts.append(Part(
+        "Rail (head)", 1, length=g["inner_post_span"], width=g["head_cap"],
+        thickness=p, material=MAT_APRON, grain="length", notes="headboard top rail"))
+    cl.parts.append(Part(
+        "Rail (foot)", 1, length=g["inner_post_span"], width=g["foot_cap"],
+        thickness=p, material=MAT_APRON, grain="length", notes="footboard top rail"))
+    if spec.panel:
+        ph_head = spec.head_height - g["head_cap"] - spec.deck_height
+        if ph_head > 0:
+            cl.parts.append(Part(
+                "Headboard panel", 1, length=g["inner_post_span"], width=ph_head,
+                thickness=g["panel_t"], material=MAT_SOLID_PANEL, grain="width",
+                notes="floating panel in the post/rail grooves (or frame-and-panel)"))
+        ph_foot = spec.foot_height - g["foot_cap"] - spec.deck_height
+        if ph_foot > 0:
+            cl.parts.append(Part(
+                "Footboard panel", 1, length=g["inner_post_span"], width=ph_foot,
+                thickness=g["panel_t"], material=MAT_SOLID_PANEL, grain="width",
+                notes="floating panel"))
+    cl.parts.append(Part(
+        "Slat", spec.slat_count, length=g["iw"], width=g["slat_w"],
+        thickness=g["slat_t"], material=MAT_SOLID, grain="length",
+        notes="cross slat resting on the rail ledgers"))
+    cl.parts.append(Part(
+        "Slat ledger", 2, length=g["rail_len_y"], width=g["ledger"],
+        thickness=g["ledger"], material=MAT_SOLID, grain="length",
+        notes="screwed inside each side rail to carry the slats"))
+
+    # Knock-down rail connectors (one corner = one joint, four joints).
+    if spec.connector == BedConnector.BED_BOLT:
+        cl.hardware.append(Hardware(
+            hw.BED_BOLT.name, 4, hw.BED_BOLT.note, sku=hw.BED_BOLT.sku,
+            category="connector"))
+        cl.hardware.append(Hardware(
+            hw.BED_BOLT_COVER.name, 4, hw.BED_BOLT_COVER.note,
+            sku=hw.BED_BOLT_COVER.sku, category="hardware"))
+    else:  # hook plates
+        cl.hardware.append(Hardware(
+            hw.BED_HOOK_PLATE.name, 4, hw.BED_HOOK_PLATE.note,
+            sku=hw.BED_HOOK_PLATE.sku, category="connector"))
+    cl.hardware.append(Hardware(
+        hw.ASSEMBLY_SCREW.name, spec.slat_count + 8, hw.ASSEMBLY_SCREW.note,
+        sku=hw.ASSEMBLY_SCREW.sku, category="fastener"))
+
+    resolve_part_stock(cl.parts, spec)
+    assign_ids(cl.parts)
+    return cl
+
+
+def _bed_validate(spec: BedSpec) -> list[Issue]:
+    issues: list[Issue] = []
+
+    def err(f, m):
+        issues.append(Issue("error", f, m))
+
+    def warn(f, m):
+        issues.append(Issue("warning", f, m))
+
+    for name in ("post", "head_height", "foot_height", "deck_height",
+                 "rail_height", "rail_thickness"):
+        if not _finite_positive(getattr(spec, name)):
+            err(name, f"must be a positive, finite number, got {getattr(spec, name)!r}")
+    if str(spec.size) == "custom" and not (
+            _finite_positive(spec.mattress_w) and _finite_positive(spec.mattress_l)):
+        err("size", "a custom bed needs positive mattress_w and mattress_l")
+    if any(i.severity == "error" for i in issues):
+        return issues
+
+    if spec.deck_height + spec.rail_height > spec.foot_height:
+        warn("foot_height",
+             "the foot posts are shorter than the rail/deck — the rail will stand "
+             "proud of the footboard; raise foot_height or lower deck_height")
+    if spec.head_height <= spec.deck_height:
+        err("head_height", "head posts are shorter than the slat deck height")
+    if spec.foot_height > spec.head_height:
+        warn("foot_height", "the footboard is taller than the headboard (unusual)")
+    if spec.deck_height < 120 or spec.deck_height > 600:
+        warn("deck_height",
+             "unusual deck height (platform decks ~200-300mm; with box-spring "
+             "~150mm)")
+
+    # Slat-deck deflection: a slat is a beam spanning the clear inner width under
+    # a share of the sleeping load. Reuse the same shelf engineering check.
+    g = _bed_dims(spec)
+    load_per_slat_kg = 180.0 / max(spec.slat_count, 1)        # ~2 sleepers + mattress
+    load_kg_per_m = load_per_slat_kg / max(g["iw"] / 1000.0, 0.1)
+    res = engineering.evaluate_shelf(
+        span=g["iw"], depth=g["slat_w"], thickness=g["slat_t"],
+        load_kg_per_m=load_kg_per_m, species=(spec.species or "pine"))
+    if res.status == "fail" or spec.inner_width > 1500:
+        warn("slats",
+             "a wide deck sags under load — add a centre support rail on a foot "
+             "(or thicker/closer slats) for a queen/king")
+    return issues
+
+
+def _bed_joinery(spec: BedSpec, cl) -> list[JoineryOp]:
+    pid = cl.part_id_for_label
+    ops: list[JoineryOp] = []
+    # Head/foot rails tenon into the posts (this part IS glued up).
+    ops.append(JoineryOp(
+        part="Rail / post", operation="mortise & tenon",
+        tool="mortiser / saw", width=round(spec.post / 3, 1),
+        depth=round(spec.post * 0.6, 1), reference="head & foot rails into posts",
+        part_id=pid("Post (head)"), note="glued headboard/footboard frame"))
+    if spec.panel:
+        ops.append(JoineryOp(
+            part="Posts / rails", operation="groove for panel",
+            tool="router / dado", width=round(_bed_dims(spec)["panel_t"], 1),
+            depth=12.0, reference="inner edges of the head/foot frame",
+            part_id=pid("Rail (head)"), note="floating panel, ~2mm expansion gap"))
+    # Side rail to post: the knock-down connector (NOT glued).
+    if spec.connector == BedConnector.BED_BOLT:
+        ops.append(JoineryOp(
+            part="Side rail / post", operation="bed-bolt bore + cross-dowel",
+            tool="drill (bolt + dowel dia.)", width=0.0,
+            depth=round(spec.post + 40, 1), reference="through the post into the rail end",
+            part_id=pid("Side rail"),
+            note="counterbore the post face; cross-dowel nut in the rail — knock-down"))
+    else:
+        ops.append(JoineryOp(
+            part="Side rail / post", operation="hook-plate mortise",
+            tool="router / chisel", width=round(spec.rail_thickness, 1),
+            depth=6.0, reference="rail end & post face",
+            part_id=pid("Side rail"), note="recess the interlocking bed-rail brackets"))
+    # Ledger that carries the slats.
+    ops.append(JoineryOp(
+        part="Side rail / ledger", operation="screw the slat ledger",
+        tool="drill / driver", width=0.0, depth=round(spec.rail_thickness / 2, 1),
+        reference="along the inside of each side rail", part_id=pid("Slat ledger"),
+        note="glue + screw; sets the deck height"))
+    return ops
+
+
+def _bed_assembly(spec: BedSpec, cl) -> list[SubAssembly]:
+    parts = cl.parts
+
+    def ids(*subs):
+        out = []
+        for p in parts:
+            if p.id and any(s in p.name.lower() for s in subs):
+                out.append(p.id)
+        return out
+
+    head_ids = ids("post (head)", "rail (head)", "headboard")
+    foot_ids = ids("post (foot)", "rail (foot)", "footboard")
+    rail_ids = ids("side rail", "ledger")
+    slat_ids = ids("slat")
+    conn_hw = [h.name for h in cl.hardware if h.category == "connector"]
+
+    head = SubAssembly("Headboard", "Posts, top rail, and infill panel",
+                       part_ids=head_ids, category="carcass")
+    head.steps = [
+        step(1, "Cut the headboard joinery",
+              "Mortise the head posts and tenon the head rail; groove for the "
+              "panel if used.", head_ids, category="joinery"),
+        step(2, "Glue up the headboard",
+              "Dry-fit, then glue and clamp the headboard square with the panel "
+              "floating in its grooves (do not glue the panel).", head_ids,
+              category="carcass"),
+    ]
+    foot = SubAssembly("Footboard", "Posts, top rail, and infill panel",
+                       part_ids=foot_ids, category="carcass")
+    foot.steps = [
+        step(1, "Build the footboard",
+              "Repeat the headboard joinery and glue-up for the shorter "
+              "footboard.", foot_ids, category="carcass"),
+    ]
+    rails = SubAssembly("Side rails", "Rails with slat ledgers + KD hardware",
+                        part_ids=rail_ids, category="carcass")
+    rails.steps = [
+        step(1, "Fit the ledgers & knock-down hardware",
+              "Glue and screw a ledger inside each side rail at the deck height, "
+              "then install the bed bolts / hook plates at the rail ends.",
+              rail_ids, conn_hw, "hardware"),
+    ]
+    final = SubAssembly("Set up & deck", "Assemble the bed and lay the slats",
+                        part_ids=slat_ids, category="final")
+    final.steps = [
+        step(1, "Finish the parts",
+              "Final-sand and finish the headboard, footboard, rails and slats "
+              "before assembly.", category="finish"),
+        step(2, "Bolt it together & lay the slats",
+              "Stand the head/footboard, connect the side rails with the "
+              "knock-down hardware (no glue — it must come apart), and drop the "
+              "slats onto the ledgers.", slat_ids, conn_hw, "hardware"),
+    ]
+    return [head, foot, rails, final]
+
+
+furniture.register(
+    BED,
+    panels=_bed_panels,
+    cut_parts=_bed_cutlist,
+    validate=_bed_validate,
+    joinery_ops=_bed_joinery,
+    assembly=_bed_assembly,
 )
