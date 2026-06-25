@@ -151,3 +151,80 @@ def test_drawer_box_section_holds_only_box_parts():
     plan = assembly_plan(spec)
     box = next(s for s in plan.subassemblies if s.name == "Drawer box 1")
     assert all("box" in by_id[pid] for pid in box.part_ids)
+
+
+# --- H4: glue-up / clamping checklist -------------------------------------
+
+from woodworking_ai.assembly_steps import clamp_plan
+
+
+def _titles(sub):
+    return [s.title.lower() for s in sub.steps]
+
+
+def test_clamp_plan_scales_with_glue_line_and_span():
+    # more glue line -> more clamps; longer span -> longer clamps
+    short = clamp_plan(300, 400)
+    longer = clamp_plan(900, 400)
+    assert longer["count"] > short["count"]
+    assert clamp_plan(300, 800)["length_mm"] > clamp_plan(300, 400)["length_mm"]
+    # a degenerate glue-up asks for no clamps
+    assert clamp_plan(0, 0)["count"] == 0
+
+
+def test_carcass_glue_up_gains_dry_fit_and_clamp_schedule():
+    plan = assembly_plan(_cab())
+    carc = next(s for s in plan.subassemblies if s.name == "Carcass")
+    titles = _titles(carc)
+    assert any("dry-fit" in t for t in titles), "a glued unit needs a dry-fit"
+    assert any("diagonal" in t for t in titles), "check diagonals for square"
+    assert any("open-time" in t for t in titles), "PVA open-time caution"
+    clamp = next(s for s in carc.steps if "clamp schedule" in s.title.lower())
+    # the clamp step names a real count and nominal length
+    assert "clamps" in clamp.detail.lower()
+    assert "mm" in clamp.detail
+    assert "Bar/parallel clamps" in clamp.hardware
+
+
+def test_open_time_caution_mentions_pva_minutes():
+    plan = assembly_plan(_cab())
+    carc = next(s for s in plan.subassemblies if s.name == "Carcass")
+    cau = next(s for s in carc.steps if "open-time" in s.title.lower())
+    assert "5-10" in cau.detail or "5" in cau.detail
+
+
+def test_drawer_box_glue_up_gets_clamp_schedule():
+    plan = assembly_plan(_cab(doors=0, drawers=[Drawer(140)]))
+    box = next(s for s in plan.subassemblies if s.name == "Drawer box 1")
+    assert any("clamp schedule" in t for t in _titles(box))
+    assert any("dry-fit" in t for t in _titles(box))
+
+
+def test_door_leaf_glue_up_warns_about_floating_panel():
+    plan = assembly_plan(_cab(door_style="shaker", doors=2))
+    door = next(s for s in plan.subassemblies if s.name.startswith("Door"))
+    blob = " ".join(s.detail.lower() for s in door.steps)
+    assert "floating" in blob, "frame-and-panel leaf must leave the panel floating"
+
+
+def test_solid_table_top_warns_cross_grain():
+    seq = assembly_plan(TableSpec(species="oak", material_form="solid"))
+    top = next(s for s in seq.subassemblies if s.name == "Top")
+    blob = " ".join(s.detail.lower() for s in top.steps)
+    assert "cross-grain" in blob or "cross grain" in blob
+    assert any("clamp schedule" in t for t in _titles(top))
+
+
+def test_augmented_steps_stay_numbered_in_order():
+    # adding glue-up steps must not break the per-unit 1..N numbering
+    plan = assembly_plan(_cab())
+    for sub in plan.subassemblies:
+        nums = [s.number for s in sub.steps]
+        assert nums == list(range(1, len(nums) + 1))
+
+
+def test_existing_carcass_glue_step_is_preserved():
+    # augmentation is additive: the original glue & clamp step still exists
+    plan = assembly_plan(_cab())
+    carc = next(s for s in plan.subassemblies if s.name == "Carcass")
+    assert any("glue & clamp the carcass" in t for t in _titles(carc))
