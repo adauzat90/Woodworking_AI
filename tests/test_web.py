@@ -190,6 +190,53 @@ def test_export_unknown_format_415():
     assert r.status_code == 415
 
 
+# --- revision diff + price delta (D2) ------------------------------------
+
+def test_diff_reports_field_changes_with_path_from_to():
+    """Saving a changed spec yields {path, from, to} rows for each edit."""
+    older = dict(VALID_SPEC)
+    newer = dict(VALID_SPEC, width=1200, shelves=3)
+    d = client.post("/api/diff", json={"from": older, "to": newer}).json()
+    by_path = {c["path"]: c for c in d["changes"]}
+    assert by_path["width"]["from"] == 900 and by_path["width"]["to"] == 1200
+    assert by_path["shelves"]["from"] == 1 and by_path["shelves"]["to"] == 3
+    assert "change(s)" in d["summary"]
+
+
+def test_diff_identical_specs_no_changes_zero_delta():
+    d = client.post("/api/diff", json={"from": VALID_SPEC, "to": VALID_SPEC}).json()
+    assert d["changes"] == []
+    assert d["summary"] == "no changes"
+    assert d["quote"]["price_delta"] == 0.0
+
+
+def test_diff_price_delta_positive_when_bigger():
+    """A wider cabinet with more shelves costs more — delta is positive."""
+    older = dict(VALID_SPEC)
+    newer = dict(VALID_SPEC, width=1200, shelves=4)
+    q = client.post("/api/diff", json={"from": older, "to": newer}).json()["quote"]
+    assert q["price_to"] > q["price_from"]
+    assert q["price_delta"] > 0
+    assert round(q["price_to"] - q["price_from"], 2) == q["price_delta"]
+    # The extra shelves show up as added parts.
+    assert q["parts_added"] or q["parts_changed"]
+
+
+def test_diff_price_delta_negative_when_smaller():
+    older = dict(VALID_SPEC, width=1200, shelves=4)
+    newer = dict(VALID_SPEC, width=600, shelves=0, doors=1)
+    q = client.post("/api/diff", json={"from": older, "to": newer}).json()["quote"]
+    assert q["price_delta"] < 0
+    assert q["price_to"] < q["price_from"]
+    assert q["parts_removed"] or q["parts_changed"]
+
+
+def test_diff_bad_spec_returns_400():
+    r = client.post("/api/diff", json={"from": {"cabinet_type": "nope"},
+                                       "to": VALID_SPEC})
+    assert r.status_code == 400
+
+
 # --- multi-component projects -------------------------------------------------
 
 PROJECT_SPEC = {

@@ -34,3 +34,50 @@ def diff_summary(changes: list[dict]) -> str:
     head = ", ".join(c["path"] for c in changes[:3])
     more = f" +{len(changes) - 3} more" if len(changes) > 3 else ""
     return f"{len(changes)} change(s): {head}{more}"
+
+
+def _part_rows(spec, *, prices=None, sheet=None) -> dict[str, dict]:
+    """Cut-list parts of *spec* keyed by stable part ID — the BOM for diffing."""
+    from .cutlist import generate_cutlist
+    rows: dict[str, dict] = {}
+    for p in generate_cutlist(spec).parts:
+        key = p.id or f"{p.name}|{p.length:.0f}x{p.width:.0f}x{p.thickness:.0f}"
+        rows[key] = {
+            "id": p.id, "name": p.name, "qty": p.qty,
+            "length": round(p.length, 1), "width": round(p.width, 1),
+            "thickness": p.thickness, "material": p.material,
+        }
+    return rows
+
+
+def quote_diff(spec_a, spec_b, *, prices=None, sheet=None) -> dict:
+    """"What changed since the last quote" between two specs.
+
+    Re-runs the estimate on each spec and reports the price delta (B minus A)
+    plus the parts that were added, removed, or had their quantity/size changed.
+    ``prices``/``sheet`` (the shop's :class:`PriceBook`/:class:`SheetSize`) apply
+    to *both* sides so the delta reflects only the design change, not pricing.
+    """
+    from .estimator import estimate
+    est_a = estimate(spec_a, prices=prices, sheet=sheet)
+    est_b = estimate(spec_b, prices=prices, sheet=sheet)
+    delta = round(est_b.total - est_a.total, 2)
+
+    rows_a = _part_rows(spec_a, prices=prices, sheet=sheet)
+    rows_b = _part_rows(spec_b, prices=prices, sheet=sheet)
+    added = [rows_b[k] for k in rows_b if k not in rows_a]
+    removed = [rows_a[k] for k in rows_a if k not in rows_b]
+    changed = []
+    for k in rows_b:
+        if k in rows_a and rows_a[k] != rows_b[k]:
+            changed.append({"from": rows_a[k], "to": rows_b[k]})
+
+    return {
+        "currency": est_a.currency,
+        "price_from": round(est_a.total, 2),
+        "price_to": round(est_b.total, 2),
+        "price_delta": delta,
+        "parts_added": added,
+        "parts_removed": removed,
+        "parts_changed": changed,
+    }
