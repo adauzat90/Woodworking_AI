@@ -1,7 +1,5 @@
 """First-class typed appliances and their per-type validation rules."""
 
-import pytest
-
 from woodworking_ai import (
     CabinetSpec, Appliance, ApplianceType, appliances_of, validate,
 )
