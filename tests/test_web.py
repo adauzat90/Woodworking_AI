@@ -41,6 +41,32 @@ def test_build_applies_profile_construction_default():
     assert r.json()["spec"]["construction"] == "face_frame"
 
 
+def test_build_constrains_to_profile_tooling():
+    # A Domino joint with a hand-tools-only inventory: the bundle should flag it
+    # with a substitute and mark the tool missing in the checklist.
+    spec = {"cabinet_type": "base", "name": "Tooled", "width": 600,
+            "height": 720, "depth": 560, "doors": 2, "shelves": 1,
+            "joinery": "domino"}
+    hand = {k: False for k in (
+        "table_saw", "dado_set", "router", "router_table", "band_saw",
+        "drill_press", "jointer", "planer", "doweling_jig", "pocket_jig",
+        "domino", "biscuit_joiner", "dovetail_jig", "box_joint_jig",
+        "mortiser", "shelf_pin_jig", "forstner_35")}
+    hand.update(hand_tools=True, drill=True)
+    r = client.post("/api/build", json={"spec": spec, "profile": {"tooling": hand}})
+    assert r.status_code == 200
+    d = r.json()
+    assert any(w["field"] == "tooling" for w in d["warnings"])
+    domino = [t for t in d["tools"] if "domino" in t["operation"].lower()]
+    assert domino and domino[0]["owned"] is False
+
+
+def test_build_without_tooling_lists_tools_unmarked():
+    d = client.post("/api/build", json={"spec": VALID_SPEC}).json()
+    assert d["tools"] and all(t["owned"] is None for t in d["tools"])
+    assert not any(w["field"] == "tooling" for w in d["warnings"])
+
+
 def test_health_reports_capabilities():
     r = client.get("/api/health")
     assert r.status_code == 200

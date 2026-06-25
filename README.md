@@ -186,9 +186,10 @@ browser. Plus:
 - **Furniture / Project modes** — design a single cabinet or table, or switch to
   **Project (run)** to build a multi-cabinet run from JSON: one combined cut list,
   quote, drilling schedule, and an assembled view (placement collisions flagged).
-- **Shop tooling** — declare the tools you own in the shop profile and the
-  design is constrained to joinery you can make (unmakeable joints are flagged
-  with a feasible substitute); every build lists the tools/jigs it needs.
+- **Shop tooling** — tick the tools you own in the **My shop tooling** panel
+  (or start from a preset) and the design is constrained to joinery you can make
+  (unmakeable joints are flagged with a feasible substitute); the **Tools** tab
+  lists every tool/jig the build needs, marked have / missing.
 - **Units toggle** — view the cut list and reports in fractional inches or mm.
 - **Live update** — toggle on to rebuild as you change parameters.
 - **Downloads** — STEP, STL, GLB, DXF cut-layout, cut-list & drilling CSV.

@@ -289,6 +289,28 @@
       </details>
     </fieldset>
     <fieldset style="margin-top:14px">
+      <legend>My shop tooling</legend>
+      <details id="toolingDetails">
+        <summary>Tick the tools you own — design only against them</summary>
+        <p class="muted" style="font-size:11px;margin:6px 0">
+          When on, the AI designs only with joinery you can cut, and any
+          unmakeable joint is flagged with a substitute you <em>can</em> make.
+          See the <b>Tools</b> tab for the checklist. Saved in this browser.</p>
+        <div class="check"><input id="tool_enable" type="checkbox" />
+          <label style="margin:0">Only design with tools I own</label></div>
+        <div id="toolingBody" style="margin-top:8px">
+          <label>Start from a preset</label>
+          <select id="tool_preset">
+            <option value="">Custom</option>
+            <option value="hand">Hand tools only</option>
+            <option value="hobbyist">Typical home shop</option>
+            <option value="full">Fully equipped</option>
+          </select>
+          <div id="toolGrid"></div>
+        </div>
+      </details>
+    </fieldset>
+    <fieldset style="margin-top:14px">
       <legend>Pricing &amp; rates</legend>
       <details id="pricingDetails">
         <summary>Edit shop prices &amp; rates</summary>
@@ -342,6 +364,7 @@
         <button data-t="lumber">Lumber</button>
         <button data-t="drilling">Drilling</button>
         <button data-t="joinery">Joinery</button>
+        <button data-t="tools">Tools</button>
         <button data-t="hardware">Hardware</button>
         <button data-t="cost">Cost</button>
         <label class="units-toggle" title="Display units for the cut list and reports (the engine is millimetre-native)">
@@ -794,8 +817,36 @@ function paint() {
                     o.width?fmtLen(o.width):"", o.depth?fmtLen(o.depth):"",
                     o.reference, o.note]))
       : '<p class="muted">No joinery operations for this design.</p>';
+  } else if (tab === "tools") {
+    h = toolsPane(d);
   }
   $("pane").innerHTML = h;
+}
+
+// --- Tools tab: the tool/jig checklist a design needs ------------------------
+// Lists every joinery/boring op and how it's made; when a tooling inventory is
+// declared each line is marked have/missing, and the substitutions to match the
+// shop are spelled out from the build's tooling warnings.
+function toolsPane(d) {
+  const tools = d.tools || [];
+  if (!tools.length) return '<p class="muted">No tool data for this design.</p>';
+  const checked = tools.some(t => t.owned !== null);
+  let h = checked
+    ? `<p class="muted" style="font-size:11.5px;margin:0 0 8px">What this design
+        needs vs. what your declared tooling can make.</p>`
+    : `<p class="muted" style="font-size:11.5px;margin:0 0 8px">Tools &amp; jigs
+        this design needs. Turn on <b>“Only design with tools I own”</b> to check
+        them against your shop.</p>`;
+  h += table(["Operation", "Made with", "Where", checked ? "In your shop" : ""],
+    tools.map(t => [t.operation, t.tool, t.where,
+      t.owned === null ? "" : (t.owned ? "✓ have" : "✗ MISSING")]));
+  const tw = (d.warnings || []).filter(w => w.field === "tooling");
+  if (tw.length) {
+    h += "<h4>Switch these to match your tools</h4><ul class='muted' "
+       + "style='font-size:12px;margin:4px 0;padding-left:18px'>"
+       + tw.map(w => `<li>${esc(w.message)}</li>`).join("") + "</ul>";
+  }
+  return h;
 }
 
 // --- Lumber tab: how much material to buy ------------------------------------
@@ -1077,7 +1128,87 @@ function currentProfile() {
     reveal: parseFloat($("std_reveal").value) || 3,
     carcass_thickness: parseFloat($("std_carcass").value) || 18,
     prices: p.prices, sheet: p.sheet,
+    tooling: currentTooling(),   // null = unconstrained (any joinery)
   };
+}
+
+// --- Shop tooling: tick what you own; the design uses only joinery you can cut.
+// Mirrors the backend ShopTooling capability flags & presets (tooling.py). The
+// selection rides along in the profile; when disabled, `tooling` is null so the
+// design is unconstrained — exactly as before.
+const TOOLING_LS = "woodai_tooling";
+const TOOL_DEFS = [
+  ["hand_tools", "Hand tools (saw &amp; chisels)"], ["table_saw", "Table saw"],
+  ["dado_set", "Dado set"], ["router", "Router"], ["router_table", "Router table"],
+  ["band_saw", "Band saw"], ["drill", "Drill"], ["drill_press", "Drill press"],
+  ["jointer", "Jointer"], ["planer", "Planer"], ["doweling_jig", "Doweling jig"],
+  ["pocket_jig", "Pocket-hole jig"], ["domino", "Festool Domino"],
+  ["biscuit_joiner", "Biscuit joiner"], ["dovetail_jig", "Dovetail jig"],
+  ["box_joint_jig", "Box-joint jig"], ["mortiser", "Mortiser"],
+  ["shelf_pin_jig", "Shelf-pin jig"], ["forstner_35", "35mm Forstner bit"],
+];
+const TOOL_KEYS = TOOL_DEFS.map(t => t[0]);
+const TOOL_PRESETS = {
+  hand: ["hand_tools", "drill"],
+  hobbyist: ["hand_tools", "table_saw", "dado_set", "router", "band_saw",
+             "drill", "drill_press", "jointer", "planer", "doweling_jig",
+             "pocket_jig", "shelf_pin_jig", "forstner_35"],
+  full: TOOL_KEYS.slice(),
+};
+function buildToolGrid() {
+  const g = $("toolGrid"); if (!g) return;
+  g.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:1px 14px;margin-top:8px";
+  g.innerHTML = TOOL_DEFS.map(([k, label]) =>
+    `<label class="check" style="font-size:12px;margin:0"><input type="checkbox"
+      id="tool_${k}" data-tool="1"> ${label}</label>`).join("");
+}
+function setTools(keys) {
+  const on = new Set(keys);
+  for (const k of TOOL_KEYS) { const el = $("tool_" + k); if (el) el.checked = on.has(k); }
+}
+function getTools() {
+  return TOOL_KEYS.filter(k => { const el = $("tool_" + k); return el && el.checked; });
+}
+function syncToolingDisabled() {
+  const on = $("tool_enable") && $("tool_enable").checked;
+  if ($("toolingBody")) $("toolingBody").style.opacity = on ? "1" : "0.45";
+  for (const k of TOOL_KEYS) { const el = $("tool_" + k); if (el) el.disabled = !on; }
+  if ($("tool_preset")) $("tool_preset").disabled = !on;
+}
+function saveTooling() {
+  const o = { enabled: !!($("tool_enable") && $("tool_enable").checked),
+              preset: $("tool_preset") ? $("tool_preset").value : "",
+              owned: getTools() };
+  try { localStorage.setItem(TOOLING_LS, JSON.stringify(o)); } catch (e) {}
+}
+// The tooling dict sent in the profile, or null when the constraint is off.
+function currentTooling() {
+  if (!($("tool_enable") && $("tool_enable").checked)) return null;
+  const on = new Set(getTools()), o = {};
+  for (const k of TOOL_KEYS) o[k] = on.has(k);
+  return o;
+}
+function loadTooling() {
+  buildToolGrid();
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(TOOLING_LS) || "null"); } catch (e) {}
+  if ($("tool_enable")) $("tool_enable").checked = !!(saved && saved.enabled);
+  setTools((saved && saved.owned) || TOOL_PRESETS.hobbyist);
+  if (saved && saved.preset != null && $("tool_preset")) $("tool_preset").value = saved.preset;
+  syncToolingDisabled();
+  if ($("tool_enable")) $("tool_enable").addEventListener("change",
+    () => { syncToolingDisabled(); saveTooling(); maybeAuto(); });
+  if ($("tool_preset")) $("tool_preset").addEventListener("change", () => {
+    const p = TOOL_PRESETS[$("tool_preset").value];
+    if (p) setTools(p);
+    saveTooling(); maybeAuto();
+  });
+  if ($("toolGrid")) $("toolGrid").addEventListener("change", e => {
+    if (e.target && e.target.dataset.tool) {
+      if ($("tool_preset")) $("tool_preset").value = "";
+      saveTooling(); maybeAuto();
+    }
+  });
 }
 
 // --- Library: Convex when CONVEX_URL is configured, else localStorage --------
@@ -1256,6 +1387,7 @@ applyUnitChange();
 health();
 loadPricing();
 loadStandards();
+loadTooling();
 refreshSaved();
 refreshRevisions();
 loadFromHash();
