@@ -237,6 +237,82 @@ def _nest_flowables(cl, avail_w, unit):
     return flows
 
 
+def build_purchase_order_pdf(spec, units: str = "metric") -> bytes:
+    """Render a supplier-grouped purchase order for *spec* as PDF bytes.
+
+    One table per supplier (sheet goods, lumber yard, each hardware brand, edge
+    banding, finish, in-house labour), each line carrying its spec/SKU, quantity,
+    unit price and line total, with per-supplier subtotals and a grand total that
+    reconciles with the quote. Uses reportlab, guarded like the build package.
+    """
+    _require_reportlab()
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import mm
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.platypus import (
+        SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle)
+
+    from .purchasing import purchase_order
+    po = purchase_order(spec)
+    c = po.currency
+
+    styles = getSampleStyleSheet()
+    h1 = styles["Heading1"]
+    body = styles["BodyText"]
+    small = ParagraphStyle("small", parent=body, fontSize=8, leading=10)
+
+    buf = BytesIO()
+    doc = SimpleDocTemplate(
+        buf, pagesize=A4, title=f"{spec.name} — purchase order",
+        leftMargin=18 * mm, rightMargin=18 * mm,
+        topMargin=16 * mm, bottomMargin=16 * mm)
+    story = []
+
+    def tbl(header, rows, widths=None):
+        t = Table([header] + rows, colWidths=widths, repeatRows=1)
+        t.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#3a352f")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTSIZE", (0, 0), (-1, -1), 7.5),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1),
+             [colors.white, colors.HexColor("#f3efe9")]),
+            ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cfc8bd")),
+            ("ALIGN", (-3, 1), (-1, -1), "RIGHT"),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ]))
+        return t
+
+    mini = ParagraphStyle("mini", parent=styles["Heading2"], fontSize=10,
+                          spaceBefore=6, textColor=colors.HexColor("#6b4f3a"))
+
+    story.append(Paragraph(f"🧾 Purchase order — {spec.name}", h1))
+    story.append(Paragraph(
+        "Everything to buy to build this, grouped by the supplier (or hardware "
+        "brand) you raise the order against. The grand total reconciles with the "
+        "cost estimate.", small))
+    story.append(Spacer(1, 6))
+
+    for supplier, lines in po.lines_by_supplier().items():
+        story.append(Paragraph(supplier, mini))
+        rows = [[ln.item, ln.spec or ln.sku, f"{ln.qty:g}", ln.unit,
+                 f"{c}{ln.unit_price:.2f}", f"{c}{ln.line_total:.2f}"]
+                for ln in lines]
+        rows.append(["", "", "", "", "Subtotal",
+                     f"{c}{po.supplier_total(supplier):.2f}"])
+        story.append(tbl(
+            ["Item", "Spec / SKU", "Qty", "Unit", "Unit price", "Line total"],
+            rows))
+        story.append(Spacer(1, 4))
+
+    story.append(Spacer(1, 6))
+    story.append(Paragraph(
+        f"<b>Grand total: {c}{po.grand_total:.2f}</b>", body))
+    doc.build(story)
+    return buf.getvalue()
+
+
 def build_package_pdf(spec, units: str = "metric") -> bytes:
     """Render the full build package for *spec* as PDF bytes."""
     _require_reportlab()

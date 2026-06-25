@@ -16,6 +16,7 @@ from .estimator import estimate, Estimate, PriceBook, SheetSize, pack_sheets
 from .drilling import (
     drilling_schedule, DrillingSchedule, hinge_count, grid_violations,
 )
+from .purchasing import purchase_order, PurchaseOrder, POLine
 
 __version__ = "0.1.0"
 
@@ -63,4 +64,7 @@ __all__ = [
     "DrillingSchedule",
     "hinge_count",
     "grid_violations",
+    "purchase_order",
+    "PurchaseOrder",
+    "POLine",
 ]
