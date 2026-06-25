@@ -122,6 +122,47 @@
                  color:var(--wood); }
   .gcard .gblurb { font-size:10.5px; color:var(--muted); line-height:1.25; }
   .ph-mini { font-size:11px; color:var(--muted); padding:6px; }
+
+  /* --- Responsive: stack the sidebar above the preview on a phone/tablet
+     (G5). The bench is where plans get used — one-handed, full-width. --- */
+  @media (max-width: 820px) {
+    .wrap { grid-template-columns:1fr; height:auto; min-height:calc(100vh - 53px); }
+    .controls { border-right:none; border-bottom:1px solid var(--line);
+                max-height:none; }
+    .preview { min-height:70vh; }
+    .stage { min-height:46vh; }
+    .results { height:auto; }
+    .tabs { flex-wrap:wrap; }
+    .gallery { grid-template-columns:1fr; }
+    header span { display:none; }       /* keep the title bar compact */
+  }
+  @media (max-width: 480px) {
+    .row { flex-wrap:wrap; }
+    .buildcap { display:none; }         /* too small to overlay; tab still has it */
+  }
+
+  /* --- Print: a clean black-on-white shop printout of the active report
+     (cut list / drilling / shopping list / build steps). Tape it to the
+     wall. Hides the app chrome and the 3D canvas (G5). --- */
+  @media print {
+    @page { margin: 14mm; }
+    header, .controls, .stage, .buildbar, .buildcap, .downloads, .tabs,
+    .gallery, #galleryWrap { display:none !important; }
+    html, body { background:#fff !important; color:#000 !important; }
+    .wrap { display:block; height:auto; }
+    .preview, .results { display:block; height:auto; border:none; }
+    .status { color:#000 !important; border:none; padding:0 0 8px; font-size:13px; }
+    .status .muted, .muted { color:#333 !important; }
+    #pane { overflow:visible !important; height:auto !important; }
+    table { border-collapse:collapse; width:100%; }
+    th, td { border:1px solid #999 !important; color:#000 !important;
+             padding:3px 6px !important; }
+    th { background:#eee !important; }
+    a { color:#000 !important; text-decoration:underline; }
+    details { display:block !important; }
+    /* Encourage the report not to split a row across a page. */
+    tr, li, details { break-inside:avoid; }
+  }
 </style>
 </head>
 <body>
@@ -391,6 +432,7 @@
         <button data-f="cutlist">Cut list</button><button data-f="drilling">Drilling</button>
         <button data-f="purchase_order">🧾 Purchase order</button>
         <button data-f="package">📄 Build package PDF</button>
+        <button id="printBtn" type="button" title="Print the current report (cut list, drilling, steps…)">🖨 Print</button>
         <button id="shareBtn" class="share">🔗 Share</button>
       </div>
       <div class="tabs" id="tabs">
@@ -825,6 +867,8 @@ $("shareBtn").onclick = async () => {
   setTimeout(() => $("shareBtn").textContent = "🔗 Share", 1500);
   history.replaceState(null, "", "#spec=" + enc);
 };
+// Print the active report (the print stylesheet hides the app chrome + 3D).
+$("printBtn").onclick = () => window.print();
 
 function loadFromHash() {
   const m = location.hash.match(/spec=([^&]+)/);
