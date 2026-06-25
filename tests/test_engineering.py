@@ -46,6 +46,31 @@ def test_tip_factor_lower_for_tall_shallow():
         engineering.tip_safety_factor(800, 500)
 
 
+# --- species database wired into engineering (H5) ------------------------
+
+def test_modulus_for_defers_to_species_db():
+    from woodworking_ai import species
+    # A known wood reads from the one species table.
+    assert engineering.modulus_for("white_oak") == species.modulus("white_oak")
+    # Aliases resolve too ("oak" -> red_oak).
+    assert engineering.modulus_for("oak") == species.modulus("oak")
+    # Sheet goods (not woods) still use the local fallback map.
+    assert engineering.modulus_for("plywood") == engineering.MODULUS_MPA["plywood"]
+
+
+def test_seasonal_movement_species_specific_and_backcompat():
+    # Stable walnut moves less across the grain than white oak for the same width.
+    assert engineering.seasonal_movement(800, "flatsawn", species="walnut") < \
+        engineering.seasonal_movement(800, "flatsawn", species="white_oak")
+    # Default (no species) is unchanged: the global flatsawn constant.
+    assert engineering.seasonal_movement(300, "flatsawn") == \
+        pytest.approx(300 * engineering.MOVEMENT_FLATSAWN)
+    # Quartersawn still halves the species value.
+    flat = engineering.seasonal_movement(300, "flatsawn", species="hard_maple")
+    quarter = engineering.seasonal_movement(300, "quartersawn", species="hard_maple")
+    assert quarter == pytest.approx(flat / 2, rel=1e-6)
+
+
 # --- shelf sag wired into the validator (STRUCT-020..022) ----------------
 
 def _shelf_cabinet(**o) -> CabinetSpec:
