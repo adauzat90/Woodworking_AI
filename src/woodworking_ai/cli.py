@@ -162,6 +162,10 @@ def _emit(spec, args) -> int:
         from .drilling import drilling_schedule
         print("\n" + drilling_schedule(spec).report_text())
 
+    if args.joinery:
+        from .joinery import joinery_schedule
+        print("\n" + joinery_schedule(spec).report_text())
+
     if args.out:
         out = Path(args.out)
         out.mkdir(parents=True, exist_ok=True)
@@ -214,6 +218,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="estimate sheet count and cost")
     common.add_argument("--drill", action="store_true",
                         help="print the drilling schedule (32mm system, hinges)")
+    common.add_argument("--joinery", action="store_true",
+                        help="print the joinery setup sheet (dado/rabbet/etc.)")
     common.add_argument("--imperial", action="store_true",
                         help="show cut list and reports in fractional inches "
                              "(engine stays metric; the 32mm drilling schedule "

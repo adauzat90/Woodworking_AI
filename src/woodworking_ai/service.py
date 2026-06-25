@@ -19,6 +19,7 @@ from .validator import validate
 from .cutlist import generate_cutlist
 from .estimator import estimate
 from .drilling import drilling_schedule
+from .joinery import joinery_schedule
 from .agents.critic import critique
 
 
@@ -77,9 +78,11 @@ def export_bytes(spec, fmt: str,
     fmt = fmt.lower()
     base = (spec.name or "cabinet").replace(" ", "_")
 
-    if fmt in ("cutlist", "hardware", "drilling"):
+    if fmt in ("cutlist", "hardware", "drilling", "joinery"):
         if fmt == "drilling":
             text = drilling_schedule(spec).to_csv()
+        elif fmt == "joinery":
+            text = joinery_schedule(spec).to_csv()
         else:
             cl = generate_cutlist(spec)
             text = cl.to_csv(units) if fmt == "cutlist" else cl.hardware_csv()
@@ -201,6 +204,14 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
                  ]}
                 for o in drill.ops],
     }
+
+    joint = joinery_schedule(spec)
+    result["joinery"] = [
+        {"part": o.part, "part_id": o.part_id, "operation": o.operation,
+         "tool": o.tool, "width": round(o.width, 1), "depth": round(o.depth, 1),
+         "reference": o.reference, "note": o.note}
+        for o in joint.ops
+    ]
 
     result["render_png"] = _render_png(spec) if want_png else None
     result["glb"] = _glb(spec) if want_glb else None

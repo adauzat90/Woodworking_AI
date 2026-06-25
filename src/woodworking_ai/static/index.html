@@ -287,6 +287,7 @@
         <button data-t="cutlist" class="active">Cut list</button>
         <button data-t="lumber">Lumber</button>
         <button data-t="drilling">Drilling</button>
+        <button data-t="joinery">Joinery</button>
         <button data-t="hardware">Hardware</button>
         <button data-t="cost">Cost</button>
         <label class="units-toggle" title="Display units for the cut list and reports (the engine is millimetre-native)">
@@ -657,6 +658,13 @@ function paint() {
     }
   } else if (tab === "drilling") {
     h = drillingPane(d);
+  } else if (tab === "joinery") {
+    const j = d.joinery || [];
+    h = j.length ? table(["ID","Part","Operation","Tool","Width","Depth","Where","Note"],
+        j.map(o => [o.part_id||"", o.part, o.operation, o.tool,
+                    o.width?fmtLen(o.width):"", o.depth?fmtLen(o.depth):"",
+                    o.reference, o.note]))
+      : '<p class="muted">No joinery operations for this design.</p>';
   }
   $("pane").innerHTML = h;
 }
