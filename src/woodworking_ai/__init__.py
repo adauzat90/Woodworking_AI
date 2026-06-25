@@ -8,6 +8,7 @@ from .dsl import (
     Drawer, Construction, BackStyle, Joinery,
     CornerJoint, DovetailTails, SlideType, Grain, TopFixing,
     ApplianceType, Appliance, appliances_of, ApplianceVoid,
+    Countertop, Filler, EndPanel, Molding,
     Component, ComponentGroup, Project, Assembly, place_run,
 )
 from .validator import validate, ValidationResult
@@ -46,6 +47,10 @@ __all__ = [
     "Appliance",
     "appliances_of",
     "ApplianceVoid",
+    "Countertop",
+    "Filler",
+    "EndPanel",
+    "Molding",
     "Component",
     "ComponentGroup",
     "Project",

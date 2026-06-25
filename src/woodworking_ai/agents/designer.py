@@ -14,6 +14,7 @@ from dataclasses import dataclass
 
 from ..dsl import (CabinetSpec, TableSpec, Project, Assembly, spec_from_dict,
                    DSL_SCHEMA_HINT)
+from ..dsl_lint import lint_spec_dict
 from ..validator import validate, ValidationResult
 from .critic import critique, CritiqueResult
 from . import llm
@@ -94,22 +95,42 @@ def design_from_prompt(
         result = validate(spec, tooling=tooling)
         last_spec, last_validation = spec, result
 
+        # Keys the model set that the language silently dropped (typos, guessed
+        # field names). Non-fatal, but surfaced so the agent can repair them
+        # rather than believing it set a value it didn't.
+        lint = lint_spec_dict(data)
+        lint_note = ""
+        if lint:
+            lint_note = (
+                "\n\nThese fields were not recognized and were ignored "
+                "(use the correct names or remove them):\n"
+                + "\n".join(f"- {i}" for i in lint)
+            )
+
         if result.ok:
             # Spec is sane — now verify the geometry it produces.
             crit = critique(spec) if run_critic else None
             last_critique = crit
-            if crit is None or crit.ok:
+            if (crit is None or crit.ok) and not lint:
                 return DesignResult(spec, result, raw_responses, attempt, crit)
-            feedback = (
-                "The geometry built from this spec has problems:\n"
-                f"{crit.as_feedback()}\n"
-                "Return a corrected JSON object that resolves every error."
-            )
+            if crit is not None and not crit.ok:
+                feedback = (
+                    "The geometry built from this spec has problems:\n"
+                    f"{crit.as_feedback()}{lint_note}\n"
+                    "Return a corrected JSON object that resolves every error."
+                )
+            else:
+                # Validates and the geometry is sound; only dropped fields remain.
+                feedback = (
+                    "The spec is otherwise sound, but some fields were ignored:"
+                    f"{lint_note}\n"
+                    "Return a corrected JSON object using the right field names."
+                )
         else:
             # Valid JSON but a broken design.
             feedback = (
                 "The specification has problems that must be fixed:\n"
-                f"{result.as_feedback()}\n"
+                f"{result.as_feedback()}{lint_note}\n"
                 "Return a corrected JSON object that resolves every error."
             )
 
