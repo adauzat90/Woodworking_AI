@@ -19,8 +19,8 @@ from __future__ import annotations
 from io import BytesIO
 
 from .estimator import estimate
-from .drawings import projected_views
 from .units import format_length
+from . import pdf_common
 
 
 def _require_reportlab():
@@ -30,83 +30,6 @@ def _require_reportlab():
         raise RuntimeError(
             "PDF proposal needs reportlab; install the 'pdf' extra "
             "(pip install -e \".[pdf]\")") from exc
-
-
-def _elevation_flowable(spec, unit, avail_w):
-    """A reportlab Flowable drawing the orthographic views with overall sizes.
-
-    A clean, dimensioned outline — the customer's view of the piece. Unlike the
-    shop drawings it carries no per-part IDs, just the exterior with overall
-    width/height/depth callouts.
-    """
-    from reportlab.platypus import Flowable
-
-    views = projected_views(spec)
-    margin = 30.0
-    gap = 24.0
-    raw_w = sum((b[1] - b[0]) for (_n, _h, _v, _bx, b, _ld) in views)
-    n = len(views)
-    scale = (avail_w - 2 * margin * n - gap * (n - 1)) / max(raw_w, 1.0)
-    scale = max(min(scale, 0.25), 0.02)
-    height = margin * 2 + max((b[3] - b[2]) for (*_, b, _ld) in views) * scale + 24
-
-    class _Elev(Flowable):
-        def wrap(self, _w, _h):
-            return (avail_w, height)
-
-        def draw(self):
-            c = self.canv
-            ox = 0.0
-            for (name, _h, _v, boxes, bounds, label_dims) in views:
-                hmin, hmax, vmin, vmax = bounds
-                w_mm, h_mm = hmax - hmin, vmax - vmin
-                bx = ox + margin
-                by = margin
-
-                def sx(hh):
-                    return bx + (hh - hmin) * scale
-
-                def sy(vv):
-                    return by + (vv - vmin) * scale
-
-                c.setFont("Helvetica-Bold", 8)
-                c.setFillColorRGB(0.2, 0.2, 0.2)
-                c.drawString(bx, by + h_mm * scale + 8, name)
-                # Outlines only — fronts filled lightly, no part IDs or detail.
-                for b in sorted(boxes, key=lambda b: b.category != "front"):
-                    x, y = sx(b.h0), sy(b.v0)
-                    bw, bh = (b.h1 - b.h0) * scale, (b.v1 - b.v0) * scale
-                    if b.category == "front":
-                        c.setStrokeColorRGB(0.55, 0.4, 0.27)
-                        c.setFillColorRGB(0.93, 0.88, 0.80)
-                        c.rect(x, y, bw, bh, stroke=1, fill=1)
-                    else:
-                        c.setStrokeColorRGB(0.7, 0.66, 0.6)
-                        c.rect(x, y, bw, bh, stroke=1, fill=0)
-                # Overall dimension callouts (nominal exterior sizes).
-                c.setFillColorRGB(0.25, 0.33, 0.41)
-                c.setFont("Helvetica", 7)
-                c.drawCentredString(bx + w_mm * scale / 2, by - 10,
-                                    format_length(label_dims[0], unit, mark=True))
-                c.drawString(bx + w_mm * scale + 4, by + h_mm * scale / 2,
-                             format_length(label_dims[1], unit, mark=True))
-                ox += margin * 2 + w_mm * scale + gap
-
-    return _Elev()
-
-
-def _model_image(spec, avail_w):
-    """A reportlab Image of the assembled model, or None if matplotlib is absent."""
-    try:
-        import os
-        import tempfile
-        from reportlab.platypus import Image
-        from .render import render_cabinet
-        path = os.path.join(tempfile.mkdtemp(), "model.png")
-        render_cabinet(spec, path)
-        return Image(path, width=avail_w, height=avail_w * 4.2 / 12.0)
-    except Exception:
-        return None
 
 
 def _plain_summary(spec) -> list[str]:
@@ -152,19 +75,16 @@ def build_proposal_pdf(spec, units: str = "metric") -> bytes:
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import mm
     from reportlab.lib import colors
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.platypus import (
         SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle)
 
     unit = units
     est = estimate(spec)
 
-    styles = getSampleStyleSheet()
+    styles, small, mini = pdf_common.paragraph_styles(
+        small_leading=11, mini_font=11)
     h1 = styles["Heading1"]
     body = styles["BodyText"]
-    small = ParagraphStyle("small", parent=body, fontSize=8, leading=11)
-    mini = ParagraphStyle("mini", parent=styles["Heading2"], fontSize=11,
-                          spaceBefore=6, textColor=colors.HexColor("#6b4f3a"))
 
     buf = BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=A4,
@@ -192,12 +112,13 @@ def build_proposal_pdf(spec, units: str = "metric") -> bytes:
     story.append(Spacer(1, 8))
 
     # --- visual ---------------------------------------------------------
-    img = _model_image(spec, avail_w)
+    img = pdf_common.model_image(spec, avail_w)
     if img is not None:
         story.append(img)
         story.append(Spacer(1, 6))
     story.append(Paragraph("Elevations &amp; overall dimensions", mini))
-    story.append(_elevation_flowable(spec, unit, avail_w))
+    story.append(pdf_common.elevation_flowable(
+        spec, unit, avail_w, show_ids=False, colors=pdf_common.PROPOSAL_COLORS))
     story.append(Spacer(1, 8))
 
     # --- plain-language spec -------------------------------------------
