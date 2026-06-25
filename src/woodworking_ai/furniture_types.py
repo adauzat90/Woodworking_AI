@@ -1165,7 +1165,7 @@ def _bed_assembly(spec: BedSpec, cl) -> list[SubAssembly]:
               "Repeat the headboard joinery and glue-up for the shorter "
               "footboard.", foot_ids, category="carcass"),
     ]
-    rails = SubAssembly("Side rails", "Rails with slat ledgers + KD hardware",
+    rails = SubAssembly("Rails", "Side rails with slat ledgers + KD hardware",
                         part_ids=rail_ids, category="carcass")
     rails.steps = [
         step(1, "Fit the ledgers & knock-down hardware",

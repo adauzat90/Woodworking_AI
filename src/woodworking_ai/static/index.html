@@ -34,6 +34,14 @@
   .buildbar .sec { color:var(--wood); font-weight:600; font-size:12px;
     min-width:120px; }
   .buildbar input[type=checkbox] { width:auto; accent-color:var(--accent); }
+  /* Assembly-walkthrough caption synced to the build stepper (G2a). */
+  .buildcap { position:absolute; left:50%; bottom:64px; transform:translateX(-50%);
+    background:rgba(28,26,23,.92); border:1px solid var(--line); border-radius:9px;
+    padding:7px 12px; max-width:80%; color:var(--text); font-size:12px;
+    backdrop-filter:blur(4px); pointer-events:none; }
+  .buildcap ul { color:var(--muted); }
+  .step-show { cursor:pointer; }
+  .step-show:hover { text-decoration:underline; }
   .results { height:42%; border-top:1px solid var(--line); display:flex;
              flex-direction:column; }
   fieldset { border:1px solid var(--line); border-radius:8px; margin:0 0 14px;
@@ -419,6 +427,7 @@ function esc(s) {
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 let last = null, tab = "cutlist";
+let _walkTimer = null;   // assembly-walkthrough auto-advance timer (G2a)
 
 // --- display units (engine is millimetre-native; this is display only) ------
 const MM_PER_IN = 25.4;
@@ -660,6 +669,7 @@ function showError(msg) {
 
 function render(d) {
   last = d;
+  if (_walkTimer) { clearInterval(_walkTimer); _walkTimer = null; }
   if (d.errors && d.errors.length) {
     showError(d.errors.map(e => e.field+": "+e.message).join("; ")); return;
   }
@@ -698,7 +708,54 @@ function buildBarHtml(sections) {
     <label>Build
       <input type="range" id="buildStep" min="1" max="${n}" value="${n}"></label>
     <span class="sec" id="buildSec">Assembled (${n})</span>
-  </div>`;
+    <button id="buildPlay" class="secondary" type="button" title="Walk the build step by step"
+      style="padding:2px 8px;margin:0">▶ Walk</button>
+  </div>
+  <div class="buildcap" id="buildCaption"></div>`;
+}
+
+// The assembly sub-assembly that matches a 3D section name (G2a). Matches by
+// name (case-insensitive, prefix-tolerant) so the stepper can show the actual
+// build instructions for the section currently on screen.
+function assemblyForSection(name) {
+  const subs = (last && last.assembly) || [];
+  const n = (name || "").toLowerCase();
+  return subs.find(s => (s.name || "").toLowerCase() === n)
+      || subs.find(s => n.startsWith((s.name || "").toLowerCase())
+                     || (s.name || "").toLowerCase().startsWith(n))
+      || null;
+}
+
+// Caption under the 3D view: the instructions for the section just added.
+function setBuildCaption(sections, step) {
+  const cap = $("buildCaption"); if (!cap) return;
+  if (step >= sections.length) {
+    cap.innerHTML = `<span class="muted">Fully assembled — drag <b>Build</b> ` +
+      `back or hit <b>▶ Walk</b> to see it go together.</span>`;
+    return;
+  }
+  const name = sections[step - 1];
+  const sub = assemblyForSection(name);
+  let h = `<b>Step ${step}/${sections.length}: ${esc(name)}</b>`;
+  if (sub) {
+    const steps = (sub.steps || []).map(s =>
+      `<li>${esc(s.title)}${(s.part_ids||[]).length
+        ? ` <span class="muted">[${esc(s.part_ids.join(", "))}]</span>` : ""}</li>`).join("");
+    if (sub.detail) h += `<div class="muted" style="font-size:11px">${esc(sub.detail)}</div>`;
+    if (steps) h += `<ul style="margin:3px 0 0;padding-left:16px;font-size:11.5px">${steps}</ul>`;
+  }
+  cap.innerHTML = h;
+}
+
+// Drive the 3D stepper to a given section (used by the Build-steps tab).
+function showSectionInModel(name) {
+  const sections = (last && last.model_sections) || [];
+  const idx = sections.findIndex(s =>
+    s.toLowerCase() === (name||"").toLowerCase());
+  if (idx < 0 || !$("buildStep")) return;
+  $("buildStep").value = idx + 1;
+  loadModel(sections);
+  const stage = $("stage"); if (stage) stage.scrollIntoView({behavior:"smooth", block:"nearest"});
 }
 // Load a GLB variant (exploded factor + the sub-assemblies up to the step).
 let _mvBlob = null;
@@ -710,6 +767,7 @@ async function loadModel(sections) {
   if ($("buildSec")) $("buildSec").textContent = include
     ? `+ ${sections[step - 1]} (${step}/${sections.length})`
     : `Assembled (${sections.length})`;
+  setBuildCaption(sections, step);
   try {
     const r = await fetch("/api/model", {method:"POST",
       headers:{"Content-Type":"application/json"},
@@ -725,6 +783,21 @@ function wireBuildBar(sections) {
   const go = () => loadModel(sections);
   if ($("explodeChk")) $("explodeChk").onchange = go;
   if ($("buildStep")) $("buildStep").oninput = go;
+  // "▶ Walk": step from the first sub-assembly to fully assembled, pausing on
+  // each so the caption explains what's being added.
+  const play = $("buildPlay");
+  if (play) play.onclick = () => {
+    if (_walkTimer) { clearInterval(_walkTimer); _walkTimer = null; play.textContent = "▶ Walk"; return; }
+    const slider = $("buildStep"); if (!slider) return;
+    play.textContent = "⏸ Pause";
+    let k = 1; slider.value = 1; loadModel(sections);
+    _walkTimer = setInterval(() => {
+      k += 1;
+      if (k > sections.length) { clearInterval(_walkTimer); _walkTimer = null; play.textContent = "▶ Walk"; return; }
+      slider.value = k; loadModel(sections);
+    }, 1600);
+  };
+  setBuildCaption(sections, sections.length);
 }
 
 async function download(fmt) {
@@ -822,17 +895,22 @@ function paint() {
     h = drillingPane(d);
   } else if (tab === "steps") {
     const subs = d.assembly || [];
+    const sections = d.model_sections || [];
     h = subs.length ? `<p class="muted" style="font-size:11.5px;margin:0 0 8px">
-        Build each sub-assembly, then bring them together in Final assembly.</p>` +
+        Build each sub-assembly, then bring them together in Final assembly.${
+          sections.length > 1 ? ' Click <b>👁 Show in 3D</b> to isolate a sub-assembly in the preview.' : ''}</p>` +
       subs.map(sub => {
         const sids = (sub.part_ids||[]).length ? ` <span class="muted" style="font-size:11px">[${esc(sub.part_ids.join(", "))}]</span>` : "";
+        const canShow = sections.some(s => s.toLowerCase() === (sub.name||"").toLowerCase());
+        const show = canShow ? ` <span class="step-show muted" style="font-size:11px"
+          onclick="showSectionInModel('${esc((sub.name||'').replace(/'/g,"\\'"))}')">👁 Show in 3D</span>` : "";
         const steps = (sub.steps||[]).map(s => {
           const ids = (s.part_ids||[]).length ? ` <span class="muted">[${esc(s.part_ids.join(", "))}]</span>` : "";
           const hw = (s.hardware||[]).length ? `<div class="muted" style="font-size:11px">↳ ${esc(s.hardware.join(", "))}</div>` : "";
           return `<div style="margin:5px 0 5px 10px">
             <b>${esc(s.number)}. ${esc(s.title)}</b>${ids}<div style="font-size:12.5px">${esc(s.detail)}</div>${hw}</div>`;
         }).join("");
-        return `<details open style="margin:6px 0"><summary style="font-weight:600;color:var(--wood)">▪ ${esc(sub.name)}${sids}</summary>
+        return `<details open style="margin:6px 0"><summary style="font-weight:600;color:var(--wood)">▪ ${esc(sub.name)}${sids}${show}</summary>
           <div class="muted" style="font-size:11.5px;margin:2px 0 4px 10px">${esc(sub.detail)}</div>${steps}</details>`;
       }).join("") : '<p class="muted">No assembly steps for this design.</p>';
   } else if (tab === "drawings") {

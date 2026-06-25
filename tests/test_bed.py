@@ -123,7 +123,7 @@ def test_assembly_plan_phases():
     plan = assembly_plan(_bed())
     names = [s.name for s in plan.subassemblies]
     assert "Headboard" in names and "Footboard" in names
-    assert "Side rails" in names
+    assert "Rails" in names
 
 
 def test_estimate_prices_the_bed():

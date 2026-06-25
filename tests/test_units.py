@@ -83,3 +83,17 @@ def test_cutlist_summary_units():
     cl = generate_cutlist(_spec())
     assert "m²" in cl.summary("metric")
     assert "ft²" in cl.summary("imperial")
+
+
+# --- G6b: imperial-first default for the CLI (WOODAI_UNITS) ----------------
+
+def test_cli_default_unit_from_env(monkeypatch):
+    from woodworking_ai.cli import _default_unit
+    monkeypatch.delenv("WOODAI_UNITS", raising=False)
+    assert _default_unit() == "metric"          # mm-native default
+    for v in ("in", "inch", "inches", "imperial", "IN"):
+        monkeypatch.setenv("WOODAI_UNITS", v)
+        assert _default_unit() == "imperial", v
+    for v in ("mm", "metric", "garbage"):
+        monkeypatch.setenv("WOODAI_UNITS", v)
+        assert _default_unit() == "metric", v
