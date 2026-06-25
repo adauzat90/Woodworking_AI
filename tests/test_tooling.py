@@ -6,12 +6,10 @@ the designer prompt constraint, ShopProfile round-trip, and the service bundle's
 tool checklist.
 """
 
-from woodworking_ai.dsl import CabinetSpec, TableSpec, Drawer, Material, Joinery
-from woodworking_ai import tooling as T
+from woodworking_ai.dsl import CabinetSpec, TableSpec, Drawer, Joinery
 from woodworking_ai.tooling import (
-    ShopTooling, HAND_TOOL_SHOP, HOBBYIST_SHOP, FULL_SHOP,
-    can_make, substitute, required_operations, tooling_advisories,
-    tools_needed, designer_constraint,
+    ShopTooling, HAND_TOOL_SHOP, HOBBYIST_SHOP, can_make, substitute, required_operations, tooling_advisories,
+    designer_constraint,
 )
 from woodworking_ai.validator import validate
 from woodworking_ai.profile import ShopProfile, profile_from_dict, profile_to_dict

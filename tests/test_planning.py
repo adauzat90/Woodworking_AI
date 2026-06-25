@@ -6,10 +6,10 @@ Pure math; runs without build123d or an API key.
 import pytest
 
 from woodworking_ai import (
-    CabinetSpec, CabinetType, TableSpec, Material, ToeKick, Drawer,
+    CabinetSpec, TableSpec, Material, ToeKick, Drawer,
     Joinery, CornerJoint,
 )
-from woodworking_ai.tooling import ShopTooling, HAND_TOOL_SHOP, FULL_SHOP
+from woodworking_ai.tooling import HAND_TOOL_SHOP, FULL_SHOP
 from woodworking_ai.planning import skill, build_time, plan
 
 

@@ -5,7 +5,6 @@ cut list, hardware, validate, joinery, assembly, estimate) and round-trips
 through the DSL, with no edit to any generic stage.
 """
 
-import math
 
 import pytest
 

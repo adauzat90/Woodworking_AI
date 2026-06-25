@@ -8,11 +8,11 @@ any part.
 from woodworking_ai.packing import pack_into_bin, pack
 from woodworking_ai.estimator import SheetSize
 from woodworking_ai.cutplan import (
-    StockBoard, CutPlan, cut_plan, boards_from_dicts, boards_to_dicts,
+    StockBoard, cut_plan, boards_from_dicts, boards_to_dicts,
     cutplan_dxf,
 )
 from woodworking_ai.cutlist import CutList, Part, generate_cutlist
-from woodworking_ai.dsl import CabinetSpec, Drawer
+from woodworking_ai.dsl import CabinetSpec
 from woodworking_ai import service
 
 

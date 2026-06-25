@@ -7,7 +7,7 @@ single source down and prove a new ComponentGroup subclass flows through the
 whole pipeline without editing any stage.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import woodworking_ai.dispatch as dispatch
 from woodworking_ai import (

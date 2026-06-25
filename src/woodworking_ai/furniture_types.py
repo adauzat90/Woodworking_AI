@@ -23,7 +23,7 @@ import math
 
 from . import furniture
 from .dispatch import WALL_SHELF, BOX, BENCH
-from .dsl import WallShelfSpec, BoxSpec, BenchSpec, ShelfFixing, CornerJoint
+from .dsl import WallShelfSpec, BoxSpec, BenchSpec, ShelfFixing
 from .geometry import PanelBox
 from .cutlist import CutList, Part, Hardware, assign_ids, _resolve_part_stock
 from .validator import Issue
@@ -443,7 +443,7 @@ def _bench_panels(spec: BenchSpec) -> list[PanelBox]:
     """
     W, D, H = spec.width, spec.depth, spec.height
     tt, leg = spec.top_thickness, spec.leg
-    ah, at, li = spec.apron_height, spec.apron_thickness, spec.leg_inset
+    ah, at = spec.apron_height, spec.apron_thickness  # leg inset via _bench_leg_offsets
     panels: list[PanelBox] = []
 
     def add(label, size, center, category, unit=""):

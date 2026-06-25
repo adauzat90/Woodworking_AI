@@ -245,7 +245,7 @@ def cutplan_result(spec, boards, *, cutlist=None, kerf: float = 3.0) -> dict[str
     dependency. Returned standalone and (optionally) embedded by
     :func:`build_result` when boards are supplied.
     """
-    from .cutplan import cut_plan, boards_from_dicts, StockBoard
+    from .cutplan import cut_plan, boards_from_dicts
     if boards and isinstance(boards[0], dict):
         boards = boards_from_dicts(boards)
     plan = cut_plan(spec, list(boards), cutlist=cutlist, kerf=kerf)

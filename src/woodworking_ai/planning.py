@@ -349,7 +349,6 @@ def build_time(spec, tooling: ShopTooling | None = None) -> dict:
                 "drivers": ["a reserved gap — nothing to build"]}
 
     if kind == GROUP:
-        drivers: list[str] = []
         for comp in spec.components:
             sub = build_time(comp.spec, tooling)
             for p in _PHASES:
