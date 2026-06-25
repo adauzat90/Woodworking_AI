@@ -159,55 +159,114 @@
     }
   ],
   "purchasing": {
+    "consumables": [
+      {
+        "alt": "",
+        "brand": "",
+        "category": "consumable",
+        "item": "Wood glue (PVA)",
+        "line_total": 8.0,
+        "qty": 1,
+        "sku": "",
+        "source": "Home center",
+        "spec": "~250ml bottle",
+        "supplier": "Shop consumables",
+        "unit": "ea",
+        "unit_price": 8.0,
+        "url": "https://duckduckgo.com/?q=Wood+glue+%28PVA%29"
+      },
+      {
+        "alt": "",
+        "brand": "",
+        "category": "abrasive",
+        "item": "Sandpaper (assorted grits)",
+        "line_total": 5.4,
+        "qty": 6,
+        "sku": "",
+        "source": "Home center",
+        "spec": "120/150/180 grit",
+        "supplier": "Shop consumables",
+        "unit": "sheet",
+        "unit_price": 0.9,
+        "url": "https://duckduckgo.com/?q=Sandpaper+%28assorted+grits%29"
+      },
+      {
+        "alt": "",
+        "brand": "",
+        "category": "clamp",
+        "item": "Bar / parallel clamps",
+        "line_total": 80.0,
+        "qty": 5,
+        "sku": "",
+        "source": "Woodworking store (Rockler / Lee Valley / Woodcraft)",
+        "spec": "own these? skip \u2014 ~1 per 200mm",
+        "supplier": "Shop consumables",
+        "unit": "ea",
+        "unit_price": 16.0,
+        "url": "https://duckduckgo.com/?q=Bar+%2F+parallel+clamps"
+      }
+    ],
     "currency": "$",
     "lines": [
       {
+        "alt": "",
         "brand": "",
         "category": "lumber",
         "item": "Oak solid lumber",
         "line_total": 31.5798,
         "qty": 3.05,
         "sku": "",
+        "source": "Hardwood dealer / lumberyard",
         "spec": "25mm S4S",
         "supplier": "Lumber yard",
         "unit": "bd ft",
-        "unit_price": 10.35
+        "unit_price": 10.35,
+        "url": "https://duckduckgo.com/?q=Oak+solid+lumber"
       },
       {
+        "alt": "",
         "brand": "generic",
         "category": "hardware",
         "item": "French cleat (45\u00b0 bevel pair)",
         "line_total": 0.0,
         "qty": 1,
         "sku": "CLEAT-45",
+        "source": "Woodworking store (Rockler / Lee Valley / Woodcraft)",
         "spec": "CLEAT-45",
         "supplier": "Generic (hardware)",
         "unit": "ea",
-        "unit_price": 0.0
+        "unit_price": 0.0,
+        "url": "https://duckduckgo.com/?q=French+cleat+%2845%C2%B0+bevel+pair%29+CLEAT-45"
       },
       {
+        "alt": "",
         "brand": "generic",
         "category": "hardware",
         "item": "Wall anchor / lag screw",
         "line_total": 0.0,
         "qty": 3,
         "sku": "ANCHOR-LAG",
+        "source": "Woodworking store (Rockler / Lee Valley / Woodcraft)",
         "spec": "ANCHOR-LAG",
         "supplier": "Generic (hardware)",
         "unit": "ea",
-        "unit_price": 0.0
+        "unit_price": 0.0,
+        "url": "https://duckduckgo.com/?q=Wall+anchor+%2F+lag+screw+ANCHOR-LAG"
       },
       {
+        "alt": "",
         "brand": "",
         "category": "labour",
         "item": "Shop labour",
         "line_total": 42.25,
         "qty": 0.65,
         "sku": "",
+        "source": "",
         "spec": "cut, process, assemble, finish",
         "supplier": "Shop labour (in-house)",
         "unit": "h",
-        "unit_price": 65.0
+        "unit_price": 65.0,
+        "url": ""
       }
     ],
     "name": "Oak shelf"

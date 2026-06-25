@@ -379,79 +379,144 @@
     }
   ],
   "purchasing": {
+    "consumables": [
+      {
+        "alt": "",
+        "brand": "",
+        "category": "consumable",
+        "item": "Wood glue (PVA)",
+        "line_total": 8.0,
+        "qty": 1,
+        "sku": "",
+        "source": "Home center",
+        "spec": "~250ml bottle",
+        "supplier": "Shop consumables",
+        "unit": "ea",
+        "unit_price": 8.0,
+        "url": "https://duckduckgo.com/?q=Wood+glue+%28PVA%29"
+      },
+      {
+        "alt": "",
+        "brand": "",
+        "category": "abrasive",
+        "item": "Sandpaper (assorted grits)",
+        "line_total": 5.4,
+        "qty": 6,
+        "sku": "",
+        "source": "Home center",
+        "spec": "120/150/180 grit",
+        "supplier": "Shop consumables",
+        "unit": "sheet",
+        "unit_price": 0.9,
+        "url": "https://duckduckgo.com/?q=Sandpaper+%28assorted+grits%29"
+      },
+      {
+        "alt": "",
+        "brand": "",
+        "category": "clamp",
+        "item": "Bar / parallel clamps",
+        "line_total": 112.0,
+        "qty": 7,
+        "sku": "",
+        "source": "Woodworking store (Rockler / Lee Valley / Woodcraft)",
+        "spec": "own these? skip \u2014 ~1 per 200mm",
+        "supplier": "Shop consumables",
+        "unit": "ea",
+        "unit_price": 16.0,
+        "url": "https://duckduckgo.com/?q=Bar+%2F+parallel+clamps"
+      }
+    ],
     "currency": "$",
     "lines": [
       {
+        "alt": "",
         "brand": "",
         "category": "lumber",
         "item": "Ash solid lumber",
         "line_total": 18.2929,
         "qty": 1.99,
         "sku": "",
+        "source": "Hardwood dealer / lumberyard",
         "spec": "20mm S4S",
         "supplier": "Lumber yard",
         "unit": "bd ft",
-        "unit_price": 9.2
+        "unit_price": 9.2,
+        "url": "https://duckduckgo.com/?q=Ash+solid+lumber"
       },
       {
+        "alt": "",
         "brand": "",
         "category": "lumber",
         "item": "Ash solid lumber",
         "line_total": 13.2635,
         "qty": 1.44,
         "sku": "",
+        "source": "Hardwood dealer / lumberyard",
         "spec": "45mm S4S",
         "supplier": "Lumber yard",
         "unit": "bd ft",
-        "unit_price": 9.2
+        "unit_price": 9.2,
+        "url": "https://duckduckgo.com/?q=Ash+solid+lumber"
       },
       {
+        "alt": "",
         "brand": "",
         "category": "lumber",
         "item": "Ash solid lumber",
         "line_total": 49.1241,
         "qty": 5.34,
         "sku": "",
+        "source": "Hardwood dealer / lumberyard",
         "spec": "30mm S4S",
         "supplier": "Lumber yard",
         "unit": "bd ft",
-        "unit_price": 9.2
+        "unit_price": 9.2,
+        "url": "https://duckduckgo.com/?q=Ash+solid+lumber"
       },
       {
+        "alt": "",
         "brand": "generic",
         "category": "hardware",
         "item": "Corner bracket",
         "line_total": 0.0,
         "qty": 4,
         "sku": "",
+        "source": "Woodworking store (Rockler / Lee Valley / Woodcraft)",
         "spec": "leg-to-apron",
         "supplier": "Generic (hardware)",
         "unit": "ea",
-        "unit_price": 0.0
+        "unit_price": 0.0,
+        "url": "https://duckduckgo.com/?q=Corner+bracket"
       },
       {
+        "alt": "",
         "brand": "generic",
         "category": "hardware",
         "item": "Seat fastener",
         "line_total": 0.0,
         "qty": 6,
         "sku": "",
+        "source": "Woodworking store (Rockler / Lee Valley / Woodcraft)",
         "spec": "expansion clip",
         "supplier": "Generic (hardware)",
         "unit": "ea",
-        "unit_price": 0.0
+        "unit_price": 0.0,
+        "url": "https://duckduckgo.com/?q=Seat+fastener"
       },
       {
+        "alt": "",
         "brand": "",
         "category": "labour",
         "item": "Shop labour",
         "line_total": 68.25,
         "qty": 1.05,
         "sku": "",
+        "source": "",
         "spec": "cut, process, assemble, finish",
         "supplier": "Shop labour (in-house)",
         "unit": "h",
-        "unit_price": 65.0
+        "unit_price": 65.0,
+        "url": ""
       }
     ],
     "name": "Dining bench"

@@ -320,79 +320,144 @@
     }
   ],
   "purchasing": {
+    "consumables": [
+      {
+        "alt": "",
+        "brand": "",
+        "category": "consumable",
+        "item": "Wood glue (PVA)",
+        "line_total": 8.0,
+        "qty": 1,
+        "sku": "",
+        "source": "Home center",
+        "spec": "~250ml bottle",
+        "supplier": "Shop consumables",
+        "unit": "ea",
+        "unit_price": 8.0,
+        "url": "https://duckduckgo.com/?q=Wood+glue+%28PVA%29"
+      },
+      {
+        "alt": "",
+        "brand": "",
+        "category": "abrasive",
+        "item": "Sandpaper (assorted grits)",
+        "line_total": 5.4,
+        "qty": 6,
+        "sku": "",
+        "source": "Home center",
+        "spec": "120/150/180 grit",
+        "supplier": "Shop consumables",
+        "unit": "sheet",
+        "unit_price": 0.9,
+        "url": "https://duckduckgo.com/?q=Sandpaper+%28assorted+grits%29"
+      },
+      {
+        "alt": "",
+        "brand": "",
+        "category": "clamp",
+        "item": "Bar / parallel clamps",
+        "line_total": 144.0,
+        "qty": 9,
+        "sku": "",
+        "source": "Woodworking store (Rockler / Lee Valley / Woodcraft)",
+        "spec": "own these? skip \u2014 ~1 per 200mm",
+        "supplier": "Shop consumables",
+        "unit": "ea",
+        "unit_price": 16.0,
+        "url": "https://duckduckgo.com/?q=Bar+%2F+parallel+clamps"
+      }
+    ],
     "currency": "$",
     "lines": [
       {
+        "alt": "",
         "brand": "",
         "category": "lumber",
         "item": "solid lumber",
         "line_total": 24.0942,
         "qty": 3.49,
         "sku": "",
+        "source": "Hardwood dealer / lumberyard",
         "spec": "20mm S4S",
         "supplier": "Lumber yard",
         "unit": "bd ft",
-        "unit_price": 6.9
+        "unit_price": 6.9,
+        "url": "https://duckduckgo.com/?q=solid+lumber"
       },
       {
+        "alt": "",
         "brand": "",
         "category": "lumber",
         "item": "solid lumber",
         "line_total": 47.8073,
         "qty": 5.94,
         "sku": "",
+        "source": "Hardwood dealer / lumberyard",
         "spec": "70mm S4S",
         "supplier": "Lumber yard",
         "unit": "bd ft",
-        "unit_price": 8.05
+        "unit_price": 8.05,
+        "url": "https://duckduckgo.com/?q=solid+lumber"
       },
       {
+        "alt": "",
         "brand": "",
         "category": "lumber",
         "item": "solid lumber",
         "line_total": 157.934,
         "qty": 15.26,
         "sku": "",
+        "source": "Hardwood dealer / lumberyard",
         "spec": "25mm S4S",
         "supplier": "Lumber yard",
         "unit": "bd ft",
-        "unit_price": 10.35
+        "unit_price": 10.35,
+        "url": "https://duckduckgo.com/?q=solid+lumber"
       },
       {
+        "alt": "",
         "brand": "generic",
         "category": "hardware",
         "item": "Corner bracket",
         "line_total": 0.0,
         "qty": 4,
         "sku": "",
+        "source": "Woodworking store (Rockler / Lee Valley / Woodcraft)",
         "spec": "leg-to-apron",
         "supplier": "Generic (hardware)",
         "unit": "ea",
-        "unit_price": 0.0
+        "unit_price": 0.0,
+        "url": "https://duckduckgo.com/?q=Corner+bracket"
       },
       {
+        "alt": "",
         "brand": "generic",
         "category": "hardware",
         "item": "Tabletop fastener",
         "line_total": 0.0,
         "qty": 8,
         "sku": "",
+        "source": "Woodworking store (Rockler / Lee Valley / Woodcraft)",
         "spec": "expansion clip",
         "supplier": "Generic (hardware)",
         "unit": "ea",
-        "unit_price": 0.0
+        "unit_price": 0.0,
+        "url": "https://duckduckgo.com/?q=Tabletop+fastener"
       },
       {
+        "alt": "",
         "brand": "",
         "category": "labour",
         "item": "Shop labour",
         "line_total": 81.25,
         "qty": 1.25,
         "sku": "",
+        "source": "",
         "spec": "cut, process, assemble, finish",
         "supplier": "Shop labour (in-house)",
         "unit": "h",
-        "unit_price": 65.0
+        "unit_price": 65.0,
+        "url": ""
       }
     ],
     "name": "Dining table"

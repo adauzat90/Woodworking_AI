@@ -54,18 +54,33 @@ class POLine:
     line_total: float = 0.0
     brand: str = ""        # hardware brand, when applicable
     sku: str = ""          # orderable part number, when applicable
+    source: str = ""       # where to buy it (retailer); advisory, never priced
+    url: str = ""          # an optional search/buy link for the source
+    alt: str = ""          # a home-center equivalent (for pro/Euro hardware)
 
 
 @dataclass
 class PurchaseOrder:
-    """A purchase order for a spec, grouped by supplier."""
+    """A purchase order for a spec, grouped by supplier.
+
+    ``lines`` are the billable materials + labour and reconcile to the quote
+    (:pyattr:`grand_total` == ``estimate(...).total``). ``consumables`` are the
+    shop sundries a build also needs — glue, abrasives, clamps, finishing kit —
+    kept **separate** so they never disturb that reconciliation; they carry their
+    own :pyattr:`consumables_total`.
+    """
     name: str
     lines: list[POLine] = field(default_factory=list)
     currency: str = "$"
+    consumables: list[POLine] = field(default_factory=list)
 
     @property
     def grand_total(self) -> float:
         return sum(line.line_total for line in self.lines)
+
+    @property
+    def consumables_total(self) -> float:
+        return sum(line.line_total for line in self.consumables)
 
     @property
     def suppliers(self) -> list[str]:
@@ -118,6 +133,15 @@ class PurchaseOrder:
             out.append(f"    subtotal: {c}{self.supplier_total(supplier):.2f}")
         out.append(f"  {'=' * 30}")
         out.append(f"  GRAND TOTAL: {c}{self.grand_total:.2f}")
+        if self.consumables:
+            out.append("")
+            out.append("  Shop consumables (not in the total above):")
+            for ln in self.consumables:
+                alt = f"  [or: {ln.alt}]" if ln.alt else ""
+                out.append(
+                    f"    {ln.item:<28}{' ':>9} {ln.qty:>8.2f} {ln.unit:<6} "
+                    f"@ {c}{ln.unit_price:>7.2f} = {c}{ln.line_total:>9.2f}{alt}")
+            out.append(f"    consumables subtotal: {c}{self.consumables_total:.2f}")
         return "\n".join(out)
 
 
@@ -226,6 +250,99 @@ def _labour_line(est: Estimate, prices: PriceBook) -> list[POLine]:
         line_total=est.labour_cost)]
 
 
+# --- shop consumables (G4a) --------------------------------------------------
+# A build also needs sundries the quote doesn't itemise: glue, abrasives, clamps,
+# finishing kit. These are kept OFF the reconciled `lines` (so the PO still ties
+# to the quote) and surfaced as their own section with indicative prices. Prices
+# are typical retail and overridable by editing this table.
+SUPPLIER_CONSUMABLES = "Shop consumables"
+_GLUE_BOTTLE_PRICE = 8.0       # ~250ml PVA
+_SANDPAPER_SHEET_PRICE = 0.9   # per sheet
+_CLAMP_PRICE = 16.0            # one parallel/bar clamp (a kept tool, not per-build)
+_BRUSH_PRICE = 4.0
+_CONDITIONER_PRICE = 12.0      # pre-stain wood conditioner
+
+
+def _largest_part_mm(cl: CutList) -> float:
+    return max((getattr(p, "length", 0.0) or 0.0 for p in cl.parts), default=0.0)
+
+
+def _consumable_lines(spec, est: Estimate, cl: CutList) -> list[POLine]:
+    """Indicative shop-consumables lines (glue, abrasives, clamps, finishing kit).
+
+    Derived from the same data the rest of the pipeline uses — the glue-up count,
+    the finishing schedule's grits + area, and the largest glued panel — so the
+    list scales with the actual build. Each line is best-effort and skipped when
+    its quantity rounds to zero.
+    """
+    import math
+    from .planning import _glue_up_count
+    from .finishing import finishing_schedule
+    from . import species as species_mod
+
+    lines: list[POLine] = []
+
+    # Glue — ~one 250ml bottle per two glue-ups, at least one for any glued build.
+    glue_ups = max(_glue_up_count(spec), 0)
+    bottles = max(1, math.ceil(glue_ups / 2)) if glue_ups else 0
+    if bottles:
+        lines.append(POLine(
+            supplier=SUPPLIER_CONSUMABLES, category="consumable",
+            item="Wood glue (PVA)", spec="~250ml bottle", qty=bottles, unit="ea",
+            unit_price=_GLUE_BOTTLE_PRICE, line_total=bottles * _GLUE_BOTTLE_PRICE))
+
+    # Abrasives — the finish's grit sequence (or a default 3-grit sand for a bare
+    # piece) over the finishable area, ~0.5 m² of useful life per sheet.
+    fin = finishing_schedule(spec)
+    grits = fin.get("grits") or [120, 150, 180]
+    area = max(float(fin.get("area_m2", 0.0)) or 0.0, 1.0)
+    sheets = len(grits) * max(2, math.ceil(area / 0.5))
+    if sheets:
+        lines.append(POLine(
+            supplier=SUPPLIER_CONSUMABLES, category="abrasive",
+            item="Sandpaper (assorted grits)",
+            spec=f"{'/'.join(str(g) for g in grits)} grit", qty=sheets,
+            unit="sheet", unit_price=_SANDPAPER_SHEET_PRICE,
+            line_total=round(sheets * _SANDPAPER_SHEET_PRICE, 2)))
+
+    # Clamps — enough to span the largest glued panel at ~1 per 200mm (a kept
+    # tool: priced for shoppers who don't own them, flagged as such).
+    span = _largest_part_mm(cl)
+    n_clamps = min(max(int(span // 200) + 1, 2), 12) if span > 0 else 0
+    if n_clamps:
+        lines.append(POLine(
+            supplier=SUPPLIER_CONSUMABLES, category="clamp",
+            item="Bar / parallel clamps", spec="own these? skip — ~1 per 200mm",
+            qty=n_clamps, unit="ea", unit_price=_CLAMP_PRICE,
+            line_total=n_clamps * _CLAMP_PRICE))
+
+    # Finishing sundries — applicators, and a conditioner for blotch-prone woods.
+    if fin.get("coats", 0):
+        lines.append(POLine(
+            supplier=SUPPLIER_CONSUMABLES, category="finish",
+            item="Brushes / applicators & rags", spec="for the finish coats",
+            qty=2, unit="ea", unit_price=_BRUSH_PRICE,
+            line_total=2 * _BRUSH_PRICE))
+        if species_mod.finishing_category(getattr(spec, "species", "")) == \
+                species_mod.FINISH_BLOTCH and "stain" in str(fin.get("type", "")):
+            lines.append(POLine(
+                supplier=SUPPLIER_CONSUMABLES, category="finish",
+                item="Pre-stain wood conditioner",
+                spec="blotch-prone species — condition before stain", qty=1,
+                unit="ea", unit_price=_CONDITIONER_PRICE,
+                line_total=_CONDITIONER_PRICE))
+    return lines
+
+
+def _apply_sources(lines: list[POLine]) -> None:
+    """Stamp each line with where to buy it (retailer / link / big-box alt)."""
+    from .sources import source_for
+    for ln in lines:
+        retailer, url, alt = source_for(
+            ln.category, brand=ln.brand, item=ln.item, sku=ln.sku)
+        ln.source, ln.url, ln.alt = retailer, url, alt
+
+
 def purchase_order(spec, *, prices: PriceBook | None = None,
                    sheet: SheetSize | None = None,
                    cutlist: CutList | None = None) -> PurchaseOrder:
@@ -264,6 +381,13 @@ def purchase_order(spec, *, prices: PriceBook | None = None,
         order.setdefault(ln.supplier, len(order))
     lines.sort(key=lambda ln: order[ln.supplier])
 
-    return PurchaseOrder(name=est.spec_name, lines=lines, currency=est.currency)
+    consumables = _consumable_lines(spec, est, cl)
+
+    # Stamp sourcing onto every line (billable + consumable); advisory only.
+    _apply_sources(lines)
+    _apply_sources(consumables)
+
+    return PurchaseOrder(name=est.spec_name, lines=lines, currency=est.currency,
+                         consumables=consumables)
 
 

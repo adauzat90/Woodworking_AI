@@ -2041,103 +2041,174 @@
     }
   ],
   "purchasing": {
+    "consumables": [
+      {
+        "alt": "",
+        "brand": "",
+        "category": "consumable",
+        "item": "Wood glue (PVA)",
+        "line_total": 8.0,
+        "qty": 1,
+        "sku": "",
+        "source": "Home center",
+        "spec": "~250ml bottle",
+        "supplier": "Shop consumables",
+        "unit": "ea",
+        "unit_price": 8.0,
+        "url": "https://duckduckgo.com/?q=Wood+glue+%28PVA%29"
+      },
+      {
+        "alt": "",
+        "brand": "",
+        "category": "abrasive",
+        "item": "Sandpaper (assorted grits)",
+        "line_total": 5.4,
+        "qty": 6,
+        "sku": "",
+        "source": "Home center",
+        "spec": "120/150/180 grit",
+        "supplier": "Shop consumables",
+        "unit": "sheet",
+        "unit_price": 0.9,
+        "url": "https://duckduckgo.com/?q=Sandpaper+%28assorted+grits%29"
+      },
+      {
+        "alt": "",
+        "brand": "",
+        "category": "clamp",
+        "item": "Bar / parallel clamps",
+        "line_total": 144.0,
+        "qty": 9,
+        "sku": "",
+        "source": "Woodworking store (Rockler / Lee Valley / Woodcraft)",
+        "spec": "own these? skip \u2014 ~1 per 200mm",
+        "supplier": "Shop consumables",
+        "unit": "ea",
+        "unit_price": 16.0,
+        "url": "https://duckduckgo.com/?q=Bar+%2F+parallel+clamps"
+      }
+    ],
     "currency": "$",
     "lines": [
       {
+        "alt": "",
         "brand": "",
         "category": "sheet",
         "item": "Back & drawer-bottom panel",
         "line_total": 30.0,
         "qty": 1,
         "sku": "",
+        "source": "Home center / sheet-goods yard",
         "spec": "thin ply or hardboard 6mm",
         "supplier": "Sheet goods supplier",
         "unit": "sheet",
-        "unit_price": 30.0
+        "unit_price": 30.0,
+        "url": "https://duckduckgo.com/?q=Back+%26+drawer-bottom+panel"
       },
       {
+        "alt": "",
         "brand": "",
         "category": "sheet",
         "item": "Carcass sheet",
         "line_total": 140.0,
         "qty": 2,
         "sku": "",
+        "source": "Home center / sheet-goods yard",
         "spec": "plywood / MDF / melamine 18mm",
         "supplier": "Sheet goods supplier",
         "unit": "sheet",
-        "unit_price": 70.0
+        "unit_price": 70.0,
+        "url": "https://duckduckgo.com/?q=Carcass+sheet"
       },
       {
+        "alt": "",
         "brand": "generic",
         "category": "hardware",
         "item": "Shelf pin",
         "line_total": 2.4,
         "qty": 16,
         "sku": "",
+        "source": "Woodworking store (Rockler / Lee Valley / Woodcraft)",
         "spec": "5mm",
         "supplier": "Generic (hardware)",
         "unit": "ea",
-        "unit_price": 0.15
+        "unit_price": 0.15,
+        "url": "https://duckduckgo.com/?q=Shelf+pin"
       },
       {
+        "alt": "",
         "brand": "generic",
         "category": "hardware",
         "item": "Assembly screw 4\u00d735",
         "line_total": 0.0,
         "qty": 4,
         "sku": "SCR-4x35",
+        "source": "Woodworking store (Rockler / Lee Valley / Woodcraft)",
         "spec": "SCR-4x35",
         "supplier": "Generic (hardware)",
         "unit": "ea",
-        "unit_price": 0.0
+        "unit_price": 0.0,
+        "url": "https://duckduckgo.com/?q=Assembly+screw+4%C3%9735+SCR-4x35"
       },
       {
+        "alt": "",
         "brand": "generic",
         "category": "hardware",
         "item": "Back panel screw 4\u00d716",
         "line_total": 0.0,
         "qty": 10,
         "sku": "",
+        "source": "Woodworking store (Rockler / Lee Valley / Woodcraft)",
         "spec": "fix back to rear edges",
         "supplier": "Generic (hardware)",
         "unit": "ea",
-        "unit_price": 0.0
+        "unit_price": 0.0,
+        "url": "https://duckduckgo.com/?q=Back+panel+screw+4%C3%9716"
       },
       {
+        "alt": "",
         "brand": "generic",
         "category": "hardware",
         "item": "Edge banding",
         "line_total": 0.0,
         "qty": 1,
         "sku": "",
+        "source": "Woodworking store (Rockler / Lee Valley / Woodcraft)",
         "spec": "match shown panel faces (see estimate for run)",
         "supplier": "Generic (hardware)",
         "unit": "ea",
-        "unit_price": 0.0
+        "unit_price": 0.0,
+        "url": "https://duckduckgo.com/?q=Edge+banding"
       },
       {
+        "alt": "",
         "brand": "",
         "category": "banding",
         "item": "Edge banding \u2014 sheet",
         "line_total": 12.012,
         "qty": 8.01,
         "sku": "",
+        "source": "Woodworking store (Rockler / Lee Valley / Woodcraft)",
         "spec": "pre-glued roll",
         "supplier": "Edge-banding supplier",
         "unit": "m",
-        "unit_price": 1.5
+        "unit_price": 1.5,
+        "url": "https://duckduckgo.com/?q=Edge+banding+%E2%80%94+sheet"
       },
       {
+        "alt": "",
         "brand": "",
         "category": "labour",
         "item": "Shop labour",
         "line_total": 65.0,
         "qty": 1.0,
         "sku": "",
+        "source": "",
         "spec": "cut, process, assemble, finish",
         "supplier": "Shop labour (in-house)",
         "unit": "h",
-        "unit_price": 65.0
+        "unit_price": 65.0,
+        "url": ""
       }
     ],
     "name": "Bookcase"

@@ -4475,163 +4475,234 @@
     }
   ],
   "purchasing": {
+    "consumables": [
+      {
+        "alt": "",
+        "brand": "",
+        "category": "consumable",
+        "item": "Wood glue (PVA)",
+        "line_total": 16.0,
+        "qty": 2,
+        "sku": "",
+        "source": "Home center",
+        "spec": "~250ml bottle",
+        "supplier": "Shop consumables",
+        "unit": "ea",
+        "unit_price": 8.0,
+        "url": "https://duckduckgo.com/?q=Wood+glue+%28PVA%29"
+      },
+      {
+        "alt": "",
+        "brand": "",
+        "category": "abrasive",
+        "item": "Sandpaper (assorted grits)",
+        "line_total": 5.4,
+        "qty": 6,
+        "sku": "",
+        "source": "Home center",
+        "spec": "120/150/180 grit",
+        "supplier": "Shop consumables",
+        "unit": "sheet",
+        "unit_price": 0.9,
+        "url": "https://duckduckgo.com/?q=Sandpaper+%28assorted+grits%29"
+      }
+    ],
     "currency": "$",
     "lines": [
       {
+        "alt": "",
         "brand": "",
         "category": "sheet",
         "item": "Back & drawer-bottom panel",
         "line_total": 120.0,
         "qty": 4,
         "sku": "",
+        "source": "Home center / sheet-goods yard",
         "spec": "thin ply or hardboard 6mm",
         "supplier": "Sheet goods supplier",
         "unit": "sheet",
-        "unit_price": 30.0
+        "unit_price": 30.0,
+        "url": "https://duckduckgo.com/?q=Back+%26+drawer-bottom+panel"
       },
       {
+        "alt": "",
         "brand": "",
         "category": "sheet",
         "item": "Door & drawer-front panel",
         "line_total": 380.0,
         "qty": 4,
         "sku": "",
+        "source": "Home center / sheet-goods yard",
         "spec": "veneer ply / MDF 18mm",
         "supplier": "Sheet goods supplier",
         "unit": "sheet",
-        "unit_price": 95.0
+        "unit_price": 95.0,
+        "url": "https://duckduckgo.com/?q=Door+%26+drawer-front+panel"
       },
       {
+        "alt": "",
         "brand": "",
         "category": "sheet",
         "item": "Carcass sheet",
         "line_total": 280.0,
         "qty": 4,
         "sku": "",
+        "source": "Home center / sheet-goods yard",
         "spec": "plywood / MDF / melamine 18mm",
         "supplier": "Sheet goods supplier",
         "unit": "sheet",
-        "unit_price": 70.0
+        "unit_price": 70.0,
+        "url": "https://duckduckgo.com/?q=Carcass+sheet"
       },
       {
+        "alt": "",
         "brand": "generic",
         "category": "hardware",
         "item": "Cabinet \u00b7 Shelf pin",
         "line_total": 0.0,
         "qty": 16,
         "sku": "",
+        "source": "Woodworking store (Rockler / Lee Valley / Woodcraft)",
         "spec": "5mm",
         "supplier": "Generic (hardware)",
         "unit": "ea",
-        "unit_price": 0.0
+        "unit_price": 0.0,
+        "url": "https://duckduckgo.com/?q=Cabinet+%C2%B7+Shelf+pin"
       },
       {
+        "alt": "",
         "brand": "generic",
         "category": "hardware",
         "item": "Cabinet \u00b7 Concealed hinge",
         "line_total": 0.0,
         "qty": 16,
         "sku": "",
+        "source": "Woodworking store (Rockler / Lee Valley / Woodcraft)",
         "spec": "Concealed hinge 110\u00b0 (overlay)",
         "supplier": "Generic (hardware)",
         "unit": "ea",
-        "unit_price": 0.0
+        "unit_price": 0.0,
+        "url": "https://duckduckgo.com/?q=Cabinet+%C2%B7+Concealed+hinge"
       },
       {
+        "alt": "",
         "brand": "generic",
         "category": "hardware",
         "item": "Cabinet \u00b7 Hinge mounting plate",
         "line_total": 0.0,
         "qty": 16,
         "sku": "",
+        "source": "Woodworking store (Rockler / Lee Valley / Woodcraft)",
         "spec": "one per hinge",
         "supplier": "Generic (hardware)",
         "unit": "ea",
-        "unit_price": 0.0
+        "unit_price": 0.0,
+        "url": "https://duckduckgo.com/?q=Cabinet+%C2%B7+Hinge+mounting+plate"
       },
       {
+        "alt": "",
         "brand": "generic",
         "category": "hardware",
         "item": "Cabinet \u00b7 Door pull",
         "line_total": 0.0,
         "qty": 8,
         "sku": "",
+        "source": "Woodworking store (Rockler / Lee Valley / Woodcraft)",
         "spec": "96mm CC",
         "supplier": "Generic (hardware)",
         "unit": "ea",
-        "unit_price": 0.0
+        "unit_price": 0.0,
+        "url": "https://duckduckgo.com/?q=Cabinet+%C2%B7+Door+pull"
       },
       {
+        "alt": "",
         "brand": "generic",
         "category": "hardware",
         "item": "Cabinet \u00b7 Assembly screw 4\u00d735",
         "line_total": 0.0,
         "qty": 16,
         "sku": "SCR-4x35",
+        "source": "Woodworking store (Rockler / Lee Valley / Woodcraft)",
         "spec": "SCR-4x35",
         "supplier": "Generic (hardware)",
         "unit": "ea",
-        "unit_price": 0.0
+        "unit_price": 0.0,
+        "url": "https://duckduckgo.com/?q=Cabinet+%C2%B7+Assembly+screw+4%C3%9735+SCR-4x35"
       },
       {
+        "alt": "",
         "brand": "generic",
         "category": "hardware",
         "item": "Cabinet \u00b7 Back panel screw 4\u00d716",
         "line_total": 0.0,
         "qty": 40,
         "sku": "",
+        "source": "Woodworking store (Rockler / Lee Valley / Woodcraft)",
         "spec": "fix back to rear edges",
         "supplier": "Generic (hardware)",
         "unit": "ea",
-        "unit_price": 0.0
+        "unit_price": 0.0,
+        "url": "https://duckduckgo.com/?q=Cabinet+%C2%B7+Back+panel+screw+4%C3%9716"
       },
       {
+        "alt": "",
         "brand": "generic",
         "category": "hardware",
         "item": "Cabinet \u00b7 Edge banding",
         "line_total": 0.0,
         "qty": 4,
         "sku": "",
+        "source": "Woodworking store (Rockler / Lee Valley / Woodcraft)",
         "spec": "match shown panel faces (see estimate for run)",
         "supplier": "Generic (hardware)",
         "unit": "ea",
-        "unit_price": 0.0
+        "unit_price": 0.0,
+        "url": "https://duckduckgo.com/?q=Cabinet+%C2%B7+Edge+banding"
       },
       {
+        "alt": "",
         "brand": "",
         "category": "banding",
         "item": "Edge banding \u2014 door/front",
         "line_total": 24.228,
         "qty": 16.15,
         "sku": "",
+        "source": "Woodworking store (Rockler / Lee Valley / Woodcraft)",
         "spec": "pre-glued roll",
         "supplier": "Edge-banding supplier",
         "unit": "m",
-        "unit_price": 1.5
+        "unit_price": 1.5,
+        "url": "https://duckduckgo.com/?q=Edge+banding+%E2%80%94+door%2Ffront"
       },
       {
+        "alt": "",
         "brand": "",
         "category": "banding",
         "item": "Edge banding \u2014 sheet",
         "line_total": 18.768,
         "qty": 12.51,
         "sku": "",
+        "source": "Woodworking store (Rockler / Lee Valley / Woodcraft)",
         "spec": "pre-glued roll",
         "supplier": "Edge-banding supplier",
         "unit": "m",
-        "unit_price": 1.5
+        "unit_price": 1.5,
+        "url": "https://duckduckgo.com/?q=Edge+banding+%E2%80%94+sheet"
       },
       {
+        "alt": "",
         "brand": "",
         "category": "labour",
         "item": "Shop labour",
         "line_total": 364.0,
         "qty": 5.6,
         "sku": "",
+        "source": "",
         "spec": "cut, process, assemble, finish",
         "supplier": "Shop labour (in-house)",
         "unit": "h",
-        "unit_price": 65.0
+        "unit_price": 65.0,
+        "url": ""
       }
     ],
     "name": "Wall of Cabinets"

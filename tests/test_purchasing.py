@@ -176,3 +176,65 @@ def test_project_po_hardware_sums_component_quantities():
         return sum(ln.qty for ln in p.lines if ln.item == "Concealed hinge")
 
     assert hinges(po) == pytest.approx(2 * hinges(one))
+
+
+# --- shop consumables (G4a) — kept off the reconciled total ---------------
+
+def test_consumables_do_not_change_grand_total():
+    spec = base_spec(finish="oil", species="walnut")
+    po = purchase_order(spec)
+    est = estimate(spec)
+    assert po.grand_total == pytest.approx(est.total, abs=0.005)
+    # Consumables are a separate section with their own subtotal.
+    assert po.consumables
+    assert po.consumables_total > 0
+    assert po.consumables_total == pytest.approx(
+        sum(l.line_total for l in po.consumables), abs=0.005)
+
+
+def test_consumables_cover_glue_abrasives_clamps():
+    po = purchase_order(base_spec(finish="oil"))
+    items = " ".join(l.item.lower() for l in po.consumables)
+    assert "glue" in items
+    assert "sandpaper" in items
+    assert "clamp" in items
+
+
+def test_consumables_add_conditioner_for_blotch_prone_stain():
+    # Cherry is blotch-prone; a stain finish should add a wood conditioner line.
+    po = purchase_order(base_spec(finish="stain_clear", species="cherry"))
+    assert any("conditioner" in l.item.lower() for l in po.consumables)
+    # An oil finish on a non-blotch species should not.
+    po2 = purchase_order(base_spec(finish="oil", species="white_oak"))
+    assert not any("conditioner" in l.item.lower() for l in po2.consumables)
+
+
+def test_consumables_are_not_in_reconciled_lines():
+    po = purchase_order(base_spec(finish="oil"))
+    assert all(l.supplier != "Shop consumables" for l in po.lines)
+
+
+# --- sourcing (G4b) -------------------------------------------------------
+
+def test_every_buy_line_has_a_source():
+    po = purchase_order(base_spec(finish="oil", hardware_brand="blum"))
+    for ln in po.lines:
+        if ln.category == "labour":
+            continue                     # in-house; nothing to source
+        assert ln.source, ln.item
+    for ln in po.consumables:
+        assert ln.source, ln.item
+
+
+def test_euro_brand_hardware_gets_big_box_alternative():
+    po = purchase_order(base_spec(hardware_brand="blum"))
+    hinge = next((ln for ln in po.lines
+                  if ln.brand == "blum" and "hinge" in ln.item.lower()), None)
+    assert hinge is not None
+    assert hinge.alt                     # a home-center equivalent is offered
+    assert hinge.url                     # and a search link to the SKU
+
+
+def test_generic_hardware_has_no_alt():
+    po = purchase_order(base_spec(hardware_brand="generic"))
+    assert all(not ln.alt for ln in po.lines if ln.category == "hardware")
