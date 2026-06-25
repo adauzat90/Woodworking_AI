@@ -33,10 +33,22 @@ def test_door_thinner_than_cup_depth_errors():
     assert any(e.field == "material.door" for e in _door_errors(spec))
 
 
+def test_door_blow_through_errors():
+    # 14mm door: 14 - 12.5 = 1.5mm backing, under the 3mm minimum — the cup
+    # blows through the face (A3 depth-axis feasibility), now a hard error.
+    spec = cab(material=Material(door=14.0))
+    errs = _door_errors(spec)
+    assert any(e.field == "material.door" and "blows through" in e.message
+               for e in errs)
+    assert not validate(spec).ok
+
+
 def test_marginal_door_thickness_warns():
-    spec = cab(material=Material(door=14.0))  # hosts the cup but little backing
+    # 15.5mm door: exactly 3mm backing (hosts the cup) but thin stock — a soft
+    # warning, not a hard failure.
+    spec = cab(material=Material(door=15.5))
     assert any(w.field == "material.door" for w in _door_warnings(spec))
-    assert validate(spec).ok  # a warning, not a hard failure
+    assert validate(spec).ok
 
 
 def test_standard_door_thickness_ok():

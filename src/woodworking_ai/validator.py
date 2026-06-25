@@ -43,6 +43,18 @@ PIN_END_MARGIN = 64.0        # first/last system hole in from the panel ends
 ROW_SETBACK = 37.0           # each pin row in from the front / back edge
 MIN_PIN_POSITIONS = 3        # fewer than this is not meaningfully adjustable
 
+# --- A3 joinery / machining feasibility (analytic, no CAD) ---------------
+# A housed joint (dado/groove/rabbet) cut too close to a panel's end leaves a
+# short-grain "tongue" that splits out; keep it at least ~1x stock thickness in.
+END_DISTANCE_FACTOR = 1.0    # min joint-to-end distance, x stock thickness
+# A drawer-slide screw line and a shelf-pin hole share a side panel; if their
+# heights land within this band the pilots/bores foul each other.
+SLIDE_PIN_CLEARANCE = 6.0    # mm vertical clearance wanted between the two
+# A grooved back's housing is captured this far in from the rear edge
+# (matches joinery.GROOVE_BACK_INSET); a back rabbet that reaches deeper than
+# the groove start eats into the same material and the two interfere.
+GROOVE_BACK_INSET = 12.0
+
 # Practical bounds that also guard against pathological inputs (huge loops, NaN).
 MAX_DIMENSION = 6000.0   # mm — larger than any real cabinet/pantry
 MAX_SHELVES = 50
@@ -198,6 +210,104 @@ def _validate_project(project: ComponentGroup) -> ValidationResult:
                     f"'{component_tag(comps[j], j + 1)}' overlap in plan; space "
                     "them or fit a corner unit / filler between the runs"))
     return ValidationResult(issues)
+
+
+def _joinery_feasibility(spec) -> list[Issue]:
+    """A3 analytic joinery-feasibility checks (no CAD).
+
+    Derived from the same arithmetic schedules the shop uses
+    (:func:`joinery.joinery_schedule`, :func:`drilling.drilling_schedule`), so
+    the warnings name the exact op that fouls. Covers the machining hazards the
+    envelope/sag checks miss:
+
+    * a housed joint cut too near a panel end (short-grain blow-out);
+    * a drawer-slide screw line colliding with a shelf-pin row on a side; and
+    * a grooved back whose housing clashes with the back rabbet/recess.
+
+    The hinge-cup blow-through (depth axis) is the fourth A3 check; it raises a
+    hard error inline in :func:`validate` (see the concealed-hinge block).
+    """
+    from .joinery import joinery_schedule, HOUSED_DEPTH_FRACTION
+    from .drilling import drilling_schedule
+    from .dsl import BackStyle
+
+    issues: list[Issue] = []
+    m = spec.material
+
+    # --- 2) housed joint too close to a panel end (short-grain blow-out) ---
+    # A dado/groove/rabbet leaves a ledge of material between the cut and the
+    # panel end; under ~1x stock thickness that short-grain ledge splits out.
+    # The numerically-located housed joint here is the grooved back, set in
+    # GROOVE_BACK_INSET from the rear edge.
+    min_end = round(END_DISTANCE_FACTOR * m.carcass, 1)
+    try:
+        sched = joinery_schedule(spec)
+    except Exception:
+        sched = None
+    if sched is not None:
+        for op in sched.ops:
+            if "groove for back" not in op.operation or op.depth <= 0:
+                continue
+            # Distance from the groove to the rear panel end it's cut near.
+            if GROOVE_BACK_INSET < min_end:
+                issues.append(Issue(
+                    "warning", "joinery",
+                    f"the {op.operation} on '{op.part}' sits {GROOVE_BACK_INSET:.0f}mm "
+                    f"from the rear edge — under ~1x the {m.carcass:.0f}mm stock, so "
+                    "the short-grain ledge can blow out; rabbet the back instead or "
+                    "increase the inset"))
+
+    # --- 4) grooved back vs. back rabbet/recess interference ---------------
+    # A captured (grooved) back is housed GROOVE_BACK_INSET in from the rear and
+    # cut HOUSED_DEPTH_FRACTION of the side's thickness deep. The groove plus the
+    # rear recess (the back's own seat) must not consume the whole rear corner:
+    # if the groove housing reaches past the rear-edge ledge, the two interfere
+    # and the corner breaks through. Ledge behind the groove = inset - back seat.
+    if getattr(spec, "back", None) == BackStyle.GROOVED:
+        groove_depth = round(m.carcass * HOUSED_DEPTH_FRACTION, 1)
+        rear_ledge = GROOVE_BACK_INSET - m.back   # solid wood behind the back seat
+        if groove_depth > rear_ledge:
+            issues.append(Issue(
+                "warning", "back",
+                f"the {groove_depth:.0f}mm-deep back groove on an {m.carcass:.0f}mm "
+                f"side reaches past the {max(rear_ledge, 0.0):.0f}mm rear-edge ledge "
+                f"(inset {GROOVE_BACK_INSET:.0f}mm - {m.back:.0f}mm back) — the groove "
+                "and the rear recess interfere; use a shallower groove, a thinner "
+                "back, or rabbet the rear edge for the back"))
+
+    # --- 3) drawer-slide screw line vs. shelf-pin row collision ------------
+    # Both land on the side panels in the same bottom-referenced frame; reuse the
+    # drilling schedule so the heights match the real bores exactly.
+    if getattr(spec, "shelves", 0) > 0 and getattr(spec, "drawers", None):
+        try:
+            ds = drilling_schedule(spec)
+        except Exception:
+            ds = None
+        if ds is not None:
+            pin_v: dict[str, list[float]] = {}
+            slide_v: dict[str, list[tuple[float, str]]] = {}
+            for op in ds.ops:
+                if "shelf-pin" in op.operation:
+                    pin_v.setdefault(op.part, []).extend(h.v for h in op.holes)
+                elif "slide" in op.operation:
+                    for h in op.holes:
+                        slide_v.setdefault(op.part, []).append((h.v, op.operation))
+            seen: set[str] = set()
+            for side, lines in slide_v.items():
+                pins = pin_v.get(side, [])
+                for v, opname in lines:
+                    if any(abs(v - pv) < SLIDE_PIN_CLEARANCE for pv in pins):
+                        key = f"{side}:{opname}"
+                        if key in seen:
+                            continue
+                        seen.add(key)
+                        issues.append(Issue(
+                            "warning", "drawers",
+                            f"on '{side}' a drawer-slide screw line ({opname}) lands "
+                            f"within {SLIDE_PIN_CLEARANCE:.0f}mm of a shelf-pin hole "
+                            f"(~{round(v):.0f}mm up) — the pilots collide; shift the "
+                            "drawer, skip that pin position, or offset the slide line"))
+    return issues
 
 
 def validate(spec) -> ValidationResult:
@@ -422,16 +532,21 @@ def validate(spec) -> ValidationResult:
     has_door = spec.doors > 0 or spec.cabinet_type == CabinetType.CORNER_DIAGONAL
     if has_door:
         # A 35mm cup bores 12.5mm deep; the door must host it with backing.
-        if m.door <= HINGE_CUP_DEPTH:
+        # Blow-through (A3, depth axis): a cup that leaves less than the minimum
+        # backing punches through the door face — a hard error, not a warning.
+        backing = m.door - HINGE_CUP_DEPTH
+        if backing < HINGE_MIN_DOOR_BACKING:
             err("material.door",
-                f"a {m.door:.0f}mm door is thinner than the {HINGE_CUP_DEPTH:.1f}mm "
-                "hinge cup; a 35mm concealed hinge cannot be bored — thicken the "
-                "door or change hinge")
-        elif m.door < HINGE_CUP_DEPTH + HINGE_MIN_DOOR_BACKING:
+                f"a {m.door:.0f}mm door leaves only {max(backing, 0.0):.1f}mm behind "
+                f"a {HINGE_CUP_DEPTH:.1f}mm hinge cup (need ≥{HINGE_MIN_DOOR_BACKING:.0f}"
+                "mm) — the 35mm cup blows through the face; use ≥16mm door stock or a "
+                "shallower hinge")
+        elif m.door < 16.0:
+            # Hosts the cup with the minimum backing, but thin stock telegraphs
+            # the cup and offers little screw purchase — buildable, worth a note.
             warn("material.door",
-                 f"only {m.door - HINGE_CUP_DEPTH:.1f}mm of material behind a "
-                 f"{HINGE_CUP_DEPTH:.1f}mm hinge cup; use ≥16mm door stock for a "
-                 "35mm concealed hinge")
+                 f"only {backing:.1f}mm of material behind a {HINGE_CUP_DEPTH:.1f}mm "
+                 "hinge cup; use ≥16mm door stock for a 35mm concealed hinge")
 
     if spec.doors > 0 and not spec.is_corner and plan.doors:
         door_w = min(d.width for d in plan.doors)  # narrowest leaf
@@ -492,6 +607,9 @@ def validate(spec) -> ValidationResult:
              "drawer heights are irregular; a uniform or graduated bank "
              "(shorter drawers on top, taller toward the bottom) looks more "
              "intentional")
+
+    # --- A3 joinery / machining feasibility (analytic, no CAD) -----------
+    issues.extend(_joinery_feasibility(spec))
 
     # --- accessories: countertop, appliance cutout, filler, molding ------
     if getattr(spec, "accessories", None):
