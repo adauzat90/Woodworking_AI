@@ -192,6 +192,9 @@ class CabinetSpec:
     hardware_brand: str = "generic"  # generic | blum | hettich | grass
     hinge_overlay: str = "overlay"   # overlay | half | inset
 
+    # --- accessories: countertop, appliance cutout, filler, end panel, molding
+    accessories: list = field(default_factory=list)
+
     @property
     def has_full_top(self) -> bool:
         """Enclosed-top units; base/corner cabinets use top rails instead."""
@@ -622,7 +625,17 @@ not mix — inches are converted to millimetres on load.
   "edge_banding": true | false,
   "shelf_species": "plywood" | "mdf" | "particleboard" | "oak" | "maple" | ...,
   "shelf_load_kg_per_m": <expected shelf load, e.g. 25 (books ~20-40)>,
-  "anti_tip": true | false
+  "anti_tip": true | false,
+  "hardware_brand": "generic" | "blum" | "hettich" | "grass",
+  "hinge_overlay": "overlay" | "half" | "inset",
+  "accessories": [        // optional countertop / appliance / filler / molding
+    {{"kind": "countertop", "depth": 640, "thickness": 38,
+      "material": "butcher_block", "overhang": 25}},
+    {{"kind": "appliance", "type": "sink", "cutout_w": 700, "cutout_d": 450}},
+    {{"kind": "filler", "width": 75, "side": "left"}},
+    {{"kind": "end_panel", "side": "right"}},
+    {{"kind": "molding", "type": "crown", "height": 90}}
+  ]
 }}
 
 == TABLE ==

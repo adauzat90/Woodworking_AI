@@ -80,6 +80,7 @@ _CATEGORY_PREFIX = {
     "drawer_box": "E",
     "frame": "F",          # face-frame stiles/rails
     "solid": "T",          # table top / leg / apron (solid stock)
+    "accessory": "G",      # countertop / molding / end panel
 }
 
 
@@ -88,6 +89,8 @@ def _part_category(p: "Part") -> str:
     n = p.name.lower()
     if "box" in n and "drawer" in n:
         return "drawer_box"
+    if p.material in ("countertop", "molding"):
+        return "accessory"
     if p.material in ("door/front", "door panel"):
         return "front"
     if p.material == "frame":
@@ -627,6 +630,11 @@ def generate_cutlist(spec) -> CutList:
     # Solid-wood carcass: edge-glue the sheet panels from boards.
     if str(getattr(spec, "panel_construction", "sheet")).lower() == "glue_up":
         _expand_glue_ups(cl)
+
+    # Accessories: countertop, filler, end panel, moldings.
+    if getattr(spec, "accessories", None):
+        from .accessories import add_accessory_parts
+        add_accessory_parts(cl, spec)
 
     assign_ids(cl.parts)
     return cl
