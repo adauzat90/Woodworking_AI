@@ -113,7 +113,7 @@ class LumberGroup:
     species: str = ""         # wood species, when declared
 
 
-def _sheet_price(prices: "PriceBook", label: str, form: str,
+def sheet_price(prices: "PriceBook", label: str, form: str,
                  species: str) -> float:
     """Full-sheet price for a group: form base (or label) × species premium."""
     if form and form in prices.form_sheet_price:
@@ -348,7 +348,7 @@ def estimate(spec, *, cutlist: CutList | None = None,
     material_cost = 0.0
     for (label, form, species, thickness), rects in sorted(groups.items()):
         sheets, util, oversize = pack_sheets(rects, sheet)
-        price = _sheet_price(prices, label, form, species)
+        price = sheet_price(prices, label, form, species)
         material_cost += sheets * price
         sheet_groups.append(SheetGroup(
             material=label, thickness=thickness, part_count=len(rects),
@@ -480,3 +480,6 @@ def sheetsize_from_dict(data) -> SheetSize:
     s.width = _num(data.get("width"), s.width, lo=1.0)
     s.kerf = _num(data.get("kerf"), s.kerf, lo=0.0)
     return s
+
+# Backwards-compatible private alias (promoted to public API).
+_sheet_price = sheet_price

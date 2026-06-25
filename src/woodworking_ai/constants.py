@@ -16,6 +16,9 @@ MULLION_WIDTH = 60.0           # frameless center post between a pair of doors
 SLIDE_SIDE_CLEARANCE = 12.7    # gap each side for side-mount slides (½in nominal)
 DRAWER_BOX_HEIGHT_DROP = 40.0  # box height below the drawer front
 DRAWER_BOX_DEPTH_GAP = 25.0    # box shallower than the interior
+MIN_DRAWER_BOX_HEIGHT = 60.0   # a box is never shorter than this
+MIN_DRAWER_BOX_DEPTH = 100.0   # a box is never shallower than this
+MIN_DRAWER_BOX_WIDTH_3D = 80.0 # 3D-model floor for a usable box width
 
 # Five-piece (stile-and-rail) door construction.
 DOOR_STILE_WIDTH = 57.0        # vertical stile width (~2-1/4in)

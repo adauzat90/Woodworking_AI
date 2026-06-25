@@ -31,7 +31,7 @@ from .geometry import panel_layout, project_layout, explode_panels
 log = logging.getLogger(__name__)
 
 
-def _require_build123d() -> Any:
+def require_build123d() -> Any:
     try:
         import build123d as b3d  # type: ignore
     except ImportError as exc:  # pragma: no cover - environment dependent
@@ -224,7 +224,7 @@ def _machined_solid(base: Any, panel: Any, cuts: dict, cl: Any, b3d: Any) -> Any
 
 def _compound_from_panels(panels, label: str, *, spec: Any = None,
                           joinery_geometry: bool = False) -> Any:
-    b3d = _require_build123d()
+    b3d = require_build123d()
     Box, Pos, Compound, Rot = b3d.Box, b3d.Pos, b3d.Compound, b3d.Rot
     # Only pay for the schedule lookup / booleans when the flag is on.
     cuts: dict = {}
@@ -309,3 +309,6 @@ def measure(model: Any) -> dict[str, float]:
         "height": bb.size.Z,
         "part_count": len(model.children),
     }
+
+# Backwards-compatible private alias (promoted to public API).
+_require_build123d = require_build123d

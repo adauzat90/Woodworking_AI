@@ -19,10 +19,10 @@ from .dsl import (CabinetSpec, TableSpec, ComponentGroup, BackStyle,
                   Construction, CabinetType, ApplianceVoid)
 from .geometry import front_plan, component_tag
 # Construction constants now live in one neutral module shared with geometry.
+from .partmath import drawer_box_dims
 from .constants import (
     SHELF_SIDE_CLEARANCE, SHELF_SETBACK, STRETCHER_WIDTH,
-    FRAME_WIDTH, FRAME_THICKNESS,
-    SLIDE_SIDE_CLEARANCE, DRAWER_BOX_HEIGHT_DROP, DRAWER_BOX_DEPTH_GAP,
+    FRAME_WIDTH, FRAME_THICKNESS, DRAWER_BOX_DEPTH_GAP,
     DOOR_STILE_WIDTH, DOOR_RAIL_WIDTH, DOOR_PANEL_GROOVE,
     GLUE_UP_BOARD_WIDTH,
 )
@@ -407,9 +407,9 @@ def _add_drawer_box(cl: "CutList", spec: CabinetSpec, index: int,
     """
     m = spec.material
     t = m.drawer_box
-    box_w = opening_w - 2 * SLIDE_SIDE_CLEARANCE          # outer box width
-    box_h = max(front_height - DRAWER_BOX_HEIGHT_DROP, 60.0)
-    box_d = max(interior_depth - DRAWER_BOX_DEPTH_GAP, 100.0)
+    # Cut list sizes the box straight from the opening (no 3D-model width floor)
+    # and snaps the depth to a real slide length below.
+    box_w, box_h, box_d = drawer_box_dims(opening_w, front_height, interior_depth)
     side_note = "grooved for bottom"
     chosen = 0.0
     if slide_length <= 0:

@@ -24,9 +24,9 @@ from .dsl import (
 from .constants import (
     STRETCHER_WIDTH, SHELF_SIDE_CLEARANCE, SHELF_SETBACK,
     FRAME_WIDTH, FRAME_THICKNESS, MULLION_WIDTH,
-    DOOR_STILE_WIDTH, DOOR_RAIL_WIDTH,
-    SLIDE_SIDE_CLEARANCE, DRAWER_BOX_HEIGHT_DROP, DRAWER_BOX_DEPTH_GAP,
+    DOOR_STILE_WIDTH, DOOR_RAIL_WIDTH, MIN_DRAWER_BOX_WIDTH_3D,
 )
+from .partmath import drawer_box_dims
 
 
 @dataclass
@@ -592,9 +592,9 @@ def _drawer_box_panels(it: "FrontItem", spec: CabinetSpec, plan) -> list[PanelBo
     m = spec.material
     t = m.drawer_box
     unit = f"Drawer {it.index}"
-    box_w = max(plan.opening_w - 2 * SLIDE_SIDE_CLEARANCE, 80.0)
-    box_h = max(it.height - DRAWER_BOX_HEIGHT_DROP, 60.0)
-    box_d = max(spec.interior_depth - DRAWER_BOX_DEPTH_GAP, 100.0)
+    box_w, box_h, box_d = drawer_box_dims(
+        plan.opening_w, it.height, spec.interior_depth,
+        width_floor=MIN_DRAWER_BOX_WIDTH_3D)
     cx = it.x
     cy = box_d / 2 + 8.0          # just behind the drawer front
     cz = it.z                     # aligned with the front's centre height

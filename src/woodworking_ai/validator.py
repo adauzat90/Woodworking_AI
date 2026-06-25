@@ -245,7 +245,7 @@ def _validate_project(project: ComponentGroup) -> ValidationResult:
     return ValidationResult(issues)
 
 
-def _joinery_feasibility(spec) -> list[Issue]:
+def joinery_feasibility(spec) -> list[Issue]:
     """A3 analytic joinery-feasibility checks (no CAD).
 
     Derived from the same arithmetic schedules the shop uses
@@ -656,7 +656,7 @@ def validate(spec) -> ValidationResult:
              "intentional")
 
     # --- A3 joinery / machining feasibility (analytic, no CAD) -----------
-    issues.extend(_joinery_feasibility(spec))
+    issues.extend(joinery_feasibility(spec))
 
     # --- accessories: countertop, appliance cutout, filler, molding ------
     if getattr(spec, "accessories", None):
@@ -670,3 +670,6 @@ def validate(spec) -> ValidationResult:
         issues.append(Issue(severity, field_, msg))
 
     return ValidationResult(issues)
+
+# Backwards-compatible private alias (promoted to public API).
+_joinery_feasibility = joinery_feasibility

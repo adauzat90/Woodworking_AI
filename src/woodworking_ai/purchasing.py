@@ -27,7 +27,7 @@ from dataclasses import dataclass, field
 from .cutlist import CutList, generate_cutlist
 from .dsl import ComponentGroup
 from .estimator import (
-    Estimate, PriceBook, SheetSize, _sheet_price, estimate,
+    Estimate, PriceBook, SheetSize, sheet_price, estimate,
 )
 from .materials import stock_name, product_hint
 from .stock import stock_label, stock_product
@@ -127,7 +127,7 @@ def _sheet_lines(est: Estimate, prices: PriceBook) -> list[POLine]:
     for g in est.groups:
         if g.sheets <= 0:
             continue
-        price = _sheet_price(prices, g.material, g.form, g.species)
+        price = sheet_price(prices, g.material, g.form, g.species)
         name = stock_name(g.form, g.species, fallback=stock_label(g.material))
         product = product_hint(g.form, stock_product(g.material))
         spec = f"{product} {g.thickness:.0f}mm".strip()

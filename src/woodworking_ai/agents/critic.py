@@ -276,8 +276,8 @@ def _buildability_issues(spec: CabinetSpec, tools=DEFAULT_TOOLS
     # Fold the validator's joinery-feasibility findings (hinge-cup blow-through,
     # housed-joint short grain, slide-vs-pin collision, grooved-back interference)
     # into the Critic's structured findings so they flow into the repair note too.
-    from ..validator import _joinery_feasibility, validate
-    for iss in _joinery_feasibility(spec):
+    from ..validator import joinery_feasibility, validate
+    for iss in joinery_feasibility(spec):
         out.append(CritiqueIssue(iss.severity, "joinery", iss.message))
     # The hinge-cup blow-through is a hard depth-axis error raised in validate();
     # promote it here so a Critic-only review still gates on it.
@@ -351,8 +351,8 @@ def _critique_project(project: ComponentGroup, *, use_cad: bool = False,
     # A2/A3 machine-honest cross-check: no negative remaining-material region.
     if joinery_geometry:
         try:
-            from ..builder import _require_build123d
-            b3d = _require_build123d()
+            from ..builder import require_build123d
+            b3d = require_build123d()
             bad = _negative_material_regions(project, b3d)
             result.report["negative_material_count"] = len(bad)
             for label, slab_vol, mach_vol in bad:
@@ -509,8 +509,8 @@ def critique(spec, *, use_cad: bool = False, brep: bool = False,
     # when build123d is absent — same degrade-safe contract as the checks above.
     if joinery_geometry:
         try:
-            from ..builder import _require_build123d
-            b3d = _require_build123d()
+            from ..builder import require_build123d
+            b3d = require_build123d()
             bad = _negative_material_regions(spec, b3d)
             result.report["negative_material_count"] = len(bad)
             for label, slab_vol, mach_vol in bad:
