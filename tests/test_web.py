@@ -23,6 +23,24 @@ def test_index_served():
     assert "Woodworking AI" in r.text
 
 
+def test_profile_endpoint_returns_defaults():
+    r = client.get("/api/profile")
+    assert r.status_code == 200
+    d = r.json()
+    assert d["construction"] == "frameless"
+    assert "prices" in d and "sheet" in d
+
+
+def test_build_applies_profile_construction_default():
+    # A bare cabinet that omits construction; the profile should fill it.
+    bare = {"cabinet_type": "base", "name": "Bare", "width": 600,
+            "height": 720, "depth": 560, "doors": 2, "shelves": 1}
+    r = client.post("/api/build", json={
+        "spec": bare, "profile": {"construction": "face_frame"}})
+    assert r.status_code == 200
+    assert r.json()["spec"]["construction"] == "face_frame"
+
+
 def test_health_reports_capabilities():
     r = client.get("/api/health")
     assert r.status_code == 200

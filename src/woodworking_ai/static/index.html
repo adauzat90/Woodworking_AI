@@ -203,6 +203,50 @@
     <button id="buildBtn">🔨 Build design</button>
     <div class="check"><input id="auto" type="checkbox" /><label style="margin:0">Live update as I change values</label></div>
     <fieldset style="margin-top:14px">
+      <legend>Shop standards</legend>
+      <details id="standardsDetails">
+        <summary>Set your shop's defaults &amp; hardware brand</summary>
+        <p class="muted" style="font-size:11px;margin:6px 0">
+          Applied to any field a design leaves unset (AI, project JSON, or API),
+          so work comes out in your standards. Saved in this browser.</p>
+        <div class="row">
+          <div><label>Construction</label>
+            <select id="std_construction">
+              <option value="frameless">Frameless</option>
+              <option value="face_frame">Face frame</option>
+            </select></div>
+          <div><label>Hardware brand</label>
+            <select id="std_hardware_brand">
+              <option value="generic">Generic</option>
+              <option value="blum">Blum</option>
+              <option value="hettich">Hettich</option>
+              <option value="grass">Grass</option>
+            </select></div>
+        </div>
+        <div class="row">
+          <div><label>Back</label>
+            <select id="std_back">
+              <option value="rabbeted">Rabbeted</option>
+              <option value="applied">Applied</option>
+              <option value="grooved">Grooved</option>
+            </select></div>
+          <div><label>Joinery</label>
+            <select id="std_joinery">
+              <option value="dado">Dado</option>
+              <option value="rabbet">Rabbet</option>
+              <option value="dowel">Dowel</option>
+              <option value="domino">Domino</option>
+              <option value="pocket">Pocket</option>
+              <option value="screw">Screw</option>
+            </select></div>
+        </div>
+        <div class="row">
+          <div><label>Reveal (mm)</label><input id="std_reveal" type="number" value="3" step="0.5" /></div>
+          <div><label>Carcass thk (mm)</label><input id="std_carcass" type="number" value="18" step="1" /></div>
+        </div>
+      </details>
+    </fieldset>
+    <fieldset style="margin-top:14px">
       <legend>Pricing &amp; rates</legend>
       <details id="pricingDetails">
         <summary>Edit shop prices &amp; rates</summary>
@@ -447,7 +491,7 @@ async function post(url, body) {
 }
 $("buildBtn").onclick = async () => {
   setBusy(true);
-  try { render(await post("/api/build", {spec: specFromForm(), ...currentPricing()})); }
+  try { render(await post("/api/build", {spec: specFromForm(), ...currentPricing(), profile: currentProfile()})); }
   catch (e) { showError(e.message); } finally { setBusy(false); health(); }
 };
 $("designBtn").onclick = async () => {
@@ -455,7 +499,7 @@ $("designBtn").onclick = async () => {
   if (!prompt) return;
   setBusy(true);
   try {
-    const d = await post("/api/design", {prompt, ...currentPricing()});
+    const d = await post("/api/design", {prompt, ...currentPricing(), profile: currentProfile()});
     syncForm(d.spec); render(d);
   } catch (e) { showError(e.message); } finally { setBusy(false); health(); }
 };
@@ -553,7 +597,7 @@ function loadFromHash() {
   try {
     const spec = JSON.parse(decodeURIComponent(escape(atob(m[1]))));
     syncForm(spec);
-    post("/api/build", {spec, ...currentPricing()}).then(render).catch(e => showError(e.message));
+    post("/api/build", {spec, ...currentPricing(), profile: currentProfile()}).then(render).catch(e => showError(e.message));
   } catch (e) {}
 }
 
@@ -862,6 +906,41 @@ $("resetPricing").onclick = () => {
   maybeAuto();
 };
 
+// --- Shop standards (construction defaults + hardware brand) ------------------
+// Persisted to localStorage and sent as `profile` on every build, so anything a
+// design leaves unset (AI output, project JSON, API) inherits the shop's way.
+const STANDARDS_LS = "woodai_standards";
+const STD_FIELDS = ["construction", "back", "joinery", "hardware_brand",
+                    "reveal", "carcass"];
+function loadStandards() {
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(STANDARDS_LS) || "null"); } catch (e) {}
+  if (saved) for (const f of STD_FIELDS) if (saved[f] != null && $("std_" + f))
+    $("std_" + f).value = saved[f];
+  for (const f of STD_FIELDS) {
+    const el = $("std_" + f);
+    if (el) el.addEventListener("input", () => { saveStandards(); maybeAuto(); });
+  }
+}
+function saveStandards() {
+  const o = {};
+  for (const f of STD_FIELDS) if ($("std_" + f)) o[f] = $("std_" + f).value;
+  try { localStorage.setItem(STANDARDS_LS, JSON.stringify(o)); } catch (e) {}
+}
+// The profile sent with each request: construction defaults + the shop's rates.
+function currentProfile() {
+  const p = pricing ? readPricing() : {};
+  return {
+    construction: $("std_construction").value,
+    back: $("std_back").value,
+    joinery: $("std_joinery").value,
+    hardware_brand: $("std_hardware_brand").value,
+    reveal: parseFloat($("std_reveal").value) || 3,
+    carcass_thickness: parseFloat($("std_carcass").value) || 18,
+    prices: p.prices, sheet: p.sheet,
+  };
+}
+
 // --- Library: Convex when CONVEX_URL is configured, else localStorage --------
 const CONVEX_URL = window.__CONVEX_URL__ || "";
 const CONVEX_VER = "1.17.0";
@@ -920,7 +999,7 @@ $("loadBtn").onclick = async () => {
   const d = savedCache.find(x => x._id === $("savedList").value);
   if (!d) return;
   syncForm(d.spec);
-  try { render(await post("/api/build", {spec: d.spec, ...currentPricing()})); }
+  try { render(await post("/api/build", {spec: d.spec, ...currentPricing(), profile: currentProfile()})); }
   catch (e) { showError(e.message); }
 };
 $("delBtn").onclick = async () => {
@@ -960,6 +1039,7 @@ applyUnitChange();
 
 health();
 loadPricing();
+loadStandards();
 refreshSaved();
 loadFromHash();
 window.addEventListener("hashchange", loadFromHash);

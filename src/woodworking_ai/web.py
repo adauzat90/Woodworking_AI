@@ -31,6 +31,7 @@ from .estimator import (
     PriceBook, SheetSize, pricebook_to_dict, pricebook_from_dict,
     sheetsize_to_dict, sheetsize_from_dict,
 )
+from .profile import ShopProfile, profile_to_dict, profile_from_dict
 
 STATIC = Path(__file__).parent / "static"
 
@@ -73,22 +74,44 @@ def pricing() -> dict[str, Any]:
             "sheet": sheetsize_to_dict(SheetSize())}
 
 
+@app.get("/api/profile")
+def profile() -> dict[str, Any]:
+    """The shop's default standards profile, for the UI to seed its editor."""
+    return profile_to_dict(ShopProfile())
+
+
+def _profile_of(payload: dict[str, Any]) -> ShopProfile | None:
+    """The :class:`ShopProfile` in *payload*, or ``None`` when absent."""
+    return profile_from_dict(payload["profile"]) if payload.get("profile") else None
+
+
 def _pricing_overrides(payload: dict[str, Any]):
     """Pull optional ``prices`` / ``sheet`` overrides from a request payload.
 
-    Returns (PriceBook | None, SheetSize | None) — ``None`` means "use the
-    server defaults", so requests that omit pricing behave exactly as before.
+    An explicit ``prices``/``sheet`` wins; otherwise a supplied ``profile``
+    provides them; otherwise ``None`` means "use the server defaults", so
+    requests that omit pricing behave exactly as before.
     """
-    prices = pricebook_from_dict(payload["prices"]) if payload.get("prices") else None
-    sheet = sheetsize_from_dict(payload["sheet"]) if payload.get("sheet") else None
+    prof = _profile_of(payload)
+    prices = (pricebook_from_dict(payload["prices"]) if payload.get("prices")
+              else (prof.prices if prof else None))
+    sheet = (sheetsize_from_dict(payload["sheet"]) if payload.get("sheet")
+             else (prof.sheet if prof else None))
     return prices, sheet
 
 
 def _parse_spec(payload: dict[str, Any]) -> CabinetSpec | TableSpec | ComponentGroup:
-    """Build a furniture spec (cabinet, table, project, or assembly) from a payload."""
+    """Build a furniture spec (cabinet, table, project, or assembly) from a payload.
+
+    A ``profile`` in the payload fills the shop's construction defaults into any
+    field the design left unset before the spec is parsed.
+    """
     if not isinstance(payload, dict):
         raise HTTPException(status_code=400, detail="expected a JSON object")
     spec_data = payload.get("spec", payload)
+    prof = _profile_of(payload)
+    if prof is not None and isinstance(spec_data, dict):
+        spec_data = prof.apply_defaults(spec_data)
     try:
         return spec_from_dict(spec_data)
     except (TypeError, ValueError, AttributeError) as exc:
