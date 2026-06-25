@@ -176,6 +176,7 @@ class CabinetSpec:
 
     reveal: float = 3.0          # gap around overlay doors/drawers
     door_style: str = "slab"     # slab | shaker | raised_panel | cope_stick
+    panel_construction: str = "sheet"  # sheet | glue_up (solid-wood carcass)
     center_mullion: bool = False # vertical post/stile between a pair of doors
     blind_width: float = 0.0     # corner_blind: width of the blind/filler return
     corner_cut: float = 0.0      # corner_diagonal: leg length of the 45° chamfer
@@ -603,6 +604,7 @@ not mix — inches are converted to millimetres on load.
                "drawer_box": 12, "door_panel": 6}},
   "construction": {_opts(Construction)},
   "door_style": "slab" | "shaker" | "raised_panel" | "cope_stick",
+  "panel_construction": "sheet" | "glue_up",   // glue_up = solid-wood carcass
   "back": {_opts(BackStyle)},
   "joinery": {_opts(Joinery)},
   "toe_kick": {{"height": 100, "setback": 50}}  | null,

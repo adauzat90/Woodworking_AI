@@ -70,7 +70,8 @@ def test_table_real_brep_clean():
 
 def test_table_cutlist_parts():
     names = {p.name for p in generate_cutlist(table()).parts}
-    assert {"Top", "Leg", "Apron (long)", "Apron (short)"} == names
+    # A solid top wider than a board is edge-glued, so it lists as "Top board".
+    assert {"Top board", "Leg", "Apron (long)", "Apron (short)"} == names
 
 
 def test_table_lumber_is_board_feet():
@@ -137,4 +138,4 @@ def test_table_via_web_api():
     assert r.status_code == 200
     d = r.json()
     assert d["valid"] is True
-    assert any(p["name"] == "Top" for p in d["cutlist"])
+    assert any(p["name"].startswith("Top") for p in d["cutlist"])

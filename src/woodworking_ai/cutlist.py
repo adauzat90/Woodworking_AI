@@ -24,6 +24,7 @@ from .constants import (
     FRAME_WIDTH, FRAME_THICKNESS,
     SLIDE_SIDE_CLEARANCE, DRAWER_BOX_HEIGHT_DROP, DRAWER_BOX_DEPTH_GAP,
     DOOR_STILE_WIDTH, DOOR_RAIL_WIDTH, DOOR_PANEL_GROOVE,
+    GLUE_UP_BOARD_WIDTH,
 )
 from .hardware import (
     select_hinge, select_slide, select_pull, hinge_count,
@@ -32,7 +33,7 @@ from .hardware import (
 
 # Materials cut from solid/dimensional lumber rather than sheet goods. A shop
 # buys these by the board foot (and often by the running length), not the sheet.
-SOLID_LUMBER_MATERIALS = frozenset({"frame", "top", "leg", "apron"})
+SOLID_LUMBER_MATERIALS = frozenset({"frame", "top", "leg", "apron", "solid panel"})
 # One board foot is 144 cubic inches; expressed in mm³ for our mm-native parts.
 BOARD_FOOT_MM3 = 144.0 * (25.4 ** 3)   # ≈ 2_359_737.2 mm³
 
@@ -246,6 +247,38 @@ class CutList:
         )
 
 
+def glue_up_boards(width: float, board_width: float = GLUE_UP_BOARD_WIDTH
+                   ) -> tuple[int, float]:
+    """Boards needed to edge-glue a panel of *width*: ``(count, board_width)``.
+
+    Splits the panel into the fewest equal boards no wider than *board_width*,
+    the way a shop rips and edge-glues a solid panel.
+    """
+    n = max(2, math.ceil(width / board_width)) if width > board_width else 1
+    return n, round(width / n, 1)
+
+
+def _expand_glue_ups(cl: "CutList", board_width: float = GLUE_UP_BOARD_WIDTH) -> None:
+    """Rewrite sheet carcass panels as edge-glued solid boards, in place.
+
+    Each carcass panel wider than a board becomes N solid boards (priced by the
+    board foot) with a note of the glue-line length, so a solid-wood cabinet
+    quotes and cuts as the boards a shop actually buys.
+    """
+    new_parts: list[Part] = []
+    for p in cl.parts:
+        if p.material == "sheet" and p.width > board_width:
+            n, bw = glue_up_boards(p.width, board_width)
+            glue_m = (n - 1) * p.length / 1000.0
+            new_parts.append(Part(
+                f"{p.name} board", p.qty * n, length=p.length, width=bw,
+                thickness=p.thickness, material="solid panel", grain="length",
+                notes=f"glue-up: {n} boards/panel, ~{glue_m:.1f}m glue line"))
+        else:
+            new_parts.append(p)
+    cl.parts = new_parts
+
+
 def _add_drawer_box(cl: "CutList", spec: CabinetSpec, index: int,
                     opening_w: float, front_height: float,
                     interior_depth: float) -> None:
@@ -379,9 +412,17 @@ def _table_cutlist(spec: TableSpec) -> CutList:
     li, leg = spec.leg_inset, spec.leg
     apron_x = (spec.width - 2 * li - leg) - leg
     apron_y = (spec.depth - 2 * li - leg) - leg
-    cl.parts.append(Part("Top", 1, length=spec.width, width=spec.depth,
-                         thickness=spec.top_thickness, material="top",
-                         notes="glued panel or solid"))
+    if getattr(spec, "solid_top", True) and spec.depth > GLUE_UP_BOARD_WIDTH:
+        n, bw = glue_up_boards(spec.depth)
+        glue_m = (n - 1) * spec.width / 1000.0
+        cl.parts.append(Part(
+            "Top board", n, length=spec.width, width=bw,
+            thickness=spec.top_thickness, material="top", grain="length",
+            notes=f"edge-glued top: {n} boards, ~{glue_m:.1f}m glue line"))
+    else:
+        cl.parts.append(Part("Top", 1, length=spec.width, width=spec.depth,
+                             thickness=spec.top_thickness, material="top",
+                             notes="solid/sheet top"))
     cl.parts.append(Part("Leg", 4, length=leg_h, width=leg, thickness=leg,
                          material="leg", notes="square stock"))
     cl.parts.append(Part("Apron (long)", 2, length=apron_x, width=spec.apron_height,
@@ -582,6 +623,10 @@ def generate_cutlist(spec) -> CutList:
         cl.hardware.append(Hardware(
             "Edge banding", 1, "match carcass front edges (see estimate for run)",
         ))
+
+    # Solid-wood carcass: edge-glue the sheet panels from boards.
+    if str(getattr(spec, "panel_construction", "sheet")).lower() == "glue_up":
+        _expand_glue_ups(cl)
 
     assign_ids(cl.parts)
     return cl
