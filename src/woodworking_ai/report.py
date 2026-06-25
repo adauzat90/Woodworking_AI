@@ -13,6 +13,7 @@ with an install hint when it is missing, mirroring how the CAD exports behave.
 
 from __future__ import annotations
 
+import math
 from io import BytesIO
 
 from .cutlist import generate_cutlist
@@ -456,4 +457,105 @@ def build_package_pdf(spec, units: str = "metric") -> bytes:
                 story.append(Paragraph("↳ " + ", ".join(s.hardware), small))
 
     doc.build(story)
+    return buf.getvalue()
+
+
+def build_template_pdf(spec, part_id: str | None = None,
+                       *, page: str = "letter", units: str = "metric") -> bytes:
+    """A full-scale (1:1) tiled PDF template for one part, as PDF bytes.
+
+    Prints a part's finished outline at true size, tiled across as many
+    ``page`` (``"letter"`` or ``"a4"``) sheets as it takes, with an overlap
+    margin and registration tick marks so the sheets butt together. Print at
+    100% (no "fit to page"), trim to the ticks, tape the grid, then spray-glue
+    to the stock and cut to the line — the workflow hobbyists use for tapers,
+    splayed legs and frame profiles.
+
+    Without *part_id* the largest cut-list part is templated (it's the one that
+    most needs a full-size pattern). Raises ``RuntimeError`` if reportlab is
+    missing (mirrors the other PDF exports) and ``ValueError`` for an unknown
+    *part_id* or *page*.
+    """
+    _require_reportlab()
+    from reportlab.lib.pagesizes import A4, letter
+    from reportlab.pdfgen import canvas
+
+    pages = {"letter": letter, "a4": A4}
+    pname = page.lower()
+    if pname not in pages:
+        raise ValueError(f"unknown page size: {page!r} (use 'letter' or 'a4')")
+    page_w, page_h = pages[pname]
+
+    cl = generate_cutlist(spec)
+    if not cl.parts:
+        raise ValueError("spec has no parts to template")
+    if part_id is None:
+        part = max(cl.parts, key=lambda p: p.length * p.width)
+    else:
+        part = next((p for p in cl.parts if p.id == part_id), None)
+        if part is None:
+            raise ValueError(f"unknown part id: {part_id!r}")
+
+    # reportlab points are 1/72". 1mm = 72/25.4 pt. Drawing at this scale puts
+    # the outline at true physical size on the printed page.
+    pt_per_mm = 72.0 / 25.4
+    # The outline is the finished length x width rectangle.
+    part_l = max(part.length, part.width)   # mm
+    part_w = min(part.length, part.width)   # mm
+    if page_w > page_h:                     # template pages are portrait-first
+        page_w, page_h = page_h, page_w
+
+    margin = 12.0 * pt_per_mm                # registration / glue overlap (~12mm)
+    overlap = 8.0 * pt_per_mm                # shared band between adjacent tiles
+    # Live drawing area per tile and how far it advances (less the shared band).
+    tile_w = page_w - 2 * margin
+    tile_h = page_h - 2 * margin
+    span_x = part_l * pt_per_mm
+    span_y = part_w * pt_per_mm
+    step_x = tile_w - overlap
+    step_y = tile_h - overlap
+    cols = max(1, math.ceil((span_x - overlap) / step_x))
+    rows = max(1, math.ceil((span_y - overlap) / step_y))
+
+    buf = BytesIO()
+    c = canvas.Canvas(buf, pagesize=(page_w, page_h))
+
+    def _ticks():
+        c.setLineWidth(0.4)
+        c.setStrokeColorRGB(0, 0, 0)
+        m = margin
+        for (x, y) in ((m, m), (page_w - m, m), (m, page_h - m),
+                       (page_w - m, page_h - m)):
+            c.line(x - 6, y, x + 6, y)
+            c.line(x, y - 6, x, y + 6)
+
+    label = f"{part.id} {part.name}"
+    size_txt = (f"{format_length(part.length, units, mark=True)} x "
+                f"{format_length(part.width, units, mark=True)}")
+    for r in range(rows):
+        for col in range(cols):
+            # This tile's origin in part space (pt) from the part's bottom-left;
+            # tiles advance by ``step`` so each shares an ``overlap`` band with
+            # its neighbour for taping.
+            off_x = col * step_x
+            off_y = r * step_y
+            _ticks()
+            c.setFont("Helvetica", 7)
+            c.setFillColorRGB(0.3, 0.3, 0.3)
+            c.drawString(margin, page_h - margin + 4,
+                         f"{label}  {size_txt}  tile r{r + 1}c{col + 1} "
+                         f"of {rows}x{cols} - PRINT AT 100%")
+            # The part outline, clipped to this tile's live area, drawn at 1:1.
+            c.saveState()
+            path = c.beginPath()
+            path.rect(margin, margin, tile_w, tile_h)
+            c.clipPath(path, stroke=0, fill=0)
+            c.setLineWidth(1.0)
+            c.setStrokeColorRGB(0, 0, 0)
+            x0 = margin - off_x
+            y0 = margin - off_y
+            c.rect(x0, y0, span_x, span_y, stroke=1, fill=0)
+            c.restoreState()
+            c.showPage()
+    c.save()
     return buf.getvalue()

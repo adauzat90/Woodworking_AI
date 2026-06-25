@@ -206,7 +206,7 @@ def _write_outputs(spec, asm, args, unit: str, *, is_group: bool) -> None:
         write("package", "build_package.pdf")
         print("Wrote build_package.pdf")
 
-    if args.step or args.stl or args.glb:
+    if args.step or args.stl or args.glb or getattr(args, "dae", False):
         from .builder import build_model, measure
         joinery_geometry = getattr(args, "joinery_geometry", False)
         model = build_model(spec, joinery_geometry=joinery_geometry)
@@ -223,6 +223,9 @@ def _write_outputs(spec, asm, args, unit: str, *, is_group: bool) -> None:
         if args.glb:
             exporters.export_glb(model, out / f"{base}.glb")
             print(f"Wrote {base}.glb")
+        if getattr(args, "dae", False):
+            exporters.export_dae(model, out / f"{base}.dae")
+            print(f"Wrote {base}.dae")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -234,6 +237,8 @@ def main(argv: list[str] | None = None) -> int:
     common.add_argument("--step", action="store_true", help="export STEP (needs build123d)")
     common.add_argument("--stl", action="store_true", help="export STL (needs build123d)")
     common.add_argument("--glb", action="store_true", help="export GLB (needs build123d)")
+    common.add_argument("--dae", action="store_true",
+                        help="export Collada DAE for SketchUp (needs build123d + trimesh)")
     common.add_argument("--dxf", action="store_true",
                         help="export a DXF cut-layout nest (no build123d needed)")
     common.add_argument("--drawings", action="store_true",

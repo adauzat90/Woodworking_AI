@@ -146,18 +146,24 @@ def export_bytes(spec, fmt: str,
         data = build_proposal_pdf(spec, units=units)
         return data, "application/pdf", f"{base}_proposal.pdf"
 
+    if fmt == "template":
+        from .report import build_template_pdf
+        data = build_template_pdf(spec, units=units)
+        return data, "application/pdf", f"{base}_template.pdf"
+
     if fmt == "purchase_order_pdf":
         from .report import build_purchase_order_pdf
         data = build_purchase_order_pdf(spec, units=units)
         return data, "application/pdf", f"{base}_purchase_order.pdf"
 
-    if fmt in ("step", "stl", "glb"):
+    if fmt in ("step", "stl", "glb", "dae"):
         from .builder import build_model
         from . import exporters
         fn = {"step": exporters.export_step, "stl": exporters.export_stl,
-              "glb": exporters.export_glb}[fmt]
+              "glb": exporters.export_glb, "dae": exporters.export_dae}[fmt]
         mime = {"step": "application/step", "stl": "model/stl",
-                "glb": "model/gltf-binary"}[fmt]
+                "glb": "model/gltf-binary",
+                "dae": "model/vnd.collada+xml"}[fmt]
         with tempfile.TemporaryDirectory() as d:
             model = build_model(spec, joinery_geometry=joinery_geometry)
             p = fn(model, Path(d) / f"c.{fmt}")
