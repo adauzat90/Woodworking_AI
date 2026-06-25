@@ -37,3 +37,21 @@ def test_hint_describes_wall_shelf_box_and_bench():
 
 def test_hint_mentions_imperial_units():
     assert '"units": "in"' in DSL_SCHEMA_HINT
+
+
+def test_hint_leads_with_pick_kind_step():
+    # The preamble tells the model to choose `kind` before filling fields.
+    assert "STEP 1" in DSL_SCHEMA_HINT
+    assert "choose the \"kind\" first" in DSL_SCHEMA_HINT
+
+
+def test_hint_carries_a_minimal_example_per_kind():
+    for kind in ("cabinet", "table", "wall_shelf", "box", "bench", "project"):
+        assert f'"kind": "{kind}"' in DSL_SCHEMA_HINT, kind
+    # The project example uses the declarative run form.
+    assert '"runs"' in DSL_SCHEMA_HINT
+
+
+def test_hint_explains_appliance_hosting_split():
+    assert '"kind": "appliance_void"' in DSL_SCHEMA_HINT
+    assert '"kind": "appliance"' in DSL_SCHEMA_HINT

@@ -179,6 +179,33 @@ def accessory_issues(spec) -> list:
                 out.append((
                     "warning", "countertop",
                     "counter overhang over 100mm needs support brackets"))
+
+    # --- kind / enum-value sanity (additive; advisory) -------------------
+    from .dsl import ACCESSORY_SIDES, MOLDING_TYPES
+    known_kinds = {"countertop", "appliance", "filler", "end_panel",
+                   "door_panel", "molding"}
+    for a in getattr(spec, "accessories", None) or []:
+        if not isinstance(a, dict):
+            continue
+        kind = str(a.get("kind", "")).strip().lower()
+        if kind and kind not in known_kinds:
+            out.append((
+                "warning", "accessory",
+                f"unknown accessory kind {kind!r}; expected one of "
+                f"{', '.join(sorted(known_kinds))}"))
+        if kind in ("filler", "end_panel"):
+            side = str(a.get("side", "")).strip().lower()
+            if side and side not in ACCESSORY_SIDES:
+                out.append((
+                    "warning", kind,
+                    f"side {side!r} should be one of {', '.join(ACCESSORY_SIDES)}"))
+        if kind == "molding":
+            mtype = str(a.get("type", "crown")).strip().lower()
+            if mtype and mtype not in MOLDING_TYPES:
+                out.append((
+                    "warning", "molding",
+                    f"molding type {mtype!r} not recognized; expected one of "
+                    f"{', '.join(MOLDING_TYPES)}"))
     return out
 
 

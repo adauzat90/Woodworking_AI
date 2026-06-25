@@ -240,6 +240,26 @@ can stay below the examples.
 Items 1, 2, and 5 are small and remove the highest-frequency silent failures;
 item 3 is the structural win for real kitchens/built-ins.
 
+## Implementation status — all findings addressed ✅
+
+Every finding above has been implemented (see `docs/DSL_IMPLEMENTATION_PLAN.md`
+for the work breakdown). Summary:
+
+| Finding | Status | Where |
+|---|---|---|
+| #2 unknown *fields* dropped silently | ✅ | `dsl_lint.py` lints the raw dict; `agents/designer.py` feeds dropped keys back as repair warnings (non-fatal). Tests: `test_dsl_lint.py`, `test_designer.py`. |
+| #1/#4 unknown *kind* misroutes to cabinet; two discriminators | ✅ | `dsl._spec_from_dict` rejects a named-but-unknown `kind` with a helpful error and accepts `"kind": "cabinet"`; no-`kind` specs still route by shape. Tests: `test_types.py`. |
+| #3 absolute-coordinate layout | ✅ | A declarative `runs` block (`dsl._run_components` + `place_run`, now group-aware) computes every `x`/`y`/`rotation`. Tests: `test_project.py`. |
+| #5 loose, untyped `accessories` | ✅ | Typed `Countertop`/`Filler`/`EndPanel`/`Molding` (dict-identical on construction) + validation of kinds/sides/molding types. Tests: `test_accessories.py`. |
+| #6 appliance modeled two ways | ✅ | Hint now states the cutout-vs-gap split sharply; lint/validation cover both. |
+| #7 no `schema_version` | ✅ | `SCHEMA_VERSION` stamped in every `to_dict`, accepted/ignored on input. Tests: `test_schema_version.py`. |
+| #8 large, cabinet-first prompt | ✅ | "Pick the kind first" preamble + a minimal worked example per type. Tests: `test_schema_hint.py`. |
+
+The relational `"abut"` placement (a lighter alternative to `runs` noted under
+#3) was deliberately deferred: `runs` covers the kitchen/built-in cases and the
+two-mechanism surface is best kept small. Full suite green (822 passed),
+goldens byte-identical, `ruff` clean.
+
 ## Bottom line
 
 As a *data model* this language is already strong, and the original review
