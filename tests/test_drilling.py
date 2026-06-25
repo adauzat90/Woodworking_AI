@@ -84,5 +84,5 @@ def test_drawer_slide_lines_present():
 def test_csv_and_report_render():
     sched = drilling_schedule(spec())
     assert sched.total_holes > 0
-    assert sched.to_csv().splitlines()[0].startswith("part,operation")
+    assert sched.to_csv().splitlines()[0].startswith("id,part,operation")
     assert "Drilling schedule" in sched.report_text()

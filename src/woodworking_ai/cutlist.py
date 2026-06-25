@@ -42,6 +42,7 @@ class Part:
     material: str = "sheet"
     grain: str = "length"      # grain direction runs along `length`
     notes: str = ""
+    id: str = ""               # stable part code (e.g. "A1"), set by assign_ids
 
     @property
     def area_m2(self) -> float:
@@ -57,6 +58,80 @@ class Part:
     def board_feet(self) -> float:
         """Volume of a single part expressed in board feet (144 in³)."""
         return (self.length * self.width * self.thickness) / BOARD_FOOT_MM3
+
+
+# --- stable part identity ---------------------------------------------------
+# Every part gets a short code (e.g. "A1") grouped by a broad category, numbered
+# in cut-list order. The same code is referenced by the nesting diagram, the
+# drilling schedule, and the shop drawings, so a shop can cross-reference one
+# physical part across every output. Codes are deterministic because cut-list
+# generation is deterministic.
+_CATEGORY_PREFIX = {
+    "carcass": "A",        # sides, bottom, top, stretcher, toe kick
+    "back": "B",           # back panel(s) and captured drawer bottoms
+    "shelf": "C",
+    "front": "D",          # doors, drawer fronts, mullion, blind filler
+    "drawer_box": "E",
+    "frame": "F",          # face-frame stiles/rails
+    "solid": "T",          # table top / leg / apron (solid stock)
+}
+
+
+def _part_category(p: "Part") -> str:
+    """Broad category key for *p*, used to pick its ID prefix."""
+    n = p.name.lower()
+    if "box" in n and "drawer" in n:
+        return "drawer_box"
+    if p.material == "door/front":
+        return "front"
+    if p.material == "frame":
+        return "frame"
+    if p.material in ("top", "leg", "apron"):
+        return "solid"
+    if p.material == "back panel":
+        return "back"
+    if "shelf" in n:
+        return "shelf"
+    return "carcass"
+
+
+def assign_ids(parts: list["Part"], prefix: str = "") -> None:
+    """Assign a stable ``id`` to each part in *parts*, in place.
+
+    ``prefix`` namespaces the codes for one component of a project (e.g. the
+    component tag), so a run's parts read ``B2-A1`` without colliding.
+    """
+    counters: dict[str, int] = {}
+    for p in parts:
+        cat = _part_category(p)
+        letter = _CATEGORY_PREFIX[cat]
+        counters[letter] = counters.get(letter, 0) + 1
+        code = f"{letter}{counters[letter]}"
+        p.id = f"{prefix}-{code}" if prefix else code
+
+
+# Map a geometry panel label (e.g. "Side L", "Shelf 2", "Drawer front 1") to the
+# cut-list part name it belongs to, so the drilling schedule and drawings can
+# resolve the shared part ID. Both label sets are produced by this codebase, so
+# the table is small and stable.
+_PANEL_LABEL_TO_PART = {
+    "Side": "Side", "Bottom": "Bottom", "Top": "Top",
+    "Stretcher front": "Top stretcher", "Stretcher back": "Top stretcher",
+    "Back": "Back", "Shelf": "Adjustable shelf", "Corner shelf": "Corner shelf",
+    "Toe kick": "Toe kick", "Door": "Door", "Mullion": "Mullion",
+    "Stile": "Face-frame stile", "Rail": "Face-frame rail",
+    "Center stile": "Face-frame center stile", "Blind filler": "Blind filler",
+    "Front rail": "Front rail", "Side L": "Side L", "Side R": "Side R",
+    "Leg": "Leg", "Apron long": "Apron (long)", "Apron short": "Apron (short)",
+}
+
+
+def _panel_label_base(label: str) -> str:
+    """Strip a trailing hand ('L'/'R') or index ('1') from a panel label."""
+    parts = label.rsplit(" ", 1)
+    if len(parts) == 2 and (parts[1] in ("L", "R") or parts[1].isdigit()):
+        return parts[0]
+    return label
 
 
 @dataclass
@@ -85,14 +160,39 @@ class CutList:
         def f(v: float) -> str:
             return format_length(v, unit, mark=False)
 
-        lines = [f"part,qty,length_{lbl},width_{lbl},thickness_{lbl},"
+        lines = [f"id,part,qty,length_{lbl},width_{lbl},thickness_{lbl},"
                  "material,grain,notes"]
         for p in self.parts:
             lines.append(
-                f"{p.name},{p.qty},{f(p.length)},{f(p.width)},"
+                f"{p.id},{p.name},{p.qty},{f(p.length)},{f(p.width)},"
                 f"{f(p.thickness)},{p.material},{p.grain},{p.notes}"
             )
         return "\n".join(lines)
+
+    def part_id_for_label(self, label: str) -> str:
+        """Resolve a geometry panel label to its cut-list part ID (or "").
+
+        Tries an exact part-name match, then the panel→part table, then a
+        prefix match (for indexed fronts like "Drawer front 1"). A project's
+        labels are tagged ("B2 · Side"); the tag is stripped and re-applied.
+        """
+        tag = ""
+        if " · " in label:
+            tag, label = label.split(" · ", 1)
+        by_name = {p.name: p for p in self.parts}
+        cand = (by_name.get(label)
+                or by_name.get(_PANEL_LABEL_TO_PART.get(label, label))
+                or by_name.get(_PANEL_LABEL_TO_PART.get(
+                    _panel_label_base(label), "")))
+        if cand is None:
+            base = _panel_label_base(label)
+            cand = next((p for p in self.parts if p.name.startswith(base)), None)
+        if cand is None:
+            return ""
+        if tag:
+            # Project IDs are already namespaced on the part; match the tag.
+            return cand.id
+        return cand.id
 
     def hardware_csv(self) -> str:
         lines = ["item,qty,notes"]
@@ -194,6 +294,7 @@ def _diagonal_cutlist(spec: CabinetSpec) -> CutList:
     cl.hardware.append(Hardware("Door pull", 1))
     if spec.edge_banding:
         cl.hardware.append(Hardware("Edge banding", 1, "match carcass front edges"))
+    assign_ids(cl.parts)
     return cl
 
 
@@ -215,6 +316,7 @@ def _table_cutlist(spec: TableSpec) -> CutList:
                          thickness=spec.apron_thickness, material="apron"))
     cl.hardware.append(Hardware("Corner bracket", 4, "leg-to-apron"))
     cl.hardware.append(Hardware("Tabletop fastener", 8, "expansion clip"))
+    assign_ids(cl.parts)
     return cl
 
 
@@ -227,9 +329,10 @@ def _project_cutlist(project: ComponentGroup) -> CutList:
     cl = CutList(spec_name=project.name)
     for i, comp in enumerate(project.components, start=1):
         tag = component_tag(comp, i)
-        sub = generate_cutlist(comp.spec)
+        sub = generate_cutlist(comp.spec)   # already ID'd per component
         for p in sub.parts:
-            cl.parts.append(replace(p, name=f"{tag} · {p.name}"))
+            cl.parts.append(replace(
+                p, name=f"{tag} · {p.name}", id=f"{tag}-{p.id}" if p.id else ""))
         for h in sub.hardware:
             cl.hardware.append(replace(h, name=f"{tag} · {h.name}"))
     return cl
@@ -380,4 +483,5 @@ def generate_cutlist(spec) -> CutList:
             "Edge banding", 1, "match carcass front edges (see estimate for run)",
         ))
 
+    assign_ids(cl.parts)
     return cl

@@ -574,8 +574,8 @@ function paint() {
   const d = last; let h = "";
   const u = unitLabel();
   if (tab === "cutlist") {
-    h = table([`Part`,`Qty`,`L (${u})`,`W (${u})`,`Thk (${u})`,`Material`,`Notes`],
-      d.cutlist.map(p => [p.name,p.qty,fmtLen(p.length),fmtLen(p.width),
+    h = table([`ID`,`Part`,`Qty`,`L (${u})`,`W (${u})`,`Thk (${u})`,`Material`,`Notes`],
+      d.cutlist.map(p => [p.id||"",p.name,p.qty,fmtLen(p.length),fmtLen(p.width),
                           fmtLen(p.thickness),p.material,p.notes]));
     const panels = d.cutlist.reduce((n,p)=>n+p.qty,0);
     const hw = (d.hardware||[]).reduce((n,x)=>n+x.qty,0);
@@ -726,8 +726,8 @@ function drillingPane(d) {
     </div>`;
   h += '<div class="chips">' + Object.entries(cats).map(([c, n]) =>
     `<span class="chip"><b>${n}</b> ${c}</span>`).join("") + "</div>";
-  h += table(["Part", "Operation", "Holes", "Note"],
-    dr.ops.map(o => [o.part, o.operation, o.holes, o.note]));
+  h += table(["ID", "Part", "Operation", "Holes", "Note"],
+    dr.ops.map(o => [o.part_id || "", o.part, o.operation, o.holes, o.note]));
   // Exact positions, collapsible per operation. u = along depth/width,
   // v = up from the panel's bottom edge.
   h += "<h4>Hole positions</h4>";

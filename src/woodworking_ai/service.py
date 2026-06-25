@@ -137,9 +137,9 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
 
     cl = generate_cutlist(spec)
     result["cutlist"] = [
-        {"name": p.name, "qty": p.qty, "length": round(p.length, 1),
+        {"id": p.id, "name": p.name, "qty": p.qty, "length": round(p.length, 1),
          "width": round(p.width, 1), "thickness": p.thickness,
-         "material": p.material, "notes": p.notes}
+         "material": p.material, "grain": p.grain, "notes": p.notes}
         for p in cl.parts
     ]
     result["hardware"] = [
@@ -189,7 +189,7 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
     drill = drilling_schedule(spec)
     result["drilling"] = {
         "total_holes": drill.total_holes,
-        "ops": [{"part": o.part, "operation": o.operation,
+        "ops": [{"part": o.part, "part_id": o.part_id, "operation": o.operation,
                  "holes": len(o.holes), "note": o.note,
                  # Per-hole positions so the UI can show exactly where to bore.
                  # Coordinates are metric (the 32mm boring system is metric).

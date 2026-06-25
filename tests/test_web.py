@@ -143,14 +143,14 @@ def test_export_cutlist_csv():
     r = client.post("/api/export/cutlist", json={"spec": VALID_SPEC})
     assert r.status_code == 200
     assert r.headers["content-type"].startswith("text/csv")
-    assert r.text.splitlines()[0].startswith("part,qty")
+    assert r.text.splitlines()[0].startswith("id,part,qty")
     assert "attachment" in r.headers["content-disposition"]
 
 
 def test_export_drilling_csv():
     r = client.post("/api/export/drilling", json={"spec": VALID_SPEC})
     assert r.status_code == 200
-    assert r.text.splitlines()[0].startswith("part,operation")
+    assert r.text.splitlines()[0].startswith("id,part,operation")
 
 
 def test_export_dxf():
@@ -210,7 +210,7 @@ def test_export_project_cutlist_imperial():
     r = client.post("/api/export/cutlist",
                     json={"spec": PROJECT_SPEC, "units": "imperial"})
     assert r.status_code == 200
-    assert r.text.splitlines()[0].startswith("part,qty,length_in")
+    assert r.text.splitlines()[0].startswith("id,part,qty,length_in")
 
 
 # --- sub-assemblies through the API (the SPA's "Project / assembly" samples) ---

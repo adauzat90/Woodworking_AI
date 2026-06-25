@@ -38,8 +38,10 @@ def _text(x, y, height, s, layer="LABEL") -> list[str]:
 def _cutlist_items(cl: CutList) -> list[tuple[float, float, str]]:
     items: list[tuple[float, float, str]] = []
     for p in cl.parts:
+        code = f"{p.id} " if p.id else ""
         for i in range(p.qty):
-            label = p.name if p.qty == 1 else f"{p.name} {i + 1}"
+            label = (f"{code}{p.name}" if p.qty == 1
+                     else f"{code}{p.name} {i + 1}")
             items.append((p.length, p.width, label))
     return items
 
