@@ -65,6 +65,8 @@ _PKG_CAPS = {
 # Read the SPA template once at startup; per-request we only splice in the
 # (request-time) Convex URL, which is cheap and lets the env var change live.
 _INDEX_TEMPLATE = (STATIC / "index.html").read_text(encoding="utf-8")
+# Rendered SPA HTML keyed by the spliced-in CONVEX_URL (usually one entry).
+_INDEX_CACHE: dict[str, str] = {}
 
 
 def _live_capabilities() -> dict[str, bool]:
@@ -158,10 +160,16 @@ class RoomRequest(BaseModel):
 @app.get("/", response_class=HTMLResponse)
 def index() -> str:
     # Expose an optional Convex deployment URL to the front end. Read live so the
-    # value can change without a restart (and so the test harness can flip it).
+    # value can change without a restart (and so the test harness can flip it),
+    # but cache the spliced HTML per distinct URL so the common case is a dict
+    # lookup, not an O(n) string replace over the whole template every request.
     convex = os.environ.get("CONVEX_URL", "")
-    inject = f'<script>window.__CONVEX_URL__={convex!r};</script>'
-    return _INDEX_TEMPLATE.replace("<!--CONVEX_URL-->", inject)
+    html = _INDEX_CACHE.get(convex)
+    if html is None:
+        inject = f'<script>window.__CONVEX_URL__={convex!r};</script>'
+        html = _INDEX_TEMPLATE.replace("<!--CONVEX_URL-->", inject)
+        _INDEX_CACHE[convex] = html
+    return html
 
 
 @app.get("/api/config")

@@ -42,3 +42,7 @@ HINGE_CUP_INSET = 22.5         # cup centre in from the door's hinge edge
 
 # Solid-wood glue-ups: panels wider than this are edge-glued from boards.
 GLUE_UP_BOARD_WIDTH = 140.0    # nominal board width (~5-1/2in) before jointing
+
+# Tight tolerance for float comparisons (mm). One definition so every "is this
+# essentially zero / through the stock?" test uses the same epsilon.
+GEOMETRY_EPSILON = 1e-6

@@ -36,7 +36,7 @@ def diff_summary(changes: list[dict]) -> str:
     return f"{len(changes)} change(s): {head}{more}"
 
 
-def _part_rows(spec, *, prices=None, sheet=None) -> dict[str, dict]:
+def _part_rows(spec) -> dict[str, dict]:
     """Cut-list parts of *spec* keyed by stable part ID — the BOM for diffing."""
     from .cutlist import generate_cutlist
     rows: dict[str, dict] = {}
@@ -63,8 +63,8 @@ def quote_diff(spec_a, spec_b, *, prices=None, sheet=None) -> dict:
     est_b = estimate(spec_b, prices=prices, sheet=sheet)
     delta = round(est_b.total - est_a.total, 2)
 
-    rows_a = _part_rows(spec_a, prices=prices, sheet=sheet)
-    rows_b = _part_rows(spec_b, prices=prices, sheet=sheet)
+    rows_a = _part_rows(spec_a)
+    rows_b = _part_rows(spec_b)
     added = [rows_b[k] for k in rows_b if k not in rows_a]
     removed = [rows_a[k] for k in rows_a if k not in rows_b]
     changed = []

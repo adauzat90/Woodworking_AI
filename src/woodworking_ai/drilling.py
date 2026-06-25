@@ -19,11 +19,12 @@ from dataclasses import dataclass, field
 
 from .dsl import ComponentGroup
 from .dispatch import spec_kind, VOID, GROUP
-from .geometry import panel_layout, component_tag
+from .geometry import panel_layout, component_tag, trailing_index
 from .cutlist import generate_cutlist
 from .hardware import hinge_count, select_slide, PLATE_SCREW_INSET
 from .constants import (
     SYSTEM_PITCH, HINGE_CUP_DIA, HINGE_CUP_DEPTH, HINGE_CUP_INSET,
+    GEOMETRY_EPSILON,
 )
 
 # 32 mm System and boring constants (mm). SYSTEM_PITCH and the hinge-cup
@@ -125,7 +126,7 @@ def _pin_heights(panel_h: float, max_holes: int = 400) -> list[float]:
         return []
     v = PIN_END_MARGIN
     out = []
-    while v <= panel_h - PIN_END_MARGIN + 1e-6 and len(out) < max_holes:
+    while v <= panel_h - PIN_END_MARGIN + GEOMETRY_EPSILON and len(out) < max_holes:
         out.append(round(v, 1))
         v += SYSTEM_PITCH
     return out
@@ -210,7 +211,7 @@ def _slide_ops(sides, drawer_fronts, brand, slide_types, pid) -> list[DrillOp]:
         side_bottom = side.center[2] - panel_h / 2
         for df in drawer_fronts:
             slide_v = df.center[2] - side_bottom        # height up the side
-            idx = int(df.label.split()[-1]) if df.label.split()[-1].isdigit() else 0
+            idx = trailing_index(df.label)
             slide = select_slide(brand, slide_types.get(idx, "side_mount"))
             if slide.slide_type == "undermount":
                 op = DrillOp(

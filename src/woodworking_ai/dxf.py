@@ -15,6 +15,8 @@ from pathlib import Path
 from .dsl import CabinetSpec
 from .cutlist import CutList, generate_cutlist
 from .materials import MAT_DOOR_FRONT
+from .geometry import trailing_index
+from .constants import GEOMETRY_EPSILON
 from .drilling import (
     placement_rotated, place_rect, drilling_schedule, holes_by_part_id,
     ops_for_instance, place_holes,
@@ -69,7 +71,7 @@ def _bore_tag(h, thickness: float) -> str:
     A bore is "stopped" when it does not pass through the stock (depth < the
     part thickness); those carry the depth so the post drills to it.
     """
-    stopped = 0 < h.depth < thickness - 1e-6
+    stopped = 0 < h.depth < thickness - GEOMETRY_EPSILON
     return f"⌀{h.dia:g}x{h.depth:g}" if stopped else f"⌀{h.dia:g}"
 
 
@@ -98,8 +100,7 @@ def _placement_part(label: str, by_id: dict):
         return None, 1
     instance = 1
     if part.qty > 1:
-        last = label.rsplit(" ", 1)[-1]
-        instance = int(last) if last.isdigit() else 1
+        instance = trailing_index(label, default=1)
     return part, instance
 
 

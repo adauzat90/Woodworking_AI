@@ -12,11 +12,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from .dsl import CabinetSpec
 from .dispatch import is_group
 from .geometry import PanelBox, panel_layout
 
-# Wood-ish palette by panel role.
+# Wood-ish palette by panel role. The single source of the role→colour map,
+# shared with the SVG shop drawings (drawings.py imports the "front" tone) so
+# the two views can't drift.
 CATEGORY_COLORS = {
     "carcass": "#caa472",
     "back": "#e6d2ad",
@@ -24,6 +25,7 @@ CATEGORY_COLORS = {
     "toe": "#6b4f3a",
     "frame": "#7a5230",
     "front": "#9c6b43",
+    "drawer_box": "#bfa177",   # box sides — a mid wood tone (was the grey default)
     # applied trim / accessories
     "counter": "#3f3a36",
     "filler": "#8a6a47",
@@ -99,7 +101,7 @@ def _cuboid_faces(p: PanelBox):
     return [[v[i] for i in face] for face in idx]
 
 
-def _isometric(ax, panels: list[PanelBox], spec: CabinetSpec) -> None:
+def _isometric(ax, panels: list[PanelBox]) -> None:
     from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
     for p in panels:
@@ -164,7 +166,7 @@ def render_cabinet(spec, path: str | Path, *, dpi: int = 110,
     _elevation(ax_front, panels, haxis=0, vaxis=2, depth_axis=1, title="front")
     # Side elevation: depth (Y) vs height (Z), looking along X.
     _elevation(ax_side, panels, haxis=1, vaxis=2, depth_axis=0, title="side")
-    _isometric(ax_iso, panels, spec)
+    _isometric(ax_iso, panels)
 
     fig.suptitle(_title(spec, panels), fontsize=11)
     fig.tight_layout(rect=(0, 0, 1, 0.95))

@@ -22,26 +22,29 @@ from .cutlist import CutList
 from .dxf import export_cutlayout_dxf  # noqa: F401  (re-export, no CAD dep)
 
 
-def export_step(model: Any, path: str | Path) -> Path:
+def _export_b3d(model: Any, path: str | Path, fn_name: str, **kwargs) -> Path:
+    """Run a build123d ``export_*`` function to *path* and return it.
+
+    One body for the B-Rep exporters, which differ only by the build123d
+    function and its kwargs.
+    """
     import build123d as b3d  # type: ignore
     path = Path(path)
-    b3d.export_step(model, str(path))
+    getattr(b3d, fn_name)(model, str(path), **kwargs)
     return path
+
+
+def export_step(model: Any, path: str | Path) -> Path:
+    return _export_b3d(model, path, "export_step")
 
 
 def export_stl(model: Any, path: str | Path) -> Path:
-    import build123d as b3d  # type: ignore
-    path = Path(path)
-    b3d.export_stl(model, str(path))
-    return path
+    return _export_b3d(model, path, "export_stl")
 
 
 def export_glb(model: Any, path: str | Path) -> Path:
-    import build123d as b3d  # type: ignore
-    path = Path(path)
     # build123d exposes glTF export via the Mesher; .glb is the binary form.
-    b3d.export_gltf(model, str(path), binary=True)
-    return path
+    return _export_b3d(model, path, "export_gltf", binary=True)
 
 
 def _require_trimesh() -> Any:

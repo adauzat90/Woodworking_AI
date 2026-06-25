@@ -465,6 +465,16 @@ def _digits(s: str, default: int = 0) -> int:
     return int(d) if d else default
 
 
+def trailing_index(s: str, default: int = 0) -> int:
+    """The trailing integer token of *s* (``"Drawer front 1"`` -> 1).
+
+    The shared "instance from a placement label" idiom: returns *default* when
+    the last whitespace-separated token isn't a plain integer (e.g. "Side L").
+    """
+    last = s.rsplit(" ", 1)[-1] if s else ""
+    return int(last) if last.isdigit() else default
+
+
 def _unit_sort_key(name: str) -> tuple:
     """Canonical build order for sub-assemblies (Carcass first, trim last)."""
     n = name.lower()

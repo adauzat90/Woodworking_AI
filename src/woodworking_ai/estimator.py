@@ -493,6 +493,3 @@ def sheetsize_from_dict(data) -> SheetSize:
     s.width = _num(data.get("width"), s.width, lo=1.0)
     s.kerf = _num(data.get("kerf"), s.kerf, lo=0.0)
     return s
-
-# Backwards-compatible private alias (promoted to public API).
-_sheet_price = sheet_price

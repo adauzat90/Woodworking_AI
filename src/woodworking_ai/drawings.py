@@ -177,14 +177,18 @@ def _dim_v(y1: float, y2: float, x: float, label: str) -> list[str]:
         f'transform="rotate(-90 {x - 8:.1f} {(ya + yb) / 2:.1f})">{_esc(label)}</text>']
 
 
-_STYLE = """
-.title{font:600 12px system-ui,sans-serif;fill:#3a352f}
-.panel{fill:none;stroke:#b9b0a2;stroke-width:0.8}
-.front{fill:#e7d8bf;stroke:#9c6b43;stroke-width:1}
-.lbl{font:600 10px system-ui,sans-serif;fill:#5a4632;text-anchor:middle}
-.dim{stroke:#6b8aa5;stroke-width:0.7}
-.dimtext{font:10px system-ui,sans-serif;fill:#3f5468;text-anchor:middle}
-.bore{fill:none;stroke:#9c6b43;stroke-width:0.7}
+# The "front" stroke is pulled from render's shared role palette so the SVG
+# drawings and the 3D render agree on the front colour (no parallel hex copy).
+from .render import CATEGORY_COLORS as _COLORS
+_FRONT = _COLORS["front"]
+_STYLE = f"""
+.title{{font:600 12px system-ui,sans-serif;fill:#3a352f}}
+.panel{{fill:none;stroke:#b9b0a2;stroke-width:0.8}}
+.front{{fill:#e7d8bf;stroke:{_FRONT};stroke-width:1}}
+.lbl{{font:600 10px system-ui,sans-serif;fill:#5a4632;text-anchor:middle}}
+.dim{{stroke:#6b8aa5;stroke-width:0.7}}
+.dimtext{{font:10px system-ui,sans-serif;fill:#3f5468;text-anchor:middle}}
+.bore{{fill:none;stroke:{_FRONT};stroke-width:0.7}}
 """
 
 
