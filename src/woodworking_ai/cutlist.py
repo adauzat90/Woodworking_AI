@@ -25,6 +25,12 @@ from .constants import (
     SLIDE_SIDE_CLEARANCE, DRAWER_BOX_HEIGHT_DROP, DRAWER_BOX_DEPTH_GAP,
 )
 
+# Materials cut from solid/dimensional lumber rather than sheet goods. A shop
+# buys these by the board foot (and often by the running length), not the sheet.
+SOLID_LUMBER_MATERIALS = frozenset({"frame", "top", "leg", "apron"})
+# One board foot is 144 cubic inches; expressed in mm³ for our mm-native parts.
+BOARD_FOOT_MM3 = 144.0 * (25.4 ** 3)   # ≈ 2_359_737.2 mm³
+
 
 @dataclass
 class Part:
@@ -41,6 +47,16 @@ class Part:
     def area_m2(self) -> float:
         """Single-part face area in m² (assumes mm input)."""
         return (self.length / 1000.0) * (self.width / 1000.0)
+
+    @property
+    def is_solid_lumber(self) -> bool:
+        """True when this part is cut from solid stock (bought by the board foot)."""
+        return self.material in SOLID_LUMBER_MATERIALS
+
+    @property
+    def board_feet(self) -> float:
+        """Volume of a single part expressed in board feet (144 in³)."""
+        return (self.length * self.width * self.thickness) / BOARD_FOOT_MM3
 
 
 @dataclass
@@ -83,6 +99,32 @@ class CutList:
         for h in self.hardware:
             lines.append(f"{h.name},{h.qty},{h.notes}")
         return "\n".join(lines)
+
+    def lumber_breakdown(self) -> list[dict]:
+        """Solid-lumber requirement grouped by (material, thickness).
+
+        Sheet goods (plywood/MDF, bought by the sheet — see the estimate) are
+        excluded. Each group reports the total board feet and running length so
+        a shop can order solid stock the way it actually buys it: legs and
+        aprons by the linear metre/foot, tops and frames by the board foot.
+        """
+        groups: dict[tuple[str, float], dict] = {}
+        for p in self.parts:
+            if not p.is_solid_lumber:
+                continue
+            g = groups.setdefault((p.material, p.thickness), {
+                "material": p.material, "thickness": p.thickness,
+                "parts": 0, "board_feet": 0.0, "length_mm": 0.0,
+            })
+            g["parts"] += p.qty
+            g["board_feet"] += p.board_feet * p.qty
+            g["length_mm"] += p.length * p.qty
+        return [groups[k] for k in sorted(groups)]
+
+    @property
+    def total_board_feet(self) -> float:
+        """Board feet of solid lumber across the whole cut list."""
+        return sum(p.board_feet * p.qty for p in self.parts if p.is_solid_lumber)
 
     def summary(self, unit: str = "metric") -> str:
         from .units import format_area

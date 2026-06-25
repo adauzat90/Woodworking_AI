@@ -96,3 +96,37 @@ def test_report_text_renders():
     text = estimate(base_spec()).report_text()
     assert "Cost estimate" in text
     assert "TOTAL" in text
+
+
+# --- solid lumber priced by the board foot -------------------------------
+
+def test_frameless_cabinet_has_no_lumber_cost():
+    """An all-sheet-goods cabinet has zero board feet and zero lumber cost."""
+    est = estimate(base_spec())
+    assert est.lumber_groups == []
+    assert est.lumber_cost == 0
+    assert est.total_board_feet == 0
+    # Solid materials must not leak into the sheet packing.
+    assert all(g.material not in {"frame", "top", "leg", "apron"} for g in est.groups)
+
+
+def test_face_frame_priced_by_board_foot():
+    """Face-frame stock is solid lumber, billed per board foot (incl. waste)."""
+    est = estimate(base_spec(construction="face_frame"))
+    frame = [g for g in est.lumber_groups if g.material == "frame"]
+    assert frame and est.lumber_cost > 0
+    g = frame[0]
+    prices = PriceBook()
+    expect = g.board_feet * prices.lumber_waste_factor * prices.board_foot_price["frame"]
+    assert g.cost == pytest.approx(expect)
+    assert est.total == pytest.approx(
+        est.material_cost + est.lumber_cost + est.hardware_cost
+        + est.edge_banding_cost + est.labour_cost)
+
+
+def test_board_foot_price_changes_lumber_cost():
+    base = PriceBook()
+    dear = PriceBook(board_foot_price={"frame": base.board_foot_price["frame"] * 2})
+    spec = base_spec(construction="face_frame")
+    assert estimate(spec, prices=dear).lumber_cost > \
+        estimate(spec, prices=base).lumber_cost

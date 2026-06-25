@@ -106,13 +106,14 @@ def export_bytes(spec, fmt: str,
     raise ValueError(f"unknown export format: {fmt}")
 
 
-def build_result(spec, *, want_png: bool = True,
-                 want_glb: bool = True) -> dict[str, Any]:
+def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
+                 prices=None, sheet=None) -> dict[str, Any]:
     """Full design bundle for *spec* — a cabinet, table, or whole project.
 
     Always JSON-serialisable; aggregate stages (cut list, cost, drilling,
     critic, render) dispatch on the spec type, so a Project returns the combined
-    run bundle.
+    run bundle. ``prices`` (a :class:`PriceBook`) and ``sheet`` (a
+    :class:`SheetSize`) override the costing defaults when supplied.
     """
     v = validate(spec)
     result: dict[str, Any] = {
@@ -146,11 +147,26 @@ def build_result(spec, *, want_png: bool = True,
     ]
     result["cutlist_summary"] = cl.summary()
 
-    est = estimate(spec, cutlist=cl)
+    # Solid-lumber requirement in board feet / running length. Empty for an
+    # all-sheet-goods cabinet; populated for tables, face frames, etc.
+    lumber_groups = cl.lumber_breakdown()
+    result["lumber"] = {
+        "board_feet": round(cl.total_board_feet, 2),
+        "groups": [
+            {"material": g["material"], "thickness": g["thickness"],
+             "parts": g["parts"], "board_feet": round(g["board_feet"], 2),
+             "length_mm": round(g["length_mm"], 1)}
+            for g in lumber_groups
+        ],
+    }
+
+    est = estimate(spec, cutlist=cl, prices=prices, sheet=sheet)
     result["estimate"] = {
         "currency": est.currency,
         "total": round(est.total, 2),
         "material": round(est.material_cost, 2),
+        "lumber": round(est.lumber_cost, 2),
+        "board_feet": round(est.total_board_feet, 2),
         "hardware": round(est.hardware_cost, 2),
         "edge_banding": round(est.edge_banding_cost, 2),
         "labour": round(est.labour_cost, 2),
@@ -162,13 +178,27 @@ def build_result(spec, *, want_png: bool = True,
              "utilization": round(g.utilization, 3), "oversize": g.oversize}
             for g in est.groups
         ],
+        "lumber_groups": [
+            {"material": g.material, "thickness": g.thickness,
+             "parts": g.part_count, "board_feet": round(g.board_feet, 2),
+             "cost": round(g.cost, 2)}
+            for g in est.lumber_groups
+        ],
     }
 
     drill = drilling_schedule(spec)
     result["drilling"] = {
         "total_holes": drill.total_holes,
         "ops": [{"part": o.part, "operation": o.operation,
-                 "holes": len(o.holes), "note": o.note} for o in drill.ops],
+                 "holes": len(o.holes), "note": o.note,
+                 # Per-hole positions so the UI can show exactly where to bore.
+                 # Coordinates are metric (the 32mm boring system is metric).
+                 "hole_list": [
+                     {"face": h.face, "u": round(h.u, 1), "v": round(h.v, 1),
+                      "dia": h.dia, "depth": h.depth, "note": h.note}
+                     for h in o.holes
+                 ]}
+                for o in drill.ops],
     }
 
     result["render_png"] = _render_png(spec) if want_png else None

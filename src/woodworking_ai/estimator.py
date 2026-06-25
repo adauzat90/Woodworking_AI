@@ -12,10 +12,12 @@ heuristics like this too.)
 
 from __future__ import annotations
 
+import dataclasses
+import math
 from dataclasses import dataclass, field
 
 from .dsl import CabinetSpec, ComponentGroup
-from .cutlist import CutList, generate_cutlist
+from .cutlist import CutList, generate_cutlist, SOLID_LUMBER_MATERIALS
 from .packing import pack
 
 
@@ -36,6 +38,14 @@ class PriceBook:
         "top": 110.0, "leg": 35.0, "apron": 35.0,   # table stock
     })
     sheet_price_default: float = 70.0
+    # Solid/dimensional lumber is bought by the board foot, not the sheet. Price
+    # per board foot keyed by the cut list's `material` label.
+    board_foot_price: dict[str, float] = field(default_factory=lambda: {
+        "top": 9.0, "leg": 7.0, "apron": 6.0, "frame": 6.5,
+    })
+    board_foot_price_default: float = 7.0
+    # Milling/defect allowance billed on solid stock (rough lumber yields less).
+    lumber_waste_factor: float = 1.15
     # Per-unit hardware prices keyed by the hardware item name.
     hardware_price: dict[str, float] = field(default_factory=lambda: {
         "Concealed hinge": 4.0, "Door pull": 3.5, "Drawer pull": 3.5,
@@ -61,6 +71,15 @@ class SheetGroup:
 
 
 @dataclass
+class LumberGroup:
+    material: str
+    thickness: float
+    part_count: int
+    board_feet: float         # net board feet (before the waste allowance)
+    cost: float               # billed cost (includes the waste allowance)
+
+
+@dataclass
 class Estimate:
     spec_name: str
     groups: list[SheetGroup]
@@ -70,17 +89,23 @@ class Estimate:
     edge_banding_m: float
     labour_hours: float
     labour_cost: float
+    lumber_groups: list[LumberGroup] = field(default_factory=list)
+    lumber_cost: float = 0.0
     currency: str = "$"
     _rate: float = 65.0       # shop_rate_per_hour, echoed for report_text()
 
     @property
     def total(self) -> float:
-        return (self.material_cost + self.hardware_cost
+        return (self.material_cost + self.lumber_cost + self.hardware_cost
                 + self.edge_banding_cost + self.labour_cost)
 
     @property
     def total_sheets(self) -> int:
         return sum(g.sheets for g in self.groups)
+
+    @property
+    def total_board_feet(self) -> float:
+        return sum(g.board_feet for g in self.lumber_groups)
 
     def report_text(self, unit: str = "metric") -> str:
         from .units import format_length, format_run_mm
@@ -94,10 +119,21 @@ class Estimate:
                 f"{g.part_count:>2} parts -> {g.sheets} sheet(s), "
                 f"{g.utilization*100:4.0f}% used{note}"
             )
+        if self.lumber_groups:
+            lines.append("  solid lumber:")
+            for g in self.lumber_groups:
+                thk = format_length(g.thickness, unit)
+                lines.append(
+                    f"    {g.material:<12} {thk:>8}  "
+                    f"{g.part_count:>2} parts -> {g.board_feet:6.2f} bd ft "
+                    f"({c}{g.cost:.2f})"
+                )
         banding = format_run_mm(self.edge_banding_m * 1000.0, unit)
         lines += [
             f"  material:        {c}{self.material_cost:8.2f} "
             f"({self.total_sheets} sheets)",
+            f"  lumber:          {c}{self.lumber_cost:8.2f} "
+            f"({self.total_board_feet:.1f} bd ft)",
             f"  hardware:        {c}{self.hardware_cost:8.2f}",
             f"  edge banding:    {c}{self.edge_banding_cost:8.2f} "
             f"({banding})",
@@ -139,8 +175,9 @@ def _estimate_project(project: ComponentGroup, prices: PriceBook,
     merged for the report. Hardware, banding and labour add straight up.
     """
     groups: dict[tuple[str, float], SheetGroup] = {}
+    lumber: dict[tuple[str, float], LumberGroup] = {}
     material_cost = hardware_cost = banding_cost = banding_m = 0.0
-    labour_hours = labour_cost = 0.0
+    labour_hours = labour_cost = lumber_cost = 0.0
     for comp in project.components:
         e = estimate(comp.spec, prices=prices, sheet=sheet)
         material_cost += e.material_cost
@@ -149,6 +186,7 @@ def _estimate_project(project: ComponentGroup, prices: PriceBook,
         banding_m += e.edge_banding_m
         labour_hours += e.labour_hours
         labour_cost += e.labour_cost
+        lumber_cost += e.lumber_cost
         for g in e.groups:
             key = (g.material, g.thickness)
             if key in groups:
@@ -160,12 +198,25 @@ def _estimate_project(project: ComponentGroup, prices: PriceBook,
             else:
                 groups[key] = SheetGroup(g.material, g.thickness, g.part_count,
                                          g.sheets, g.utilization, g.oversize)
+        for g in e.lumber_groups:
+            key = (g.material, g.thickness)
+            if key in lumber:
+                acc = lumber[key]
+                acc.part_count += g.part_count
+                acc.board_feet += g.board_feet
+                acc.cost += g.cost
+            else:
+                lumber[key] = LumberGroup(g.material, g.thickness, g.part_count,
+                                          g.board_feet, g.cost)
     est = Estimate(
         spec_name=project.name, groups=sorted(
             groups.values(), key=lambda g: (g.material, g.thickness)),
         material_cost=material_cost, hardware_cost=hardware_cost,
         edge_banding_cost=banding_cost, edge_banding_m=banding_m,
         labour_hours=labour_hours, labour_cost=labour_cost,
+        lumber_groups=sorted(lumber.values(),
+                             key=lambda g: (g.material, g.thickness)),
+        lumber_cost=lumber_cost,
     )
     est._rate = prices.shop_rate_per_hour
     return est
@@ -181,9 +232,12 @@ def estimate(spec, *, cutlist: CutList | None = None,
         return _estimate_project(spec, prices, sheet)
     cl = cutlist or generate_cutlist(spec)
 
-    # Group panels by (material, thickness) and nest each group.
+    # Group panels by (material, thickness) and nest each group. Solid lumber is
+    # priced by the board foot below, so it is left out of the sheet packing.
     groups: dict[tuple[str, float], list] = {}
     for p in cl.parts:
+        if p.material in SOLID_LUMBER_MATERIALS:
+            continue
         key = (p.material, p.thickness)
         groups.setdefault(key, [])
         groups[key].extend([(p.length, p.width)] * p.qty)
@@ -197,6 +251,19 @@ def estimate(spec, *, cutlist: CutList | None = None,
         sheet_groups.append(SheetGroup(
             material=material, thickness=thickness, part_count=len(rects),
             sheets=sheets, utilization=util, oversize=oversize,
+        ))
+
+    # Solid lumber, priced by the board foot (with a milling-waste allowance).
+    lumber_groups: list[LumberGroup] = []
+    lumber_cost = 0.0
+    for g in cl.lumber_breakdown():
+        price = prices.board_foot_price.get(
+            g["material"], prices.board_foot_price_default)
+        cost = g["board_feet"] * prices.lumber_waste_factor * price
+        lumber_cost += cost
+        lumber_groups.append(LumberGroup(
+            material=g["material"], thickness=g["thickness"],
+            part_count=g["parts"], board_feet=g["board_feet"], cost=cost,
         ))
 
     # Hardware.
@@ -220,6 +287,75 @@ def estimate(spec, *, cutlist: CutList | None = None,
         material_cost=material_cost, hardware_cost=hardware_cost,
         edge_banding_cost=banding_cost, edge_banding_m=banding_m,
         labour_hours=hours, labour_cost=labour_cost,
+        lumber_groups=lumber_groups, lumber_cost=lumber_cost,
     )
     est._rate = prices.shop_rate_per_hour
     return est
+
+
+# --- price book / sheet size (de)serialisation -------------------------------
+# Let a front end read the shop's default rates and post tuned overrides. The
+# from_dict helpers merge a (possibly partial) override onto the defaults and
+# coerce every value to a sane, finite, non-negative number.
+
+# Scalar (single-value) PriceBook fields, exposed for editing.
+_PRICE_SCALARS = (
+    "sheet_price_default", "board_foot_price_default", "lumber_waste_factor",
+    "edge_banding_per_m", "shop_rate_per_hour", "labour_base_h",
+    "labour_per_part_h", "labour_per_door_h", "labour_per_drawer_h",
+)
+# Per-label price maps (material/hardware -> price).
+_PRICE_MAPS = ("sheet_price", "board_foot_price", "hardware_price")
+
+
+def _num(value, default=None, lo=None):
+    """Coerce *value* to a finite float, clamped to >= *lo*; else *default*."""
+    try:
+        x = float(value)
+    except (TypeError, ValueError):
+        return default
+    if not math.isfinite(x):
+        return default
+    if lo is not None and x < lo:
+        x = lo
+    return x
+
+
+def pricebook_to_dict(prices: PriceBook) -> dict:
+    """The full price book as a plain JSON-friendly dict."""
+    return dataclasses.asdict(prices)
+
+
+def pricebook_from_dict(data) -> PriceBook:
+    """A PriceBook with any overrides in *data* merged onto the defaults."""
+    pb = PriceBook()
+    if not isinstance(data, dict):
+        return pb
+    for f in _PRICE_SCALARS:
+        if f in data:
+            x = _num(data[f], lo=0.0)
+            if x is not None:
+                setattr(pb, f, x)
+    for f in _PRICE_MAPS:
+        sub = data.get(f)
+        if isinstance(sub, dict):
+            for k, v in sub.items():
+                x = _num(v, lo=0.0)
+                if x is not None:
+                    getattr(pb, f)[str(k)] = x
+    return pb
+
+
+def sheetsize_to_dict(sheet: SheetSize) -> dict:
+    return {"length": sheet.length, "width": sheet.width, "kerf": sheet.kerf}
+
+
+def sheetsize_from_dict(data) -> SheetSize:
+    """A SheetSize with overrides merged on; dimensions kept strictly positive."""
+    s = SheetSize()
+    if not isinstance(data, dict):
+        return s
+    s.length = _num(data.get("length"), s.length, lo=1.0)
+    s.width = _num(data.get("width"), s.width, lo=1.0)
+    s.kerf = _num(data.get("kerf"), s.kerf, lo=0.0)
+    return s

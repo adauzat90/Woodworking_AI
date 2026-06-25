@@ -73,6 +73,29 @@ def test_table_cutlist_parts():
     assert {"Top", "Leg", "Apron (long)", "Apron (short)"} == names
 
 
+def test_table_lumber_is_board_feet():
+    """A table is all solid stock — every part counts toward board feet."""
+    cl = generate_cutlist(table())
+    groups = cl.lumber_breakdown()
+    materials = {g["material"] for g in groups}
+    assert {"top", "leg", "apron"} <= materials
+    # Board feet are positive and the group totals reconcile with the whole list.
+    assert cl.total_board_feet > 0
+    assert sum(g["board_feet"] for g in groups) == pytest.approx(cl.total_board_feet)
+    # 4 legs of square stock contribute a known volume (in board feet).
+    leg = next(g for g in groups if g["material"] == "leg")
+    one_leg_bf = (740 - 25) * 60 * 60 / (144 * 25.4 ** 3)
+    assert leg["board_feet"] == pytest.approx(one_leg_bf * 4)
+    assert leg["length_mm"] == pytest.approx((740 - 25) * 4)
+
+
+def test_cabinet_sheet_goods_have_no_board_feet():
+    """A frameless cabinet is all sheet goods — no solid lumber to buy."""
+    spec = spec_from_dict({"cabinet_type": "base", "width": 600, "doors": 2,
+                           "shelves": 1})
+    assert generate_cutlist(spec).lumber_breakdown() == []
+
+
 def test_table_estimate_positive():
     assert estimate(table()).total > 0
 
@@ -82,6 +105,9 @@ def test_table_build_result_is_finite_json():
     assert res["valid"] is True
     json.dumps(res, allow_nan=False)
     assert res["drilling"]["total_holes"] == 0  # no holes on a table
+    # The bundle reports solid-lumber board feet for the front end's Lumber tab.
+    assert res["lumber"]["board_feet"] > 0
+    assert {g["material"] for g in res["lumber"]["groups"]} >= {"top", "leg", "apron"}
 
 
 # --- validation ----------------------------------------------------------

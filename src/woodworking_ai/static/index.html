@@ -66,6 +66,30 @@
   .cost-grid { display:grid; grid-template-columns:auto auto; gap:4px 24px; max-width:340px; }
   .cost-grid .total { font-weight:700; border-top:1px solid var(--line); padding-top:6px; }
   .muted { color:var(--muted); }
+  /* Headline summary for the Lumber and Drilling tabs. */
+  .headline { display:flex; align-items:center; gap:14px; margin:6px 0 14px; }
+  .headline .big { font-size:34px; font-weight:700; color:var(--wood); line-height:1; }
+  .headline .sub { font-size:12.5px; }
+  .chips { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 12px; }
+  .chip { background:#3a352f; border-radius:7px; padding:5px 11px; font-size:12px; }
+  .chip b { color:var(--wood); font-weight:700; }
+  details { margin:6px 0; border:1px solid var(--line); border-radius:7px;
+            padding:4px 10px; background:var(--bg); }
+  details[open] { padding-bottom:8px; }
+  summary { cursor:pointer; padding:3px 0; font-size:12.5px; list-style:none; }
+  summary::-webkit-details-marker { display:none; }
+  summary::before { content:"▸ "; color:var(--muted); }
+  details[open] summary::before { content:"▾ "; }
+  summary .count { color:var(--muted); }
+  h4 { margin:16px 0 6px; font-size:12px; color:var(--muted);
+       text-transform:uppercase; letter-spacing:.05em; }
+  /* Pricing editor (sidebar). */
+  .price-sec { font-size:11px; color:var(--wood); text-transform:uppercase;
+               letter-spacing:.04em; margin:12px 0 3px; }
+  .price-row { display:flex; align-items:center; justify-content:space-between;
+               gap:8px; margin:3px 0; }
+  .price-row span { font-size:11.5px; color:var(--muted); }
+  input.price-input { width:96px; flex:0 0 auto; padding:5px 7px; }
 </style>
 </head>
 <body>
@@ -179,6 +203,19 @@
     <button id="buildBtn">🔨 Build design</button>
     <div class="check"><input id="auto" type="checkbox" /><label style="margin:0">Live update as I change values</label></div>
     <fieldset style="margin-top:14px">
+      <legend>Pricing &amp; rates</legend>
+      <details id="pricingDetails">
+        <summary>Edit shop prices &amp; rates</summary>
+        <p class="muted" style="font-size:11px;margin:6px 0">
+          Tune the quote to your shop — sheet &amp; board-foot prices, hardware,
+          labour rates and stock size. Saved in this browser; the quote and
+          lumber costs refresh on the next build.</p>
+        <div id="pricingBody"></div>
+        <button id="resetPricing" class="secondary" type="button"
+          style="margin-top:8px">↺ Reset to defaults</button>
+      </details>
+    </fieldset>
+    <fieldset style="margin-top:14px">
       <legend>Library</legend>
       <button id="saveBtn" class="secondary">💾 Save current design</button>
       <label>Saved designs</label>
@@ -204,9 +241,10 @@
       </div>
       <div class="tabs" id="tabs">
         <button data-t="cutlist" class="active">Cut list</button>
+        <button data-t="lumber">Lumber</button>
+        <button data-t="drilling">Drilling</button>
         <button data-t="hardware">Hardware</button>
         <button data-t="cost">Cost</button>
-        <button data-t="drilling">Drilling</button>
         <label class="units-toggle" title="Display units for the cut list and reports (the engine is millimetre-native)">
           <span class="muted">Units</span>
           <select id="units">
@@ -244,6 +282,14 @@ function fmtArea(m2) {
   if (unit() === "imperial") return (m2 / 0.09290304).toFixed(1) + " ft²";
   return (+m2).toFixed(2) + " m²";
 }
+// Running (linear) length of stock, for solid lumber bought by the metre/foot.
+function fmtRun(mm) {
+  if (mm == null || !isFinite(mm)) return "";
+  if (unit() === "imperial") return (mm / 304.8).toFixed(1) + " ft";
+  return (mm / 1000).toFixed(2) + " m";
+}
+// Materials cut from solid stock (board feet) rather than sheet goods.
+const SOLID_MATERIALS = new Set(["frame", "top", "leg", "apron"]);
 
 // --- form inputs honour the same toggle (length fields only) ----------------
 const LEN_IDS = ["width","height","depth","reveal","toe","blind_width","corner_cut",
@@ -401,7 +447,7 @@ async function post(url, body) {
 }
 $("buildBtn").onclick = async () => {
   setBusy(true);
-  try { render(await post("/api/build", {spec: specFromForm()})); }
+  try { render(await post("/api/build", {spec: specFromForm(), ...currentPricing()})); }
   catch (e) { showError(e.message); } finally { setBusy(false); health(); }
 };
 $("designBtn").onclick = async () => {
@@ -409,7 +455,7 @@ $("designBtn").onclick = async () => {
   if (!prompt) return;
   setBusy(true);
   try {
-    const d = await post("/api/design", {prompt});
+    const d = await post("/api/design", {prompt, ...currentPricing()});
     syncForm(d.spec); render(d);
   } catch (e) { showError(e.message); } finally { setBusy(false); health(); }
 };
@@ -507,7 +553,7 @@ function loadFromHash() {
   try {
     const spec = JSON.parse(decodeURIComponent(escape(atob(m[1]))));
     syncForm(spec);
-    post("/api/build", {spec}).then(render).catch(e => showError(e.message));
+    post("/api/build", {spec, ...currentPricing()}).then(render).catch(e => showError(e.message));
   } catch (e) {}
 }
 
@@ -537,25 +583,165 @@ function paint() {
     h += `<p class="muted">${(d.spec&&d.spec.name)||"Design"}: ${groupSummary(d.spec)}`
        + `${panels} panels (${d.cutlist.length} unique), ${hw} hardware items, `
        + `~${fmtArea(area)} sheet goods</p>`;
+  } else if (tab === "lumber") {
+    h = lumberPane(d);
   } else if (tab === "hardware") {
     h = table(["Item","Qty","Notes"], d.hardware.map(x=>[x.name,x.qty,x.notes]));
   } else if (tab === "cost") {
-    const e = d.estimate;
+    const e = d.estimate, m = v => e.currency + v.toFixed(2);
+    const lumberGroups = e.lumber_groups || [];
     h = `<div class="cost-grid">
-      <div>Material (${e.total_sheets} sheets)</div><div>${e.currency}${e.material.toFixed(2)}</div>
-      <div>Hardware</div><div>${e.currency}${e.hardware.toFixed(2)}</div>
-      <div>Edge banding</div><div>${e.currency}${e.edge_banding.toFixed(2)}</div>
-      <div>Labour (${e.labour_hours}h)</div><div>${e.currency}${e.labour.toFixed(2)}</div>
-      <div class="total">Total</div><div class="total">${e.currency}${e.total.toFixed(2)}</div></div>
-      <h4>Sheets</h4>` +
-      table(["Material",`Thk (${u})`,"Parts","Sheets","Used"],
-        e.groups.map(g=>[g.material,fmtLen(g.thickness),g.parts,g.sheets,Math.round(g.utilization*100)+"%"]));
+      <div>Sheet goods (${e.total_sheets} sheet${e.total_sheets === 1 ? "" : "s"})</div><div>${m(e.material)}</div>`
+      + (lumberGroups.length
+          ? `<div>Solid lumber (${(e.board_feet || 0).toFixed(1)} bd ft)</div><div>${m(e.lumber || 0)}</div>` : "")
+      + `<div>Hardware</div><div>${m(e.hardware)}</div>
+      <div>Edge banding</div><div>${m(e.edge_banding)}</div>
+      <div>Labour (${e.labour_hours}h)</div><div>${m(e.labour)}</div>
+      <div class="total">Total</div><div class="total">${m(e.total)}</div></div>`;
+    if (e.groups.length) {
+      h += "<h4>Sheets</h4>" +
+        table(["Material", `Thk (${u})`, "Parts", "Sheets", "Used"],
+          e.groups.map(g => [g.material, fmtLen(g.thickness), g.parts, g.sheets,
+                             Math.round(g.utilization * 100) + "%"]));
+    }
+    if (lumberGroups.length) {
+      h += "<h4>Solid lumber (board feet)</h4>" +
+        table(["Material", `Thk (${u})`, "Parts", "Board feet", "Cost"],
+          lumberGroups.map(g => [g.material, fmtLen(g.thickness), g.parts,
+                                 g.board_feet.toFixed(2) + " bd ft", m(g.cost)]));
+    }
   } else if (tab === "drilling") {
-    h = `<p class="muted">${d.drilling.total_holes} holes total</p>` +
-      table(["Part","Operation","Holes","Note"],
-        d.drilling.ops.map(o=>[o.part,o.operation,o.holes,o.note]));
+    h = drillingPane(d);
   }
   $("pane").innerHTML = h;
+}
+
+// --- Lumber tab: how much material to buy ------------------------------------
+// Headlines the sheet/board count, then breaks it down per material so the shop
+// knows exactly what to order. Numbers come straight from the cost estimate's
+// nesting (estimate.groups) plus the cut list's gross face area.
+function lumberPane(d) {
+  const e = d.estimate, u = unitLabel();
+  if (!e || !e.groups) return '<p class="muted">No lumber data.</p>';
+  // Gross face area per (material, thickness) from the cut list.
+  const areaByKey = {};
+  for (const p of d.cutlist) {
+    const k = p.material + "@" + p.thickness;
+    areaByKey[k] = (areaByKey[k] || 0) + (p.length / 1000) * (p.width / 1000) * p.qty;
+  }
+  // Split the two ways stock is bought: sheet goods vs. solid lumber.
+  const sheetGroups = e.groups.filter(g => !SOLID_MATERIALS.has(g.material));
+  const solidGroups = (d.lumber && d.lumber.groups) || [];
+  const sheetsToBuy = sheetGroups.reduce((n, g) => n + g.sheets, 0);
+  const boardFeet = (d.lumber && d.lumber.board_feet) || 0;
+  const sheetArea = d.cutlist.reduce((a, p) =>
+    SOLID_MATERIALS.has(p.material) ? a
+      : a + (p.length / 1000) * (p.width / 1000) * p.qty, 0);
+  const sheetDims = unit() === "imperial" ? "8 × 4 ft" : "2440 × 1220 mm";
+  const oversize = sheetGroups.reduce((n, g) => n + (g.oversize || 0), 0);
+
+  // Headline: one stat block per kind of stock actually needed.
+  const stats = [];
+  if (sheetsToBuy > 0 || boardFeet === 0)
+    stats.push(`<div><div class="big">${sheetsToBuy}</div>
+      <div class="sub">sheet${sheetsToBuy === 1 ? "" : "s"} of goods
+        <div class="muted">${sheetDims} · ~${fmtArea(sheetArea)} of parts</div></div></div>`);
+  if (boardFeet > 0)
+    stats.push(`<div><div class="big">${boardFeet.toFixed(1)}</div>
+      <div class="sub">board feet of solid lumber
+        <div class="muted">tops, legs, aprons &amp; frames</div></div></div>`);
+  let h = `<div class="headline" style="gap:28px">${stats.join("")}</div>`;
+
+  // --- sheet goods -----------------------------------------------------
+  if (sheetGroups.length) {
+    h += '<div class="chips">' + sheetGroups.map(g =>
+      `<span class="chip"><b>${g.sheets}×</b> ${g.material} ${fmtLen(g.thickness, true)}</span>`
+    ).join("") + "</div>";
+    h += "<h4>Sheet goods</h4>";
+    h += table(
+      ["Material", `Thk (${u})`, "Parts", "Sheets", "Used", "Area"],
+      sheetGroups.map(g => {
+        const area = areaByKey[g.material + "@" + g.thickness] || 0;
+        const util = Math.round(g.utilization * 100) + "%";
+        const flag = g.oversize ? ` ⚠ ${g.oversize} oversize` : "";
+        return [g.material + flag, fmtLen(g.thickness), g.parts, g.sheets, util, fmtArea(area)];
+      }));
+    h += `<p class="muted" style="margin-top:8px">Sheet counts include nesting
+      waste from a guillotine pack; “Used” is the packed area per sheet. ` +
+      (oversize ? `⚠ ${oversize} part(s) exceed a single sheet — split or order oversized stock. ` : "") +
+      `Order ${sheetsToBuy} sheet${sheetsToBuy === 1 ? "" : "s"} total.</p>`;
+  }
+
+  // --- solid lumber (board feet + cost) --------------------------------
+  if (solidGroups.length) {
+    // Cost per (material, thickness) comes from the estimate's board-foot pricing.
+    const costByKey = {};
+    for (const g of (e.lumber_groups || [])) costByKey[g.material + "@" + g.thickness] = g.cost;
+    const lumberCost = e.lumber || 0;
+    h += '<div class="chips" style="margin-top:14px">' + solidGroups.map(g =>
+      `<span class="chip"><b>${g.board_feet.toFixed(1)}</b> bd ft · ${g.material} ${fmtLen(g.thickness, true)}</span>`
+    ).join("") + "</div>";
+    h += "<h4>Solid lumber (board feet)</h4>";
+    h += table(
+      ["Material", `Thk (${u})`, "Parts", "Length", "Board feet", "Cost"],
+      solidGroups.map(g => {
+        const cost = costByKey[g.material + "@" + g.thickness];
+        return [g.material, fmtLen(g.thickness), g.parts, fmtRun(g.length_mm),
+                g.board_feet.toFixed(2) + " bd ft",
+                cost == null ? "" : e.currency + cost.toFixed(2)];
+      }));
+    h += `<p class="muted" style="margin-top:8px">Solid stock is bought by the
+      board foot (or the running length for legs &amp; aprons). Cost bills ~15%
+      milling/defect waste on net board feet at the shop's per-bd-ft rate. ` +
+      `<b>${boardFeet.toFixed(1)} bd ft</b>` +
+      (lumberCost ? ` · <b>${e.currency}${lumberCost.toFixed(2)}</b>` : "") +
+      ` total.</p>`;
+  }
+  return h;
+}
+
+// --- Drilling tab: every hole, where to bore it ------------------------------
+// Headlines the hole count with a per-type breakdown, lists the operations, then
+// exposes the exact bore positions (u/v/Ø/depth, metric) under each operation.
+function drillCategory(op) {
+  if (/shelf-pin/i.test(op)) return "Shelf-pin · 5mm";
+  if (/hinge/i.test(op)) return "Hinge cup · 35mm";
+  if (/slide/i.test(op)) return "Drawer slide · 4mm";
+  return "Other";
+}
+function drillingPane(d) {
+  const dr = d.drilling;
+  if (!dr || !dr.ops.length)
+    return '<p class="muted">No drilling required for this design.</p>';
+  // Holes by category, for the chip summary.
+  const cats = {};
+  for (const o of dr.ops) {
+    const c = drillCategory(o.operation);
+    cats[c] = (cats[c] || 0) + o.holes;
+  }
+  let h = `<div class="headline">
+      <div class="big">${dr.total_holes}</div>
+      <div class="sub">holes to drill
+        <div class="muted">positions are metric — 32mm boring system</div></div>
+    </div>`;
+  h += '<div class="chips">' + Object.entries(cats).map(([c, n]) =>
+    `<span class="chip"><b>${n}</b> ${c}</span>`).join("") + "</div>";
+  h += table(["Part", "Operation", "Holes", "Note"],
+    dr.ops.map(o => [o.part, o.operation, o.holes, o.note]));
+  // Exact positions, collapsible per operation. u = along depth/width,
+  // v = up from the panel's bottom edge.
+  h += "<h4>Hole positions</h4>";
+  for (const o of dr.ops) {
+    const holes = o.hole_list || [];
+    if (!holes.length) continue;
+    h += `<details><summary>${o.part} — ${o.operation}
+      <span class="count">(${o.holes} hole${o.holes === 1 ? "" : "s"})</span></summary>` +
+      table(["#", "Face", "U (mm)", "V (mm)", "Ø (mm)", "Depth (mm)"],
+        holes.map((hh, i) => [i + 1, hh.face, hh.u.toFixed(1), hh.v.toFixed(1),
+                              hh.dia.toFixed(1), hh.depth.toFixed(1)])) +
+      "</details>";
+  }
+  return h;
 }
 function table(cols, rows) {
   return "<table><thead><tr>" + cols.map(c=>`<th>${c}</th>`).join("") +
@@ -570,6 +756,111 @@ $("tabs").querySelectorAll("button").forEach(b => b.onclick = () => {
 });
 // Switching units converts the form inputs and reformats the loaded bundle.
 $("units").onchange = applyUnitChange;
+
+// --- Pricing editor ----------------------------------------------------------
+// Tune the shop's price book + sheet size. Defaults come from the server; edits
+// persist to localStorage and ride along with every build request as `prices`
+// and `sheet`, so the quote and lumber costs reflect the user's own rates.
+const PRICING_LS = "woodai_pricing";
+let pricingDefaults = null, pricing = null;
+// Scalar fields, grouped for the sidebar. [key, label, input step].
+const PRICE_RATE_FIELDS = [
+  ["shop_rate_per_hour", "Shop rate ($/h)", 1],
+  ["lumber_waste_factor", "Lumber waste (×)", 0.01],
+  ["edge_banding_per_m", "Edge banding ($/m)", 0.1],
+];
+const PRICE_FALLBACK_FIELDS = [
+  ["sheet_price_default", "Sheet default ($)", 1],
+  ["board_foot_price_default", "Board-foot default ($)", 0.5],
+];
+const LABOUR_FIELDS = [
+  ["labour_base_h", "Base (h)", 0.1],
+  ["labour_per_part_h", "Per part (h)", 0.01],
+  ["labour_per_door_h", "Per door (h)", 0.05],
+  ["labour_per_drawer_h", "Per drawer (h)", 0.05],
+];
+const SHEET_FIELDS = [
+  ["length", "Length (mm)", 10], ["width", "Width (mm)", 10],
+  ["kerf", "Saw kerf (mm)", 0.5],
+];
+const clone = o => JSON.parse(JSON.stringify(o));
+
+function priceRow(sec, key, label, step, val) {
+  return `<div class="price-row"><span>${label}</span>` +
+    `<input class="price-input" data-sec="${sec}" data-key="${key}" type="number" ` +
+    `step="${step}" min="0" value="${val}"></div>`;
+}
+// Overlay a saved override onto the server defaults (deep for the price maps).
+function mergePricing(def, saved) {
+  const out = { prices: clone(def.prices), sheet: clone(def.sheet) };
+  if (saved && saved.prices) for (const k in saved.prices) {
+    const v = saved.prices[k];
+    if (v && typeof v === "object" && out.prices[k] && typeof out.prices[k] === "object")
+      Object.assign(out.prices[k], v);
+    else out.prices[k] = v;
+  }
+  if (saved && saved.sheet) Object.assign(out.sheet, saved.sheet);
+  return out;
+}
+function renderPricingForm() {
+  if (!pricing) return;
+  const p = pricing.prices, sz = pricing.sheet;
+  const scalars = (title, fields) => {
+    let s = `<div class="price-sec">${title}</div>`;
+    for (const [k, l, st] of fields) s += priceRow("scalar", k, l, st, p[k]);
+    return s;
+  };
+  const mapRows = (title, sec, step) => {
+    let s = `<div class="price-sec">${title}</div>`;
+    for (const k of Object.keys(p[sec]).sort()) s += priceRow(sec, k, k, step, p[sec][k]);
+    return s;
+  };
+  let h = scalars("Rates &amp; factors", PRICE_RATE_FIELDS);
+  h += mapRows("Sheet goods ($/sheet)", "sheet_price", 1);
+  h += mapRows("Solid lumber ($/board foot)", "board_foot_price", 0.5);
+  h += mapRows("Hardware ($/unit)", "hardware_price", 0.25);
+  h += scalars("Labour (hours)", LABOUR_FIELDS);
+  h += scalars("Fallback prices", PRICE_FALLBACK_FIELDS);
+  h += '<div class="price-sec">Sheet stock size</div>';
+  for (const [k, l, st] of SHEET_FIELDS) h += priceRow("sheet", k, l, st, sz[k]);
+  $("pricingBody").innerHTML = h;
+  $("pricingBody").querySelectorAll(".price-input").forEach(el =>
+    el.addEventListener("input", () => { savePricing(); maybeAuto(); }));
+}
+// Read the form back into a {prices, sheet} object, defaults filling any blanks.
+function readPricing() {
+  const out = mergePricing(pricingDefaults, null);
+  document.querySelectorAll("#pricingBody .price-input").forEach(el => {
+    const v = parseFloat(el.value);
+    if (!isFinite(v)) return;
+    const sec = el.dataset.sec, key = el.dataset.key;
+    if (sec === "scalar") out.prices[key] = v;
+    else if (sec === "sheet") out.sheet[key] = v;
+    else (out.prices[sec] = out.prices[sec] || {})[key] = v;
+  });
+  return out;
+}
+function savePricing() {
+  pricing = readPricing();
+  try { localStorage.setItem(PRICING_LS, JSON.stringify(pricing)); } catch (e) {}
+}
+// What every build request sends; {} (so unchanged) until defaults have loaded.
+function currentPricing() { return pricing ? readPricing() : {}; }
+async function loadPricing() {
+  try { pricingDefaults = await (await fetch("/api/pricing")).json(); }
+  catch (e) { pricingDefaults = null; return; }
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(PRICING_LS) || "null"); } catch (e) {}
+  pricing = mergePricing(pricingDefaults, saved);
+  renderPricingForm();
+}
+$("resetPricing").onclick = () => {
+  if (!pricingDefaults) return;
+  try { localStorage.removeItem(PRICING_LS); } catch (e) {}
+  pricing = mergePricing(pricingDefaults, null);
+  renderPricingForm();
+  maybeAuto();
+};
 
 // --- Library: Convex when CONVEX_URL is configured, else localStorage --------
 const CONVEX_URL = window.__CONVEX_URL__ || "";
@@ -629,7 +920,8 @@ $("loadBtn").onclick = async () => {
   const d = savedCache.find(x => x._id === $("savedList").value);
   if (!d) return;
   syncForm(d.spec);
-  try { render(await post("/api/build", {spec: d.spec})); } catch (e) { showError(e.message); }
+  try { render(await post("/api/build", {spec: d.spec, ...currentPricing()})); }
+  catch (e) { showError(e.message); }
 };
 $("delBtn").onclick = async () => {
   const id = $("savedList").value;
@@ -667,6 +959,7 @@ setUnitLabels();
 applyUnitChange();
 
 health();
+loadPricing();
 refreshSaved();
 loadFromHash();
 window.addEventListener("hashchange", loadFromHash);
