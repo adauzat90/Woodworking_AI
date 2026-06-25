@@ -181,6 +181,10 @@ def _emit(spec, args) -> int:
         if args.dxf:
             exporters.export_cutlayout_dxf(spec, out / "cutlayout.dxf", cutlist=cutlist)
             print("Wrote cutlayout.dxf")
+        if args.drawings:
+            from .drawings import write_drawings_svg
+            write_drawings_svg(spec, out / "drawings.svg", unit)
+            print("Wrote drawings.svg")
 
         if args.step or args.stl or args.glb:
             from .builder import build_model, measure
@@ -210,6 +214,8 @@ def main(argv: list[str] | None = None) -> int:
     common.add_argument("--glb", action="store_true", help="export GLB (needs build123d)")
     common.add_argument("--dxf", action="store_true",
                         help="export a DXF cut-layout nest (no build123d needed)")
+    common.add_argument("--drawings", action="store_true",
+                        help="export dimensioned 2D shop drawings (SVG)")
     common.add_argument("--render", action="store_true",
                         help="render PNG snapshots (needs matplotlib)")
     common.add_argument("--visual-review", action="store_true",

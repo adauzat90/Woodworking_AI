@@ -94,6 +94,11 @@ def export_bytes(spec, fmt: str,
             p = export_cutlayout_dxf(spec, Path(d) / "layout.dxf")
             return p.read_bytes(), "application/dxf", f"{base}_cutlayout.dxf"
 
+    if fmt == "drawings":
+        from .drawings import render_svg
+        svg = render_svg(spec, units)
+        return svg.encode("utf-8"), "image/svg+xml", f"{base}_drawings.svg"
+
     if fmt in ("step", "stl", "glb"):
         from .builder import build_model
         from . import exporters
@@ -212,6 +217,12 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
          "reference": o.reference, "note": o.note}
         for o in joint.ops
     ]
+
+    try:
+        from .drawings import render_svg
+        result["drawings_svg"] = render_svg(spec, "metric")
+    except Exception:
+        result["drawings_svg"] = None
 
     result["render_png"] = _render_png(spec) if want_png else None
     result["glb"] = _glb(spec) if want_glb else None

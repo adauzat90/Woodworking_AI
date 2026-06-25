@@ -280,11 +280,13 @@
         <span class="muted" style="font-size:12px">Download:</span>
         <button data-f="step">STEP</button><button data-f="stl">STL</button>
         <button data-f="glb">GLB</button><button data-f="dxf">DXF</button>
+        <button data-f="drawings">Drawings</button>
         <button data-f="cutlist">Cut list</button><button data-f="drilling">Drilling</button>
         <button id="shareBtn" class="share">🔗 Share</button>
       </div>
       <div class="tabs" id="tabs">
         <button data-t="cutlist" class="active">Cut list</button>
+        <button data-t="drawings">Drawings</button>
         <button data-t="lumber">Lumber</button>
         <button data-t="drilling">Drilling</button>
         <button data-t="joinery">Joinery</button>
@@ -658,6 +660,10 @@ function paint() {
     }
   } else if (tab === "drilling") {
     h = drillingPane(d);
+  } else if (tab === "drawings") {
+    h = d.drawings_svg
+      ? `<div style="overflow:auto;padding:4px">${d.drawings_svg}</div>`
+      : '<p class="muted">Drawings unavailable for this design.</p>';
   } else if (tab === "joinery") {
     const j = d.joinery || [];
     h = j.length ? table(["ID","Part","Operation","Tool","Width","Depth","Where","Note"],
