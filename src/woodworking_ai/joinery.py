@@ -15,13 +15,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from .dsl import (CabinetSpec, TableSpec, ComponentGroup, BackStyle,
-                  CabinetType, Joinery, ApplianceVoid)
+                  Joinery, ApplianceVoid)
 from .cutlist import generate_cutlist
 from .geometry import component_tag
-from .constants import DOOR_PANEL_GROOVE
-
-HOUSED_DEPTH_FRACTION = 0.5     # dado/groove depth as a fraction of stock
-GROOVE_BACK_INSET = 12.0        # a grooved back sits this far in from the rear
+from .constants import (
+    DOOR_PANEL_GROOVE, HOUSED_DEPTH_FRACTION, GROOVE_BACK_INSET,
+)
 
 
 @dataclass
@@ -216,8 +215,5 @@ def joinery_schedule(spec) -> JoinerySchedule:
     cl = generate_cutlist(spec)
     if isinstance(spec, TableSpec):
         return JoinerySchedule(spec_name=spec.name, ops=_table_joinery(spec, cl))
-    if spec.cabinet_type == CabinetType.CORNER_DIAGONAL:
-        # The diagonal carcass uses the same housed joints as a box.
-        return JoinerySchedule(spec_name=spec.name,
-                               ops=_cabinet_joinery(spec, cl))
+    # Cabinets (including the diagonal corner) use the same housed box joints.
     return JoinerySchedule(spec_name=spec.name, ops=_cabinet_joinery(spec, cl))

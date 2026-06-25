@@ -34,8 +34,8 @@ def test_box_sides_and_frontback_are_pairs():
 def test_box_width_accounts_for_slide_clearance():
     cl = generate_cutlist(spec([Drawer(140)], width=600))
     bottom = next(p for p in cl.parts if p.name == "Drawer 1 box bottom")
-    # opening 600, minus 2 * 13mm slide clearance = 574
-    assert bottom.length == pytest.approx(574)
+    # opening 600, minus 2 * 12.7mm (½in) side-mount slide clearance = 574.6
+    assert bottom.length == pytest.approx(574.6)
 
 
 def test_false_front_has_no_box_or_slides():

@@ -23,6 +23,7 @@ import json
 import math
 
 from .units import normalize_unit, IMPERIAL, MM_PER_IN
+from .constants import SLIDE_SIDE_CLEARANCE
 
 
 class CabinetType(StrEnum):
@@ -204,7 +205,7 @@ class Drawer:
     dovetail_tails: DovetailTails = DovetailTails.SIDES  # tails on the sides so
                                      # the front can't pull off; "front" is wrong
     slide_type: SlideType = SlideType.SIDE_MOUNT     # side_mount | undermount
-    slide_clearance: float = 12.7    # per-side gap for side-mount slides (½in)
+    slide_clearance: float = SLIDE_SIDE_CLEARANCE    # per-side gap, side-mount
     slide_length: float = 0.0        # nominal slide length; 0 = derive from depth
 
     def __post_init__(self) -> None:

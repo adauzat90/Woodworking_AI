@@ -23,9 +23,12 @@ Two layers:
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+_log = logging.getLogger(__name__)
 
 from ..dsl import CabinetSpec, ComponentGroup, Construction, Joinery
 from ..geometry import (
@@ -155,8 +158,14 @@ def _brep_interferences(model: Any, eps_volume: float = 1.0,
             a, b = children[i], children[j]
             try:
                 vol = (a & b).volume
-            except Exception:
-                vol = 0.0  # disjoint solids can raise instead of empty
+            except Exception as exc:
+                # Disjoint solids legitimately raise instead of returning an
+                # empty intersection — treat as no overlap, but never swallow
+                # the failure silently: a real kernel bug must be observable
+                # rather than masquerading as a clean model.
+                vol = 0.0
+                _log.debug("B-Rep intersection of %r & %r failed: %s",
+                           getattr(a, "label", i), getattr(b, "label", j), exc)
             if vol > eps_volume:
                 hits.append((getattr(a, "label", f"#{i}"),
                              getattr(b, "label", f"#{j}"), vol))

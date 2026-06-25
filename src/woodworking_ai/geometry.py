@@ -442,11 +442,6 @@ def panel_layout(spec) -> list[PanelBox]:
 
     return panels
 
-    # --- accessories: countertop, filler, end panel, molding -------------
-    panels.extend(_accessory_panels(spec))
-
-    return panels
-
 
 def _unit_sort_key(name: str) -> tuple:
     """Canonical build order for sub-assemblies (Carcass first, trim last)."""

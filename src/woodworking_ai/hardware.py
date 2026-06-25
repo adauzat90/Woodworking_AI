@@ -22,11 +22,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-# 35 mm Euro hinge cup geometry (shared with drilling.py / validator.py).
-CUP_DIA = 35.0
-CUP_DEPTH = 12.5
-CUP_INSET = 22.5            # cup centre in from the door's hinge edge
-PLATE_SCREW_PITCH = 32.0   # the two plate screws sit on the 32 mm system
+from .constants import (
+    HINGE_CUP_DIA, HINGE_CUP_DEPTH, HINGE_CUP_INSET, SYSTEM_PITCH,
+    SLIDE_SIDE_CLEARANCE,
+)
+
+# 35 mm Euro hinge cup geometry — canonical values live in constants.py.
+CUP_DIA = HINGE_CUP_DIA
+CUP_DEPTH = HINGE_CUP_DEPTH
+CUP_INSET = HINGE_CUP_INSET   # cup centre in from the door's hinge edge
+PLATE_SCREW_PITCH = SYSTEM_PITCH   # the two plate screws sit on the 32 mm system
 PLATE_SCREW_INSET = 37.0   # plate screw row in from the front edge of the side
 
 KNOWN_BRANDS = ("generic", "blum", "hettich", "grass")
@@ -73,7 +78,7 @@ class SlideSpec:
     sku: str
     slide_type: str = "side_mount"  # side_mount | undermount
     length: float = 500.0
-    side_clearance: float = 12.7    # per side (side-mount box width = opening-2*)
+    side_clearance: float = SLIDE_SIDE_CLEARANCE  # per side (box w = opening-2*)
     # Undermount: the box is sized to the opening less this *total* clearance,
     # needs a rear notch for the locking device, and a pair of locking holes.
     box_clearance_total: float = 42.0

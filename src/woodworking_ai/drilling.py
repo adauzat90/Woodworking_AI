@@ -21,16 +21,16 @@ from .dsl import ComponentGroup, ApplianceVoid
 from .geometry import panel_layout, component_tag
 from .cutlist import generate_cutlist
 from .hardware import hinge_count, select_slide, PLATE_SCREW_INSET
+from .constants import (
+    SYSTEM_PITCH, HINGE_CUP_DIA, HINGE_CUP_DEPTH, HINGE_CUP_INSET,
+)
 
-# 32 mm System and boring constants (mm).
-SYSTEM_PITCH = 32.0
+# 32 mm System and boring constants (mm). SYSTEM_PITCH and the hinge-cup
+# geometry are shared via constants.py.
 PIN_DIA = 5.0
 PIN_DEPTH = 12.0
 ROW_SETBACK = 37.0          # each pin row in from the front / back edge
 PIN_END_MARGIN = 64.0       # first/last pin in from the panel ends
-HINGE_CUP_DIA = 35.0
-HINGE_CUP_DEPTH = 12.5
-HINGE_CUP_INSET = 22.5      # cup centre in from the hinge edge
 HINGE_END_MARGIN = 90.0     # top/bottom hinge in from the door ends
 SLIDE_SCREW_DEPTHS = (37.0, 0.5, -50.0)  # 0.5 means "mid-depth" sentinel
 
@@ -203,7 +203,7 @@ def drilling_schedule(spec) -> DrillingSchedule:
                 op.holes.append(Hole("front bracket", 69.0, low_v, 4.0, 12.0))
                 for k in range(slide.locking_holes):
                     op.holes.append(Hole("rear locking", depth - 37.0,
-                                         low_v + k * 32.0, 4.0, 12.0))
+                                         low_v + k * SYSTEM_PITCH, 4.0, 12.0))
             else:
                 op = DrillOp(
                     part=side.label, operation=f"slide line — {df.label}",
