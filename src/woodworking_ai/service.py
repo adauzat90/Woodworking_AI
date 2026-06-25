@@ -100,6 +100,11 @@ def export_bytes(spec, fmt: str,
         svg = render_svg(spec, units)
         return svg.encode("utf-8"), "image/svg+xml", f"{base}_drawings.svg"
 
+    if fmt == "package":
+        from .report import build_package_pdf
+        data = build_package_pdf(spec, units=units)
+        return data, "application/pdf", f"{base}_build_package.pdf"
+
     if fmt in ("step", "stl", "glb"):
         from .builder import build_model
         from . import exporters

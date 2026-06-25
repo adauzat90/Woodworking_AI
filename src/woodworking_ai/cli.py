@@ -189,6 +189,10 @@ def _emit(spec, args) -> int:
             from .drawings import write_drawings_svg
             write_drawings_svg(spec, out / "drawings.svg", unit)
             print("Wrote drawings.svg")
+        if getattr(args, "package", False):
+            from .report import build_package_pdf
+            (out / "build_package.pdf").write_bytes(build_package_pdf(spec, unit))
+            print("Wrote build_package.pdf")
 
         if args.step or args.stl or args.glb:
             from .builder import build_model, measure
@@ -220,6 +224,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="export a DXF cut-layout nest (no build123d needed)")
     common.add_argument("--drawings", action="store_true",
                         help="export dimensioned 2D shop drawings (SVG)")
+    common.add_argument("--package", action="store_true",
+                        help="export the printable build-package PDF (needs reportlab)")
     common.add_argument("--render", action="store_true",
                         help="render PNG snapshots (needs matplotlib)")
     common.add_argument("--visual-review", action="store_true",

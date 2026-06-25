@@ -185,3 +185,27 @@ def write_drawings_svg(spec, path, unit: str = "metric"):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(render_svg(spec, unit), encoding="utf-8")
     return path
+
+
+def projected_views(spec):
+    """View data for other renderers (e.g. the PDF build package).
+
+    Returns a list of ``(name, h_axis, v_axis, boxes, bounds, label_dims)`` —
+    the same projection the SVG uses, so any renderer draws identical views.
+    """
+    panels = panel_layout(spec)
+    cl = generate_cutlist(spec)
+    label_for = cl.part_id_for_label
+
+    def nominal(axis: int, lo: float, hi: float) -> float:
+        attr = ("width", "depth", "height")[axis]
+        val = getattr(spec, attr, None)
+        return float(val) if isinstance(val, (int, float)) else (hi - lo)
+
+    out = []
+    for (name, h, v) in _VIEWS:
+        boxes, bounds = _project(panels, h, v, label_for)
+        label_dims = (nominal(h, bounds[0], bounds[1]),
+                      nominal(v, bounds[2], bounds[3]))
+        out.append((name, h, v, boxes, bounds, label_dims))
+    return out
