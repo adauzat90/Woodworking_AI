@@ -17,7 +17,8 @@ from dataclasses import dataclass, field, replace
 
 from .dsl import (CabinetSpec, TableSpec, ComponentGroup, BackStyle,
                   Construction, CabinetType)
-from .dispatch import spec_kind, VOID, GROUP, TABLE
+from .dispatch import spec_kind, VOID, GROUP, TABLE, CABINET
+from . import furniture
 from .geometry import front_plan, component_tag
 # Construction constants now live in one neutral module shared with geometry.
 from .partmath import drawer_box_dims
@@ -590,14 +591,22 @@ def _project_cutlist(project: ComponentGroup) -> CutList:
 
 
 def generate_cutlist(spec) -> CutList:
-    """Derive the full parts + hardware list for a cabinet, table, or group."""
+    """Derive the full parts + hardware list for a leaf, or aggregate a group.
+
+    VOID/GROUP are handled here; every *leaf* type dispatches through the
+    :mod:`furniture` registry, so a new furniture type adds its parts by
+    registering, not by editing this function.
+    """
     kind = spec_kind(spec)
     if kind == VOID:
         return CutList(spec_name=spec.name)   # a reserved gap adds no parts
     if kind == GROUP:
         return _project_cutlist(spec)
-    if kind == TABLE:
-        return _table_cutlist(spec)
+    return furniture.get(kind).cut_parts(spec)
+
+
+def _cabinet_cutlist(spec) -> CutList:
+    """Parts + hardware for a cabinet (every CabinetType variant)."""
     if spec.cabinet_type == CabinetType.CORNER_DIAGONAL:
         return _diagonal_cutlist(spec)
 
@@ -798,3 +807,9 @@ def generate_cutlist(spec) -> CutList:
     _resolve_part_stock(cl.parts, spec)
     assign_ids(cl.parts)
     return cl
+
+
+# Register the built-in leaf cut lists. A new furniture type registers its own
+# ``cut_parts`` in its home module, so ``generate_cutlist`` never grows a branch.
+furniture.register(CABINET, cut_parts=_cabinet_cutlist)
+furniture.register(TABLE, cut_parts=_table_cutlist)

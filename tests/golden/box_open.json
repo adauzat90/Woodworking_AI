@@ -1,0 +1,234 @@
+{
+  "cutlist": {
+    "hardware": [],
+    "parts": [
+      {
+        "banded_edges": "",
+        "form": "solid",
+        "grain": "length",
+        "id": "A1",
+        "length": 400,
+        "material": "solid",
+        "name": "Front/back",
+        "notes": "box corners",
+        "openings": [],
+        "qty": 2,
+        "species": "",
+        "thickness": 12,
+        "width": 188.0
+      },
+      {
+        "banded_edges": "",
+        "form": "solid",
+        "grain": "length",
+        "id": "A2",
+        "length": 276,
+        "material": "solid",
+        "name": "Side",
+        "notes": "box corners",
+        "openings": [],
+        "qty": 2,
+        "species": "",
+        "thickness": 12,
+        "width": 188.0
+      },
+      {
+        "banded_edges": "",
+        "form": "solid",
+        "grain": "length",
+        "id": "A3",
+        "length": 376,
+        "material": "solid",
+        "name": "Bottom",
+        "notes": "captured in a groove",
+        "openings": [],
+        "qty": 1,
+        "species": "",
+        "thickness": 12,
+        "width": 276
+      }
+    ],
+    "spec_name": "Open box"
+  },
+  "drilling": {
+    "ops": [],
+    "spec_name": "Open box"
+  },
+  "dxf": "0\nSECTION\n2\nTABLES\n0\nTABLE\n2\nLAYER\n70\n8\n0\nLAYER\n2\nPANEL\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nSHEET\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nLABEL\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nWARN\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nBORE\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nDADO\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nRABBET\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nCUTOUT\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nENDTAB\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n0\nLINE\n8\nSHEET\n10\n0.00\n20\n0.00\n30\n0.0\n11\n2440.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n2440.00\n20\n0.00\n30\n0.0\n11\n2440.00\n21\n1220.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n2440.00\n20\n1220.00\n30\n0.0\n11\n0.00\n21\n1220.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n0.00\n20\n1220.00\n30\n0.0\n11\n0.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nSHEET\n10\n5.00\n20\n1250.00\n30\n0.0\n40\n40.0\n1\nSheet 1\n0\nLINE\n8\nPANEL\n10\n0.00\n20\n0.00\n30\n0.0\n11\n376.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n376.00\n20\n0.00\n30\n0.0\n11\n376.00\n21\n276.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n376.00\n20\n276.00\n30\n0.0\n11\n0.00\n21\n276.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n0.00\n20\n276.00\n30\n0.0\n11\n0.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n8.00\n20\n130.00\n30\n0.0\n40\n16.0\n1\nA3 Bottom 376x276\n0\nLINE\n8\nPANEL\n10\n379.00\n20\n0.00\n30\n0.0\n11\n779.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n779.00\n20\n0.00\n30\n0.0\n11\n779.00\n21\n188.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n779.00\n20\n188.00\n30\n0.0\n11\n379.00\n21\n188.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n379.00\n20\n188.00\n30\n0.0\n11\n379.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n387.00\n20\n86.00\n30\n0.0\n40\n16.0\n1\nA1 Front/back 1 400x188\n0\nLINE\n8\nPANEL\n10\n782.00\n20\n0.00\n30\n0.0\n11\n1182.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1182.00\n20\n0.00\n30\n0.0\n11\n1182.00\n21\n188.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1182.00\n20\n188.00\n30\n0.0\n11\n782.00\n21\n188.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n782.00\n20\n188.00\n30\n0.0\n11\n782.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n790.00\n20\n86.00\n30\n0.0\n40\n16.0\n1\nA1 Front/back 2 400x188\n0\nLINE\n8\nPANEL\n10\n1185.00\n20\n0.00\n30\n0.0\n11\n1461.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1461.00\n20\n0.00\n30\n0.0\n11\n1461.00\n21\n188.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1461.00\n20\n188.00\n30\n0.0\n11\n1185.00\n21\n188.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1185.00\n20\n188.00\n30\n0.0\n11\n1185.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n1193.00\n20\n86.00\n30\n0.0\n40\n16.0\n1\nA2 Side 1 276x188\n0\nLINE\n8\nDADO\n10\n1197.00\n20\n0.00\n30\n0.0\n11\n1209.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n1209.00\n20\n0.00\n30\n0.0\n11\n1209.00\n21\n188.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n1209.00\n20\n188.00\n30\n0.0\n11\n1197.00\n21\n188.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n1197.00\n20\n188.00\n30\n0.0\n11\n1197.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1464.00\n20\n0.00\n30\n0.0\n11\n1740.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1740.00\n20\n0.00\n30\n0.0\n11\n1740.00\n21\n188.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1740.00\n20\n188.00\n30\n0.0\n11\n1464.00\n21\n188.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1464.00\n20\n188.00\n30\n0.0\n11\n1464.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n1472.00\n20\n86.00\n30\n0.0\n40\n16.0\n1\nA2 Side 2 276x188\n0\nLINE\n8\nDADO\n10\n1476.00\n20\n0.00\n30\n0.0\n11\n1488.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n1488.00\n20\n0.00\n30\n0.0\n11\n1488.00\n21\n188.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n1488.00\n20\n188.00\n30\n0.0\n11\n1476.00\n21\n188.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n1476.00\n20\n188.00\n30\n0.0\n11\n1476.00\n21\n0.00\n31\n0.0\n0\nENDSEC\n0\nEOF\n",
+  "estimate": {
+    "_rate": 65.0,
+    "banding_groups": [],
+    "currency": "$",
+    "edge_banding_cost": 0.0,
+    "edge_banding_m": 0.0,
+    "finish_cost": 0.0,
+    "finish_m2": 0.0,
+    "groups": [],
+    "hardware_cost": 0,
+    "labour_cost": 48.75,
+    "labour_hours": 0.75,
+    "lumber_cost": 14.6534,
+    "lumber_groups": [
+      {
+        "board_feet": 1.8203,
+        "cost": 14.6534,
+        "form": "solid",
+        "material": "solid",
+        "part_count": 5,
+        "species": "",
+        "thickness": 12
+      }
+    ],
+    "material_cost": 0.0,
+    "spec_name": "Open box"
+  },
+  "issues": [],
+  "joinery": {
+    "ops": [
+      {
+        "depth": 12,
+        "note": "finger width = stock thickness",
+        "operation": "box/finger joint",
+        "part": "Box corners",
+        "part_id": "A1",
+        "reference": "all four corners",
+        "tool": "box-joint jig",
+        "width": 12
+      },
+      {
+        "depth": 6.0,
+        "note": "captures the bottom panel",
+        "operation": "groove for bottom",
+        "part": "Box sides",
+        "part_id": "A2",
+        "reference": "~10mm up from the bottom edge",
+        "tool": "straight bit / dado",
+        "width": 12
+      }
+    ],
+    "spec_name": "Open box"
+  },
+  "panels": [
+    {
+      "category": "carcass",
+      "center": [
+        0.0,
+        150.0,
+        6.0
+      ],
+      "label": "Bottom",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        376,
+        276,
+        12
+      ],
+      "subassembly": "Box"
+    },
+    {
+      "category": "carcass",
+      "center": [
+        0.0,
+        6.0,
+        106.0
+      ],
+      "label": "Front",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        400,
+        12,
+        188.0
+      ],
+      "subassembly": "Box"
+    },
+    {
+      "category": "carcass",
+      "center": [
+        0.0,
+        294.0,
+        106.0
+      ],
+      "label": "Back",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        400,
+        12,
+        188.0
+      ],
+      "subassembly": "Box"
+    },
+    {
+      "category": "carcass",
+      "center": [
+        -194.0,
+        150.0,
+        106.0
+      ],
+      "label": "Side L",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        12,
+        276,
+        188.0
+      ],
+      "subassembly": "Box"
+    },
+    {
+      "category": "carcass",
+      "center": [
+        194.0,
+        150.0,
+        106.0
+      ],
+      "label": "Side R",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        12,
+        276,
+        188.0
+      ],
+      "subassembly": "Box"
+    }
+  ],
+  "purchasing": {
+    "currency": "$",
+    "lines": [
+      {
+        "brand": "",
+        "category": "lumber",
+        "item": "solid lumber",
+        "line_total": 14.6534,
+        "qty": 1.82,
+        "sku": "",
+        "spec": "12mm S4S",
+        "supplier": "Lumber yard",
+        "unit": "bd ft",
+        "unit_price": 8.05
+      },
+      {
+        "brand": "",
+        "category": "labour",
+        "item": "Shop labour",
+        "line_total": 48.75,
+        "qty": 0.75,
+        "sku": "",
+        "spec": "cut, process, assemble, finish",
+        "supplier": "Shop labour (in-house)",
+        "unit": "h",
+        "unit_price": 65.0
+      }
+    ],
+    "name": "Open box"
+  },
+  "valid": true
+}

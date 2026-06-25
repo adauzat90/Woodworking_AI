@@ -1,0 +1,318 @@
+{
+  "cutlist": {
+    "hardware": [
+      {
+        "brand": "",
+        "category": "hardware",
+        "name": "Butt hinge (lid)",
+        "notes": "lid pivot, mortised",
+        "qty": 2,
+        "sku": "HINGE-BUTT"
+      },
+      {
+        "brand": "",
+        "category": "hardware",
+        "name": "Lid-stay / chest support",
+        "notes": "holds the lid open, soft-close",
+        "qty": 1,
+        "sku": "LID-STAY"
+      }
+    ],
+    "parts": [
+      {
+        "banded_edges": "",
+        "form": "solid",
+        "grain": "length",
+        "id": "A1",
+        "length": 900,
+        "material": "solid",
+        "name": "Front/back",
+        "notes": "dovetail corners",
+        "openings": [],
+        "qty": 2,
+        "species": "walnut",
+        "thickness": 18,
+        "width": 414
+      },
+      {
+        "banded_edges": "",
+        "form": "solid",
+        "grain": "length",
+        "id": "A2",
+        "length": 414,
+        "material": "solid",
+        "name": "Side",
+        "notes": "dovetail corners",
+        "openings": [],
+        "qty": 2,
+        "species": "walnut",
+        "thickness": 18,
+        "width": 414
+      },
+      {
+        "banded_edges": "",
+        "form": "solid",
+        "grain": "length",
+        "id": "A3",
+        "length": 864,
+        "material": "solid",
+        "name": "Bottom",
+        "notes": "captured in a groove",
+        "openings": [],
+        "qty": 1,
+        "species": "walnut",
+        "thickness": 18,
+        "width": 414
+      },
+      {
+        "banded_edges": "",
+        "form": "solid",
+        "grain": "length",
+        "id": "A4",
+        "length": 900,
+        "material": "solid",
+        "name": "Lid",
+        "notes": "hinged lid",
+        "openings": [],
+        "qty": 1,
+        "species": "walnut",
+        "thickness": 18,
+        "width": 450
+      }
+    ],
+    "spec_name": "Blanket chest"
+  },
+  "drilling": {
+    "ops": [],
+    "spec_name": "Blanket chest"
+  },
+  "dxf": "0\nSECTION\n2\nTABLES\n0\nTABLE\n2\nLAYER\n70\n8\n0\nLAYER\n2\nPANEL\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nSHEET\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nLABEL\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nWARN\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nBORE\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nDADO\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nRABBET\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nCUTOUT\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nENDTAB\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n0\nLINE\n8\nSHEET\n10\n0.00\n20\n0.00\n30\n0.0\n11\n2440.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n2440.00\n20\n0.00\n30\n0.0\n11\n2440.00\n21\n1220.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n2440.00\n20\n1220.00\n30\n0.0\n11\n0.00\n21\n1220.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n0.00\n20\n1220.00\n30\n0.0\n11\n0.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nSHEET\n10\n5.00\n20\n1250.00\n30\n0.0\n40\n40.0\n1\nSheet 1\n0\nLINE\n8\nPANEL\n10\n0.00\n20\n0.00\n30\n0.0\n11\n900.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n900.00\n20\n0.00\n30\n0.0\n11\n900.00\n21\n450.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n900.00\n20\n450.00\n30\n0.0\n11\n0.00\n21\n450.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n0.00\n20\n450.00\n30\n0.0\n11\n0.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n8.00\n20\n217.00\n30\n0.0\n40\n16.0\n1\nA4 Lid 900x450\n0\nLINE\n8\nPANEL\n10\n903.00\n20\n0.00\n30\n0.0\n11\n1803.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1803.00\n20\n0.00\n30\n0.0\n11\n1803.00\n21\n414.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1803.00\n20\n414.00\n30\n0.0\n11\n903.00\n21\n414.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n903.00\n20\n414.00\n30\n0.0\n11\n903.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n911.00\n20\n199.00\n30\n0.0\n40\n16.0\n1\nA1 Front/back 1 900x414\n0\nLINE\n8\nPANEL\n10\n0.00\n20\n453.00\n30\n0.0\n11\n900.00\n21\n453.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n900.00\n20\n453.00\n30\n0.0\n11\n900.00\n21\n867.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n900.00\n20\n867.00\n30\n0.0\n11\n0.00\n21\n867.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n0.00\n20\n867.00\n30\n0.0\n11\n0.00\n21\n453.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n8.00\n20\n652.00\n30\n0.0\n40\n16.0\n1\nA1 Front/back 2 900x414\n0\nLINE\n8\nPANEL\n10\n903.00\n20\n453.00\n30\n0.0\n11\n1317.00\n21\n453.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1317.00\n20\n453.00\n30\n0.0\n11\n1317.00\n21\n867.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1317.00\n20\n867.00\n30\n0.0\n11\n903.00\n21\n867.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n903.00\n20\n867.00\n30\n0.0\n11\n903.00\n21\n453.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n911.00\n20\n652.00\n30\n0.0\n40\n16.0\n1\nA2 Side 1 414x414\n0\nLINE\n8\nDADO\n10\n915.00\n20\n453.00\n30\n0.0\n11\n933.00\n21\n453.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n933.00\n20\n453.00\n30\n0.0\n11\n933.00\n21\n867.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n933.00\n20\n867.00\n30\n0.0\n11\n915.00\n21\n867.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n915.00\n20\n867.00\n30\n0.0\n11\n915.00\n21\n453.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1320.00\n20\n453.00\n30\n0.0\n11\n1734.00\n21\n453.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1734.00\n20\n453.00\n30\n0.0\n11\n1734.00\n21\n867.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1734.00\n20\n867.00\n30\n0.0\n11\n1320.00\n21\n867.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1320.00\n20\n867.00\n30\n0.0\n11\n1320.00\n21\n453.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n1328.00\n20\n652.00\n30\n0.0\n40\n16.0\n1\nA2 Side 2 414x414\n0\nLINE\n8\nDADO\n10\n1332.00\n20\n453.00\n30\n0.0\n11\n1350.00\n21\n453.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n1350.00\n20\n453.00\n30\n0.0\n11\n1350.00\n21\n867.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n1350.00\n20\n867.00\n30\n0.0\n11\n1332.00\n21\n867.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n1332.00\n20\n867.00\n30\n0.0\n11\n1332.00\n21\n453.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n2640.00\n20\n0.00\n30\n0.0\n11\n5080.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n5080.00\n20\n0.00\n30\n0.0\n11\n5080.00\n21\n1220.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n5080.00\n20\n1220.00\n30\n0.0\n11\n2640.00\n21\n1220.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n2640.00\n20\n1220.00\n30\n0.0\n11\n2640.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nSHEET\n10\n2645.00\n20\n1250.00\n30\n0.0\n40\n40.0\n1\nSheet 2\n0\nLINE\n8\nPANEL\n10\n2640.00\n20\n0.00\n30\n0.0\n11\n3504.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n3504.00\n20\n0.00\n30\n0.0\n11\n3504.00\n21\n414.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n3504.00\n20\n414.00\n30\n0.0\n11\n2640.00\n21\n414.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n2640.00\n20\n414.00\n30\n0.0\n11\n2640.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n2648.00\n20\n199.00\n30\n0.0\n40\n16.0\n1\nA3 Bottom 864x414\n0\nENDSEC\n0\nEOF\n",
+  "estimate": {
+    "_rate": 65.0,
+    "banding_groups": [],
+    "currency": "$",
+    "edge_banding_cost": 0.0,
+    "edge_banding_m": 0.0,
+    "finish_cost": 0.0,
+    "finish_m2": 0.0,
+    "groups": [],
+    "hardware_cost": 0.0,
+    "labour_cost": 52.0,
+    "labour_hours": 0.8,
+    "lumber_cost": 292.2217,
+    "lumber_groups": [
+      {
+        "board_feet": 14.117,
+        "cost": 292.2217,
+        "form": "solid",
+        "material": "solid",
+        "part_count": 6,
+        "species": "walnut",
+        "thickness": 18
+      }
+    ],
+    "material_cost": 0.0,
+    "spec_name": "Blanket chest"
+  },
+  "issues": [],
+  "joinery": {
+    "ops": [
+      {
+        "depth": 18,
+        "note": "through or half-blind; tails on the sides",
+        "operation": "dovetail corners",
+        "part": "Box corners",
+        "part_id": "A1",
+        "reference": "all four corners",
+        "tool": "dovetail jig / saw",
+        "width": 0.0
+      },
+      {
+        "depth": 9.0,
+        "note": "captures the bottom panel",
+        "operation": "groove for bottom",
+        "part": "Box sides",
+        "part_id": "A2",
+        "reference": "~10mm up from the bottom edge",
+        "tool": "straight bit / dado",
+        "width": 18
+      },
+      {
+        "depth": 5.4,
+        "note": "mortise the butt hinges flush",
+        "operation": "hinge mortise",
+        "part": "Lid / back",
+        "part_id": "A4",
+        "reference": "rear edge",
+        "tool": "chisel / router",
+        "width": 0.0
+      }
+    ],
+    "spec_name": "Blanket chest"
+  },
+  "panels": [
+    {
+      "category": "carcass",
+      "center": [
+        0.0,
+        225.0,
+        9.0
+      ],
+      "label": "Bottom",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        864,
+        414,
+        18
+      ],
+      "subassembly": "Box"
+    },
+    {
+      "category": "carcass",
+      "center": [
+        0.0,
+        9.0,
+        225.0
+      ],
+      "label": "Front",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        900,
+        18,
+        414
+      ],
+      "subassembly": "Box"
+    },
+    {
+      "category": "carcass",
+      "center": [
+        0.0,
+        441.0,
+        225.0
+      ],
+      "label": "Back",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        900,
+        18,
+        414
+      ],
+      "subassembly": "Box"
+    },
+    {
+      "category": "carcass",
+      "center": [
+        -441.0,
+        225.0,
+        225.0
+      ],
+      "label": "Side L",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        18,
+        414,
+        414
+      ],
+      "subassembly": "Box"
+    },
+    {
+      "category": "carcass",
+      "center": [
+        441.0,
+        225.0,
+        225.0
+      ],
+      "label": "Side R",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        18,
+        414,
+        414
+      ],
+      "subassembly": "Box"
+    },
+    {
+      "category": "carcass",
+      "center": [
+        0.0,
+        225.0,
+        441.0
+      ],
+      "label": "Lid",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        900,
+        450,
+        18
+      ],
+      "subassembly": "Lid"
+    }
+  ],
+  "purchasing": {
+    "currency": "$",
+    "lines": [
+      {
+        "brand": "",
+        "category": "lumber",
+        "item": "Walnut solid lumber",
+        "line_total": 292.2217,
+        "qty": 14.12,
+        "sku": "",
+        "spec": "18mm S4S",
+        "supplier": "Lumber yard",
+        "unit": "bd ft",
+        "unit_price": 20.7
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "Butt hinge (lid)",
+        "line_total": 0.0,
+        "qty": 2,
+        "sku": "HINGE-BUTT",
+        "spec": "HINGE-BUTT",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.0
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "Lid-stay / chest support",
+        "line_total": 0.0,
+        "qty": 1,
+        "sku": "LID-STAY",
+        "spec": "LID-STAY",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.0
+      },
+      {
+        "brand": "",
+        "category": "labour",
+        "item": "Shop labour",
+        "line_total": 52.0,
+        "qty": 0.8,
+        "sku": "",
+        "spec": "cut, process, assemble, finish",
+        "supplier": "Shop labour (in-house)",
+        "unit": "h",
+        "unit_price": 65.0
+      }
+    ],
+    "name": "Blanket chest"
+  },
+  "valid": true
+}

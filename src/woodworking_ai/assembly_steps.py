@@ -17,7 +17,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from .dsl import (CabinetSpec, TableSpec, Construction)
-from .dispatch import spec_kind, VOID, GROUP, TABLE
+from .dispatch import spec_kind, VOID, GROUP, TABLE, CABINET
+from . import furniture
 from .cutlist import generate_cutlist
 from .geometry import component_tag
 
@@ -354,12 +355,19 @@ def assembly_plan(spec) -> AssemblyPlan:
         plan.subassemblies.append(run)
         return plan
     cl = generate_cutlist(spec)
-    if kind == TABLE:
-        return AssemblyPlan(spec.name, _table_plan(spec, cl))
-    return AssemblyPlan(spec.name, _cabinet_plan(spec, cl))
+    # Every leaf type contributes its sub-assemblies through the furniture
+    # registry; a new type adds a build plan by registering ``assembly`` (or
+    # falls back to a generic one-unit plan).
+    return AssemblyPlan(spec.name, furniture.get(kind).assembly(spec, cl))
 
 
 def assembly_sequence(spec) -> AssemblySequence:
     """Flat, numbered build checklist (flattens :func:`assembly_plan`)."""
     plan = assembly_plan(spec)
     return AssemblySequence(plan.spec_name, plan.flat_steps())
+
+
+# Register the built-in leaf build plans. A new furniture type registers its own
+# ``assembly`` in its home module (or omits it for a generic one-unit plan).
+furniture.register(CABINET, assembly=_cabinet_plan)
+furniture.register(TABLE, assembly=_table_plan)
