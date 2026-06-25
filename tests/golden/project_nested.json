@@ -1,0 +1,4076 @@
+{
+  "cutlist": {
+    "hardware": [
+      {
+        "brand": "",
+        "category": "hardware",
+        "name": "BANK \u00b7 DB1 \u00b7 Shelf pin",
+        "notes": "5mm",
+        "qty": 4,
+        "sku": ""
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "name": "BANK \u00b7 DB1 \u00b7 Drawer slide (pair)",
+        "notes": "Ball-bearing slide (side) \u2014 500mm",
+        "qty": 1,
+        "sku": ""
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "name": "BANK \u00b7 DB1 \u00b7 Drawer pull",
+        "notes": "96mm CC",
+        "qty": 1,
+        "sku": ""
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "name": "BANK \u00b7 DB1 \u00b7 Drawer slide (pair)",
+        "notes": "Ball-bearing slide (side) \u2014 500mm",
+        "qty": 1,
+        "sku": ""
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "name": "BANK \u00b7 DB1 \u00b7 Drawer pull",
+        "notes": "96mm CC",
+        "qty": 1,
+        "sku": ""
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "name": "BANK \u00b7 DB1 \u00b7 Concealed hinge",
+        "notes": "Concealed hinge 110\u00b0 (overlay)",
+        "qty": 4,
+        "sku": ""
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "name": "BANK \u00b7 DB1 \u00b7 Hinge mounting plate",
+        "notes": "one per hinge",
+        "qty": 4,
+        "sku": ""
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "name": "BANK \u00b7 DB1 \u00b7 Door pull",
+        "notes": "96mm CC",
+        "qty": 2,
+        "sku": ""
+      },
+      {
+        "brand": "",
+        "category": "fastener",
+        "name": "BANK \u00b7 DB1 \u00b7 Assembly screw 4\u00d735",
+        "notes": "edge fixing + glue",
+        "qty": 4,
+        "sku": "SCR-4x35"
+      },
+      {
+        "brand": "",
+        "category": "fastener",
+        "name": "BANK \u00b7 DB1 \u00b7 Back panel screw 4\u00d716",
+        "notes": "fix back to rear edges",
+        "qty": 10,
+        "sku": ""
+      },
+      {
+        "brand": "",
+        "category": "hardware",
+        "name": "BANK \u00b7 DB1 \u00b7 Edge banding",
+        "notes": "match shown panel faces (see estimate for run)",
+        "qty": 1,
+        "sku": ""
+      },
+      {
+        "brand": "",
+        "category": "hardware",
+        "name": "BANK \u00b7 DB2 \u00b7 Shelf pin",
+        "notes": "5mm",
+        "qty": 4,
+        "sku": ""
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "name": "BANK \u00b7 DB2 \u00b7 Concealed hinge",
+        "notes": "Concealed hinge 110\u00b0 (overlay)",
+        "qty": 4,
+        "sku": ""
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "name": "BANK \u00b7 DB2 \u00b7 Hinge mounting plate",
+        "notes": "one per hinge",
+        "qty": 4,
+        "sku": ""
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "name": "BANK \u00b7 DB2 \u00b7 Door pull",
+        "notes": "96mm CC",
+        "qty": 2,
+        "sku": ""
+      },
+      {
+        "brand": "",
+        "category": "fastener",
+        "name": "BANK \u00b7 DB2 \u00b7 Assembly screw 4\u00d735",
+        "notes": "edge fixing + glue",
+        "qty": 4,
+        "sku": "SCR-4x35"
+      },
+      {
+        "brand": "",
+        "category": "fastener",
+        "name": "BANK \u00b7 DB2 \u00b7 Back panel screw 4\u00d716",
+        "notes": "fix back to rear edges",
+        "qty": 10,
+        "sku": ""
+      },
+      {
+        "brand": "",
+        "category": "hardware",
+        "name": "BANK \u00b7 DB2 \u00b7 Edge banding",
+        "notes": "match shown panel faces (see estimate for run)",
+        "qty": 1,
+        "sku": ""
+      },
+      {
+        "brand": "",
+        "category": "hardware",
+        "name": "SINK \u00b7 Shelf pin",
+        "notes": "5mm",
+        "qty": 4,
+        "sku": ""
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "name": "SINK \u00b7 Concealed hinge",
+        "notes": "Concealed hinge 110\u00b0 (overlay)",
+        "qty": 4,
+        "sku": ""
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "name": "SINK \u00b7 Hinge mounting plate",
+        "notes": "one per hinge",
+        "qty": 4,
+        "sku": ""
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "name": "SINK \u00b7 Door pull",
+        "notes": "96mm CC",
+        "qty": 2,
+        "sku": ""
+      },
+      {
+        "brand": "",
+        "category": "fastener",
+        "name": "SINK \u00b7 Assembly screw 4\u00d735",
+        "notes": "edge fixing + glue",
+        "qty": 4,
+        "sku": "SCR-4x35"
+      },
+      {
+        "brand": "",
+        "category": "fastener",
+        "name": "SINK \u00b7 Back panel screw 4\u00d716",
+        "notes": "fix back to rear edges",
+        "qty": 10,
+        "sku": ""
+      },
+      {
+        "brand": "",
+        "category": "hardware",
+        "name": "SINK \u00b7 Edge banding",
+        "notes": "match shown panel faces (see estimate for run)",
+        "qty": 1,
+        "sku": ""
+      }
+    ],
+    "parts": [
+      {
+        "banded_edges": "L",
+        "form": "",
+        "grain": "length",
+        "id": "BANK-DB1-A1",
+        "length": 620.0,
+        "material": "sheet",
+        "name": "BANK \u00b7 DB1 \u00b7 Side",
+        "notes": "full-height gable",
+        "openings": [],
+        "qty": 2,
+        "species": "",
+        "thickness": 18.0,
+        "width": 560.0
+      },
+      {
+        "banded_edges": "L",
+        "form": "",
+        "grain": "none",
+        "id": "BANK-DB1-A2",
+        "length": 564.0,
+        "material": "sheet",
+        "name": "BANK \u00b7 DB1 \u00b7 Bottom",
+        "notes": "between sides",
+        "openings": [],
+        "qty": 1,
+        "species": "",
+        "thickness": 18.0,
+        "width": 554.0
+      },
+      {
+        "banded_edges": "L",
+        "form": "",
+        "grain": "none",
+        "id": "BANK-DB1-A3",
+        "length": 564.0,
+        "material": "sheet",
+        "name": "BANK \u00b7 DB1 \u00b7 Top stretcher",
+        "notes": "front & back top rail",
+        "openings": [],
+        "qty": 2,
+        "species": "",
+        "thickness": 18.0,
+        "width": 80.0
+      },
+      {
+        "banded_edges": "",
+        "form": "",
+        "grain": "none",
+        "id": "BANK-DB1-B1",
+        "length": 602.0,
+        "material": "back panel",
+        "name": "BANK \u00b7 DB1 \u00b7 Back",
+        "notes": "rabbeted back",
+        "openings": [],
+        "qty": 1,
+        "species": "",
+        "thickness": 6.0,
+        "width": 564.0
+      },
+      {
+        "banded_edges": "L",
+        "form": "",
+        "grain": "none",
+        "id": "BANK-DB1-C1",
+        "length": 560.0,
+        "material": "sheet",
+        "name": "BANK \u00b7 DB1 \u00b7 Adjustable shelf",
+        "notes": "on shelf pins",
+        "openings": [],
+        "qty": 1,
+        "species": "",
+        "thickness": 18.0,
+        "width": 534.0
+      },
+      {
+        "banded_edges": "",
+        "form": "",
+        "grain": "none",
+        "id": "BANK-DB1-A4",
+        "length": 600,
+        "material": "sheet",
+        "name": "BANK \u00b7 DB1 \u00b7 Toe kick",
+        "notes": "set back 50mm",
+        "openings": [],
+        "qty": 1,
+        "species": "",
+        "thickness": 18.0,
+        "width": 100.0
+      },
+      {
+        "banded_edges": "LLSS",
+        "form": "",
+        "grain": "length",
+        "id": "BANK-DB1-D1",
+        "length": 594.0,
+        "material": "door/front",
+        "name": "BANK \u00b7 DB1 \u00b7 Drawer front #1",
+        "notes": "overlay",
+        "openings": [],
+        "qty": 1,
+        "species": "",
+        "thickness": 18.0,
+        "width": 180
+      },
+      {
+        "banded_edges": "",
+        "form": "",
+        "grain": "none",
+        "id": "BANK-DB1-E1",
+        "length": 500.0,
+        "material": "drawer box",
+        "name": "BANK \u00b7 DB1 \u00b7 Drawer 1 box side",
+        "notes": "grooved for bottom; sized for 500mm slide",
+        "openings": [],
+        "qty": 2,
+        "species": "",
+        "thickness": 12.0,
+        "width": 140.0
+      },
+      {
+        "banded_edges": "",
+        "form": "",
+        "grain": "none",
+        "id": "BANK-DB1-E2",
+        "length": 550.6,
+        "material": "drawer box",
+        "name": "BANK \u00b7 DB1 \u00b7 Drawer 1 box front/back",
+        "notes": "",
+        "openings": [],
+        "qty": 2,
+        "species": "",
+        "thickness": 12.0,
+        "width": 140.0
+      },
+      {
+        "banded_edges": "",
+        "form": "",
+        "grain": "none",
+        "id": "BANK-DB1-E3",
+        "length": 574.6,
+        "material": "back panel",
+        "name": "BANK \u00b7 DB1 \u00b7 Drawer 1 box bottom",
+        "notes": "captured in groove",
+        "openings": [],
+        "qty": 1,
+        "species": "",
+        "thickness": 6.0,
+        "width": 500.0
+      },
+      {
+        "banded_edges": "LLSS",
+        "form": "",
+        "grain": "length",
+        "id": "BANK-DB1-D2",
+        "length": 594.0,
+        "material": "door/front",
+        "name": "BANK \u00b7 DB1 \u00b7 Drawer front #2",
+        "notes": "overlay",
+        "openings": [],
+        "qty": 1,
+        "species": "",
+        "thickness": 18.0,
+        "width": 180
+      },
+      {
+        "banded_edges": "",
+        "form": "",
+        "grain": "none",
+        "id": "BANK-DB1-E4",
+        "length": 500.0,
+        "material": "drawer box",
+        "name": "BANK \u00b7 DB1 \u00b7 Drawer 2 box side",
+        "notes": "grooved for bottom; sized for 500mm slide",
+        "openings": [],
+        "qty": 2,
+        "species": "",
+        "thickness": 12.0,
+        "width": 140.0
+      },
+      {
+        "banded_edges": "",
+        "form": "",
+        "grain": "none",
+        "id": "BANK-DB1-E5",
+        "length": 550.6,
+        "material": "drawer box",
+        "name": "BANK \u00b7 DB1 \u00b7 Drawer 2 box front/back",
+        "notes": "",
+        "openings": [],
+        "qty": 2,
+        "species": "",
+        "thickness": 12.0,
+        "width": 140.0
+      },
+      {
+        "banded_edges": "",
+        "form": "",
+        "grain": "none",
+        "id": "BANK-DB1-E6",
+        "length": 574.6,
+        "material": "back panel",
+        "name": "BANK \u00b7 DB1 \u00b7 Drawer 2 box bottom",
+        "notes": "captured in groove",
+        "openings": [],
+        "qty": 1,
+        "species": "",
+        "thickness": 6.0,
+        "width": 500.0
+      },
+      {
+        "banded_edges": "LLSS",
+        "form": "",
+        "grain": "length",
+        "id": "BANK-DB1-D3",
+        "length": 248.0,
+        "material": "door/front",
+        "name": "BANK \u00b7 DB1 \u00b7 Door",
+        "notes": "overlay slab (2)",
+        "openings": [],
+        "qty": 2,
+        "species": "",
+        "thickness": 18.0,
+        "width": 295.5
+      },
+      {
+        "banded_edges": "L",
+        "form": "",
+        "grain": "length",
+        "id": "BANK-DB2-A1",
+        "length": 620.0,
+        "material": "sheet",
+        "name": "BANK \u00b7 DB2 \u00b7 Side",
+        "notes": "full-height gable",
+        "openings": [],
+        "qty": 2,
+        "species": "",
+        "thickness": 18.0,
+        "width": 560.0
+      },
+      {
+        "banded_edges": "L",
+        "form": "",
+        "grain": "none",
+        "id": "BANK-DB2-A2",
+        "length": 564.0,
+        "material": "sheet",
+        "name": "BANK \u00b7 DB2 \u00b7 Bottom",
+        "notes": "between sides",
+        "openings": [],
+        "qty": 1,
+        "species": "",
+        "thickness": 18.0,
+        "width": 554.0
+      },
+      {
+        "banded_edges": "L",
+        "form": "",
+        "grain": "none",
+        "id": "BANK-DB2-A3",
+        "length": 564.0,
+        "material": "sheet",
+        "name": "BANK \u00b7 DB2 \u00b7 Top stretcher",
+        "notes": "front & back top rail",
+        "openings": [],
+        "qty": 2,
+        "species": "",
+        "thickness": 18.0,
+        "width": 80.0
+      },
+      {
+        "banded_edges": "",
+        "form": "",
+        "grain": "none",
+        "id": "BANK-DB2-B1",
+        "length": 602.0,
+        "material": "back panel",
+        "name": "BANK \u00b7 DB2 \u00b7 Back",
+        "notes": "rabbeted back",
+        "openings": [],
+        "qty": 1,
+        "species": "",
+        "thickness": 6.0,
+        "width": 564.0
+      },
+      {
+        "banded_edges": "L",
+        "form": "",
+        "grain": "none",
+        "id": "BANK-DB2-C1",
+        "length": 560.0,
+        "material": "sheet",
+        "name": "BANK \u00b7 DB2 \u00b7 Adjustable shelf",
+        "notes": "on shelf pins",
+        "openings": [],
+        "qty": 1,
+        "species": "",
+        "thickness": 18.0,
+        "width": 534.0
+      },
+      {
+        "banded_edges": "",
+        "form": "",
+        "grain": "none",
+        "id": "BANK-DB2-A4",
+        "length": 600,
+        "material": "sheet",
+        "name": "BANK \u00b7 DB2 \u00b7 Toe kick",
+        "notes": "set back 50mm",
+        "openings": [],
+        "qty": 1,
+        "species": "",
+        "thickness": 18.0,
+        "width": 100.0
+      },
+      {
+        "banded_edges": "LLSS",
+        "form": "",
+        "grain": "length",
+        "id": "BANK-DB2-D1",
+        "length": 614.0,
+        "material": "door/front",
+        "name": "BANK \u00b7 DB2 \u00b7 Door",
+        "notes": "overlay slab (2)",
+        "openings": [],
+        "qty": 2,
+        "species": "",
+        "thickness": 18.0,
+        "width": 295.5
+      },
+      {
+        "banded_edges": "L",
+        "form": "",
+        "grain": "length",
+        "id": "SINK-A1",
+        "length": 620.0,
+        "material": "sheet",
+        "name": "SINK \u00b7 Side",
+        "notes": "full-height gable",
+        "openings": [],
+        "qty": 2,
+        "species": "",
+        "thickness": 18.0,
+        "width": 560.0
+      },
+      {
+        "banded_edges": "L",
+        "form": "",
+        "grain": "none",
+        "id": "SINK-A2",
+        "length": 864.0,
+        "material": "sheet",
+        "name": "SINK \u00b7 Bottom",
+        "notes": "between sides",
+        "openings": [],
+        "qty": 1,
+        "species": "",
+        "thickness": 18.0,
+        "width": 554.0
+      },
+      {
+        "banded_edges": "L",
+        "form": "",
+        "grain": "none",
+        "id": "SINK-A3",
+        "length": 864.0,
+        "material": "sheet",
+        "name": "SINK \u00b7 Top stretcher",
+        "notes": "front & back top rail",
+        "openings": [],
+        "qty": 2,
+        "species": "",
+        "thickness": 18.0,
+        "width": 80.0
+      },
+      {
+        "banded_edges": "",
+        "form": "",
+        "grain": "none",
+        "id": "SINK-B1",
+        "length": 864.0,
+        "material": "back panel",
+        "name": "SINK \u00b7 Back",
+        "notes": "rabbeted back",
+        "openings": [],
+        "qty": 1,
+        "species": "",
+        "thickness": 6.0,
+        "width": 602.0
+      },
+      {
+        "banded_edges": "L",
+        "form": "",
+        "grain": "none",
+        "id": "SINK-C1",
+        "length": 860.0,
+        "material": "sheet",
+        "name": "SINK \u00b7 Adjustable shelf",
+        "notes": "on shelf pins",
+        "openings": [],
+        "qty": 1,
+        "species": "",
+        "thickness": 18.0,
+        "width": 534.0
+      },
+      {
+        "banded_edges": "",
+        "form": "",
+        "grain": "none",
+        "id": "SINK-A4",
+        "length": 900,
+        "material": "sheet",
+        "name": "SINK \u00b7 Toe kick",
+        "notes": "set back 50mm",
+        "openings": [],
+        "qty": 1,
+        "species": "",
+        "thickness": 18.0,
+        "width": 100.0
+      },
+      {
+        "banded_edges": "LLSS",
+        "form": "",
+        "grain": "length",
+        "id": "SINK-D1",
+        "length": 614.0,
+        "material": "door/front",
+        "name": "SINK \u00b7 Door",
+        "notes": "overlay slab (2)",
+        "openings": [],
+        "qty": 2,
+        "species": "",
+        "thickness": 18.0,
+        "width": 445.5
+      }
+    ],
+    "spec_name": "Galley Kitchen"
+  },
+  "drilling": {
+    "ops": [
+      {
+        "holes": [
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 64.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 96.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 128.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 160.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 192.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 224.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 256.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 288.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 320.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 352.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 384.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 416.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 448.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 480.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 512.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 544.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 64.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 96.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 128.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 160.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 192.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 224.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 256.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 288.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 320.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 352.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 384.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 416.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 448.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 480.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 512.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 544.0
+          }
+        ],
+        "note": "2 rows @ 32mm pitch",
+        "operation": "shelf-pin holes (32mm)",
+        "part": "BANK \u00b7 DB1 \u00b7 Side L",
+        "part_id": "BANK-DB1-A1"
+      },
+      {
+        "holes": [
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 64.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 96.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 128.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 160.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 192.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 224.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 256.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 288.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 320.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 352.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 384.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 416.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 448.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 480.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 512.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 544.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 64.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 96.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 128.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 160.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 192.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 224.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 256.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 288.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 320.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 352.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 384.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 416.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 448.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 480.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 512.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 544.0
+          }
+        ],
+        "note": "2 rows @ 32mm pitch",
+        "operation": "shelf-pin holes (32mm)",
+        "part": "BANK \u00b7 DB1 \u00b7 Side R",
+        "part_id": "BANK-DB1-A1"
+      },
+      {
+        "holes": [
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "slide screw",
+            "note": "",
+            "u": 37.0,
+            "v": 527.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "slide screw",
+            "note": "",
+            "u": 280.0,
+            "v": 527.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "slide screw",
+            "note": "",
+            "u": 510.0,
+            "v": 527.0
+          }
+        ],
+        "note": "Ball-bearing slide (side)",
+        "operation": "slide line \u2014 Drawer front 1",
+        "part": "BANK \u00b7 DB1 \u00b7 Side L",
+        "part_id": "BANK-DB1-A1"
+      },
+      {
+        "holes": [
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "slide screw",
+            "note": "",
+            "u": 37.0,
+            "v": 344.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "slide screw",
+            "note": "",
+            "u": 280.0,
+            "v": 344.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "slide screw",
+            "note": "",
+            "u": 510.0,
+            "v": 344.0
+          }
+        ],
+        "note": "Ball-bearing slide (side)",
+        "operation": "slide line \u2014 Drawer front 2",
+        "part": "BANK \u00b7 DB1 \u00b7 Side L",
+        "part_id": "BANK-DB1-A1"
+      },
+      {
+        "holes": [
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "slide screw",
+            "note": "",
+            "u": 37.0,
+            "v": 527.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "slide screw",
+            "note": "",
+            "u": 280.0,
+            "v": 527.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "slide screw",
+            "note": "",
+            "u": 510.0,
+            "v": 527.0
+          }
+        ],
+        "note": "Ball-bearing slide (side)",
+        "operation": "slide line \u2014 Drawer front 1",
+        "part": "BANK \u00b7 DB1 \u00b7 Side R",
+        "part_id": "BANK-DB1-A1"
+      },
+      {
+        "holes": [
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "slide screw",
+            "note": "",
+            "u": 37.0,
+            "v": 344.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "slide screw",
+            "note": "",
+            "u": 280.0,
+            "v": 344.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "slide screw",
+            "note": "",
+            "u": 510.0,
+            "v": 344.0
+          }
+        ],
+        "note": "Ball-bearing slide (side)",
+        "operation": "slide line \u2014 Drawer front 2",
+        "part": "BANK \u00b7 DB1 \u00b7 Side R",
+        "part_id": "BANK-DB1-A1"
+      },
+      {
+        "holes": [
+          {
+            "depth": 12.5,
+            "dia": 35.0,
+            "face": "hinge cup",
+            "note": "",
+            "u": 22.5,
+            "v": 90.0
+          },
+          {
+            "depth": 12.5,
+            "dia": 35.0,
+            "face": "hinge cup",
+            "note": "",
+            "u": 22.5,
+            "v": 158.0
+          }
+        ],
+        "note": "cup centre from hinge edge",
+        "operation": "2x hinge cup (35mm)",
+        "part": "BANK \u00b7 DB1 \u00b7 Door L",
+        "part_id": "BANK-DB1-D3"
+      },
+      {
+        "holes": [
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "plate screw",
+            "note": "",
+            "u": 37.0,
+            "v": 93.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "plate screw",
+            "note": "",
+            "u": 69.0,
+            "v": 93.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "plate screw",
+            "note": "",
+            "u": 37.0,
+            "v": 161.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "plate screw",
+            "note": "",
+            "u": 69.0,
+            "v": 161.0
+          }
+        ],
+        "note": "2 screws per hinge (32mm system)",
+        "operation": "hinge plate screws \u2014 Door L",
+        "part": "BANK \u00b7 DB1 \u00b7 Side L",
+        "part_id": "BANK-DB1-A1"
+      },
+      {
+        "holes": [
+          {
+            "depth": 12.5,
+            "dia": 35.0,
+            "face": "hinge cup",
+            "note": "",
+            "u": 273.0,
+            "v": 90.0
+          },
+          {
+            "depth": 12.5,
+            "dia": 35.0,
+            "face": "hinge cup",
+            "note": "",
+            "u": 273.0,
+            "v": 158.0
+          }
+        ],
+        "note": "cup centre from hinge edge",
+        "operation": "2x hinge cup (35mm)",
+        "part": "BANK \u00b7 DB1 \u00b7 Door R",
+        "part_id": "BANK-DB1-D3"
+      },
+      {
+        "holes": [
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "plate screw",
+            "note": "",
+            "u": 37.0,
+            "v": 93.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "plate screw",
+            "note": "",
+            "u": 69.0,
+            "v": 93.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "plate screw",
+            "note": "",
+            "u": 37.0,
+            "v": 161.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "plate screw",
+            "note": "",
+            "u": 69.0,
+            "v": 161.0
+          }
+        ],
+        "note": "2 screws per hinge (32mm system)",
+        "operation": "hinge plate screws \u2014 Door R",
+        "part": "BANK \u00b7 DB1 \u00b7 Side R",
+        "part_id": "BANK-DB1-A1"
+      },
+      {
+        "holes": [
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 64.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 96.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 128.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 160.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 192.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 224.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 256.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 288.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 320.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 352.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 384.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 416.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 448.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 480.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 512.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 544.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 64.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 96.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 128.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 160.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 192.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 224.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 256.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 288.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 320.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 352.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 384.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 416.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 448.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 480.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 512.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 544.0
+          }
+        ],
+        "note": "2 rows @ 32mm pitch",
+        "operation": "shelf-pin holes (32mm)",
+        "part": "BANK \u00b7 DB2 \u00b7 Side L",
+        "part_id": "BANK-DB2-A1"
+      },
+      {
+        "holes": [
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 64.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 96.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 128.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 160.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 192.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 224.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 256.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 288.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 320.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 352.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 384.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 416.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 448.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 480.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 512.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 544.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 64.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 96.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 128.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 160.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 192.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 224.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 256.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 288.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 320.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 352.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 384.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 416.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 448.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 480.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 512.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 544.0
+          }
+        ],
+        "note": "2 rows @ 32mm pitch",
+        "operation": "shelf-pin holes (32mm)",
+        "part": "BANK \u00b7 DB2 \u00b7 Side R",
+        "part_id": "BANK-DB2-A1"
+      },
+      {
+        "holes": [
+          {
+            "depth": 12.5,
+            "dia": 35.0,
+            "face": "hinge cup",
+            "note": "",
+            "u": 22.5,
+            "v": 90.0
+          },
+          {
+            "depth": 12.5,
+            "dia": 35.0,
+            "face": "hinge cup",
+            "note": "",
+            "u": 22.5,
+            "v": 524.0
+          }
+        ],
+        "note": "cup centre from hinge edge",
+        "operation": "2x hinge cup (35mm)",
+        "part": "BANK \u00b7 DB2 \u00b7 Door L",
+        "part_id": "BANK-DB2-D1"
+      },
+      {
+        "holes": [
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "plate screw",
+            "note": "",
+            "u": 37.0,
+            "v": 93.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "plate screw",
+            "note": "",
+            "u": 69.0,
+            "v": 93.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "plate screw",
+            "note": "",
+            "u": 37.0,
+            "v": 527.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "plate screw",
+            "note": "",
+            "u": 69.0,
+            "v": 527.0
+          }
+        ],
+        "note": "2 screws per hinge (32mm system)",
+        "operation": "hinge plate screws \u2014 Door L",
+        "part": "BANK \u00b7 DB2 \u00b7 Side L",
+        "part_id": "BANK-DB2-A1"
+      },
+      {
+        "holes": [
+          {
+            "depth": 12.5,
+            "dia": 35.0,
+            "face": "hinge cup",
+            "note": "",
+            "u": 273.0,
+            "v": 90.0
+          },
+          {
+            "depth": 12.5,
+            "dia": 35.0,
+            "face": "hinge cup",
+            "note": "",
+            "u": 273.0,
+            "v": 524.0
+          }
+        ],
+        "note": "cup centre from hinge edge",
+        "operation": "2x hinge cup (35mm)",
+        "part": "BANK \u00b7 DB2 \u00b7 Door R",
+        "part_id": "BANK-DB2-D1"
+      },
+      {
+        "holes": [
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "plate screw",
+            "note": "",
+            "u": 37.0,
+            "v": 93.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "plate screw",
+            "note": "",
+            "u": 69.0,
+            "v": 93.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "plate screw",
+            "note": "",
+            "u": 37.0,
+            "v": 527.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "plate screw",
+            "note": "",
+            "u": 69.0,
+            "v": 527.0
+          }
+        ],
+        "note": "2 screws per hinge (32mm system)",
+        "operation": "hinge plate screws \u2014 Door R",
+        "part": "BANK \u00b7 DB2 \u00b7 Side R",
+        "part_id": "BANK-DB2-A1"
+      },
+      {
+        "holes": [
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 64.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 96.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 128.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 160.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 192.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 224.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 256.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 288.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 320.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 352.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 384.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 416.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 448.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 480.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 512.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 544.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 64.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 96.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 128.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 160.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 192.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 224.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 256.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 288.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 320.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 352.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 384.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 416.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 448.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 480.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 512.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 544.0
+          }
+        ],
+        "note": "2 rows @ 32mm pitch",
+        "operation": "shelf-pin holes (32mm)",
+        "part": "SINK \u00b7 Side L",
+        "part_id": "SINK-A1"
+      },
+      {
+        "holes": [
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 64.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 96.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 128.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 160.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 192.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 224.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 256.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 288.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 320.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 352.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 384.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 416.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 448.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 480.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 512.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 544.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 64.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 96.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 128.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 160.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 192.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 224.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 256.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 288.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 320.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 352.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 384.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 416.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 448.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 480.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 512.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 523.0,
+            "v": 544.0
+          }
+        ],
+        "note": "2 rows @ 32mm pitch",
+        "operation": "shelf-pin holes (32mm)",
+        "part": "SINK \u00b7 Side R",
+        "part_id": "SINK-A1"
+      },
+      {
+        "holes": [
+          {
+            "depth": 12.5,
+            "dia": 35.0,
+            "face": "hinge cup",
+            "note": "",
+            "u": 22.5,
+            "v": 90.0
+          },
+          {
+            "depth": 12.5,
+            "dia": 35.0,
+            "face": "hinge cup",
+            "note": "",
+            "u": 22.5,
+            "v": 524.0
+          }
+        ],
+        "note": "cup centre from hinge edge",
+        "operation": "2x hinge cup (35mm)",
+        "part": "SINK \u00b7 Door L",
+        "part_id": "SINK-D1"
+      },
+      {
+        "holes": [
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "plate screw",
+            "note": "",
+            "u": 37.0,
+            "v": 93.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "plate screw",
+            "note": "",
+            "u": 69.0,
+            "v": 93.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "plate screw",
+            "note": "",
+            "u": 37.0,
+            "v": 527.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "plate screw",
+            "note": "",
+            "u": 69.0,
+            "v": 527.0
+          }
+        ],
+        "note": "2 screws per hinge (32mm system)",
+        "operation": "hinge plate screws \u2014 Door L",
+        "part": "SINK \u00b7 Side L",
+        "part_id": "SINK-A1"
+      },
+      {
+        "holes": [
+          {
+            "depth": 12.5,
+            "dia": 35.0,
+            "face": "hinge cup",
+            "note": "",
+            "u": 423.0,
+            "v": 90.0
+          },
+          {
+            "depth": 12.5,
+            "dia": 35.0,
+            "face": "hinge cup",
+            "note": "",
+            "u": 423.0,
+            "v": 524.0
+          }
+        ],
+        "note": "cup centre from hinge edge",
+        "operation": "2x hinge cup (35mm)",
+        "part": "SINK \u00b7 Door R",
+        "part_id": "SINK-D1"
+      },
+      {
+        "holes": [
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "plate screw",
+            "note": "",
+            "u": 37.0,
+            "v": 93.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "plate screw",
+            "note": "",
+            "u": 69.0,
+            "v": 93.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "plate screw",
+            "note": "",
+            "u": 37.0,
+            "v": 527.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 4.0,
+            "face": "plate screw",
+            "note": "",
+            "u": 69.0,
+            "v": 527.0
+          }
+        ],
+        "note": "2 screws per hinge (32mm system)",
+        "operation": "hinge plate screws \u2014 Door R",
+        "part": "SINK \u00b7 Side R",
+        "part_id": "SINK-A1"
+      }
+    ],
+    "spec_name": "Galley Kitchen"
+  },
+  "dxf": "0\nSECTION\n2\nTABLES\n0\nTABLE\n2\nLAYER\n70\n8\n0\nLAYER\n2\nPANEL\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nSHEET\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nLABEL\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nWARN\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nBORE\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nDADO\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nRABBET\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nCUTOUT\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nENDTAB\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n0\nLINE\n8\nSHEET\n10\n0.00\n20\n0.00\n30\n0.0\n11\n2440.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n2440.00\n20\n0.00\n30\n0.0\n11\n2440.00\n21\n1220.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n2440.00\n20\n1220.00\n30\n0.0\n11\n0.00\n21\n1220.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n0.00\n20\n1220.00\n30\n0.0\n11\n0.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nSHEET\n10\n5.00\n20\n1250.00\n30\n0.0\n40\n40.0\n1\nSheet 1\n0\nLINE\n8\nPANEL\n10\n0.00\n20\n0.00\n30\n0.0\n11\n594.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n594.00\n20\n0.00\n30\n0.0\n11\n594.00\n21\n180.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n594.00\n20\n180.00\n30\n0.0\n11\n0.00\n21\n180.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n0.00\n20\n180.00\n30\n0.0\n11\n0.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n8.00\n20\n82.00\n30\n0.0\n40\n16.0\n1\nBANK-DB1-D1 BANK \u00b7 DB1 \u00b7 Drawer front #1 594x180\n0\nLINE\n8\nPANEL\n10\n597.00\n20\n0.00\n30\n0.0\n11\n1191.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1191.00\n20\n0.00\n30\n0.0\n11\n1191.00\n21\n180.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1191.00\n20\n180.00\n30\n0.0\n11\n597.00\n21\n180.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n597.00\n20\n180.00\n30\n0.0\n11\n597.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n605.00\n20\n82.00\n30\n0.0\n40\n16.0\n1\nBANK-DB1-D2 BANK \u00b7 DB1 \u00b7 Drawer front #2 594x180\n0\nLINE\n8\nPANEL\n10\n1194.00\n20\n0.00\n30\n0.0\n11\n1442.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1442.00\n20\n0.00\n30\n0.0\n11\n1442.00\n21\n295.50\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1442.00\n20\n295.50\n30\n0.0\n11\n1194.00\n21\n295.50\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1194.00\n20\n295.50\n30\n0.0\n11\n1194.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n1202.00\n20\n139.75\n30\n0.0\n40\n16.0\n1\nBANK-DB1-D3 BANK \u00b7 DB1 \u00b7 Door 1 248x296\n0\nCIRCLE\n8\nBORE\n10\n1284.00\n20\n22.50\n30\n0.0\n40\n17.50\n0\nTEXT\n8\nBORE\n10\n1302.50\n20\n18.50\n30\n0.0\n40\n7.0\n1\n\u230035x12.5\n0\nCIRCLE\n8\nBORE\n10\n1352.00\n20\n22.50\n30\n0.0\n40\n17.50\n0\nTEXT\n8\nBORE\n10\n1370.50\n20\n18.50\n30\n0.0\n40\n7.0\n1\n\u230035x12.5\n0\nLINE\n8\nPANEL\n10\n1445.00\n20\n0.00\n30\n0.0\n11\n1693.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1693.00\n20\n0.00\n30\n0.0\n11\n1693.00\n21\n295.50\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1693.00\n20\n295.50\n30\n0.0\n11\n1445.00\n21\n295.50\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1445.00\n20\n295.50\n30\n0.0\n11\n1445.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n1453.00\n20\n139.75\n30\n0.0\n40\n16.0\n1\nBANK-DB1-D3 BANK \u00b7 DB1 \u00b7 Door 2 248x296\n0\nCIRCLE\n8\nBORE\n10\n1535.00\n20\n273.00\n30\n0.0\n40\n17.50\n0\nTEXT\n8\nBORE\n10\n1553.50\n20\n269.00\n30\n0.0\n40\n7.0\n1\n\u230035x12.5\n0\nCIRCLE\n8\nBORE\n10\n1603.00\n20\n273.00\n30\n0.0\n40\n17.50\n0\nTEXT\n8\nBORE\n10\n1621.50\n20\n269.00\n30\n0.0\n40\n7.0\n1\n\u230035x12.5\n0\nLINE\n8\nPANEL\n10\n1696.00\n20\n0.00\n30\n0.0\n11\n2310.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n2310.00\n20\n0.00\n30\n0.0\n11\n2310.00\n21\n295.50\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n2310.00\n20\n295.50\n30\n0.0\n11\n1696.00\n21\n295.50\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1696.00\n20\n295.50\n30\n0.0\n11\n1696.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n1704.00\n20\n139.75\n30\n0.0\n40\n16.0\n1\nBANK-DB2-D1 BANK \u00b7 DB2 \u00b7 Door 1 614x296\n0\nCIRCLE\n8\nBORE\n10\n1786.00\n20\n22.50\n30\n0.0\n40\n17.50\n0\nTEXT\n8\nBORE\n10\n1804.50\n20\n18.50\n30\n0.0\n40\n7.0\n1\n\u230035x12.5\n0\nCIRCLE\n8\nBORE\n10\n2220.00\n20\n22.50\n30\n0.0\n40\n17.50\n0\nTEXT\n8\nBORE\n10\n2238.50\n20\n18.50\n30\n0.0\n40\n7.0\n1\n\u230035x12.5\n0\nLINE\n8\nPANEL\n10\n0.00\n20\n298.50\n30\n0.0\n11\n614.00\n21\n298.50\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n614.00\n20\n298.50\n30\n0.0\n11\n614.00\n21\n594.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n614.00\n20\n594.00\n30\n0.0\n11\n0.00\n21\n594.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n0.00\n20\n594.00\n30\n0.0\n11\n0.00\n21\n298.50\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n8.00\n20\n438.25\n30\n0.0\n40\n16.0\n1\nBANK-DB2-D1 BANK \u00b7 DB2 \u00b7 Door 2 614x296\n0\nCIRCLE\n8\nBORE\n10\n90.00\n20\n571.50\n30\n0.0\n40\n17.50\n0\nTEXT\n8\nBORE\n10\n108.50\n20\n567.50\n30\n0.0\n40\n7.0\n1\n\u230035x12.5\n0\nCIRCLE\n8\nBORE\n10\n524.00\n20\n571.50\n30\n0.0\n40\n17.50\n0\nTEXT\n8\nBORE\n10\n542.50\n20\n567.50\n30\n0.0\n40\n7.0\n1\n\u230035x12.5\n0\nLINE\n8\nPANEL\n10\n617.00\n20\n298.50\n30\n0.0\n11\n1231.00\n21\n298.50\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1231.00\n20\n298.50\n30\n0.0\n11\n1231.00\n21\n744.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1231.00\n20\n744.00\n30\n0.0\n11\n617.00\n21\n744.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n617.00\n20\n744.00\n30\n0.0\n11\n617.00\n21\n298.50\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n625.00\n20\n513.25\n30\n0.0\n40\n16.0\n1\nSINK-D1 SINK \u00b7 Door 1 614x446\n0\nCIRCLE\n8\nBORE\n10\n707.00\n20\n321.00\n30\n0.0\n40\n17.50\n0\nTEXT\n8\nBORE\n10\n725.50\n20\n317.00\n30\n0.0\n40\n7.0\n1\n\u230035x12.5\n0\nCIRCLE\n8\nBORE\n10\n1141.00\n20\n321.00\n30\n0.0\n40\n17.50\n0\nTEXT\n8\nBORE\n10\n1159.50\n20\n317.00\n30\n0.0\n40\n7.0\n1\n\u230035x12.5\n0\nLINE\n8\nPANEL\n10\n1234.00\n20\n298.50\n30\n0.0\n11\n1848.00\n21\n298.50\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1848.00\n20\n298.50\n30\n0.0\n11\n1848.00\n21\n744.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1848.00\n20\n744.00\n30\n0.0\n11\n1234.00\n21\n744.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1234.00\n20\n744.00\n30\n0.0\n11\n1234.00\n21\n298.50\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n1242.00\n20\n513.25\n30\n0.0\n40\n16.0\n1\nSINK-D1 SINK \u00b7 Door 2 614x446\n0\nCIRCLE\n8\nBORE\n10\n1324.00\n20\n721.50\n30\n0.0\n40\n17.50\n0\nTEXT\n8\nBORE\n10\n1342.50\n20\n717.50\n30\n0.0\n40\n7.0\n1\n\u230035x12.5\n0\nCIRCLE\n8\nBORE\n10\n1758.00\n20\n721.50\n30\n0.0\n40\n17.50\n0\nTEXT\n8\nBORE\n10\n1776.50\n20\n717.50\n30\n0.0\n40\n7.0\n1\n\u230035x12.5\n0\nLINE\n8\nSHEET\n10\n2640.00\n20\n0.00\n30\n0.0\n11\n5080.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n5080.00\n20\n0.00\n30\n0.0\n11\n5080.00\n21\n1220.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n5080.00\n20\n1220.00\n30\n0.0\n11\n2640.00\n21\n1220.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n2640.00\n20\n1220.00\n30\n0.0\n11\n2640.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nSHEET\n10\n2645.00\n20\n1250.00\n30\n0.0\n40\n40.0\n1\nSheet 2\n0\nLINE\n8\nPANEL\n10\n2640.00\n20\n0.00\n30\n0.0\n11\n3504.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n3504.00\n20\n0.00\n30\n0.0\n11\n3504.00\n21\n602.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n3504.00\n20\n602.00\n30\n0.0\n11\n2640.00\n21\n602.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n2640.00\n20\n602.00\n30\n0.0\n11\n2640.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n2648.00\n20\n293.00\n30\n0.0\n40\n16.0\n1\nSINK-B1 SINK \u00b7 Back 864x602\n0\nLINE\n8\nPANEL\n10\n3507.00\n20\n0.00\n30\n0.0\n11\n4109.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n4109.00\n20\n0.00\n30\n0.0\n11\n4109.00\n21\n564.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n4109.00\n20\n564.00\n30\n0.0\n11\n3507.00\n21\n564.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n3507.00\n20\n564.00\n30\n0.0\n11\n3507.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n3515.00\n20\n274.00\n30\n0.0\n40\n16.0\n1\nBANK-DB1-B1 BANK \u00b7 DB1 \u00b7 Back 602x564\n0\nLINE\n8\nPANEL\n10\n4112.00\n20\n0.00\n30\n0.0\n11\n4714.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n4714.00\n20\n0.00\n30\n0.0\n11\n4714.00\n21\n564.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n4714.00\n20\n564.00\n30\n0.0\n11\n4112.00\n21\n564.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n4112.00\n20\n564.00\n30\n0.0\n11\n4112.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n4120.00\n20\n274.00\n30\n0.0\n40\n16.0\n1\nBANK-DB2-B1 BANK \u00b7 DB2 \u00b7 Back 602x564\n0\nLINE\n8\nPANEL\n10\n2640.00\n20\n605.00\n30\n0.0\n11\n3260.00\n21\n605.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n3260.00\n20\n605.00\n30\n0.0\n11\n3260.00\n21\n1165.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n3260.00\n20\n1165.00\n30\n0.0\n11\n2640.00\n21\n1165.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n2640.00\n20\n1165.00\n30\n0.0\n11\n2640.00\n21\n605.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n2648.00\n20\n877.00\n30\n0.0\n40\n16.0\n1\nBANK-DB1-A1 BANK \u00b7 DB1 \u00b7 Side 1 620x560\n0\nCIRCLE\n8\nBORE\n10\n2704.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2707.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2736.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2739.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2768.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2771.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2800.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2803.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2832.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2835.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2864.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2867.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2896.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2899.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2928.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2931.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2960.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2963.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2992.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2995.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3024.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3027.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3056.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3059.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3088.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3091.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3120.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3123.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3152.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3155.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3184.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3187.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2704.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2707.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2736.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2739.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2768.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2771.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2800.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2803.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2832.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2835.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2864.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2867.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2896.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2899.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2928.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2931.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2960.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2963.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2992.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2995.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3024.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3027.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3056.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3059.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3088.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3091.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3120.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3123.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3152.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3155.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3184.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3187.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3167.00\n20\n642.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n3170.00\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n3167.00\n20\n885.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n3170.00\n20\n881.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n3167.00\n20\n1115.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n3170.00\n20\n1111.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n2984.00\n20\n642.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n2987.00\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n2984.00\n20\n885.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n2987.00\n20\n881.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n2984.00\n20\n1115.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n2987.00\n20\n1111.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n2733.00\n20\n642.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n2736.00\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n2733.00\n20\n674.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n2736.00\n20\n670.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n2801.00\n20\n642.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n2804.00\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n2801.00\n20\n674.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n2804.00\n20\n670.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nLINE\n8\nDADO\n10\n2652.00\n20\n605.00\n30\n0.0\n11\n2670.00\n21\n605.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n2670.00\n20\n605.00\n30\n0.0\n11\n2670.00\n21\n1165.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n2670.00\n20\n1165.00\n30\n0.0\n11\n2652.00\n21\n1165.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n2652.00\n20\n1165.00\n30\n0.0\n11\n2652.00\n21\n605.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n2640.00\n20\n1147.00\n30\n0.0\n11\n3260.00\n21\n1147.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n3260.00\n20\n1147.00\n30\n0.0\n11\n3260.00\n21\n1153.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n3260.00\n20\n1153.00\n30\n0.0\n11\n2640.00\n21\n1153.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n2640.00\n20\n1153.00\n30\n0.0\n11\n2640.00\n21\n1147.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n3263.00\n20\n605.00\n30\n0.0\n11\n3883.00\n21\n605.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n3883.00\n20\n605.00\n30\n0.0\n11\n3883.00\n21\n1165.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n3883.00\n20\n1165.00\n30\n0.0\n11\n3263.00\n21\n1165.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n3263.00\n20\n1165.00\n30\n0.0\n11\n3263.00\n21\n605.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n3271.00\n20\n877.00\n30\n0.0\n40\n16.0\n1\nBANK-DB1-A1 BANK \u00b7 DB1 \u00b7 Side 2 620x560\n0\nCIRCLE\n8\nBORE\n10\n3327.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3330.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3359.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3362.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3391.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3394.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3423.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3426.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3455.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3458.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3487.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3490.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3519.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3522.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3551.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3554.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3583.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3586.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3615.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3618.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3647.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3650.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3679.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3682.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3711.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3714.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3743.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3746.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3775.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3778.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3807.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3810.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3327.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3330.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3359.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3362.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3391.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3394.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3423.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3426.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3455.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3458.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3487.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3490.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3519.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3522.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3551.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3554.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3583.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3586.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3615.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3618.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3647.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3650.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3679.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3682.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3711.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3714.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3743.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3746.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3775.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3778.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3807.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3810.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3790.00\n20\n642.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n3793.00\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n3790.00\n20\n885.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n3793.00\n20\n881.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n3790.00\n20\n1115.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n3793.00\n20\n1111.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n3607.00\n20\n642.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n3610.00\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n3607.00\n20\n885.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n3610.00\n20\n881.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n3607.00\n20\n1115.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n3610.00\n20\n1111.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n3356.00\n20\n642.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n3359.00\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n3356.00\n20\n674.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n3359.00\n20\n670.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n3424.00\n20\n642.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n3427.00\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n3424.00\n20\n674.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n3427.00\n20\n670.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nLINE\n8\nDADO\n10\n3275.00\n20\n605.00\n30\n0.0\n11\n3293.00\n21\n605.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n3293.00\n20\n605.00\n30\n0.0\n11\n3293.00\n21\n1165.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n3293.00\n20\n1165.00\n30\n0.0\n11\n3275.00\n21\n1165.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n3275.00\n20\n1165.00\n30\n0.0\n11\n3275.00\n21\n605.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n3263.00\n20\n1147.00\n30\n0.0\n11\n3883.00\n21\n1147.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n3883.00\n20\n1147.00\n30\n0.0\n11\n3883.00\n21\n1153.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n3883.00\n20\n1153.00\n30\n0.0\n11\n3263.00\n21\n1153.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n3263.00\n20\n1153.00\n30\n0.0\n11\n3263.00\n21\n1147.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n3886.00\n20\n605.00\n30\n0.0\n11\n4506.00\n21\n605.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n4506.00\n20\n605.00\n30\n0.0\n11\n4506.00\n21\n1165.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n4506.00\n20\n1165.00\n30\n0.0\n11\n3886.00\n21\n1165.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n3886.00\n20\n1165.00\n30\n0.0\n11\n3886.00\n21\n605.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n3894.00\n20\n877.00\n30\n0.0\n40\n16.0\n1\nBANK-DB2-A1 BANK \u00b7 DB2 \u00b7 Side 1 620x560\n0\nCIRCLE\n8\nBORE\n10\n3950.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3953.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3982.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3985.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4014.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4017.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4046.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4049.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4078.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4081.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4110.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4113.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4142.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4145.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4174.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4177.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4206.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4209.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4238.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4241.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4270.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4273.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4302.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4305.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4334.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4337.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4366.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4369.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4398.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4401.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4430.00\n20\n642.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4433.50\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3950.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3953.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3982.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3985.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4014.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4017.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4046.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4049.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4078.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4081.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4110.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4113.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4142.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4145.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4174.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4177.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4206.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4209.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4238.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4241.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4270.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4273.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4302.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4305.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4334.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4337.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4366.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4369.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4398.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4401.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4430.00\n20\n1128.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4433.50\n20\n1124.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3979.00\n20\n642.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n3982.00\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n3979.00\n20\n674.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n3982.00\n20\n670.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n4413.00\n20\n642.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n4416.00\n20\n638.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n4413.00\n20\n674.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n4416.00\n20\n670.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nLINE\n8\nDADO\n10\n3898.00\n20\n605.00\n30\n0.0\n11\n3916.00\n21\n605.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n3916.00\n20\n605.00\n30\n0.0\n11\n3916.00\n21\n1165.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n3916.00\n20\n1165.00\n30\n0.0\n11\n3898.00\n21\n1165.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n3898.00\n20\n1165.00\n30\n0.0\n11\n3898.00\n21\n605.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n3886.00\n20\n1147.00\n30\n0.0\n11\n4506.00\n21\n1147.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n4506.00\n20\n1147.00\n30\n0.0\n11\n4506.00\n21\n1153.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n4506.00\n20\n1153.00\n30\n0.0\n11\n3886.00\n21\n1153.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n3886.00\n20\n1153.00\n30\n0.0\n11\n3886.00\n21\n1147.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n5280.00\n20\n0.00\n30\n0.0\n11\n7720.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n7720.00\n20\n0.00\n30\n0.0\n11\n7720.00\n21\n1220.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n7720.00\n20\n1220.00\n30\n0.0\n11\n5280.00\n21\n1220.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n5280.00\n20\n1220.00\n30\n0.0\n11\n5280.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nSHEET\n10\n5285.00\n20\n1250.00\n30\n0.0\n40\n40.0\n1\nSheet 3\n0\nLINE\n8\nPANEL\n10\n5280.00\n20\n0.00\n30\n0.0\n11\n5900.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n5900.00\n20\n0.00\n30\n0.0\n11\n5900.00\n21\n560.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n5900.00\n20\n560.00\n30\n0.0\n11\n5280.00\n21\n560.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n5280.00\n20\n560.00\n30\n0.0\n11\n5280.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n5288.00\n20\n272.00\n30\n0.0\n40\n16.0\n1\nBANK-DB2-A1 BANK \u00b7 DB2 \u00b7 Side 2 620x560\n0\nCIRCLE\n8\nBORE\n10\n5344.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5347.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5376.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5379.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5408.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5411.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5440.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5443.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5472.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5475.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5504.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5507.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5536.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5539.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5568.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5571.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5600.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5603.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5632.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5635.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5664.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5667.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5696.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5699.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5728.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5731.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5760.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5763.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5792.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5795.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5824.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5827.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5344.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5347.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5376.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5379.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5408.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5411.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5440.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5443.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5472.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5475.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5504.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5507.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5536.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5539.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5568.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5571.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5600.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5603.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5632.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5635.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5664.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5667.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5696.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5699.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5728.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5731.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5760.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5763.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5792.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5795.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5824.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5827.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5373.00\n20\n37.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n5376.00\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n5373.00\n20\n69.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n5376.00\n20\n65.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n5807.00\n20\n37.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n5810.00\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n5807.00\n20\n69.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n5810.00\n20\n65.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nLINE\n8\nDADO\n10\n5292.00\n20\n0.00\n30\n0.0\n11\n5310.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n5310.00\n20\n0.00\n30\n0.0\n11\n5310.00\n21\n560.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n5310.00\n20\n560.00\n30\n0.0\n11\n5292.00\n21\n560.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n5292.00\n20\n560.00\n30\n0.0\n11\n5292.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n5280.00\n20\n542.00\n30\n0.0\n11\n5900.00\n21\n542.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n5900.00\n20\n542.00\n30\n0.0\n11\n5900.00\n21\n548.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n5900.00\n20\n548.00\n30\n0.0\n11\n5280.00\n21\n548.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n5280.00\n20\n548.00\n30\n0.0\n11\n5280.00\n21\n542.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n5903.00\n20\n0.00\n30\n0.0\n11\n6523.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n6523.00\n20\n0.00\n30\n0.0\n11\n6523.00\n21\n560.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n6523.00\n20\n560.00\n30\n0.0\n11\n5903.00\n21\n560.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n5903.00\n20\n560.00\n30\n0.0\n11\n5903.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n5911.00\n20\n272.00\n30\n0.0\n40\n16.0\n1\nSINK-A1 SINK \u00b7 Side 1 620x560\n0\nCIRCLE\n8\nBORE\n10\n5967.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5970.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5999.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6002.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6031.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6034.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6063.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6066.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6095.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6098.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6127.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6130.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6159.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6162.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6191.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6194.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6223.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6226.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6255.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6258.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6287.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6290.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6319.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6322.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6351.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6354.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6383.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6386.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6415.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6418.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6447.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6450.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5967.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n5970.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5999.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6002.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6031.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6034.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6063.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6066.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6095.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6098.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6127.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6130.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6159.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6162.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6191.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6194.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6223.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6226.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6255.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6258.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6287.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6290.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6319.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6322.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6351.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6354.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6383.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6386.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6415.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6418.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6447.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6450.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n5996.00\n20\n37.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n5999.00\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n5996.00\n20\n69.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n5999.00\n20\n65.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n6430.00\n20\n37.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n6433.00\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n6430.00\n20\n69.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n6433.00\n20\n65.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nLINE\n8\nDADO\n10\n5915.00\n20\n0.00\n30\n0.0\n11\n5933.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n5933.00\n20\n0.00\n30\n0.0\n11\n5933.00\n21\n560.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n5933.00\n20\n560.00\n30\n0.0\n11\n5915.00\n21\n560.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n5915.00\n20\n560.00\n30\n0.0\n11\n5915.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n5903.00\n20\n542.00\n30\n0.0\n11\n6523.00\n21\n542.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n6523.00\n20\n542.00\n30\n0.0\n11\n6523.00\n21\n548.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n6523.00\n20\n548.00\n30\n0.0\n11\n5903.00\n21\n548.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n5903.00\n20\n548.00\n30\n0.0\n11\n5903.00\n21\n542.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n6526.00\n20\n0.00\n30\n0.0\n11\n7146.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n7146.00\n20\n0.00\n30\n0.0\n11\n7146.00\n21\n560.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n7146.00\n20\n560.00\n30\n0.0\n11\n6526.00\n21\n560.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n6526.00\n20\n560.00\n30\n0.0\n11\n6526.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n6534.00\n20\n272.00\n30\n0.0\n40\n16.0\n1\nSINK-A1 SINK \u00b7 Side 2 620x560\n0\nCIRCLE\n8\nBORE\n10\n6590.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6593.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6622.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6625.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6654.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6657.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6686.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6689.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6718.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6721.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6750.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6753.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6782.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6785.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6814.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6817.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6846.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6849.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6878.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6881.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6910.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6913.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6942.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6945.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6974.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6977.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n7006.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n7009.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n7038.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n7041.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n7070.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n7073.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6590.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6593.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6622.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6625.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6654.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6657.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6686.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6689.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6718.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6721.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6750.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6753.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6782.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6785.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6814.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6817.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6846.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6849.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6878.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6881.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6910.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6913.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6942.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6945.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6974.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n6977.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n7006.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n7009.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n7038.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n7041.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n7070.00\n20\n523.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n7073.50\n20\n519.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n6619.00\n20\n37.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n6622.00\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n6619.00\n20\n69.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n6622.00\n20\n65.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n7053.00\n20\n37.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n7056.00\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nCIRCLE\n8\nBORE\n10\n7053.00\n20\n69.00\n30\n0.0\n40\n2.00\n0\nTEXT\n8\nBORE\n10\n7056.00\n20\n65.00\n30\n0.0\n40\n7.0\n1\n\u23004x12\n0\nLINE\n8\nDADO\n10\n6538.00\n20\n0.00\n30\n0.0\n11\n6556.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n6556.00\n20\n0.00\n30\n0.0\n11\n6556.00\n21\n560.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n6556.00\n20\n560.00\n30\n0.0\n11\n6538.00\n21\n560.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n6538.00\n20\n560.00\n30\n0.0\n11\n6538.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n6526.00\n20\n542.00\n30\n0.0\n11\n7146.00\n21\n542.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n7146.00\n20\n542.00\n30\n0.0\n11\n7146.00\n21\n548.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n7146.00\n20\n548.00\n30\n0.0\n11\n6526.00\n21\n548.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n6526.00\n20\n548.00\n30\n0.0\n11\n6526.00\n21\n542.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n7149.00\n20\n0.00\n30\n0.0\n11\n7713.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n7713.00\n20\n0.00\n30\n0.0\n11\n7713.00\n21\n554.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n7713.00\n20\n554.00\n30\n0.0\n11\n7149.00\n21\n554.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n7149.00\n20\n554.00\n30\n0.0\n11\n7149.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n7157.00\n20\n269.00\n30\n0.0\n40\n16.0\n1\nBANK-DB1-A2 BANK \u00b7 DB1 \u00b7 Bottom 564x554\n0\nLINE\n8\nPANEL\n10\n5280.00\n20\n563.00\n30\n0.0\n11\n5844.00\n21\n563.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n5844.00\n20\n563.00\n30\n0.0\n11\n5844.00\n21\n1117.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n5844.00\n20\n1117.00\n30\n0.0\n11\n5280.00\n21\n1117.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n5280.00\n20\n1117.00\n30\n0.0\n11\n5280.00\n21\n563.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n5288.00\n20\n832.00\n30\n0.0\n40\n16.0\n1\nBANK-DB2-A2 BANK \u00b7 DB2 \u00b7 Bottom 564x554\n0\nLINE\n8\nPANEL\n10\n5847.00\n20\n563.00\n30\n0.0\n11\n6711.00\n21\n563.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n6711.00\n20\n563.00\n30\n0.0\n11\n6711.00\n21\n1117.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n6711.00\n20\n1117.00\n30\n0.0\n11\n5847.00\n21\n1117.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n5847.00\n20\n1117.00\n30\n0.0\n11\n5847.00\n21\n563.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n5855.00\n20\n832.00\n30\n0.0\n40\n16.0\n1\nSINK-A2 SINK \u00b7 Bottom 864x554\n0\nLINE\n8\nPANEL\n10\n6714.00\n20\n563.00\n30\n0.0\n11\n7274.00\n21\n563.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n7274.00\n20\n563.00\n30\n0.0\n11\n7274.00\n21\n1097.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n7274.00\n20\n1097.00\n30\n0.0\n11\n6714.00\n21\n1097.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n6714.00\n20\n1097.00\n30\n0.0\n11\n6714.00\n21\n563.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n6722.00\n20\n822.00\n30\n0.0\n40\n16.0\n1\nBANK-DB1-C1 BANK \u00b7 DB1 \u00b7 Adjustable shelf 560x534\n0\nLINE\n8\nSHEET\n10\n7920.00\n20\n0.00\n30\n0.0\n11\n10360.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n10360.00\n20\n0.00\n30\n0.0\n11\n10360.00\n21\n1220.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n10360.00\n20\n1220.00\n30\n0.0\n11\n7920.00\n21\n1220.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n7920.00\n20\n1220.00\n30\n0.0\n11\n7920.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nSHEET\n10\n7925.00\n20\n1250.00\n30\n0.0\n40\n40.0\n1\nSheet 4\n0\nLINE\n8\nPANEL\n10\n7920.00\n20\n0.00\n30\n0.0\n11\n8480.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n8480.00\n20\n0.00\n30\n0.0\n11\n8480.00\n21\n534.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n8480.00\n20\n534.00\n30\n0.0\n11\n7920.00\n21\n534.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n7920.00\n20\n534.00\n30\n0.0\n11\n7920.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n7928.00\n20\n259.00\n30\n0.0\n40\n16.0\n1\nBANK-DB2-C1 BANK \u00b7 DB2 \u00b7 Adjustable shelf 560x534\n0\nLINE\n8\nPANEL\n10\n8483.00\n20\n0.00\n30\n0.0\n11\n9343.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n9343.00\n20\n0.00\n30\n0.0\n11\n9343.00\n21\n534.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n9343.00\n20\n534.00\n30\n0.0\n11\n8483.00\n21\n534.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n8483.00\n20\n534.00\n30\n0.0\n11\n8483.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n8491.00\n20\n259.00\n30\n0.0\n40\n16.0\n1\nSINK-C1 SINK \u00b7 Adjustable shelf 860x534\n0\nLINE\n8\nPANEL\n10\n9346.00\n20\n0.00\n30\n0.0\n11\n9920.60\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n9920.60\n20\n0.00\n30\n0.0\n11\n9920.60\n21\n500.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n9920.60\n20\n500.00\n30\n0.0\n11\n9346.00\n21\n500.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n9346.00\n20\n500.00\n30\n0.0\n11\n9346.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n9354.00\n20\n242.00\n30\n0.0\n40\n16.0\n1\nBANK-DB1-E3 BANK \u00b7 DB1 \u00b7 Drawer 1 box bottom 575x500\n0\nLINE\n8\nPANEL\n10\n7920.00\n20\n537.00\n30\n0.0\n11\n8494.60\n21\n537.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n8494.60\n20\n537.00\n30\n0.0\n11\n8494.60\n21\n1037.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n8494.60\n20\n1037.00\n30\n0.0\n11\n7920.00\n21\n1037.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n7920.00\n20\n1037.00\n30\n0.0\n11\n7920.00\n21\n537.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n7928.00\n20\n779.00\n30\n0.0\n40\n16.0\n1\nBANK-DB1-E6 BANK \u00b7 DB1 \u00b7 Drawer 2 box bottom 575x500\n0\nLINE\n8\nPANEL\n10\n8497.60\n20\n537.00\n30\n0.0\n11\n8997.60\n21\n537.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n8997.60\n20\n537.00\n30\n0.0\n11\n8997.60\n21\n677.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n8997.60\n20\n677.00\n30\n0.0\n11\n8497.60\n21\n677.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n8497.60\n20\n677.00\n30\n0.0\n11\n8497.60\n21\n537.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n8505.60\n20\n599.00\n30\n0.0\n40\n16.0\n1\nBANK-DB1-E1 BANK \u00b7 DB1 \u00b7 Drawer 1 box side 1 500x140\n0\nLINE\n8\nDADO\n10\n8509.60\n20\n537.00\n30\n0.0\n11\n8515.60\n21\n537.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n8515.60\n20\n537.00\n30\n0.0\n11\n8515.60\n21\n677.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n8515.60\n20\n677.00\n30\n0.0\n11\n8509.60\n21\n677.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n8509.60\n20\n677.00\n30\n0.0\n11\n8509.60\n21\n537.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n9000.60\n20\n537.00\n30\n0.0\n11\n9500.60\n21\n537.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n9500.60\n20\n537.00\n30\n0.0\n11\n9500.60\n21\n677.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n9500.60\n20\n677.00\n30\n0.0\n11\n9000.60\n21\n677.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n9000.60\n20\n677.00\n30\n0.0\n11\n9000.60\n21\n537.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n9008.60\n20\n599.00\n30\n0.0\n40\n16.0\n1\nBANK-DB1-E1 BANK \u00b7 DB1 \u00b7 Drawer 1 box side 2 500x140\n0\nLINE\n8\nDADO\n10\n9012.60\n20\n537.00\n30\n0.0\n11\n9018.60\n21\n537.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n9018.60\n20\n537.00\n30\n0.0\n11\n9018.60\n21\n677.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n9018.60\n20\n677.00\n30\n0.0\n11\n9012.60\n21\n677.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n9012.60\n20\n677.00\n30\n0.0\n11\n9012.60\n21\n537.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n9503.60\n20\n537.00\n30\n0.0\n11\n10054.20\n21\n537.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n10054.20\n20\n537.00\n30\n0.0\n11\n10054.20\n21\n677.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n10054.20\n20\n677.00\n30\n0.0\n11\n9503.60\n21\n677.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n9503.60\n20\n677.00\n30\n0.0\n11\n9503.60\n21\n537.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n9511.60\n20\n599.00\n30\n0.0\n40\n16.0\n1\nBANK-DB1-E2 BANK \u00b7 DB1 \u00b7 Drawer 1 box front/back 1 551x140\n0\nLINE\n8\nPANEL\n10\n7920.00\n20\n1040.00\n30\n0.0\n11\n8470.60\n21\n1040.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n8470.60\n20\n1040.00\n30\n0.0\n11\n8470.60\n21\n1180.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n8470.60\n20\n1180.00\n30\n0.0\n11\n7920.00\n21\n1180.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n7920.00\n20\n1180.00\n30\n0.0\n11\n7920.00\n21\n1040.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n7928.00\n20\n1102.00\n30\n0.0\n40\n16.0\n1\nBANK-DB1-E2 BANK \u00b7 DB1 \u00b7 Drawer 1 box front/back 2 551x140\n0\nLINE\n8\nPANEL\n10\n8473.60\n20\n1040.00\n30\n0.0\n11\n8973.60\n21\n1040.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n8973.60\n20\n1040.00\n30\n0.0\n11\n8973.60\n21\n1180.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n8973.60\n20\n1180.00\n30\n0.0\n11\n8473.60\n21\n1180.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n8473.60\n20\n1180.00\n30\n0.0\n11\n8473.60\n21\n1040.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n8481.60\n20\n1102.00\n30\n0.0\n40\n16.0\n1\nBANK-DB1-E4 BANK \u00b7 DB1 \u00b7 Drawer 2 box side 1 500x140\n0\nLINE\n8\nDADO\n10\n8485.60\n20\n1040.00\n30\n0.0\n11\n8491.60\n21\n1040.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n8491.60\n20\n1040.00\n30\n0.0\n11\n8491.60\n21\n1180.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n8491.60\n20\n1180.00\n30\n0.0\n11\n8485.60\n21\n1180.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n8485.60\n20\n1180.00\n30\n0.0\n11\n8485.60\n21\n1040.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n8976.60\n20\n1040.00\n30\n0.0\n11\n9476.60\n21\n1040.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n9476.60\n20\n1040.00\n30\n0.0\n11\n9476.60\n21\n1180.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n9476.60\n20\n1180.00\n30\n0.0\n11\n8976.60\n21\n1180.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n8976.60\n20\n1180.00\n30\n0.0\n11\n8976.60\n21\n1040.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n8984.60\n20\n1102.00\n30\n0.0\n40\n16.0\n1\nBANK-DB1-E4 BANK \u00b7 DB1 \u00b7 Drawer 2 box side 2 500x140\n0\nLINE\n8\nDADO\n10\n8988.60\n20\n1040.00\n30\n0.0\n11\n8994.60\n21\n1040.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n8994.60\n20\n1040.00\n30\n0.0\n11\n8994.60\n21\n1180.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n8994.60\n20\n1180.00\n30\n0.0\n11\n8988.60\n21\n1180.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n8988.60\n20\n1180.00\n30\n0.0\n11\n8988.60\n21\n1040.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n9479.60\n20\n1040.00\n30\n0.0\n11\n10030.20\n21\n1040.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n10030.20\n20\n1040.00\n30\n0.0\n11\n10030.20\n21\n1180.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n10030.20\n20\n1180.00\n30\n0.0\n11\n9479.60\n21\n1180.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n9479.60\n20\n1180.00\n30\n0.0\n11\n9479.60\n21\n1040.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n9487.60\n20\n1102.00\n30\n0.0\n40\n16.0\n1\nBANK-DB1-E5 BANK \u00b7 DB1 \u00b7 Drawer 2 box front/back 1 551x140\n0\nLINE\n8\nSHEET\n10\n10560.00\n20\n0.00\n30\n0.0\n11\n13000.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n13000.00\n20\n0.00\n30\n0.0\n11\n13000.00\n21\n1220.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n13000.00\n20\n1220.00\n30\n0.0\n11\n10560.00\n21\n1220.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n10560.00\n20\n1220.00\n30\n0.0\n11\n10560.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nSHEET\n10\n10565.00\n20\n1250.00\n30\n0.0\n40\n40.0\n1\nSheet 5\n0\nLINE\n8\nPANEL\n10\n10560.00\n20\n0.00\n30\n0.0\n11\n11110.60\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n11110.60\n20\n0.00\n30\n0.0\n11\n11110.60\n21\n140.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n11110.60\n20\n140.00\n30\n0.0\n11\n10560.00\n21\n140.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n10560.00\n20\n140.00\n30\n0.0\n11\n10560.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n10568.00\n20\n62.00\n30\n0.0\n40\n16.0\n1\nBANK-DB1-E5 BANK \u00b7 DB1 \u00b7 Drawer 2 box front/back 2 551x140\n0\nLINE\n8\nPANEL\n10\n11113.60\n20\n0.00\n30\n0.0\n11\n11713.60\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n11713.60\n20\n0.00\n30\n0.0\n11\n11713.60\n21\n100.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n11713.60\n20\n100.00\n30\n0.0\n11\n11113.60\n21\n100.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n11113.60\n20\n100.00\n30\n0.0\n11\n11113.60\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n11121.60\n20\n42.00\n30\n0.0\n40\n16.0\n1\nBANK-DB1-A4 BANK \u00b7 DB1 \u00b7 Toe kick 600x100\n0\nLINE\n8\nPANEL\n10\n11716.60\n20\n0.00\n30\n0.0\n11\n12316.60\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n12316.60\n20\n0.00\n30\n0.0\n11\n12316.60\n21\n100.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n12316.60\n20\n100.00\n30\n0.0\n11\n11716.60\n21\n100.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n11716.60\n20\n100.00\n30\n0.0\n11\n11716.60\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n11724.60\n20\n42.00\n30\n0.0\n40\n16.0\n1\nBANK-DB2-A4 BANK \u00b7 DB2 \u00b7 Toe kick 600x100\n0\nLINE\n8\nPANEL\n10\n10560.00\n20\n143.00\n30\n0.0\n11\n11460.00\n21\n143.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n11460.00\n20\n143.00\n30\n0.0\n11\n11460.00\n21\n243.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n11460.00\n20\n243.00\n30\n0.0\n11\n10560.00\n21\n243.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n10560.00\n20\n243.00\n30\n0.0\n11\n10560.00\n21\n143.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n10568.00\n20\n185.00\n30\n0.0\n40\n16.0\n1\nSINK-A4 SINK \u00b7 Toe kick 900x100\n0\nLINE\n8\nPANEL\n10\n11463.00\n20\n143.00\n30\n0.0\n11\n12027.00\n21\n143.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n12027.00\n20\n143.00\n30\n0.0\n11\n12027.00\n21\n223.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n12027.00\n20\n223.00\n30\n0.0\n11\n11463.00\n21\n223.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n11463.00\n20\n223.00\n30\n0.0\n11\n11463.00\n21\n143.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n11471.00\n20\n175.00\n30\n0.0\n40\n16.0\n1\nBANK-DB1-A3 BANK \u00b7 DB1 \u00b7 Top stretcher 1 564x80\n0\nLINE\n8\nPANEL\n10\n12030.00\n20\n143.00\n30\n0.0\n11\n12594.00\n21\n143.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n12594.00\n20\n143.00\n30\n0.0\n11\n12594.00\n21\n223.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n12594.00\n20\n223.00\n30\n0.0\n11\n12030.00\n21\n223.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n12030.00\n20\n223.00\n30\n0.0\n11\n12030.00\n21\n143.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n12038.00\n20\n175.00\n30\n0.0\n40\n16.0\n1\nBANK-DB1-A3 BANK \u00b7 DB1 \u00b7 Top stretcher 2 564x80\n0\nLINE\n8\nPANEL\n10\n10560.00\n20\n246.00\n30\n0.0\n11\n11124.00\n21\n246.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n11124.00\n20\n246.00\n30\n0.0\n11\n11124.00\n21\n326.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n11124.00\n20\n326.00\n30\n0.0\n11\n10560.00\n21\n326.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n10560.00\n20\n326.00\n30\n0.0\n11\n10560.00\n21\n246.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n10568.00\n20\n278.00\n30\n0.0\n40\n16.0\n1\nBANK-DB2-A3 BANK \u00b7 DB2 \u00b7 Top stretcher 1 564x80\n0\nLINE\n8\nPANEL\n10\n11127.00\n20\n246.00\n30\n0.0\n11\n11691.00\n21\n246.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n11691.00\n20\n246.00\n30\n0.0\n11\n11691.00\n21\n326.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n11691.00\n20\n326.00\n30\n0.0\n11\n11127.00\n21\n326.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n11127.00\n20\n326.00\n30\n0.0\n11\n11127.00\n21\n246.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n11135.00\n20\n278.00\n30\n0.0\n40\n16.0\n1\nBANK-DB2-A3 BANK \u00b7 DB2 \u00b7 Top stretcher 2 564x80\n0\nLINE\n8\nPANEL\n10\n11694.00\n20\n246.00\n30\n0.0\n11\n12558.00\n21\n246.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n12558.00\n20\n246.00\n30\n0.0\n11\n12558.00\n21\n326.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n12558.00\n20\n326.00\n30\n0.0\n11\n11694.00\n21\n326.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n11694.00\n20\n326.00\n30\n0.0\n11\n11694.00\n21\n246.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n11702.00\n20\n278.00\n30\n0.0\n40\n16.0\n1\nSINK-A3 SINK \u00b7 Top stretcher 1 864x80\n0\nLINE\n8\nPANEL\n10\n10560.00\n20\n329.00\n30\n0.0\n11\n11424.00\n21\n329.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n11424.00\n20\n329.00\n30\n0.0\n11\n11424.00\n21\n409.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n11424.00\n20\n409.00\n30\n0.0\n11\n10560.00\n21\n409.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n10560.00\n20\n409.00\n30\n0.0\n11\n10560.00\n21\n329.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n10568.00\n20\n361.00\n30\n0.0\n40\n16.0\n1\nSINK-A3 SINK \u00b7 Top stretcher 2 864x80\n0\nENDSEC\n0\nEOF\n",
+  "estimate": {
+    "_rate": 65.0,
+    "banding_groups": [
+      {
+        "metres": 13.146,
+        "stock": "door/front"
+      },
+      {
+        "metres": 11.676,
+        "stock": "sheet"
+      }
+    ],
+    "currency": "$",
+    "edge_banding_cost": 37.233,
+    "edge_banding_m": 24.822,
+    "finish_cost": 0.0,
+    "finish_m2": 0.0,
+    "groups": [
+      {
+        "form": "",
+        "material": "back panel",
+        "oversize": 0,
+        "part_count": 5,
+        "sheets": 3,
+        "species": "",
+        "thickness": 6.0,
+        "utilization": 0.3071
+      },
+      {
+        "form": "",
+        "material": "door/front",
+        "oversize": 0,
+        "part_count": 8,
+        "sheets": 3,
+        "species": "",
+        "thickness": 18.0,
+        "utilization": 0.1838
+      },
+      {
+        "form": "",
+        "material": "drawer box",
+        "oversize": 0,
+        "part_count": 8,
+        "sheets": 1,
+        "species": "",
+        "thickness": 12.0,
+        "utilization": 0.1976
+      },
+      {
+        "form": "",
+        "material": "sheet",
+        "oversize": 0,
+        "part_count": 21,
+        "sheets": 3,
+        "species": "",
+        "thickness": 18.0,
+        "utilization": 0.625
+      }
+    ],
+    "hardware_cost": 101.8,
+    "labour_cost": 370.5,
+    "labour_hours": 5.7,
+    "lumber_cost": 0.0,
+    "lumber_groups": [],
+    "material_cost": 640.0,
+    "spec_name": "Galley Kitchen"
+  },
+  "issues": [
+    "warning:shelves above a drawer bank may be obstructed by the box"
+  ],
+  "joinery": {
+    "ops": [
+      {
+        "depth": 9.0,
+        "note": "cut to the mating panel thickness for a snug fit",
+        "operation": "joint for bottom",
+        "part": "BANK \u00b7 DB1 \u00b7 Side L",
+        "part_id": "BANK-DB1-A1",
+        "reference": "near the bottom edge",
+        "tool": "dado stack / straight bit",
+        "width": 18.0
+      },
+      {
+        "depth": 9.0,
+        "note": "cut to the mating panel thickness for a snug fit",
+        "operation": "joint for bottom",
+        "part": "BANK \u00b7 DB1 \u00b7 Side R",
+        "part_id": "BANK-DB1-A1",
+        "reference": "near the bottom edge",
+        "tool": "dado stack / straight bit",
+        "width": 18.0
+      },
+      {
+        "depth": 6.0,
+        "note": "back sits flush in the rabbet",
+        "operation": "rabbet for back",
+        "part": "BANK \u00b7 DB1 \u00b7 Side / top / bottom",
+        "part_id": "BANK-DB1-A1",
+        "reference": "rear edge",
+        "tool": "rabbet bit / dado",
+        "width": 6.0
+      },
+      {
+        "depth": 12.0,
+        "note": "tails on the sides so the front can't pull off",
+        "operation": "dovetail corners",
+        "part": "BANK \u00b7 DB1 \u00b7 Drawer 1 box",
+        "part_id": "BANK-DB1-E1",
+        "reference": "tails on the sides",
+        "tool": "dovetail jig / saw",
+        "width": 0.0
+      },
+      {
+        "depth": 6.0,
+        "note": "",
+        "operation": "groove for bottom",
+        "part": "BANK \u00b7 DB1 \u00b7 Drawer 1 box sides",
+        "part_id": "BANK-DB1-E1",
+        "reference": "~10mm up from the bottom edge",
+        "tool": "straight bit / dado",
+        "width": 6.0
+      },
+      {
+        "depth": 12.0,
+        "note": "tails on the sides so the front can't pull off",
+        "operation": "dovetail corners",
+        "part": "BANK \u00b7 DB1 \u00b7 Drawer 2 box",
+        "part_id": "BANK-DB1-E4",
+        "reference": "tails on the sides",
+        "tool": "dovetail jig / saw",
+        "width": 0.0
+      },
+      {
+        "depth": 6.0,
+        "note": "",
+        "operation": "groove for bottom",
+        "part": "BANK \u00b7 DB1 \u00b7 Drawer 2 box sides",
+        "part_id": "BANK-DB1-E4",
+        "reference": "~10mm up from the bottom edge",
+        "tool": "straight bit / dado",
+        "width": 6.0
+      },
+      {
+        "depth": 9.0,
+        "note": "cut to the mating panel thickness for a snug fit",
+        "operation": "joint for bottom",
+        "part": "BANK \u00b7 DB2 \u00b7 Side L",
+        "part_id": "BANK-DB2-A1",
+        "reference": "near the bottom edge",
+        "tool": "dado stack / straight bit",
+        "width": 18.0
+      },
+      {
+        "depth": 9.0,
+        "note": "cut to the mating panel thickness for a snug fit",
+        "operation": "joint for bottom",
+        "part": "BANK \u00b7 DB2 \u00b7 Side R",
+        "part_id": "BANK-DB2-A1",
+        "reference": "near the bottom edge",
+        "tool": "dado stack / straight bit",
+        "width": 18.0
+      },
+      {
+        "depth": 6.0,
+        "note": "back sits flush in the rabbet",
+        "operation": "rabbet for back",
+        "part": "BANK \u00b7 DB2 \u00b7 Side / top / bottom",
+        "part_id": "BANK-DB2-A1",
+        "reference": "rear edge",
+        "tool": "rabbet bit / dado",
+        "width": 6.0
+      },
+      {
+        "depth": 9.0,
+        "note": "cut to the mating panel thickness for a snug fit",
+        "operation": "joint for bottom",
+        "part": "SINK \u00b7 Side L",
+        "part_id": "SINK-A1",
+        "reference": "near the bottom edge",
+        "tool": "dado stack / straight bit",
+        "width": 18.0
+      },
+      {
+        "depth": 9.0,
+        "note": "cut to the mating panel thickness for a snug fit",
+        "operation": "joint for bottom",
+        "part": "SINK \u00b7 Side R",
+        "part_id": "SINK-A1",
+        "reference": "near the bottom edge",
+        "tool": "dado stack / straight bit",
+        "width": 18.0
+      },
+      {
+        "depth": 6.0,
+        "note": "back sits flush in the rabbet",
+        "operation": "rabbet for back",
+        "part": "SINK \u00b7 Side / top / bottom",
+        "part_id": "SINK-A1",
+        "reference": "rear edge",
+        "tool": "rabbet bit / dado",
+        "width": 6.0
+      }
+    ],
+    "spec_name": "Galley Kitchen"
+  },
+  "panels": [
+    {
+      "category": "carcass",
+      "center": [
+        9.0,
+        280.0,
+        410.0
+      ],
+      "label": "BANK \u00b7 DB1 \u00b7 Side L",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        18.0,
+        560.0,
+        620.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "carcass",
+      "center": [
+        591.0,
+        280.0,
+        410.0
+      ],
+      "label": "BANK \u00b7 DB1 \u00b7 Side R",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        18.0,
+        560.0,
+        620.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "carcass",
+      "center": [
+        300.0,
+        277.0,
+        109.0
+      ],
+      "label": "BANK \u00b7 DB1 \u00b7 Bottom",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        564.0,
+        554.0,
+        18.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "carcass",
+      "center": [
+        300.0,
+        40.0,
+        711.0
+      ],
+      "label": "BANK \u00b7 DB1 \u00b7 Stretcher front",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        564.0,
+        80.0,
+        18.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "carcass",
+      "center": [
+        300.0,
+        514.0,
+        711.0
+      ],
+      "label": "BANK \u00b7 DB1 \u00b7 Stretcher back",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        564.0,
+        80.0,
+        18.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "back",
+      "center": [
+        300.0,
+        557.0,
+        410.0
+      ],
+      "label": "BANK \u00b7 DB1 \u00b7 Back",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        564.0,
+        6.0,
+        602.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "shelf",
+      "center": [
+        300.0,
+        273.0,
+        410.0
+      ],
+      "label": "BANK \u00b7 DB1 \u00b7 Shelf 1",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        560.0,
+        534.0,
+        18.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "toe",
+      "center": [
+        300.0,
+        59.0,
+        50.0
+      ],
+      "label": "BANK \u00b7 DB1 \u00b7 Toe kick",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        600,
+        18.0,
+        100.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "front",
+      "center": [
+        300.0,
+        -9.0,
+        627.0
+      ],
+      "label": "BANK \u00b7 DB1 \u00b7 Drawer front 1",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        594.0,
+        18.0,
+        180
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "drawer_box",
+      "center": [
+        18.7,
+        272.5,
+        627.0
+      ],
+      "label": "BANK \u00b7 DB1 \u00b7 Drawer 1 box side L",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        12.0,
+        529.0,
+        140.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "drawer_box",
+      "center": [
+        581.3,
+        272.5,
+        627.0
+      ],
+      "label": "BANK \u00b7 DB1 \u00b7 Drawer 1 box side R",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        12.0,
+        529.0,
+        140.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "drawer_box",
+      "center": [
+        300.0,
+        14.0,
+        627.0
+      ],
+      "label": "BANK \u00b7 DB1 \u00b7 Drawer 1 box front",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        550.6,
+        12.0,
+        140.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "drawer_box",
+      "center": [
+        300.0,
+        531.0,
+        627.0
+      ],
+      "label": "BANK \u00b7 DB1 \u00b7 Drawer 1 box back",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        550.6,
+        12.0,
+        140.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "drawer_box",
+      "center": [
+        300.0,
+        272.5,
+        560.0
+      ],
+      "label": "BANK \u00b7 DB1 \u00b7 Drawer 1 box bottom",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        550.6,
+        505.0,
+        6.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "front",
+      "center": [
+        300.0,
+        -9.0,
+        444.0
+      ],
+      "label": "BANK \u00b7 DB1 \u00b7 Drawer front 2",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        594.0,
+        18.0,
+        180
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "drawer_box",
+      "center": [
+        18.7,
+        272.5,
+        444.0
+      ],
+      "label": "BANK \u00b7 DB1 \u00b7 Drawer 2 box side L",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        12.0,
+        529.0,
+        140.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "drawer_box",
+      "center": [
+        581.3,
+        272.5,
+        444.0
+      ],
+      "label": "BANK \u00b7 DB1 \u00b7 Drawer 2 box side R",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        12.0,
+        529.0,
+        140.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "drawer_box",
+      "center": [
+        300.0,
+        14.0,
+        444.0
+      ],
+      "label": "BANK \u00b7 DB1 \u00b7 Drawer 2 box front",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        550.6,
+        12.0,
+        140.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "drawer_box",
+      "center": [
+        300.0,
+        531.0,
+        444.0
+      ],
+      "label": "BANK \u00b7 DB1 \u00b7 Drawer 2 box back",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        550.6,
+        12.0,
+        140.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "drawer_box",
+      "center": [
+        300.0,
+        272.5,
+        377.0
+      ],
+      "label": "BANK \u00b7 DB1 \u00b7 Drawer 2 box bottom",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        550.6,
+        505.0,
+        6.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "front",
+      "center": [
+        150.75,
+        -9.0,
+        227.0
+      ],
+      "label": "BANK \u00b7 DB1 \u00b7 Door L",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        295.5,
+        18.0,
+        248.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "front",
+      "center": [
+        449.25,
+        -9.0,
+        227.0
+      ],
+      "label": "BANK \u00b7 DB1 \u00b7 Door R",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        295.5,
+        18.0,
+        248.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "carcass",
+      "center": [
+        609.0,
+        280.0,
+        410.0
+      ],
+      "label": "BANK \u00b7 DB2 \u00b7 Side L",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        18.0,
+        560.0,
+        620.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "carcass",
+      "center": [
+        1191.0,
+        280.0,
+        410.0
+      ],
+      "label": "BANK \u00b7 DB2 \u00b7 Side R",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        18.0,
+        560.0,
+        620.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "carcass",
+      "center": [
+        900.0,
+        277.0,
+        109.0
+      ],
+      "label": "BANK \u00b7 DB2 \u00b7 Bottom",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        564.0,
+        554.0,
+        18.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "carcass",
+      "center": [
+        900.0,
+        40.0,
+        711.0
+      ],
+      "label": "BANK \u00b7 DB2 \u00b7 Stretcher front",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        564.0,
+        80.0,
+        18.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "carcass",
+      "center": [
+        900.0,
+        514.0,
+        711.0
+      ],
+      "label": "BANK \u00b7 DB2 \u00b7 Stretcher back",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        564.0,
+        80.0,
+        18.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "back",
+      "center": [
+        900.0,
+        557.0,
+        410.0
+      ],
+      "label": "BANK \u00b7 DB2 \u00b7 Back",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        564.0,
+        6.0,
+        602.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "shelf",
+      "center": [
+        900.0,
+        273.0,
+        410.0
+      ],
+      "label": "BANK \u00b7 DB2 \u00b7 Shelf 1",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        560.0,
+        534.0,
+        18.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "toe",
+      "center": [
+        900.0,
+        59.0,
+        50.0
+      ],
+      "label": "BANK \u00b7 DB2 \u00b7 Toe kick",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        600,
+        18.0,
+        100.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "front",
+      "center": [
+        750.75,
+        -9.0,
+        410.0
+      ],
+      "label": "BANK \u00b7 DB2 \u00b7 Door L",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        295.5,
+        18.0,
+        614.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "front",
+      "center": [
+        1049.25,
+        -9.0,
+        410.0
+      ],
+      "label": "BANK \u00b7 DB2 \u00b7 Door R",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        295.5,
+        18.0,
+        614.0
+      ],
+      "subassembly": "BANK"
+    },
+    {
+      "category": "carcass",
+      "center": [
+        1209.0,
+        280.0,
+        410.0
+      ],
+      "label": "SINK \u00b7 Side L",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        18.0,
+        560.0,
+        620.0
+      ],
+      "subassembly": "SINK"
+    },
+    {
+      "category": "carcass",
+      "center": [
+        2091.0,
+        280.0,
+        410.0
+      ],
+      "label": "SINK \u00b7 Side R",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        18.0,
+        560.0,
+        620.0
+      ],
+      "subassembly": "SINK"
+    },
+    {
+      "category": "carcass",
+      "center": [
+        1650.0,
+        277.0,
+        109.0
+      ],
+      "label": "SINK \u00b7 Bottom",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        864.0,
+        554.0,
+        18.0
+      ],
+      "subassembly": "SINK"
+    },
+    {
+      "category": "carcass",
+      "center": [
+        1650.0,
+        40.0,
+        711.0
+      ],
+      "label": "SINK \u00b7 Stretcher front",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        864.0,
+        80.0,
+        18.0
+      ],
+      "subassembly": "SINK"
+    },
+    {
+      "category": "carcass",
+      "center": [
+        1650.0,
+        514.0,
+        711.0
+      ],
+      "label": "SINK \u00b7 Stretcher back",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        864.0,
+        80.0,
+        18.0
+      ],
+      "subassembly": "SINK"
+    },
+    {
+      "category": "back",
+      "center": [
+        1650.0,
+        557.0,
+        410.0
+      ],
+      "label": "SINK \u00b7 Back",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        864.0,
+        6.0,
+        602.0
+      ],
+      "subassembly": "SINK"
+    },
+    {
+      "category": "shelf",
+      "center": [
+        1650.0,
+        273.0,
+        410.0
+      ],
+      "label": "SINK \u00b7 Shelf 1",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        860.0,
+        534.0,
+        18.0
+      ],
+      "subassembly": "SINK"
+    },
+    {
+      "category": "toe",
+      "center": [
+        1650.0,
+        59.0,
+        50.0
+      ],
+      "label": "SINK \u00b7 Toe kick",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        900,
+        18.0,
+        100.0
+      ],
+      "subassembly": "SINK"
+    },
+    {
+      "category": "front",
+      "center": [
+        1425.75,
+        -9.0,
+        410.0
+      ],
+      "label": "SINK \u00b7 Door L",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        445.5,
+        18.0,
+        614.0
+      ],
+      "subassembly": "SINK"
+    },
+    {
+      "category": "front",
+      "center": [
+        1874.25,
+        -9.0,
+        410.0
+      ],
+      "label": "SINK \u00b7 Door R",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        445.5,
+        18.0,
+        614.0
+      ],
+      "subassembly": "SINK"
+    }
+  ],
+  "purchasing": {
+    "currency": "$",
+    "lines": [
+      {
+        "brand": "",
+        "category": "sheet",
+        "item": "Back & drawer-bottom panel",
+        "line_total": 90.0,
+        "qty": 3,
+        "sku": "",
+        "spec": "thin ply or hardboard 6mm",
+        "supplier": "Sheet goods supplier",
+        "unit": "sheet",
+        "unit_price": 30.0
+      },
+      {
+        "brand": "",
+        "category": "sheet",
+        "item": "Door & drawer-front panel",
+        "line_total": 285.0,
+        "qty": 3,
+        "sku": "",
+        "spec": "veneer ply / MDF 18mm",
+        "supplier": "Sheet goods supplier",
+        "unit": "sheet",
+        "unit_price": 95.0
+      },
+      {
+        "brand": "",
+        "category": "sheet",
+        "item": "Drawer-box sheet",
+        "line_total": 55.0,
+        "qty": 1,
+        "sku": "",
+        "spec": "Baltic birch / solid 12mm",
+        "supplier": "Sheet goods supplier",
+        "unit": "sheet",
+        "unit_price": 55.0
+      },
+      {
+        "brand": "",
+        "category": "sheet",
+        "item": "Carcass sheet",
+        "line_total": 210.0,
+        "qty": 3,
+        "sku": "",
+        "spec": "plywood / MDF / melamine 18mm",
+        "supplier": "Sheet goods supplier",
+        "unit": "sheet",
+        "unit_price": 70.0
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "DB1 \u00b7 Shelf pin",
+        "line_total": 0.0,
+        "qty": 4,
+        "sku": "",
+        "spec": "5mm",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.0
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "DB1 \u00b7 Drawer slide (pair)",
+        "line_total": 0.0,
+        "qty": 2,
+        "sku": "",
+        "spec": "Ball-bearing slide (side) \u2014 500mm",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.0
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "DB1 \u00b7 Drawer pull",
+        "line_total": 0.0,
+        "qty": 2,
+        "sku": "",
+        "spec": "96mm CC",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.0
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "DB1 \u00b7 Concealed hinge",
+        "line_total": 0.0,
+        "qty": 4,
+        "sku": "",
+        "spec": "Concealed hinge 110\u00b0 (overlay)",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.0
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "DB1 \u00b7 Hinge mounting plate",
+        "line_total": 0.0,
+        "qty": 4,
+        "sku": "",
+        "spec": "one per hinge",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.0
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "DB1 \u00b7 Door pull",
+        "line_total": 0.0,
+        "qty": 2,
+        "sku": "",
+        "spec": "96mm CC",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.0
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "DB1 \u00b7 Assembly screw 4\u00d735",
+        "line_total": 0.0,
+        "qty": 4,
+        "sku": "SCR-4x35",
+        "spec": "SCR-4x35",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.0
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "DB1 \u00b7 Back panel screw 4\u00d716",
+        "line_total": 0.0,
+        "qty": 10,
+        "sku": "",
+        "spec": "fix back to rear edges",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.0
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "DB1 \u00b7 Edge banding",
+        "line_total": 0.0,
+        "qty": 1,
+        "sku": "",
+        "spec": "match shown panel faces (see estimate for run)",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.0
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "DB2 \u00b7 Shelf pin",
+        "line_total": 0.0,
+        "qty": 4,
+        "sku": "",
+        "spec": "5mm",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.0
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "DB2 \u00b7 Concealed hinge",
+        "line_total": 0.0,
+        "qty": 4,
+        "sku": "",
+        "spec": "Concealed hinge 110\u00b0 (overlay)",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.0
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "DB2 \u00b7 Hinge mounting plate",
+        "line_total": 0.0,
+        "qty": 4,
+        "sku": "",
+        "spec": "one per hinge",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.0
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "DB2 \u00b7 Door pull",
+        "line_total": 0.0,
+        "qty": 2,
+        "sku": "",
+        "spec": "96mm CC",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.0
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "DB2 \u00b7 Assembly screw 4\u00d735",
+        "line_total": 0.0,
+        "qty": 4,
+        "sku": "SCR-4x35",
+        "spec": "SCR-4x35",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.0
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "DB2 \u00b7 Back panel screw 4\u00d716",
+        "line_total": 0.0,
+        "qty": 10,
+        "sku": "",
+        "spec": "fix back to rear edges",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.0
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "DB2 \u00b7 Edge banding",
+        "line_total": 0.0,
+        "qty": 1,
+        "sku": "",
+        "spec": "match shown panel faces (see estimate for run)",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.0
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "Shelf pin",
+        "line_total": 0.6,
+        "qty": 4,
+        "sku": "",
+        "spec": "5mm",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.15
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "Concealed hinge",
+        "line_total": 16.0,
+        "qty": 4,
+        "sku": "",
+        "spec": "Concealed hinge 110\u00b0 (overlay)",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 4.0
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "Hinge mounting plate",
+        "line_total": 0.0,
+        "qty": 4,
+        "sku": "",
+        "spec": "one per hinge",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.0
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "Door pull",
+        "line_total": 7.0,
+        "qty": 2,
+        "sku": "",
+        "spec": "96mm CC",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 3.5
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "Assembly screw 4\u00d735",
+        "line_total": 0.0,
+        "qty": 4,
+        "sku": "SCR-4x35",
+        "spec": "SCR-4x35",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.0
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "Back panel screw 4\u00d716",
+        "line_total": 0.0,
+        "qty": 10,
+        "sku": "",
+        "spec": "fix back to rear edges",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.0
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "Edge banding",
+        "line_total": 0.0,
+        "qty": 1,
+        "sku": "",
+        "spec": "match shown panel faces (see estimate for run)",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.0
+      },
+      {
+        "brand": "",
+        "category": "banding",
+        "item": "Edge banding \u2014 door/front",
+        "line_total": 19.719,
+        "qty": 13.15,
+        "sku": "",
+        "spec": "pre-glued roll",
+        "supplier": "Edge-banding supplier",
+        "unit": "m",
+        "unit_price": 1.5
+      },
+      {
+        "brand": "",
+        "category": "banding",
+        "item": "Edge banding \u2014 sheet",
+        "line_total": 17.514,
+        "qty": 11.68,
+        "sku": "",
+        "spec": "pre-glued roll",
+        "supplier": "Edge-banding supplier",
+        "unit": "m",
+        "unit_price": 1.5
+      },
+      {
+        "brand": "",
+        "category": "labour",
+        "item": "Shop labour",
+        "line_total": 370.5,
+        "qty": 5.7,
+        "sku": "",
+        "spec": "cut, process, assemble, finish",
+        "supplier": "Shop labour (in-house)",
+        "unit": "h",
+        "unit_price": 65.0
+      }
+    ],
+    "name": "Galley Kitchen"
+  },
+  "valid": true
+}

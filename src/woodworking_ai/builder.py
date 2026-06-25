@@ -26,12 +26,13 @@ import logging
 from typing import Any
 
 from .dsl import CabinetSpec, ComponentGroup
+from .dispatch import is_group
 from .geometry import panel_layout, project_layout, explode_panels
 
 log = logging.getLogger(__name__)
 
 
-def _require_build123d() -> Any:
+def require_build123d() -> Any:
     try:
         import build123d as b3d  # type: ignore
     except ImportError as exc:  # pragma: no cover - environment dependent
@@ -224,7 +225,7 @@ def _machined_solid(base: Any, panel: Any, cuts: dict, cl: Any, b3d: Any) -> Any
 
 def _compound_from_panels(panels, label: str, *, spec: Any = None,
                           joinery_geometry: bool = False) -> Any:
-    b3d = _require_build123d()
+    b3d = require_build123d()
     Box, Pos, Compound, Rot = b3d.Box, b3d.Pos, b3d.Compound, b3d.Rot
     # Only pay for the schedule lookup / booleans when the flag is on.
     cuts: dict = {}
@@ -279,7 +280,7 @@ def build_model(spec: CabinetSpec, *, factor: float = 0.0,
     the solids from the joinery/drilling schedules — the exported STEP is then
     machine honest. Off, the output is byte-for-byte the plain slab model.
     """
-    if isinstance(spec, ComponentGroup):
+    if is_group(spec):
         return build_project(spec, factor=factor, include=include,
                              joinery_geometry=joinery_geometry)
     panels = (explode_panels(spec, factor, include)
@@ -309,3 +310,6 @@ def measure(model: Any) -> dict[str, float]:
         "height": bb.size.Z,
         "part_count": len(model.children),
     }
+
+# Backwards-compatible private alias (promoted to public API).
+_require_build123d = require_build123d

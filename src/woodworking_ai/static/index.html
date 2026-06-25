@@ -358,6 +358,14 @@
 </div>
 <script>
 const $ = id => document.getElementById(id);
+// Escape text that originates from the API / user spec before it goes into any
+// innerHTML string, so an error/note/part name containing markup (e.g.
+// "<img onerror=…>") renders as text, not live HTML (reflected-XSS guard).
+function esc(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
 let last = null, tab = "cutlist";
 
 // --- display units (engine is millimetre-native; this is display only) ------
@@ -592,8 +600,10 @@ function syncForm(s) {
   toggleCorner();
 }
 function showError(msg) {
-  $("stage").innerHTML = '<div class="ph">⚠ ' + msg + '</div>';
-  $("status").innerHTML = '<span class="pill bad">error</span><span>'+msg+'</span>';
+  // msg is API error text (may echo user spec data) — keep it as text, not HTML.
+  $("stage").innerHTML = '<div class="ph">⚠ ' + esc(msg) + '</div>';
+  $("status").innerHTML =
+    '<span class="pill bad">error</span><span>' + esc(msg) + '</span>';
 }
 
 function render(d) {
@@ -618,7 +628,7 @@ function render(d) {
   const bits = [];
   bits.push(`<span class="pill ${d.valid?'ok':'bad'}">${d.valid?'valid':'invalid'}</span>`);
   if (cr) bits.push(`<span class="pill ${cr.ok?'ok':'warn'}">geometry ${cr.ok?'verified':'check'}</span>`);
-  if (e) bits.push(`<strong>${e.currency}${e.total.toFixed(2)}</strong> · ${e.total_sheets} sheets · ${e.labour_hours}h`);
+  if (e) bits.push(`<strong>${esc(e.currency)}${e.total.toFixed(2)}</strong> · ${e.total_sheets} sheets · ${e.labour_hours}h`);
   if (d.warnings && d.warnings.length)
     bits.push(`<span class="pill warn">${d.warnings.length} warning(s)</span>`);
   if (d.attempts) bits.push(`<span class="muted">AI: ${d.attempts} attempt(s)</span>`);
@@ -724,7 +734,7 @@ function paint() {
     const panels = d.cutlist.reduce((n,p)=>n+p.qty,0);
     const hw = (d.hardware||[]).reduce((n,x)=>n+x.qty,0);
     const area = d.cutlist.reduce((a,p)=>a+(p.length/1000)*(p.width/1000)*p.qty,0);
-    h += `<p class="muted">${(d.spec&&d.spec.name)||"Design"}: ${groupSummary(d.spec)}`
+    h += `<p class="muted">${esc((d.spec&&d.spec.name)||"Design")}: ${groupSummary(d.spec)}`
        + `${panels} panels (${d.cutlist.length} unique), ${hw} hardware items, `
        + `~${fmtArea(area)} sheet goods</p>`;
   } else if (tab === "lumber") {
@@ -763,15 +773,15 @@ function paint() {
     h = subs.length ? `<p class="muted" style="font-size:11.5px;margin:0 0 8px">
         Build each sub-assembly, then bring them together in Final assembly.</p>` +
       subs.map(sub => {
-        const sids = (sub.part_ids||[]).length ? ` <span class="muted" style="font-size:11px">[${sub.part_ids.join(", ")}]</span>` : "";
+        const sids = (sub.part_ids||[]).length ? ` <span class="muted" style="font-size:11px">[${esc(sub.part_ids.join(", "))}]</span>` : "";
         const steps = (sub.steps||[]).map(s => {
-          const ids = (s.part_ids||[]).length ? ` <span class="muted">[${s.part_ids.join(", ")}]</span>` : "";
-          const hw = (s.hardware||[]).length ? `<div class="muted" style="font-size:11px">↳ ${s.hardware.join(", ")}</div>` : "";
+          const ids = (s.part_ids||[]).length ? ` <span class="muted">[${esc(s.part_ids.join(", "))}]</span>` : "";
+          const hw = (s.hardware||[]).length ? `<div class="muted" style="font-size:11px">↳ ${esc(s.hardware.join(", "))}</div>` : "";
           return `<div style="margin:5px 0 5px 10px">
-            <b>${s.number}. ${s.title}</b>${ids}<div style="font-size:12.5px">${s.detail}</div>${hw}</div>`;
+            <b>${esc(s.number)}. ${esc(s.title)}</b>${ids}<div style="font-size:12.5px">${esc(s.detail)}</div>${hw}</div>`;
         }).join("");
-        return `<details open style="margin:6px 0"><summary style="font-weight:600;color:var(--wood)">▪ ${sub.name}${sids}</summary>
-          <div class="muted" style="font-size:11.5px;margin:2px 0 4px 10px">${sub.detail}</div>${steps}</details>`;
+        return `<details open style="margin:6px 0"><summary style="font-weight:600;color:var(--wood)">▪ ${esc(sub.name)}${sids}</summary>
+          <div class="muted" style="font-size:11.5px;margin:2px 0 4px 10px">${esc(sub.detail)}</div>${steps}</details>`;
       }).join("") : '<p class="muted">No assembly steps for this design.</p>';
   } else if (tab === "drawings") {
     h = d.drawings_svg
@@ -827,7 +837,7 @@ function lumberPane(d) {
   // --- sheet goods -----------------------------------------------------
   if (sheetGroups.length) {
     h += '<div class="chips">' + sheetGroups.map(g =>
-      `<span class="chip"><b>${g.sheets}×</b> ${g.stock || g.material} ${fmtLen(g.thickness, true)}</span>`
+      `<span class="chip"><b>${g.sheets}×</b> ${esc(g.stock || g.material)} ${fmtLen(g.thickness, true)}</span>`
     ).join("") + "</div>";
     h += "<h4>Sheet goods to buy</h4>";
     h += table(
@@ -852,7 +862,7 @@ function lumberPane(d) {
     for (const g of (e.lumber_groups || [])) costByKey[g.material + "@" + g.thickness] = g.cost;
     const lumberCost = e.lumber || 0;
     h += '<div class="chips" style="margin-top:14px">' + solidGroups.map(g =>
-      `<span class="chip"><b>${g.board_feet.toFixed(1)}</b> bd ft · ${g.stock || g.material} ${fmtLen(g.thickness, true)}</span>`
+      `<span class="chip"><b>${g.board_feet.toFixed(1)}</b> bd ft · ${esc(g.stock || g.material)} ${fmtLen(g.thickness, true)}</span>`
     ).join("") + "</div>";
     h += "<h4>Solid lumber to buy (board feet)</h4>";
     h += table(
@@ -867,7 +877,7 @@ function lumberPane(d) {
       board foot (or the running length for legs &amp; aprons). Cost bills ~15%
       milling/defect waste on net board feet at the shop's per-bd-ft rate. ` +
       `<b>${boardFeet.toFixed(1)} bd ft</b>` +
-      (lumberCost ? ` · <b>${e.currency}${lumberCost.toFixed(2)}</b>` : "") +
+      (lumberCost ? ` · <b>${esc(e.currency)}${lumberCost.toFixed(2)}</b>` : "") +
       ` total.</p>`;
   }
   return h;
@@ -907,7 +917,7 @@ function drillingPane(d) {
   for (const o of dr.ops) {
     const holes = o.hole_list || [];
     if (!holes.length) continue;
-    h += `<details><summary>${o.part} — ${o.operation}
+    h += `<details><summary>${esc(o.part)} — ${esc(o.operation)}
       <span class="count">(${o.holes} hole${o.holes === 1 ? "" : "s"})</span></summary>` +
       table(["#", "Face", "U (mm)", "V (mm)", "Ø (mm)", "Depth (mm)"],
         holes.map((hh, i) => [i + 1, hh.face, hh.u.toFixed(1), hh.v.toFixed(1),
@@ -917,9 +927,9 @@ function drillingPane(d) {
   return h;
 }
 function table(cols, rows) {
-  return "<table><thead><tr>" + cols.map(c=>`<th>${c}</th>`).join("") +
+  return "<table><thead><tr>" + cols.map(c=>`<th>${esc(c)}</th>`).join("") +
     "</tr></thead><tbody>" +
-    rows.map(r=>"<tr>"+r.map(c=>`<td>${c??""}</td>`).join("")+"</tr>").join("") +
+    rows.map(r=>"<tr>"+r.map(c=>`<td>${esc(c)}</td>`).join("")+"</tr>").join("") +
     "</tbody></table>";
 }
 $("tabs").querySelectorAll("button").forEach(b => b.onclick = () => {
@@ -959,9 +969,9 @@ const SHEET_FIELDS = [
 const clone = o => JSON.parse(JSON.stringify(o));
 
 function priceRow(sec, key, label, step, val) {
-  return `<div class="price-row"><span>${label}</span>` +
-    `<input class="price-input" data-sec="${sec}" data-key="${key}" type="number" ` +
-    `step="${step}" min="0" value="${val}"></div>`;
+  return `<div class="price-row"><span>${esc(label)}</span>` +
+    `<input class="price-input" data-sec="${esc(sec)}" data-key="${esc(key)}" type="number" ` +
+    `step="${esc(step)}" min="0" value="${esc(val)}"></div>`;
 }
 // Overlay a saved override onto the server defaults (deep for the price maps).
 function mergePricing(def, saved) {
@@ -1113,7 +1123,7 @@ async function refreshSaved() {
   try {
     savedCache = await store.list();
     $("savedList").innerHTML = '<option value="">— none —</option>' +
-      savedCache.map(d => `<option value="${d._id}">${d.name}</option>`).join("");
+      savedCache.map(d => `<option value="${esc(d._id)}">${esc(d.name)}</option>`).join("");
     $("storeNote").textContent = `${savedCache.length} saved · stored in ${store.backend}` +
       (CONVEX_URL ? "" : " — run convex/ for cloud sync");
   } catch (e) { $("storeNote").textContent = "library error: " + e.message; }
@@ -1147,7 +1157,7 @@ function refreshRevisions(name) {
   name = name || currentDesignName();
   const revs = allRevisions()[name] || [];
   $("revList").innerHTML = '<option value="">— none —</option>' +
-    revs.map((r, i) => `<option value="${i}">${r.at}</option>`).join("");
+    revs.map((r, i) => `<option value="${i}">${esc(r.at)}</option>`).join("");
   $("revNote").textContent = revs.length
     ? `${revs.length} revision(s) of "${name}"` : "";
 }
@@ -1166,9 +1176,9 @@ $("revDiffBtn").onclick = async () => {
   try {
     const d = await post("/api/diff", {from: r.spec, to: last.spec});
     $("revNote").innerHTML = d.changes.length
-      ? "<b>" + d.summary + "</b><ul style='margin:4px 0 0;padding-left:16px'>" +
+      ? "<b>" + esc(d.summary) + "</b><ul style='margin:4px 0 0;padding-left:16px'>" +
         d.changes.slice(0, 12).map(c =>
-          `<li>${c.path}: ${JSON.stringify(c.from)} → ${JSON.stringify(c.to)}</li>`).join("") + "</ul>"
+          `<li>${esc(c.path)}: ${esc(JSON.stringify(c.from))} → ${esc(JSON.stringify(c.to))}</li>`).join("") + "</ul>"
       : "No changes from the selected revision.";
   } catch (e) { $("revNote").textContent = e.message; }
 };
@@ -1233,7 +1243,7 @@ $("planWallBtn").onclick = async () => {
     const notes = ((r.scribe && r.scribe.notes) || []).concat(
       (r.issues || []).map(i => i[2]));
     if (notes.length) h += "<ul style='margin:4px 0 0;padding-left:16px'>" +
-      notes.map(n => `<li>${n}</li>`).join("") + "</ul>";
+      notes.map(n => `<li>${esc(n)}</li>`).join("") + "</ul>";
     $("wallPlan").innerHTML = h;
   } catch (e) { $("wallPlan").textContent = e.message; }
 };

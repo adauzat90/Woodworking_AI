@@ -1,0 +1,2140 @@
+{
+  "cutlist": {
+    "hardware": [
+      {
+        "brand": "",
+        "category": "hardware",
+        "name": "Shelf pin",
+        "notes": "5mm",
+        "qty": 16,
+        "sku": ""
+      },
+      {
+        "brand": "",
+        "category": "fastener",
+        "name": "Assembly screw 4\u00d735",
+        "notes": "edge fixing + glue",
+        "qty": 4,
+        "sku": "SCR-4x35"
+      },
+      {
+        "brand": "",
+        "category": "fastener",
+        "name": "Back panel screw 4\u00d716",
+        "notes": "fix back to rear edges",
+        "qty": 10,
+        "sku": ""
+      },
+      {
+        "brand": "",
+        "category": "hardware",
+        "name": "Edge banding",
+        "notes": "match shown panel faces (see estimate for run)",
+        "qty": 1,
+        "sku": ""
+      }
+    ],
+    "parts": [
+      {
+        "banded_edges": "L",
+        "form": "",
+        "grain": "length",
+        "id": "A1",
+        "length": 1720,
+        "material": "sheet",
+        "name": "Side",
+        "notes": "full-height gable",
+        "openings": [],
+        "qty": 2,
+        "species": "",
+        "thickness": 18.0,
+        "width": 300
+      },
+      {
+        "banded_edges": "L",
+        "form": "",
+        "grain": "none",
+        "id": "A2",
+        "length": 764.0,
+        "material": "sheet",
+        "name": "Bottom",
+        "notes": "between sides",
+        "openings": [],
+        "qty": 1,
+        "species": "",
+        "thickness": 18.0,
+        "width": 294.0
+      },
+      {
+        "banded_edges": "L",
+        "form": "",
+        "grain": "none",
+        "id": "A3",
+        "length": 764.0,
+        "material": "sheet",
+        "name": "Top",
+        "notes": "enclosed top",
+        "openings": [],
+        "qty": 1,
+        "species": "",
+        "thickness": 18.0,
+        "width": 294.0
+      },
+      {
+        "banded_edges": "",
+        "form": "",
+        "grain": "none",
+        "id": "B1",
+        "length": 1702.0,
+        "material": "back panel",
+        "name": "Back",
+        "notes": "rabbeted back",
+        "openings": [],
+        "qty": 1,
+        "species": "",
+        "thickness": 6.0,
+        "width": 764.0
+      },
+      {
+        "banded_edges": "L",
+        "form": "",
+        "grain": "none",
+        "id": "C1",
+        "length": 760.0,
+        "material": "sheet",
+        "name": "Adjustable shelf",
+        "notes": "on shelf pins",
+        "openings": [],
+        "qty": 4,
+        "species": "",
+        "thickness": 18.0,
+        "width": 274.0
+      },
+      {
+        "banded_edges": "",
+        "form": "",
+        "grain": "none",
+        "id": "A4",
+        "length": 800,
+        "material": "sheet",
+        "name": "Toe kick",
+        "notes": "set back 40mm",
+        "openings": [],
+        "qty": 1,
+        "species": "",
+        "thickness": 18.0,
+        "width": 80
+      }
+    ],
+    "spec_name": "Bookcase"
+  },
+  "drilling": {
+    "ops": [
+      {
+        "holes": [
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 64.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 96.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 128.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 160.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 192.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 224.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 256.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 288.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 320.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 352.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 384.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 416.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 448.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 480.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 512.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 544.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 576.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 608.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 640.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 672.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 704.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 736.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 768.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 800.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 832.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 864.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 896.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 928.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 960.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 992.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1024.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1056.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1088.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1120.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1152.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1184.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1216.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1248.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1280.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1312.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1344.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1376.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1408.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1440.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1472.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1504.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1536.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1568.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1600.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1632.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 64.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 96.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 128.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 160.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 192.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 224.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 256.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 288.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 320.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 352.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 384.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 416.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 448.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 480.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 512.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 544.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 576.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 608.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 640.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 672.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 704.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 736.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 768.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 800.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 832.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 864.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 896.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 928.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 960.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 992.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1024.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1056.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1088.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1120.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1152.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1184.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1216.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1248.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1280.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1312.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1344.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1376.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1408.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1440.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1472.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1504.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1536.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1568.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1600.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1632.0
+          }
+        ],
+        "note": "2 rows @ 32mm pitch",
+        "operation": "shelf-pin holes (32mm)",
+        "part": "Side L",
+        "part_id": "A1"
+      },
+      {
+        "holes": [
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 64.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 96.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 128.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 160.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 192.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 224.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 256.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 288.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 320.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 352.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 384.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 416.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 448.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 480.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 512.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 544.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 576.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 608.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 640.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 672.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 704.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 736.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 768.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 800.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 832.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 864.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 896.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 928.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 960.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 992.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1024.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1056.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1088.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1120.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1152.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1184.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1216.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1248.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1280.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1312.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1344.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1376.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1408.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1440.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1472.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1504.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1536.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1568.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1600.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "front row",
+            "note": "",
+            "u": 37.0,
+            "v": 1632.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 64.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 96.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 128.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 160.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 192.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 224.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 256.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 288.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 320.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 352.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 384.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 416.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 448.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 480.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 512.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 544.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 576.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 608.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 640.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 672.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 704.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 736.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 768.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 800.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 832.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 864.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 896.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 928.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 960.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 992.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1024.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1056.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1088.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1120.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1152.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1184.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1216.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1248.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1280.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1312.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1344.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1376.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1408.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1440.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1472.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1504.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1536.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1568.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1600.0
+          },
+          {
+            "depth": 12.0,
+            "dia": 5.0,
+            "face": "back row",
+            "note": "",
+            "u": 263.0,
+            "v": 1632.0
+          }
+        ],
+        "note": "2 rows @ 32mm pitch",
+        "operation": "shelf-pin holes (32mm)",
+        "part": "Side R",
+        "part_id": "A1"
+      }
+    ],
+    "spec_name": "Bookcase"
+  },
+  "dxf": "0\nSECTION\n2\nTABLES\n0\nTABLE\n2\nLAYER\n70\n8\n0\nLAYER\n2\nPANEL\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nSHEET\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nLABEL\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nWARN\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nBORE\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nDADO\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nRABBET\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nCUTOUT\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nENDTAB\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n0\nLINE\n8\nSHEET\n10\n0.00\n20\n0.00\n30\n0.0\n11\n2440.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n2440.00\n20\n0.00\n30\n0.0\n11\n2440.00\n21\n1220.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n2440.00\n20\n1220.00\n30\n0.0\n11\n0.00\n21\n1220.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n0.00\n20\n1220.00\n30\n0.0\n11\n0.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nSHEET\n10\n5.00\n20\n1250.00\n30\n0.0\n40\n40.0\n1\nSheet 1\n0\nLINE\n8\nPANEL\n10\n0.00\n20\n0.00\n30\n0.0\n11\n1702.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1702.00\n20\n0.00\n30\n0.0\n11\n1702.00\n21\n764.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1702.00\n20\n764.00\n30\n0.0\n11\n0.00\n21\n764.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n0.00\n20\n764.00\n30\n0.0\n11\n0.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n8.00\n20\n374.00\n30\n0.0\n40\n16.0\n1\nB1 Back 1702x764\n0\nLINE\n8\nPANEL\n10\n0.00\n20\n767.00\n30\n0.0\n11\n1720.00\n21\n767.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1720.00\n20\n767.00\n30\n0.0\n11\n1720.00\n21\n1067.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1720.00\n20\n1067.00\n30\n0.0\n11\n0.00\n21\n1067.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n0.00\n20\n1067.00\n30\n0.0\n11\n0.00\n21\n767.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n8.00\n20\n909.00\n30\n0.0\n40\n16.0\n1\nA1 Side 1 1720x300\n0\nCIRCLE\n8\nBORE\n10\n64.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n67.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n96.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n99.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n128.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n131.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n160.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n163.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n192.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n195.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n224.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n227.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n256.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n259.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n288.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n291.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n320.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n323.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n352.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n355.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n384.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n387.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n416.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n419.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n448.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n451.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n480.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n483.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n512.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n515.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n544.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n547.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n576.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n579.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n608.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n611.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n640.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n643.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n672.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n675.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n704.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n707.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n736.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n739.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n768.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n771.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n800.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n803.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n832.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n835.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n864.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n867.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n896.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n899.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n928.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n931.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n960.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n963.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n992.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n995.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1024.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1027.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1056.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1059.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1088.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1091.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1120.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1123.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1152.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1155.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1184.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1187.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1216.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1219.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1248.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1251.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1280.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1283.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1312.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1315.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1344.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1347.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1376.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1379.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1408.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1411.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1440.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1443.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1472.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1475.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1504.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1507.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1536.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1539.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1568.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1571.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1600.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1603.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1632.00\n20\n804.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1635.50\n20\n800.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n64.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n67.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n96.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n99.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n128.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n131.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n160.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n163.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n192.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n195.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n224.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n227.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n256.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n259.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n288.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n291.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n320.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n323.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n352.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n355.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n384.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n387.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n416.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n419.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n448.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n451.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n480.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n483.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n512.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n515.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n544.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n547.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n576.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n579.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n608.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n611.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n640.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n643.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n672.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n675.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n704.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n707.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n736.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n739.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n768.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n771.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n800.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n803.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n832.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n835.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n864.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n867.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n896.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n899.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n928.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n931.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n960.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n963.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n992.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n995.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1024.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1027.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1056.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1059.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1088.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1091.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1120.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1123.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1152.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1155.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1184.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1187.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1216.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1219.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1248.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1251.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1280.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1283.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1312.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1315.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1344.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1347.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1376.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1379.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1408.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1411.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1440.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1443.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1472.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1475.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1504.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1507.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1536.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1539.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1568.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1571.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1600.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1603.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n1632.00\n20\n1030.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n1635.50\n20\n1026.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nLINE\n8\nDADO\n10\n12.00\n20\n767.00\n30\n0.0\n11\n30.00\n21\n767.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n30.00\n20\n767.00\n30\n0.0\n11\n30.00\n21\n1067.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n30.00\n20\n1067.00\n30\n0.0\n11\n12.00\n21\n1067.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n12.00\n20\n1067.00\n30\n0.0\n11\n12.00\n21\n767.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n1690.00\n20\n767.00\n30\n0.0\n11\n1708.00\n21\n767.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n1708.00\n20\n767.00\n30\n0.0\n11\n1708.00\n21\n1067.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n1708.00\n20\n1067.00\n30\n0.0\n11\n1690.00\n21\n1067.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n1690.00\n20\n1067.00\n30\n0.0\n11\n1690.00\n21\n767.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n0.00\n20\n1049.00\n30\n0.0\n11\n1720.00\n21\n1049.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n1720.00\n20\n1049.00\n30\n0.0\n11\n1720.00\n21\n1055.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n1720.00\n20\n1055.00\n30\n0.0\n11\n0.00\n21\n1055.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n0.00\n20\n1055.00\n30\n0.0\n11\n0.00\n21\n1049.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n2640.00\n20\n0.00\n30\n0.0\n11\n5080.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n5080.00\n20\n0.00\n30\n0.0\n11\n5080.00\n21\n1220.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n5080.00\n20\n1220.00\n30\n0.0\n11\n2640.00\n21\n1220.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n2640.00\n20\n1220.00\n30\n0.0\n11\n2640.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nSHEET\n10\n2645.00\n20\n1250.00\n30\n0.0\n40\n40.0\n1\nSheet 2\n0\nLINE\n8\nPANEL\n10\n2640.00\n20\n0.00\n30\n0.0\n11\n4360.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n4360.00\n20\n0.00\n30\n0.0\n11\n4360.00\n21\n300.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n4360.00\n20\n300.00\n30\n0.0\n11\n2640.00\n21\n300.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n2640.00\n20\n300.00\n30\n0.0\n11\n2640.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n2648.00\n20\n142.00\n30\n0.0\n40\n16.0\n1\nA1 Side 2 1720x300\n0\nCIRCLE\n8\nBORE\n10\n2704.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2707.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2736.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2739.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2768.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2771.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2800.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2803.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2832.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2835.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2864.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2867.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2896.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2899.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2928.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2931.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2960.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2963.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2992.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2995.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3024.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3027.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3056.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3059.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3088.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3091.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3120.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3123.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3152.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3155.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3184.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3187.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3216.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3219.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3248.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3251.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3280.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3283.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3312.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3315.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3344.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3347.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3376.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3379.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3408.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3411.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3440.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3443.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3472.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3475.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3504.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3507.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3536.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3539.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3568.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3571.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3600.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3603.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3632.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3635.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3664.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3667.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3696.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3699.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3728.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3731.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3760.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3763.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3792.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3795.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3824.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3827.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3856.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3859.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3888.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3891.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3920.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3923.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3952.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3955.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3984.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3987.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4016.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4019.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4048.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4051.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4080.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4083.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4112.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4115.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4144.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4147.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4176.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4179.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4208.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4211.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4240.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4243.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4272.00\n20\n37.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4275.50\n20\n33.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2704.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2707.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2736.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2739.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2768.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2771.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2800.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2803.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2832.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2835.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2864.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2867.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2896.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2899.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2928.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2931.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2960.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2963.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n2992.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n2995.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3024.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3027.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3056.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3059.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3088.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3091.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3120.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3123.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3152.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3155.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3184.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3187.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3216.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3219.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3248.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3251.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3280.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3283.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3312.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3315.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3344.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3347.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3376.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3379.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3408.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3411.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3440.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3443.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3472.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3475.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3504.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3507.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3536.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3539.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3568.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3571.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3600.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3603.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3632.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3635.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3664.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3667.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3696.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3699.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3728.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3731.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3760.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3763.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3792.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3795.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3824.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3827.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3856.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3859.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3888.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3891.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3920.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3923.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3952.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3955.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n3984.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n3987.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4016.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4019.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4048.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4051.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4080.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4083.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4112.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4115.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4144.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4147.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4176.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4179.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4208.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4211.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4240.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4243.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nCIRCLE\n8\nBORE\n10\n4272.00\n20\n263.00\n30\n0.0\n40\n2.50\n0\nTEXT\n8\nBORE\n10\n4275.50\n20\n259.00\n30\n0.0\n40\n7.0\n1\n\u23005x12\n0\nLINE\n8\nDADO\n10\n2652.00\n20\n0.00\n30\n0.0\n11\n2670.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n2670.00\n20\n0.00\n30\n0.0\n11\n2670.00\n21\n300.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n2670.00\n20\n300.00\n30\n0.0\n11\n2652.00\n21\n300.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n2652.00\n20\n300.00\n30\n0.0\n11\n2652.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n4330.00\n20\n0.00\n30\n0.0\n11\n4348.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n4348.00\n20\n0.00\n30\n0.0\n11\n4348.00\n21\n300.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n4348.00\n20\n300.00\n30\n0.0\n11\n4330.00\n21\n300.00\n31\n0.0\n0\nLINE\n8\nDADO\n10\n4330.00\n20\n300.00\n30\n0.0\n11\n4330.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n2640.00\n20\n282.00\n30\n0.0\n11\n4360.00\n21\n282.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n4360.00\n20\n282.00\n30\n0.0\n11\n4360.00\n21\n288.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n4360.00\n20\n288.00\n30\n0.0\n11\n2640.00\n21\n288.00\n31\n0.0\n0\nLINE\n8\nRABBET\n10\n2640.00\n20\n288.00\n30\n0.0\n11\n2640.00\n21\n282.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n2640.00\n20\n303.00\n30\n0.0\n11\n3404.00\n21\n303.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n3404.00\n20\n303.00\n30\n0.0\n11\n3404.00\n21\n597.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n3404.00\n20\n597.00\n30\n0.0\n11\n2640.00\n21\n597.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n2640.00\n20\n597.00\n30\n0.0\n11\n2640.00\n21\n303.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n2648.00\n20\n442.00\n30\n0.0\n40\n16.0\n1\nA2 Bottom 764x294\n0\nLINE\n8\nPANEL\n10\n3407.00\n20\n303.00\n30\n0.0\n11\n4171.00\n21\n303.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n4171.00\n20\n303.00\n30\n0.0\n11\n4171.00\n21\n597.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n4171.00\n20\n597.00\n30\n0.0\n11\n3407.00\n21\n597.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n3407.00\n20\n597.00\n30\n0.0\n11\n3407.00\n21\n303.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n3415.00\n20\n442.00\n30\n0.0\n40\n16.0\n1\nA3 Top 764x294\n0\nLINE\n8\nPANEL\n10\n4174.00\n20\n303.00\n30\n0.0\n11\n4934.00\n21\n303.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n4934.00\n20\n303.00\n30\n0.0\n11\n4934.00\n21\n577.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n4934.00\n20\n577.00\n30\n0.0\n11\n4174.00\n21\n577.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n4174.00\n20\n577.00\n30\n0.0\n11\n4174.00\n21\n303.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n4182.00\n20\n432.00\n30\n0.0\n40\n16.0\n1\nC1 Adjustable shelf 1 760x274\n0\nLINE\n8\nPANEL\n10\n2640.00\n20\n600.00\n30\n0.0\n11\n3400.00\n21\n600.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n3400.00\n20\n600.00\n30\n0.0\n11\n3400.00\n21\n874.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n3400.00\n20\n874.00\n30\n0.0\n11\n2640.00\n21\n874.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n2640.00\n20\n874.00\n30\n0.0\n11\n2640.00\n21\n600.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n2648.00\n20\n729.00\n30\n0.0\n40\n16.0\n1\nC1 Adjustable shelf 2 760x274\n0\nLINE\n8\nPANEL\n10\n3403.00\n20\n600.00\n30\n0.0\n11\n4163.00\n21\n600.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n4163.00\n20\n600.00\n30\n0.0\n11\n4163.00\n21\n874.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n4163.00\n20\n874.00\n30\n0.0\n11\n3403.00\n21\n874.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n3403.00\n20\n874.00\n30\n0.0\n11\n3403.00\n21\n600.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n3411.00\n20\n729.00\n30\n0.0\n40\n16.0\n1\nC1 Adjustable shelf 3 760x274\n0\nLINE\n8\nPANEL\n10\n4166.00\n20\n600.00\n30\n0.0\n11\n4926.00\n21\n600.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n4926.00\n20\n600.00\n30\n0.0\n11\n4926.00\n21\n874.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n4926.00\n20\n874.00\n30\n0.0\n11\n4166.00\n21\n874.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n4166.00\n20\n874.00\n30\n0.0\n11\n4166.00\n21\n600.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n4174.00\n20\n729.00\n30\n0.0\n40\n16.0\n1\nC1 Adjustable shelf 4 760x274\n0\nLINE\n8\nPANEL\n10\n2640.00\n20\n877.00\n30\n0.0\n11\n3440.00\n21\n877.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n3440.00\n20\n877.00\n30\n0.0\n11\n3440.00\n21\n957.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n3440.00\n20\n957.00\n30\n0.0\n11\n2640.00\n21\n957.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n2640.00\n20\n957.00\n30\n0.0\n11\n2640.00\n21\n877.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n2648.00\n20\n909.00\n30\n0.0\n40\n16.0\n1\nA4 Toe kick 800x80\n0\nENDSEC\n0\nEOF\n",
+  "estimate": {
+    "_rate": 65.0,
+    "banding_groups": [
+      {
+        "metres": 8.008,
+        "stock": "sheet"
+      }
+    ],
+    "currency": "$",
+    "edge_banding_cost": 12.012,
+    "edge_banding_m": 8.008,
+    "finish_cost": 0.0,
+    "finish_m2": 0.0,
+    "groups": [
+      {
+        "form": "",
+        "material": "back panel",
+        "oversize": 0,
+        "part_count": 1,
+        "sheets": 1,
+        "species": "",
+        "thickness": 6.0,
+        "utilization": 0.4368
+      },
+      {
+        "form": "",
+        "material": "sheet",
+        "oversize": 0,
+        "part_count": 9,
+        "sheets": 2,
+        "species": "",
+        "thickness": 18.0,
+        "utilization": 0.3995
+      }
+    ],
+    "hardware_cost": 2.4,
+    "labour_cost": 65.0,
+    "labour_hours": 1.0,
+    "lumber_cost": 0.0,
+    "lumber_groups": [],
+    "material_cost": 170.0,
+    "spec_name": "Bookcase"
+  },
+  "issues": [
+    "info:front face 800\u00d71720mm reads as 2.15:1; the golden ratio (1.62:1) is more balanced \u2014 e.g. shorten the long side to 1063mm or extend the short side to 1294mm",
+    "warning:toe space shallower than the ~50mm (2in) KCMA minimum depth"
+  ],
+  "joinery": {
+    "ops": [
+      {
+        "depth": 9.0,
+        "note": "cut to the mating panel thickness for a snug fit",
+        "operation": "joint for bottom",
+        "part": "Side L",
+        "part_id": "A1",
+        "reference": "near the bottom edge",
+        "tool": "dado stack / straight bit",
+        "width": 18.0
+      },
+      {
+        "depth": 9.0,
+        "note": "cut to the mating panel thickness for a snug fit",
+        "operation": "joint for top",
+        "part": "Side L",
+        "part_id": "A1",
+        "reference": "at the top edge",
+        "tool": "dado stack / straight bit",
+        "width": 18.0
+      },
+      {
+        "depth": 9.0,
+        "note": "cut to the mating panel thickness for a snug fit",
+        "operation": "joint for bottom",
+        "part": "Side R",
+        "part_id": "A1",
+        "reference": "near the bottom edge",
+        "tool": "dado stack / straight bit",
+        "width": 18.0
+      },
+      {
+        "depth": 9.0,
+        "note": "cut to the mating panel thickness for a snug fit",
+        "operation": "joint for top",
+        "part": "Side R",
+        "part_id": "A1",
+        "reference": "at the top edge",
+        "tool": "dado stack / straight bit",
+        "width": 18.0
+      },
+      {
+        "depth": 6.0,
+        "note": "back sits flush in the rabbet",
+        "operation": "rabbet for back",
+        "part": "Side / top / bottom",
+        "part_id": "A1",
+        "reference": "rear edge",
+        "tool": "rabbet bit / dado",
+        "width": 6.0
+      }
+    ],
+    "spec_name": "Bookcase"
+  },
+  "panels": [
+    {
+      "category": "carcass",
+      "center": [
+        -391.0,
+        150.0,
+        940.0
+      ],
+      "label": "Side L",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        18.0,
+        300,
+        1720
+      ],
+      "subassembly": "Carcass"
+    },
+    {
+      "category": "carcass",
+      "center": [
+        391.0,
+        150.0,
+        940.0
+      ],
+      "label": "Side R",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        18.0,
+        300,
+        1720
+      ],
+      "subassembly": "Carcass"
+    },
+    {
+      "category": "carcass",
+      "center": [
+        0,
+        147.0,
+        89.0
+      ],
+      "label": "Bottom",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        764.0,
+        294.0,
+        18.0
+      ],
+      "subassembly": "Carcass"
+    },
+    {
+      "category": "carcass",
+      "center": [
+        0,
+        147.0,
+        1791.0
+      ],
+      "label": "Top",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        764.0,
+        294.0,
+        18.0
+      ],
+      "subassembly": "Carcass"
+    },
+    {
+      "category": "back",
+      "center": [
+        0,
+        297.0,
+        940.0
+      ],
+      "label": "Back",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        764.0,
+        6.0,
+        1702.0
+      ],
+      "subassembly": "Carcass"
+    },
+    {
+      "category": "shelf",
+      "center": [
+        0,
+        143.0,
+        434.8
+      ],
+      "label": "Shelf 1",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        760.0,
+        274.0,
+        18.0
+      ],
+      "subassembly": "Carcass"
+    },
+    {
+      "category": "shelf",
+      "center": [
+        0,
+        143.0,
+        771.6
+      ],
+      "label": "Shelf 2",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        760.0,
+        274.0,
+        18.0
+      ],
+      "subassembly": "Carcass"
+    },
+    {
+      "category": "shelf",
+      "center": [
+        0,
+        143.0,
+        1108.4
+      ],
+      "label": "Shelf 3",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        760.0,
+        274.0,
+        18.0
+      ],
+      "subassembly": "Carcass"
+    },
+    {
+      "category": "shelf",
+      "center": [
+        0,
+        143.0,
+        1445.2
+      ],
+      "label": "Shelf 4",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        760.0,
+        274.0,
+        18.0
+      ],
+      "subassembly": "Carcass"
+    },
+    {
+      "category": "toe",
+      "center": [
+        0,
+        49.0,
+        40.0
+      ],
+      "label": "Toe kick",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        800,
+        18.0,
+        80
+      ],
+      "subassembly": "Carcass"
+    }
+  ],
+  "purchasing": {
+    "currency": "$",
+    "lines": [
+      {
+        "brand": "",
+        "category": "sheet",
+        "item": "Back & drawer-bottom panel",
+        "line_total": 30.0,
+        "qty": 1,
+        "sku": "",
+        "spec": "thin ply or hardboard 6mm",
+        "supplier": "Sheet goods supplier",
+        "unit": "sheet",
+        "unit_price": 30.0
+      },
+      {
+        "brand": "",
+        "category": "sheet",
+        "item": "Carcass sheet",
+        "line_total": 140.0,
+        "qty": 2,
+        "sku": "",
+        "spec": "plywood / MDF / melamine 18mm",
+        "supplier": "Sheet goods supplier",
+        "unit": "sheet",
+        "unit_price": 70.0
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "Shelf pin",
+        "line_total": 2.4,
+        "qty": 16,
+        "sku": "",
+        "spec": "5mm",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.15
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "Assembly screw 4\u00d735",
+        "line_total": 0.0,
+        "qty": 4,
+        "sku": "SCR-4x35",
+        "spec": "SCR-4x35",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.0
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "Back panel screw 4\u00d716",
+        "line_total": 0.0,
+        "qty": 10,
+        "sku": "",
+        "spec": "fix back to rear edges",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.0
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "Edge banding",
+        "line_total": 0.0,
+        "qty": 1,
+        "sku": "",
+        "spec": "match shown panel faces (see estimate for run)",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.0
+      },
+      {
+        "brand": "",
+        "category": "banding",
+        "item": "Edge banding \u2014 sheet",
+        "line_total": 12.012,
+        "qty": 8.01,
+        "sku": "",
+        "spec": "pre-glued roll",
+        "supplier": "Edge-banding supplier",
+        "unit": "m",
+        "unit_price": 1.5
+      },
+      {
+        "brand": "",
+        "category": "labour",
+        "item": "Shop labour",
+        "line_total": 65.0,
+        "qty": 1.0,
+        "sku": "",
+        "spec": "cut, process, assemble, finish",
+        "supplier": "Shop labour (in-house)",
+        "unit": "h",
+        "unit_price": 65.0
+      }
+    ],
+    "name": "Bookcase"
+  },
+  "valid": true
+}

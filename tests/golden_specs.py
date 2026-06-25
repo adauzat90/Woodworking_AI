@@ -1,0 +1,74 @@
+"""Representative specs for the golden-output safety net (no CAD/LLM needed).
+
+A spread that exercises every dispatch branch the refactor touches: each cabinet
+type, both constructions, mullion/drawers/false-fronts, a table, a blind corner,
+a flat project, and a nested+reused assembly.
+"""
+
+from woodworking_ai import (
+    CabinetSpec, CabinetType, Construction, ToeKick, Drawer, TableSpec,
+    Component, Assembly, Project, spec_from_dict,
+)
+
+
+def golden_specs() -> dict:
+    drawer_bank = Assembly(name="Drawer Bank", components=[
+        Component(spec=CabinetSpec(name="3-Drawer", width=600,
+                                   drawers=[Drawer(180), Drawer(180)]),
+                  x=0, label="DB1"),
+        Component(spec=CabinetSpec(name="3-Drawer", width=600), x=600, label="DB2"),
+    ])
+    kitchen = Project(name="Galley Kitchen", components=[
+        Component(spec=drawer_bank, x=0, y=0, label="BANK"),
+        Component(spec=CabinetSpec(name="Sink", width=900, doors=2),
+                  x=1200, y=0, label="SINK"),
+    ])
+    reuse = spec_from_dict({
+        "kind": "project", "name": "Wall of Cabinets", "units": "mm",
+        "definitions": {"wall_pair": {
+            "kind": "assembly", "name": "Wall Pair", "components": [
+                {"spec": {"cabinet_type": "wall", "width": 600, "toe_kick": None}, "x": 0},
+                {"spec": {"cabinet_type": "wall", "width": 600, "toe_kick": None}, "x": 600},
+            ]}},
+        "components": [
+            {"ref": "wall_pair", "x": 0, "y": 0, "label": "Upper-L"},
+            {"ref": "wall_pair", "x": 0, "y": 2000, "label": "Upper-R"},
+        ],
+    })
+
+    return {
+        "base_frameless": CabinetSpec(
+            name="Base frameless", cabinet_type=CabinetType.BASE, width=600,
+            height=720, depth=560, shelves=1, doors=2, drawers=[Drawer(140)]),
+        "base_faceframe": CabinetSpec(
+            name="Base face frame", cabinet_type=CabinetType.BASE,
+            construction=Construction.FACE_FRAME, width=600, height=720,
+            depth=560, shelves=1, doors=2, drawers=[Drawer(140)]),
+        "base_mullion": CabinetSpec(
+            name="Base mullion", width=900, height=720, depth=560, doors=2,
+            center_mullion=True, shelves=2),
+        "wall": CabinetSpec(
+            name="Wall", cabinet_type=CabinetType.WALL, width=800, height=720,
+            depth=330, toe_kick=None, shelves=2, doors=2),
+        "tall": CabinetSpec(
+            name="Tall pantry", cabinet_type=CabinetType.TALL, width=600,
+            height=2100, depth=580, toe_kick=ToeKick(100, 50), shelves=5, doors=2),
+        "bookcase": CabinetSpec(
+            name="Bookcase", cabinet_type=CabinetType.BOOKCASE, width=800,
+            height=1800, depth=300, toe_kick=ToeKick(80, 40), shelves=4, doors=0),
+        "dresser": CabinetSpec(
+            name="Dresser", cabinet_type=CabinetType.DRESSER, width=900,
+            height=800, depth=500, toe_kick=ToeKick(80, 40), shelves=0, doors=0,
+            drawers=[Drawer(180), Drawer(180), Drawer(180)]),
+        "corner_blind": CabinetSpec(
+            name="Blind corner", cabinet_type=CabinetType.CORNER_BLIND,
+            width=900, height=720, depth=560, blind_width=300, doors=1, shelves=1),
+        "false_front": CabinetSpec(
+            name="False front", width=600, height=720, depth=560, doors=2,
+            drawers=[Drawer(160), Drawer(160, false_front=True)]),
+        "table": TableSpec(
+            name="Dining table", width=1600, depth=900, height=740, leg=70,
+            apron_height=100),
+        "project_nested": kitchen,
+        "project_reuse": reuse,
+    }

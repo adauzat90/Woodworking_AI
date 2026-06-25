@@ -16,9 +16,14 @@ from .dsl import (
     TableSpec, ComponentGroup, CabinetType, Joinery, ApplianceVoid,
     APPLIANCE_VOID_TOLERANCE,
 )
+from .dispatch import spec_kind, VOID, GROUP, TABLE
 from . import engineering, stock, proportion
 from .hardware import longest_slide_for
 from .geometry import front_plan, footprints_overlap, component_tag
+from .constants import (
+    SLIDE_SIDE_CLEARANCE, SYSTEM_PITCH, HINGE_CUP_DIA, HINGE_CUP_DEPTH,
+    HINGE_CUP_INSET, DRAWER_BOX_DEPTH_GAP,
+)
 
 # ASTM F2057 scope: clothing storage units >= 27in (686mm) tall fall under the
 # CPSC tip-over standard. Toe-kick minimums per ANSI/KCMA A161.1 (2in x 3in).
@@ -26,17 +31,12 @@ F2057_HEIGHT_MM = 686.0
 KCMA_TOE_MIN_HEIGHT = 75.0   # ~3 in
 KCMA_TOE_MIN_SETBACK = 50.0  # ~2 in deep
 
-SIDE_MOUNT_CLEARANCE = 12.7  # ½in nominal per-side gap for side-mount slides
+SIDE_MOUNT_CLEARANCE = SLIDE_SIDE_CLEARANCE  # per-side gap for side-mount slides
 MIN_DRAWER_BOX_WIDTH = 150.0 # below this a box is barely usable
-DRAWER_BOX_DEPTH_GAP = 25.0  # box shallower than the interior (matches cutlist)
 # Depth left unused beyond the largest fitting standard slide before it's worth
 # flagging: a deeper cabinet could take the next 50mm slide size.
 SLIDE_DEPTH_WASTE_MM = 60.0
 
-# 35mm concealed (Euro) hinge cup geometry (matches drilling.py).
-HINGE_CUP_DIA = 35.0
-HINGE_CUP_DEPTH = 12.5
-HINGE_CUP_INSET = 22.5       # cup centre in from the door's hinge edge
 # Cup outer edge reaches INSET + DIA/2 from the hinge edge; the door must be at
 # least this wide to host the bore, plus a little material for strength.
 HINGE_MIN_DOOR_WIDTH = HINGE_CUP_INSET + HINGE_CUP_DIA / 2  # 40mm hard minimum
@@ -45,8 +45,7 @@ HINGE_MIN_DOOR_BACKING = 3.0  # material left behind the cup
 # Drawer-corner joints that properly resist the pull-apart load of opening.
 STRONG_DRAWER_JOINTS = {"dovetail", "box", "rabbet", "locking_rabbet"}
 
-# 32mm System constants (match drilling.py) for the grid feasibility check.
-SYSTEM_PITCH = 32.0
+# 32mm System constants for the grid feasibility check (SYSTEM_PITCH shared).
 PIN_END_MARGIN = 64.0        # first/last system hole in from the panel ends
 ROW_SETBACK = 37.0           # each pin row in from the front / back edge
 MIN_PIN_POSITIONS = 3        # fewer than this is not meaningfully adjustable
@@ -247,7 +246,7 @@ def _validate_project(project: ComponentGroup) -> ValidationResult:
     return ValidationResult(issues)
 
 
-def _joinery_feasibility(spec) -> list[Issue]:
+def joinery_feasibility(spec) -> list[Issue]:
     """A3 analytic joinery-feasibility checks (no CAD).
 
     Derived from the same arithmetic schedules the shop uses
@@ -346,11 +345,12 @@ def _joinery_feasibility(spec) -> list[Issue]:
 
 
 def validate(spec) -> ValidationResult:
-    if isinstance(spec, ApplianceVoid):
+    kind = spec_kind(spec)
+    if kind == VOID:
         return _validate_void(spec)
-    if isinstance(spec, ComponentGroup):
+    if kind == GROUP:
         return _validate_project(spec)
-    if isinstance(spec, TableSpec):
+    if kind == TABLE:
         return _validate_table(spec)
     issues: list[Issue] = []
 
@@ -658,7 +658,7 @@ def validate(spec) -> ValidationResult:
              "intentional")
 
     # --- A3 joinery / machining feasibility (analytic, no CAD) -----------
-    issues.extend(_joinery_feasibility(spec))
+    issues.extend(joinery_feasibility(spec))
 
     # --- accessories: countertop, appliance cutout, filler, molding ------
     if getattr(spec, "accessories", None):
@@ -672,3 +672,6 @@ def validate(spec) -> ValidationResult:
         issues.append(Issue(severity, field_, msg))
 
     return ValidationResult(issues)
+
+# Backwards-compatible private alias (promoted to public API).
+_joinery_feasibility = joinery_feasibility

@@ -15,13 +15,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from .dsl import (CabinetSpec, TableSpec, ComponentGroup, BackStyle,
-                  CabinetType, Joinery, ApplianceVoid)
+                  Joinery)
+from .dispatch import spec_kind, VOID, GROUP, TABLE
 from .cutlist import generate_cutlist
 from .geometry import component_tag
-from .constants import DOOR_PANEL_GROOVE
-
-HOUSED_DEPTH_FRACTION = 0.5     # dado/groove depth as a fraction of stock
-GROOVE_BACK_INSET = 12.0        # a grooved back sits this far in from the rear
+from .constants import (
+    DOOR_PANEL_GROOVE, HOUSED_DEPTH_FRACTION, GROOVE_BACK_INSET,
+)
 
 
 @dataclass
@@ -209,15 +209,13 @@ def _project_joinery(project: ComponentGroup) -> JoinerySchedule:
 
 def joinery_schedule(spec) -> JoinerySchedule:
     """Setup sheet of machining ops for a cabinet, table, or group."""
-    if isinstance(spec, ApplianceVoid):
+    kind = spec_kind(spec)
+    if kind == VOID:
         return JoinerySchedule(spec_name=spec.name)   # a gap has no joinery
-    if isinstance(spec, ComponentGroup):
+    if kind == GROUP:
         return _project_joinery(spec)
     cl = generate_cutlist(spec)
-    if isinstance(spec, TableSpec):
+    if kind == TABLE:
         return JoinerySchedule(spec_name=spec.name, ops=_table_joinery(spec, cl))
-    if spec.cabinet_type == CabinetType.CORNER_DIAGONAL:
-        # The diagonal carcass uses the same housed joints as a box.
-        return JoinerySchedule(spec_name=spec.name,
-                               ops=_cabinet_joinery(spec, cl))
+    # Cabinets (including the diagonal corner) use the same housed box joints.
     return JoinerySchedule(spec_name=spec.name, ops=_cabinet_joinery(spec, cl))

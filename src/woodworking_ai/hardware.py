@@ -22,11 +22,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-# 35 mm Euro hinge cup geometry (shared with drilling.py / validator.py).
-CUP_DIA = 35.0
-CUP_DEPTH = 12.5
-CUP_INSET = 22.5            # cup centre in from the door's hinge edge
-PLATE_SCREW_PITCH = 32.0   # the two plate screws sit on the 32 mm system
+from .constants import (
+    HINGE_CUP_DIA, HINGE_CUP_DEPTH, HINGE_CUP_INSET, SYSTEM_PITCH,
+    SLIDE_SIDE_CLEARANCE,
+)
+
+# 35 mm Euro hinge cup geometry — canonical values live in constants.py.
+CUP_DIA = HINGE_CUP_DIA
+CUP_DEPTH = HINGE_CUP_DEPTH
+CUP_INSET = HINGE_CUP_INSET   # cup centre in from the door's hinge edge
+PLATE_SCREW_PITCH = SYSTEM_PITCH   # the two plate screws sit on the 32 mm system
 PLATE_SCREW_INSET = 37.0   # plate screw row in from the front edge of the side
 
 KNOWN_BRANDS = ("generic", "blum", "hettich", "grass")
@@ -73,7 +78,7 @@ class SlideSpec:
     sku: str
     slide_type: str = "side_mount"  # side_mount | undermount
     length: float = 500.0
-    side_clearance: float = 12.7    # per side (side-mount box width = opening-2*)
+    side_clearance: float = SLIDE_SIDE_CLEARANCE  # per side (box w = opening-2*)
     # Undermount: the box is sized to the opening less this *total* clearance,
     # needs a rear notch for the locking device, and a pair of locking holes.
     box_clearance_total: float = 42.0
@@ -139,12 +144,10 @@ _SLIDES_UNDER = {
                        slide_type="undermount", box_clearance_total=42.0,
                        rear_notch=True, locking_holes=2),
 }
-_PULLS = {
-    "generic": PullSpec("Bar pull 96mm", "generic", "", hole_spacing=96.0),
-    "blum": PullSpec("Bar pull 96mm", "blum", "PULL96", hole_spacing=96.0),
-    "hettich": PullSpec("Bar pull 96mm", "hettich", "PULL96", hole_spacing=96.0),
-    "grass": PullSpec("Bar pull 96mm", "grass", "PULL96", hole_spacing=96.0),
-}
+# Every brand currently stocks the same generic 96mm bar pull, so the part is
+# built per brand rather than kept as four identical catalogue rows. (Add a real
+# per-brand table here once distinct pulls are actually sourced.)
+DEFAULT_PULL_SPACING = 96.0
 
 # Carcass assembly hardware (per joinery family).
 CONFIRMAT = Fastener("Confirmat screw 7×50", "CONF-7x50", "carcass assembly")
@@ -167,7 +170,10 @@ def select_slide(brand: str, slide_type: str = "side_mount",
 
 
 def select_pull(brand: str) -> PullSpec:
-    return _PULLS[normalize_brand(brand)]
+    brand = normalize_brand(brand)
+    sku = "" if brand == "generic" else "PULL96"
+    return PullSpec("Bar pull 96mm", brand, sku,
+                    hole_spacing=DEFAULT_PULL_SPACING)
 
 
 def hinge_count(door_height: float) -> int:

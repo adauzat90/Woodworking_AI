@@ -23,11 +23,15 @@ Two layers:
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+_log = logging.getLogger(__name__)
+
 from ..dsl import CabinetSpec, ComponentGroup, Construction, Joinery
+from ..dispatch import is_group
 from ..geometry import (
     PanelBox, panel_layout, project_layout, footprints_overlap, component_tag,
 )
@@ -155,8 +159,14 @@ def _brep_interferences(model: Any, eps_volume: float = 1.0,
             a, b = children[i], children[j]
             try:
                 vol = (a & b).volume
-            except Exception:
-                vol = 0.0  # disjoint solids can raise instead of empty
+            except Exception as exc:
+                # Disjoint solids legitimately raise instead of returning an
+                # empty intersection — treat as no overlap, but never swallow
+                # the failure silently: a real kernel bug must be observable
+                # rather than masquerading as a clean model.
+                vol = 0.0
+                _log.debug("B-Rep intersection of %r & %r failed: %s",
+                           getattr(a, "label", i), getattr(b, "label", j), exc)
             if vol > eps_volume:
                 hits.append((getattr(a, "label", f"#{i}"),
                              getattr(b, "label", f"#{j}"), vol))
@@ -267,8 +277,8 @@ def _buildability_issues(spec: CabinetSpec, tools=DEFAULT_TOOLS
     # Fold the validator's joinery-feasibility findings (hinge-cup blow-through,
     # housed-joint short grain, slide-vs-pin collision, grooved-back interference)
     # into the Critic's structured findings so they flow into the repair note too.
-    from ..validator import _joinery_feasibility, validate
-    for iss in _joinery_feasibility(spec):
+    from ..validator import joinery_feasibility, validate
+    for iss in joinery_feasibility(spec):
         out.append(CritiqueIssue(iss.severity, "joinery", iss.message))
     # The hinge-cup blow-through is a hard depth-axis error raised in validate();
     # promote it here so a Critic-only review still gates on it.
@@ -342,8 +352,8 @@ def _critique_project(project: ComponentGroup, *, use_cad: bool = False,
     # A2/A3 machine-honest cross-check: no negative remaining-material region.
     if joinery_geometry:
         try:
-            from ..builder import _require_build123d
-            b3d = _require_build123d()
+            from ..builder import require_build123d
+            b3d = require_build123d()
             bad = _negative_material_regions(project, b3d)
             result.report["negative_material_count"] = len(bad)
             for label, slab_vol, mach_vol in bad:
@@ -375,7 +385,7 @@ def critique(spec, *, use_cad: bool = False, brep: bool = False,
     needs build123d; without it the cross-check is skipped with one warning
     rather than raising, so a CAD-free caller is never blocked.
     """
-    if isinstance(spec, ComponentGroup):
+    if is_group(spec):
         return _critique_project(spec, use_cad=use_cad, brep=brep,
                                  joinery_geometry=joinery_geometry, model=model)
     panels = panel_layout(spec)
@@ -500,8 +510,8 @@ def critique(spec, *, use_cad: bool = False, brep: bool = False,
     # when build123d is absent — same degrade-safe contract as the checks above.
     if joinery_geometry:
         try:
-            from ..builder import _require_build123d
-            b3d = _require_build123d()
+            from ..builder import require_build123d
+            b3d = require_build123d()
             bad = _negative_material_regions(spec, b3d)
             result.report["negative_material_count"] = len(bad)
             for label, slab_vol, mach_vol in bad:

@@ -17,16 +17,17 @@ from dataclasses import dataclass
 
 from .dsl import (
     CabinetSpec, TableSpec, ComponentGroup, Component, BackStyle,
-    Construction, CabinetType, ApplianceVoid,
+    Construction, CabinetType,
 )
+from .dispatch import spec_kind, is_group, VOID, GROUP, TABLE
 
 # Construction constants shared with the cut list (neutral module, no cycle).
 from .constants import (
     STRETCHER_WIDTH, SHELF_SIDE_CLEARANCE, SHELF_SETBACK,
     FRAME_WIDTH, FRAME_THICKNESS, MULLION_WIDTH,
-    DOOR_STILE_WIDTH, DOOR_RAIL_WIDTH,
-    SLIDE_SIDE_CLEARANCE, DRAWER_BOX_HEIGHT_DROP, DRAWER_BOX_DEPTH_GAP,
+    DOOR_STILE_WIDTH, DOOR_RAIL_WIDTH, MIN_DRAWER_BOX_WIDTH_3D,
 )
+from .partmath import drawer_box_dims
 
 
 @dataclass
@@ -245,7 +246,7 @@ def local_plan_bounds(spec) -> tuple[float, float, float, float]:
     panels' footprints, so a placed group is overlap-checked by its real outline
     rather than a missing ``width``.
     """
-    if isinstance(spec, ComponentGroup):
+    if is_group(spec):
         xs: list[float] = []
         ys: list[float] = []
         for p in project_layout(spec):
@@ -324,11 +325,12 @@ def project_layout(project: ComponentGroup) -> list[PanelBox]:
 
 def panel_layout(spec) -> list[PanelBox]:
     """Return every panel of *spec* placed in the shared coordinate frame."""
-    if isinstance(spec, ApplianceVoid):
+    kind = spec_kind(spec)
+    if kind == VOID:
         return []                      # a reserved gap builds no carcass
-    if isinstance(spec, ComponentGroup):
+    if kind == GROUP:
         return project_layout(spec)
-    if isinstance(spec, TableSpec):
+    if kind == TABLE:
         return _table_layout(spec)
     if spec.cabinet_type == CabinetType.CORNER_DIAGONAL:
         return _diagonal_layout(spec)
@@ -442,10 +444,15 @@ def panel_layout(spec) -> list[PanelBox]:
 
     return panels
 
-    # --- accessories: countertop, filler, end panel, molding -------------
-    panels.extend(_accessory_panels(spec))
 
-    return panels
+def _digits(s: str, default: int = 0) -> int:
+    """Integer formed from every digit in *s* (``"Drawer 2 box"`` -> 2).
+
+    One definition of the index-from-label idiom that used to be hand-inlined
+    in several places. Returns *default* when *s* has no digits.
+    """
+    d = "".join(c for c in s if c.isdigit())
+    return int(d) if d else default
 
 
 def _unit_sort_key(name: str) -> tuple:
@@ -456,8 +463,7 @@ def _unit_sort_key(name: str) -> tuple:
     if n == "face frame":
         return (1, 0, name)
     if n.startswith("drawer"):
-        digits = "".join(c for c in n if c.isdigit())
-        return (2, int(digits) if digits else 0, name)
+        return (2, _digits(n), name)
     if n.startswith("door"):
         return (3, 0, name)
     if n == "countertop":
@@ -495,12 +501,10 @@ def _explode_offset(p: PanelBox, dims: tuple[float, float, float],
             W * 0.4 * f if u.endswith(" R") else -W * 0.25 * f)
         return (hx, -D * 0.95 * f, 0.0)           # doors swing off the front
     if u.startswith("Drawer"):
-        digits = "".join(c for c in u if c.isdigit())
-        i = int(digits) if digits else 1
+        i = _digits(u, 1)
         return (0.0, -D * (0.45 + 0.4 * i) * f, 0.0)   # drawers pull forward
     if cat == "shelf":
-        digits = "".join(c for c in p.label if c.isdigit())
-        i = int(digits) if digits else 1
+        i = _digits(p.label, 1)
         return (0.0, -D * 0.2 * f, H * 0.18 * i * f)   # shelves lift + forward
     if cat == "toe":
         return (0.0, -D * 0.2 * f, -H * 0.3 * f)
@@ -597,9 +601,9 @@ def _drawer_box_panels(it: "FrontItem", spec: CabinetSpec, plan) -> list[PanelBo
     m = spec.material
     t = m.drawer_box
     unit = f"Drawer {it.index}"
-    box_w = max(plan.opening_w - 2 * SLIDE_SIDE_CLEARANCE, 80.0)
-    box_h = max(it.height - DRAWER_BOX_HEIGHT_DROP, 60.0)
-    box_d = max(spec.interior_depth - DRAWER_BOX_DEPTH_GAP, 100.0)
+    box_w, box_h, box_d = drawer_box_dims(
+        plan.opening_w, it.height, spec.interior_depth,
+        width_floor=MIN_DRAWER_BOX_WIDTH_3D)
     cx = it.x
     cy = box_d / 2 + 8.0          # just behind the drawer front
     cz = it.z                     # aligned with the front's centre height

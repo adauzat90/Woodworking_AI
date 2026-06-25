@@ -6,7 +6,7 @@ No LLM or API key needed. Renders PNGs into ./out if matplotlib is installed.
 """
 
 from woodworking_ai import (
-    CabinetSpec, CabinetType, Construction, Material, ToeKick, Drawer, TableSpec,
+    CabinetSpec, CabinetType, Construction, ToeKick, Drawer, TableSpec,
     validate, generate_cutlist, estimate,
 )
 
