@@ -9,7 +9,9 @@ import math
 
 import pytest
 
-from woodworking_ai import CabinetSpec, Material, ToeKick, Drawer
+from woodworking_ai import (
+    CabinetSpec, Material, ToeKick, Drawer, Component, Project,
+)
 
 
 def spec(**o) -> CabinetSpec:
@@ -96,6 +98,58 @@ def test_flag_off_is_unchanged_slab_geometry():
     assert bv == av
     # And the machined model must differ (sanity: the flag does something).
     cut = build_model(s, joinery_geometry=True)
+    cv = {c.label: round(c.volume, 3) for c in cut.children}
+    assert cv != bv
+
+
+def _project() -> Project:
+    """A two-cabinet run, each component a plain housed-joint carcass."""
+    return Project(name="Run", components=[
+        Component(spec=spec(name="A", shelves=0, doors=0, drawers=[]),
+                  x=0, label="C1"),
+        Component(spec=spec(name="B", width=800, shelves=0, doors=0,
+                            drawers=[]), x=600, label="C2"),
+    ])
+
+
+def test_project_components_are_machined():
+    """A2 gap fix: ``build_project(..., joinery_geometry=True)`` must cut each
+    component's panels with that component's own joinery, resolved through the
+    per-component tag. A tagged side panel's machined volume is strictly less
+    than its slab volume."""
+    pytest.importorskip("build123d")
+    from woodworking_ai.builder import build_model
+
+    proj = _project()
+    off = _by_label(build_model(proj))
+    on = _by_label(build_model(proj, joinery_geometry=True))
+
+    # Every component contributes a tagged side; each one must lose material.
+    cut_any = False
+    for tag in ("C1", "C2"):
+        label = f"{tag} · Side L"
+        assert label in off and label in on, f"missing {label}"
+        if on[label].volume < off[label].volume - 1e-6:
+            cut_any = True
+            # The bottom dado + back rabbet are real removals, not noise.
+            assert on[label].volume > 0
+    assert cut_any, "no project component panel was machined"
+
+
+def test_project_flag_off_is_unchanged_slabs():
+    """Regression: with the flag off a project is byte-for-byte plain slabs."""
+    pytest.importorskip("build123d")
+    from woodworking_ai.builder import build_model, measure
+
+    proj = _project()
+    base = build_model(proj)
+    again = build_model(proj, joinery_geometry=False)
+    assert measure(base) == measure(again)
+    bv = {c.label: round(c.volume, 3) for c in base.children}
+    av = {c.label: round(c.volume, 3) for c in again.children}
+    assert bv == av
+    # And the machined project must actually differ from the slab project.
+    cut = build_model(proj, joinery_geometry=True)
     cv = {c.label: round(c.volume, 3) for c in cut.children}
     assert cv != bv
 
