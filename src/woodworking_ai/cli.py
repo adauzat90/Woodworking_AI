@@ -166,6 +166,10 @@ def _emit(spec, args) -> int:
         from .joinery import joinery_schedule
         print("\n" + joinery_schedule(spec).report_text())
 
+    if args.assembly:
+        from .assembly_steps import assembly_sequence
+        print("\n" + assembly_sequence(spec).report_text())
+
     if args.out:
         out = Path(args.out)
         out.mkdir(parents=True, exist_ok=True)
@@ -226,6 +230,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="print the drilling schedule (32mm system, hinges)")
     common.add_argument("--joinery", action="store_true",
                         help="print the joinery setup sheet (dado/rabbet/etc.)")
+    common.add_argument("--assembly", action="store_true",
+                        help="print the step-by-step assembly sequence")
     common.add_argument("--imperial", action="store_true",
                         help="show cut list and reports in fractional inches "
                              "(engine stays metric; the 32mm drilling schedule "

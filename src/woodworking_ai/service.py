@@ -20,6 +20,7 @@ from .cutlist import generate_cutlist
 from .estimator import estimate
 from .drilling import drilling_schedule
 from .joinery import joinery_schedule
+from .assembly_steps import assembly_sequence
 from .agents.critic import critique
 
 
@@ -216,6 +217,13 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
          "tool": o.tool, "width": round(o.width, 1), "depth": round(o.depth, 1),
          "reference": o.reference, "note": o.note}
         for o in joint.ops
+    ]
+
+    seq = assembly_sequence(spec)
+    result["assembly"] = [
+        {"number": s.number, "title": s.title, "detail": s.detail,
+         "part_ids": s.part_ids, "hardware": s.hardware, "category": s.category}
+        for s in seq.steps
     ]
 
     try:

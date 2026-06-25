@@ -287,6 +287,7 @@
       <div class="tabs" id="tabs">
         <button data-t="cutlist" class="active">Cut list</button>
         <button data-t="drawings">Drawings</button>
+        <button data-t="steps">Build steps</button>
         <button data-t="lumber">Lumber</button>
         <button data-t="drilling">Drilling</button>
         <button data-t="joinery">Joinery</button>
@@ -660,6 +661,14 @@ function paint() {
     }
   } else if (tab === "drilling") {
     h = drillingPane(d);
+  } else if (tab === "steps") {
+    const steps = d.assembly || [];
+    h = steps.length ? steps.map(s => {
+      const ids = (s.part_ids||[]).length ? ` <span class="muted">[${s.part_ids.join(", ")}]</span>` : "";
+      const hw = (s.hardware||[]).length ? `<div class="muted" style="font-size:11px">↳ ${s.hardware.join(", ")}</div>` : "";
+      return `<div style="margin:8px 0;padding-bottom:6px;border-bottom:1px solid var(--line)">
+        <b>${s.number}. ${s.title}</b>${ids}<div style="font-size:12.5px">${s.detail}</div>${hw}</div>`;
+    }).join("") : '<p class="muted">No assembly steps for this design.</p>';
   } else if (tab === "drawings") {
     h = d.drawings_svg
       ? `<div style="overflow:auto;padding:4px">${d.drawings_svg}</div>`
