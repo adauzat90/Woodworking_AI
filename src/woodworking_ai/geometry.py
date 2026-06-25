@@ -19,7 +19,8 @@ from .dsl import (
     CabinetSpec, TableSpec, ComponentGroup, Component, BackStyle,
     Construction, CabinetType,
 )
-from .dispatch import spec_kind, is_group, VOID, GROUP, TABLE
+from .dispatch import spec_kind, is_group, VOID, GROUP, TABLE, CABINET
+from . import furniture
 
 # Construction constants shared with the cut list (neutral module, no cycle).
 from .constants import (
@@ -324,14 +325,23 @@ def project_layout(project: ComponentGroup) -> list[PanelBox]:
 
 
 def panel_layout(spec) -> list[PanelBox]:
-    """Return every panel of *spec* placed in the shared coordinate frame."""
+    """Return every panel of *spec* placed in the shared coordinate frame.
+
+    VOID/GROUP are handled here (a gap builds nothing; a group composes its
+    components); every *leaf* type dispatches through the
+    :mod:`furniture` registry, so a new furniture type adds its panels by
+    registering, not by editing this function.
+    """
     kind = spec_kind(spec)
     if kind == VOID:
         return []                      # a reserved gap builds no carcass
     if kind == GROUP:
         return project_layout(spec)
-    if kind == TABLE:
-        return _table_layout(spec)
+    return furniture.get(kind).panels(spec)
+
+
+def _cabinet_layout(spec) -> list[PanelBox]:
+    """Panel placement for a cabinet (every CabinetType variant)."""
     if spec.cabinet_type == CabinetType.CORNER_DIAGONAL:
         return _diagonal_layout(spec)
 
@@ -776,3 +786,10 @@ def _table_layout(spec: TableSpec) -> list[PanelBox]:
         add("Apron short", (at, apron_y, ah), (sx * lx, 0, az), "apron")
 
     return panels
+
+
+# Register the built-in leaf placements. New furniture types register their own
+# ``panels`` the same way (in their home module), so ``panel_layout`` never
+# grows another branch.
+furniture.register(CABINET, panels=_cabinet_layout)
+furniture.register(TABLE, panels=_table_layout)

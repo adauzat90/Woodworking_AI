@@ -16,8 +16,8 @@ from .dsl import (
     TableSpec, ComponentGroup, CabinetType, Joinery, ApplianceVoid,
     APPLIANCE_VOID_TOLERANCE,
 )
-from .dispatch import spec_kind, VOID, GROUP, TABLE
-from . import engineering, stock, proportion
+from .dispatch import spec_kind, VOID, GROUP, TABLE, CABINET
+from . import engineering, stock, proportion, furniture
 from .hardware import longest_slide_for
 from .geometry import front_plan, footprints_overlap, component_tag
 from .constants import (
@@ -361,8 +361,13 @@ def _validate_core(spec) -> ValidationResult:
         return _validate_void(spec)
     if kind == GROUP:
         return _validate_project(spec)
-    if kind == TABLE:
-        return _validate_table(spec)
+    # Every leaf type validates through the furniture registry, which returns a
+    # flat list of issues; a new type adds its checks by registering.
+    return ValidationResult(furniture.get(kind).validate(spec))
+
+
+def _validate_cabinet(spec) -> list[Issue]:
+    """Sanity checks for a cabinet (every CabinetType variant)."""
     issues: list[Issue] = []
 
     def err(fieldname: str, msg: str) -> None:
@@ -398,7 +403,7 @@ def _validate_core(spec) -> ValidationResult:
 
     # Stop here if fundamentals are broken — later checks would divide nonsense.
     if any(i.severity == "error" for i in issues):
-        return ValidationResult(issues)
+        return issues
 
     # --- geometric consistency -------------------------------------------
     if spec.width < 2 * m.carcass + 50:
@@ -682,7 +687,15 @@ def _validate_core(spec) -> ValidationResult:
     for severity, field_, msg in build_hints(spec):
         issues.append(Issue(severity, field_, msg))
 
-    return ValidationResult(issues)
+    return issues
+
 
 # Backwards-compatible private alias (promoted to public API).
 _joinery_feasibility = joinery_feasibility
+
+
+# Register the built-in leaf validators. Each returns a flat ``list[Issue]``; a
+# new furniture type registers its own ``validate`` and routes with no edit to
+# ``_validate_core``.
+furniture.register(CABINET, validate=_validate_cabinet)
+furniture.register(TABLE, validate=lambda spec: _validate_table(spec).issues)
