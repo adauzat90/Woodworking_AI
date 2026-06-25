@@ -18,22 +18,28 @@ Pure data — no CAD dependency.
 
 from __future__ import annotations
 
-from .dsl import ApplianceVoid, ComponentGroup, TableSpec
+from .dsl import (
+    ApplianceVoid, ComponentGroup, TableSpec, WallShelfSpec, BoxSpec, BenchSpec,
+)
 
 # Canonical pipeline kinds. ``GROUP`` covers Project and Assembly (and any
-# future ComponentGroup subclass); ``CABINET`` is the default leaf.
+# future ComponentGroup subclass); ``CABINET`` is the default leaf. Each leaf
+# kind has a registered implementation in :mod:`furniture`.
 VOID = "void"
 GROUP = "group"
 TABLE = "table"
+WALL_SHELF = "wall_shelf"
+BOX = "box"
+BENCH = "bench"
 CABINET = "cabinet"
 
 
 def spec_kind(spec) -> str:
-    """The pipeline category of *spec* — one of VOID / GROUP / TABLE / CABINET.
+    """The pipeline category of *spec*.
 
     Order matters: an ``ApplianceVoid`` is a leaf placeholder, a
-    ``ComponentGroup`` aggregates components, a ``TableSpec`` is a leaf table,
-    and everything else is treated as a cabinet.
+    ``ComponentGroup`` aggregates components, then the leaf furniture types in
+    turn, and everything else is treated as a cabinet.
     """
     if isinstance(spec, ApplianceVoid):
         return VOID
@@ -41,6 +47,12 @@ def spec_kind(spec) -> str:
         return GROUP
     if isinstance(spec, TableSpec):
         return TABLE
+    if isinstance(spec, WallShelfSpec):
+        return WALL_SHELF
+    if isinstance(spec, BoxSpec):
+        return BOX
+    if isinstance(spec, BenchSpec):
+        return BENCH
     return CABINET
 
 

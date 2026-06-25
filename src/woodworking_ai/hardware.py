@@ -155,6 +155,18 @@ CAM_DOWEL = Fastener("Cam & dowel (RTA)", "CAM-DOWEL", "knock-down connector")
 ASSEMBLY_SCREW = Fastener("Assembly screw 4×35", "SCR-4x35", "general assembly")
 SHELF_PIN = Fastener("Shelf pin 5mm", "PIN-5", "supports adjustable shelf")
 
+# Wall-shelf mounting + chest/box lid hardware.
+FRENCH_CLEAT = Fastener("French cleat (45° bevel pair)", "CLEAT-45",
+                        "interlocking wall + shelf strips")
+SHELF_BRACKET = Fastener("Shelf bracket", "BRACKET-L", "L-bracket, wall + shelf")
+HIDDEN_BRACKET = Fastener("Hidden/floating-shelf bracket", "BRACKET-HIDDEN",
+                          "concealed rod into a back-bored shelf")
+WALL_ANCHOR = Fastener("Wall anchor / lag screw", "ANCHOR-LAG",
+                       "into stud or with a heavy-duty anchor")
+BUTT_HINGE = Fastener("Butt hinge (lid)", "HINGE-BUTT", "lid pivot, mortised")
+LID_SUPPORT = Fastener("Lid-stay / chest support", "LID-STAY",
+                       "holds the lid open, soft-close")
+
 
 def select_hinge(brand: str, overlay: str = "overlay") -> HingeSpec:
     h = _HINGES[normalize_brand(brand)]

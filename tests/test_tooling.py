@@ -6,12 +6,10 @@ the designer prompt constraint, ShopProfile round-trip, and the service bundle's
 tool checklist.
 """
 
-from woodworking_ai.dsl import CabinetSpec, TableSpec, Drawer, Material, Joinery
-from woodworking_ai import tooling as T
+from woodworking_ai.dsl import CabinetSpec, TableSpec, Drawer, Joinery
 from woodworking_ai.tooling import (
-    ShopTooling, HAND_TOOL_SHOP, HOBBYIST_SHOP, FULL_SHOP,
-    can_make, substitute, required_operations, tooling_advisories,
-    tools_needed, designer_constraint,
+    ShopTooling, HAND_TOOL_SHOP, HOBBYIST_SHOP, can_make, substitute,
+    required_operations, tooling_advisories, tools_needed, designer_constraint,
 )
 from woodworking_ai.validator import validate
 from woodworking_ai.profile import ShopProfile, profile_from_dict, profile_to_dict
@@ -182,3 +180,50 @@ def test_build_result_tools_owned_none_without_inventory():
     bundle = build_result(_cab(), want_png=False, want_glb=False)
     assert bundle["tools"]
     assert all(t["owned"] is None for t in bundle["tools"])
+
+
+# --- new furniture types flow through the tooling walk ---------------------
+
+def test_box_lists_corner_joint_and_lid_hinges():
+    from woodworking_ai.dsl import spec_from_dict
+    box = spec_from_dict({"kind": "box", "name": "Chest", "width": 500,
+                          "height": 300, "depth": 350,
+                          "corner_joint": "dovetail", "lid": True})
+    joints = {r.joint for r in required_operations(box)}
+    assert "dovetail" in joints and "butt_hinge" in joints
+    # A drill-only shop can't cut dovetails — gets a feasible drawer-corner sub.
+    only_drill = ShopTooling.from_names(["drill"])
+    adv = tooling_advisories(box, only_drill)
+    assert any("box corners" in m and "switch to" in m for _, _, m in adv)
+
+
+def test_bench_lists_leg_apron_frame_joint():
+    from woodworking_ai.dsl import spec_from_dict
+    bench = spec_from_dict({"kind": "bench", "name": "Bench", "width": 1100,
+                            "height": 450, "depth": 350, "joinery": "mortise_tenon"})
+    reqs = required_operations(bench)
+    assert reqs and reqs[0].role == "frame" and reqs[0].joint == "mortise_tenon"
+
+
+def test_wall_shelf_cleat_needs_bevel_no_bogus_substitute():
+    from woodworking_ai.dsl import spec_from_dict
+    shelf = spec_from_dict({"kind": "wall_shelf", "name": "Shelf", "length": 800,
+                            "depth": 250, "fixing": "french_cleat"})
+    joints = {r.joint for r in required_operations(shelf)}
+    assert "bevel_rip" in joints
+    # No table saw / hand tools: flagged, but NOT told to "switch to" a joint.
+    only_drill = ShopTooling.from_names(["drill"])
+    adv = [m for _, _, m in tooling_advisories(shelf, only_drill)
+           if "cleat" in m.lower()]
+    assert adv and "switch to" not in adv[0]
+
+
+def test_new_types_tools_needed_nonempty():
+    from woodworking_ai.dsl import spec_from_dict
+    for d in ({"kind": "box", "name": "B", "width": 400, "height": 250,
+               "depth": 300, "lid": True},
+              {"kind": "bench", "name": "Bn", "width": 1000, "height": 450,
+               "depth": 320},
+              {"kind": "wall_shelf", "name": "S", "length": 700, "depth": 220}):
+        needs = tools_needed(spec_from_dict(d), HAND_TOOL_SHOP)
+        assert needs, f"{d['kind']} should list tools"

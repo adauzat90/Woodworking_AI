@@ -48,9 +48,19 @@ GRAVITY = 9.80665  # m/s^2
 
 
 def modulus_for(species: str | None) -> float:
-    """Young's modulus (MPa) for a named material, defaulting to plywood."""
+    """Young's modulus (MPa) for a named material, defaulting to plywood.
+
+    Prefers the wood-species database (:mod:`species`) when the name is a known
+    wood, so the value tracks the one real table; falls back to the local
+    :data:`MODULUS_MPA` map (which also covers sheet goods like plywood/MDF that
+    aren't woods), and finally to plywood.
+    """
     if not species:
         return DEFAULT_MODULUS
+    from . import species as _species
+    e = _species.modulus(species)
+    if e is not None:
+        return e
     return MODULUS_MPA.get(str(species).strip().lower(), DEFAULT_MODULUS)
 
 
@@ -113,12 +123,21 @@ def evaluate_shelf(
     )
 
 
-def seasonal_movement(width: float, grain: str = "flatsawn") -> float:
+def seasonal_movement(width: float, grain: str = "flatsawn",
+                      species: str | None = None) -> float:
     """Estimated seasonal cross-grain movement of a solid panel (mm).
 
     `width` is the dimension measured *across* the grain. Quartersawn stock moves
     roughly half as much as flatsawn.
+
+    When *species* names a known wood, its species-specific movement fraction is
+    used (walnut/cherry are stable, beech/hard maple move a lot); otherwise the
+    global flatsawn/quartersawn constants apply, exactly as before.
     """
+    if species:
+        from . import species as _species
+        if _species.known(species):
+            return max(width, 0.0) * _species.movement_fraction(species, grain)
     coeff = MOVEMENT_QUARTERSAWN if str(grain).lower().startswith("quarter") \
         else MOVEMENT_FLATSAWN
     return max(width, 0.0) * coeff

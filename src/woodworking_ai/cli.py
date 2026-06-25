@@ -126,6 +126,19 @@ def _emit(spec, args, tooling=None) -> int:
     if not is_group and args.assembly:
         print("\n" + asm.assembly.report_text())
 
+    # Build plan: skill rating + method-aware phase time breakdown. The time
+    # model reflects the supplied tooling (hand vs. jig vs. machine); with no
+    # --shop/--tools it uses a stable well-equipped default.
+    _print_plan(asm.plan)
+
+    if getattr(args, "from_stock", None):
+        import json as _json
+        from .cutplan import boards_from_dicts, cut_plan
+        data = _json.loads(Path(args.from_stock).read_text(encoding="utf-8"))
+        boards = boards_from_dicts(data)
+        plan = cut_plan(spec, boards, cutlist=cutlist)
+        print("\n" + plan.report_text(unit))
+
     if tooling is not None or getattr(args, "tools_list", False):
         from .tooling import tools_needed
         print("\nTools needed:")
@@ -137,6 +150,24 @@ def _emit(spec, args, tooling=None) -> int:
     if args.out:
         _write_outputs(spec, asm, args, unit, is_group=is_group)
     return 0
+
+
+def _print_plan(plan: dict) -> None:
+    """Print the skill rating and the method-aware phase time breakdown."""
+    skill = plan.get("skill", {})
+    time = plan.get("time", {})
+    print("\nBuild plan:")
+    print(f"  skill level: {skill.get('level', '?')}")
+    for d in skill.get("drivers", []):
+        print(f"    - {d}")
+    phases = time.get("hours_by_phase", {})
+    print(f"  estimated time: {time.get('total', 0):.1f} h")
+    for phase in ("mill", "joinery", "assembly", "finish", "hardware"):
+        hrs = phases.get(phase, 0.0)
+        if hrs:
+            print(f"    {phase:<10} {hrs:5.2f} h")
+    for d in time.get("drivers", []):
+        print(f"    · {d}")
 
 
 def _write_outputs(spec, asm, args, unit: str, *, is_group: bool) -> None:
@@ -163,11 +194,19 @@ def _write_outputs(spec, asm, args, unit: str, *, is_group: bool) -> None:
     if not is_group and args.drawings:
         write("drawings", "drawings.svg")
         print("Wrote drawings.svg")
+    if getattr(args, "from_stock", None):
+        import json as _json
+        from .cutplan import boards_from_dicts, cut_plan
+        data = _json.loads(Path(args.from_stock).read_text(encoding="utf-8"))
+        plan = cut_plan(spec, boards_from_dicts(data), cutlist=asm.cutlist)
+        (out / "cutplan.csv").write_text(plan.to_csv(unit) + "\n",
+                                         encoding="utf-8")
+        print("Wrote cutplan.csv")
     if not is_group and getattr(args, "package", False):
         write("package", "build_package.pdf")
         print("Wrote build_package.pdf")
 
-    if args.step or args.stl or args.glb:
+    if args.step or args.stl or args.glb or getattr(args, "dae", False):
         from .builder import build_model, measure
         joinery_geometry = getattr(args, "joinery_geometry", False)
         model = build_model(spec, joinery_geometry=joinery_geometry)
@@ -184,6 +223,9 @@ def _write_outputs(spec, asm, args, unit: str, *, is_group: bool) -> None:
         if args.glb:
             exporters.export_glb(model, out / f"{base}.glb")
             print(f"Wrote {base}.glb")
+        if getattr(args, "dae", False):
+            exporters.export_dae(model, out / f"{base}.dae")
+            print(f"Wrote {base}.dae")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -195,6 +237,8 @@ def main(argv: list[str] | None = None) -> int:
     common.add_argument("--step", action="store_true", help="export STEP (needs build123d)")
     common.add_argument("--stl", action="store_true", help="export STL (needs build123d)")
     common.add_argument("--glb", action="store_true", help="export GLB (needs build123d)")
+    common.add_argument("--dae", action="store_true",
+                        help="export Collada DAE for SketchUp (needs build123d + trimesh)")
     common.add_argument("--dxf", action="store_true",
                         help="export a DXF cut-layout nest (no build123d needed)")
     common.add_argument("--drawings", action="store_true",
@@ -231,6 +275,10 @@ def main(argv: list[str] | None = None) -> int:
                              "joinery these can make is allowed (overrides --shop)")
     common.add_argument("--tools-list", action="store_true", dest="tools_list",
                         help="print the tool/jig checklist the design requires")
+    common.add_argument("--from-stock", dest="from_stock", metavar="BOARDS.JSON",
+                        help="assign parts to boards you already own (a JSON "
+                             "list of {length,width,thickness,species,form,qty}) "
+                             "and print the cut plan + what's still to buy")
 
     p_design = sub.add_parser("design", parents=[common],
                               help="natural language -> design (uses Claude)")

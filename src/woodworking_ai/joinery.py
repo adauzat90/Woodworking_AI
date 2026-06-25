@@ -16,7 +16,8 @@ from dataclasses import dataclass, field
 
 from .dsl import (CabinetSpec, TableSpec, ComponentGroup, BackStyle,
                   Joinery)
-from .dispatch import spec_kind, VOID, GROUP, TABLE
+from .dispatch import spec_kind, VOID, GROUP, TABLE, CABINET
+from . import furniture
 from .cutlist import generate_cutlist
 from .geometry import component_tag
 from .constants import (
@@ -208,14 +209,24 @@ def _project_joinery(project: ComponentGroup) -> JoinerySchedule:
 
 
 def joinery_schedule(spec) -> JoinerySchedule:
-    """Setup sheet of machining ops for a cabinet, table, or group."""
+    """Setup sheet of machining ops for a leaf, or aggregate a group.
+
+    VOID/GROUP are handled here; every *leaf* type dispatches its machining ops
+    through the :mod:`furniture` registry, so a new furniture type adds joinery
+    by registering, not by editing this function.
+    """
     kind = spec_kind(spec)
     if kind == VOID:
         return JoinerySchedule(spec_name=spec.name)   # a gap has no joinery
     if kind == GROUP:
         return _project_joinery(spec)
     cl = generate_cutlist(spec)
-    if kind == TABLE:
-        return JoinerySchedule(spec_name=spec.name, ops=_table_joinery(spec, cl))
-    # Cabinets (including the diagonal corner) use the same housed box joints.
-    return JoinerySchedule(spec_name=spec.name, ops=_cabinet_joinery(spec, cl))
+    ops = furniture.get(kind).joinery_ops(spec, cl)
+    return JoinerySchedule(spec_name=spec.name, ops=ops)
+
+
+# Register the built-in leaf joinery. Cabinets (including the diagonal corner)
+# use the housed box joints; tables use the leg-to-apron joint. A new furniture
+# type registers its own ``joinery_ops`` and routes with no edit here.
+furniture.register(CABINET, joinery_ops=_cabinet_joinery)
+furniture.register(TABLE, joinery_ops=_table_joinery)
