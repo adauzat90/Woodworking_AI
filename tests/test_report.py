@@ -148,6 +148,16 @@ def test_template_large_part_tiles_multiple_pages():
     assert _pdf_page_count(data) >= 2
 
 
+def test_template_has_scale_check_cover_page():
+    # The leading cover page carries the 100mm / 4in scale-check squares and the
+    # print-at-100% instruction, so a hobbyist can verify printer scale (G6a).
+    text = _pdf_text(build_template_pdf(_cab())).lower()
+    assert "100 mm" in text
+    assert "4 in" in text
+    assert "100%" in text
+    assert "1:1 template" in text
+
+
 # --- customer proposal (D3) ----------------------------------------------
 
 def test_proposal_is_a_pdf():
