@@ -213,6 +213,11 @@ class Assembly:
     def assembly(self):
         return assembly_plan(self.spec)
 
+    @cached_property
+    def plan(self):
+        from .planning import plan as _plan
+        return _plan(self.spec, self.tooling)
+
 
 def assemble(spec, *, prices=None, sheet=None, tooling=None) -> Assembly:
     """Run (lazily) the design pipeline for *spec* once, returning live objects.
@@ -377,6 +382,11 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
 
     from .finishing import finishing_schedule
     result["finishing"] = finishing_schedule(spec)
+
+    # Build plan — skill rating + method-aware phase time breakdown. Additive;
+    # the time model keys off `tooling` (hand vs. jig vs. machine) when supplied,
+    # and falls back to a stable well-equipped default when it is None.
+    result["plan"] = asm.plan
 
     # Appliance schedule — present only when the design has appliances, so the
     # web bundle can show the section conditionally (mirrors the report).
