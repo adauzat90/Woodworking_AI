@@ -106,13 +106,14 @@ def export_bytes(spec, fmt: str,
     raise ValueError(f"unknown export format: {fmt}")
 
 
-def build_result(spec, *, want_png: bool = True,
-                 want_glb: bool = True) -> dict[str, Any]:
+def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
+                 prices=None, sheet=None) -> dict[str, Any]:
     """Full design bundle for *spec* — a cabinet, table, or whole project.
 
     Always JSON-serialisable; aggregate stages (cut list, cost, drilling,
     critic, render) dispatch on the spec type, so a Project returns the combined
-    run bundle.
+    run bundle. ``prices`` (a :class:`PriceBook`) and ``sheet`` (a
+    :class:`SheetSize`) override the costing defaults when supplied.
     """
     v = validate(spec)
     result: dict[str, Any] = {
@@ -159,7 +160,7 @@ def build_result(spec, *, want_png: bool = True,
         ],
     }
 
-    est = estimate(spec, cutlist=cl)
+    est = estimate(spec, cutlist=cl, prices=prices, sheet=sheet)
     result["estimate"] = {
         "currency": est.currency,
         "total": round(est.total, 2),

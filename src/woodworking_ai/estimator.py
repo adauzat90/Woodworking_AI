@@ -12,6 +12,8 @@ heuristics like this too.)
 
 from __future__ import annotations
 
+import dataclasses
+import math
 from dataclasses import dataclass, field
 
 from .dsl import CabinetSpec, ComponentGroup
@@ -289,3 +291,71 @@ def estimate(spec, *, cutlist: CutList | None = None,
     )
     est._rate = prices.shop_rate_per_hour
     return est
+
+
+# --- price book / sheet size (de)serialisation -------------------------------
+# Let a front end read the shop's default rates and post tuned overrides. The
+# from_dict helpers merge a (possibly partial) override onto the defaults and
+# coerce every value to a sane, finite, non-negative number.
+
+# Scalar (single-value) PriceBook fields, exposed for editing.
+_PRICE_SCALARS = (
+    "sheet_price_default", "board_foot_price_default", "lumber_waste_factor",
+    "edge_banding_per_m", "shop_rate_per_hour", "labour_base_h",
+    "labour_per_part_h", "labour_per_door_h", "labour_per_drawer_h",
+)
+# Per-label price maps (material/hardware -> price).
+_PRICE_MAPS = ("sheet_price", "board_foot_price", "hardware_price")
+
+
+def _num(value, default=None, lo=None):
+    """Coerce *value* to a finite float, clamped to >= *lo*; else *default*."""
+    try:
+        x = float(value)
+    except (TypeError, ValueError):
+        return default
+    if not math.isfinite(x):
+        return default
+    if lo is not None and x < lo:
+        x = lo
+    return x
+
+
+def pricebook_to_dict(prices: PriceBook) -> dict:
+    """The full price book as a plain JSON-friendly dict."""
+    return dataclasses.asdict(prices)
+
+
+def pricebook_from_dict(data) -> PriceBook:
+    """A PriceBook with any overrides in *data* merged onto the defaults."""
+    pb = PriceBook()
+    if not isinstance(data, dict):
+        return pb
+    for f in _PRICE_SCALARS:
+        if f in data:
+            x = _num(data[f], lo=0.0)
+            if x is not None:
+                setattr(pb, f, x)
+    for f in _PRICE_MAPS:
+        sub = data.get(f)
+        if isinstance(sub, dict):
+            for k, v in sub.items():
+                x = _num(v, lo=0.0)
+                if x is not None:
+                    getattr(pb, f)[str(k)] = x
+    return pb
+
+
+def sheetsize_to_dict(sheet: SheetSize) -> dict:
+    return {"length": sheet.length, "width": sheet.width, "kerf": sheet.kerf}
+
+
+def sheetsize_from_dict(data) -> SheetSize:
+    """A SheetSize with overrides merged on; dimensions kept strictly positive."""
+    s = SheetSize()
+    if not isinstance(data, dict):
+        return s
+    s.length = _num(data.get("length"), s.length, lo=1.0)
+    s.width = _num(data.get("width"), s.width, lo=1.0)
+    s.kerf = _num(data.get("kerf"), s.kerf, lo=0.0)
+    return s

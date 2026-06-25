@@ -83,6 +83,13 @@
   summary .count { color:var(--muted); }
   h4 { margin:16px 0 6px; font-size:12px; color:var(--muted);
        text-transform:uppercase; letter-spacing:.05em; }
+  /* Pricing editor (sidebar). */
+  .price-sec { font-size:11px; color:var(--wood); text-transform:uppercase;
+               letter-spacing:.04em; margin:12px 0 3px; }
+  .price-row { display:flex; align-items:center; justify-content:space-between;
+               gap:8px; margin:3px 0; }
+  .price-row span { font-size:11.5px; color:var(--muted); }
+  input.price-input { width:96px; flex:0 0 auto; padding:5px 7px; }
 </style>
 </head>
 <body>
@@ -195,6 +202,19 @@
     </div><!-- /projectFields -->
     <button id="buildBtn">🔨 Build design</button>
     <div class="check"><input id="auto" type="checkbox" /><label style="margin:0">Live update as I change values</label></div>
+    <fieldset style="margin-top:14px">
+      <legend>Pricing &amp; rates</legend>
+      <details id="pricingDetails">
+        <summary>Edit shop prices &amp; rates</summary>
+        <p class="muted" style="font-size:11px;margin:6px 0">
+          Tune the quote to your shop — sheet &amp; board-foot prices, hardware,
+          labour rates and stock size. Saved in this browser; the quote and
+          lumber costs refresh on the next build.</p>
+        <div id="pricingBody"></div>
+        <button id="resetPricing" class="secondary" type="button"
+          style="margin-top:8px">↺ Reset to defaults</button>
+      </details>
+    </fieldset>
     <fieldset style="margin-top:14px">
       <legend>Library</legend>
       <button id="saveBtn" class="secondary">💾 Save current design</button>
@@ -427,7 +447,7 @@ async function post(url, body) {
 }
 $("buildBtn").onclick = async () => {
   setBusy(true);
-  try { render(await post("/api/build", {spec: specFromForm()})); }
+  try { render(await post("/api/build", {spec: specFromForm(), ...currentPricing()})); }
   catch (e) { showError(e.message); } finally { setBusy(false); health(); }
 };
 $("designBtn").onclick = async () => {
@@ -435,7 +455,7 @@ $("designBtn").onclick = async () => {
   if (!prompt) return;
   setBusy(true);
   try {
-    const d = await post("/api/design", {prompt});
+    const d = await post("/api/design", {prompt, ...currentPricing()});
     syncForm(d.spec); render(d);
   } catch (e) { showError(e.message); } finally { setBusy(false); health(); }
 };
@@ -533,7 +553,7 @@ function loadFromHash() {
   try {
     const spec = JSON.parse(decodeURIComponent(escape(atob(m[1]))));
     syncForm(spec);
-    post("/api/build", {spec}).then(render).catch(e => showError(e.message));
+    post("/api/build", {spec, ...currentPricing()}).then(render).catch(e => showError(e.message));
   } catch (e) {}
 }
 
@@ -737,6 +757,111 @@ $("tabs").querySelectorAll("button").forEach(b => b.onclick = () => {
 // Switching units converts the form inputs and reformats the loaded bundle.
 $("units").onchange = applyUnitChange;
 
+// --- Pricing editor ----------------------------------------------------------
+// Tune the shop's price book + sheet size. Defaults come from the server; edits
+// persist to localStorage and ride along with every build request as `prices`
+// and `sheet`, so the quote and lumber costs reflect the user's own rates.
+const PRICING_LS = "woodai_pricing";
+let pricingDefaults = null, pricing = null;
+// Scalar fields, grouped for the sidebar. [key, label, input step].
+const PRICE_RATE_FIELDS = [
+  ["shop_rate_per_hour", "Shop rate ($/h)", 1],
+  ["lumber_waste_factor", "Lumber waste (×)", 0.01],
+  ["edge_banding_per_m", "Edge banding ($/m)", 0.1],
+];
+const PRICE_FALLBACK_FIELDS = [
+  ["sheet_price_default", "Sheet default ($)", 1],
+  ["board_foot_price_default", "Board-foot default ($)", 0.5],
+];
+const LABOUR_FIELDS = [
+  ["labour_base_h", "Base (h)", 0.1],
+  ["labour_per_part_h", "Per part (h)", 0.01],
+  ["labour_per_door_h", "Per door (h)", 0.05],
+  ["labour_per_drawer_h", "Per drawer (h)", 0.05],
+];
+const SHEET_FIELDS = [
+  ["length", "Length (mm)", 10], ["width", "Width (mm)", 10],
+  ["kerf", "Saw kerf (mm)", 0.5],
+];
+const clone = o => JSON.parse(JSON.stringify(o));
+
+function priceRow(sec, key, label, step, val) {
+  return `<div class="price-row"><span>${label}</span>` +
+    `<input class="price-input" data-sec="${sec}" data-key="${key}" type="number" ` +
+    `step="${step}" min="0" value="${val}"></div>`;
+}
+// Overlay a saved override onto the server defaults (deep for the price maps).
+function mergePricing(def, saved) {
+  const out = { prices: clone(def.prices), sheet: clone(def.sheet) };
+  if (saved && saved.prices) for (const k in saved.prices) {
+    const v = saved.prices[k];
+    if (v && typeof v === "object" && out.prices[k] && typeof out.prices[k] === "object")
+      Object.assign(out.prices[k], v);
+    else out.prices[k] = v;
+  }
+  if (saved && saved.sheet) Object.assign(out.sheet, saved.sheet);
+  return out;
+}
+function renderPricingForm() {
+  if (!pricing) return;
+  const p = pricing.prices, sz = pricing.sheet;
+  const scalars = (title, fields) => {
+    let s = `<div class="price-sec">${title}</div>`;
+    for (const [k, l, st] of fields) s += priceRow("scalar", k, l, st, p[k]);
+    return s;
+  };
+  const mapRows = (title, sec, step) => {
+    let s = `<div class="price-sec">${title}</div>`;
+    for (const k of Object.keys(p[sec]).sort()) s += priceRow(sec, k, k, step, p[sec][k]);
+    return s;
+  };
+  let h = scalars("Rates &amp; factors", PRICE_RATE_FIELDS);
+  h += mapRows("Sheet goods ($/sheet)", "sheet_price", 1);
+  h += mapRows("Solid lumber ($/board foot)", "board_foot_price", 0.5);
+  h += mapRows("Hardware ($/unit)", "hardware_price", 0.25);
+  h += scalars("Labour (hours)", LABOUR_FIELDS);
+  h += scalars("Fallback prices", PRICE_FALLBACK_FIELDS);
+  h += '<div class="price-sec">Sheet stock size</div>';
+  for (const [k, l, st] of SHEET_FIELDS) h += priceRow("sheet", k, l, st, sz[k]);
+  $("pricingBody").innerHTML = h;
+  $("pricingBody").querySelectorAll(".price-input").forEach(el =>
+    el.addEventListener("input", () => { savePricing(); maybeAuto(); }));
+}
+// Read the form back into a {prices, sheet} object, defaults filling any blanks.
+function readPricing() {
+  const out = mergePricing(pricingDefaults, null);
+  document.querySelectorAll("#pricingBody .price-input").forEach(el => {
+    const v = parseFloat(el.value);
+    if (!isFinite(v)) return;
+    const sec = el.dataset.sec, key = el.dataset.key;
+    if (sec === "scalar") out.prices[key] = v;
+    else if (sec === "sheet") out.sheet[key] = v;
+    else (out.prices[sec] = out.prices[sec] || {})[key] = v;
+  });
+  return out;
+}
+function savePricing() {
+  pricing = readPricing();
+  try { localStorage.setItem(PRICING_LS, JSON.stringify(pricing)); } catch (e) {}
+}
+// What every build request sends; {} (so unchanged) until defaults have loaded.
+function currentPricing() { return pricing ? readPricing() : {}; }
+async function loadPricing() {
+  try { pricingDefaults = await (await fetch("/api/pricing")).json(); }
+  catch (e) { pricingDefaults = null; return; }
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(PRICING_LS) || "null"); } catch (e) {}
+  pricing = mergePricing(pricingDefaults, saved);
+  renderPricingForm();
+}
+$("resetPricing").onclick = () => {
+  if (!pricingDefaults) return;
+  try { localStorage.removeItem(PRICING_LS); } catch (e) {}
+  pricing = mergePricing(pricingDefaults, null);
+  renderPricingForm();
+  maybeAuto();
+};
+
 // --- Library: Convex when CONVEX_URL is configured, else localStorage --------
 const CONVEX_URL = window.__CONVEX_URL__ || "";
 const CONVEX_VER = "1.17.0";
@@ -795,7 +920,8 @@ $("loadBtn").onclick = async () => {
   const d = savedCache.find(x => x._id === $("savedList").value);
   if (!d) return;
   syncForm(d.spec);
-  try { render(await post("/api/build", {spec: d.spec})); } catch (e) { showError(e.message); }
+  try { render(await post("/api/build", {spec: d.spec, ...currentPricing()})); }
+  catch (e) { showError(e.message); }
 };
 $("delBtn").onclick = async () => {
   const id = $("savedList").value;
@@ -833,6 +959,7 @@ setUnitLabels();
 applyUnitChange();
 
 health();
+loadPricing();
 refreshSaved();
 loadFromHash();
 window.addEventListener("hashchange", loadFromHash);

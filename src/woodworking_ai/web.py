@@ -27,6 +27,10 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 from .dsl import CabinetSpec, TableSpec, ComponentGroup, spec_from_dict
 from .validator import validate
 from .service import build_result, export_bytes
+from .estimator import (
+    PriceBook, SheetSize, pricebook_to_dict, pricebook_from_dict,
+    sheetsize_to_dict, sheetsize_from_dict,
+)
 
 STATIC = Path(__file__).parent / "static"
 
@@ -62,6 +66,24 @@ def health() -> dict[str, Any]:
     return {"status": "ok", "capabilities": _capabilities()}
 
 
+@app.get("/api/pricing")
+def pricing() -> dict[str, Any]:
+    """The shop's default price book + sheet size, for the UI to seed its editor."""
+    return {"prices": pricebook_to_dict(PriceBook()),
+            "sheet": sheetsize_to_dict(SheetSize())}
+
+
+def _pricing_overrides(payload: dict[str, Any]):
+    """Pull optional ``prices`` / ``sheet`` overrides from a request payload.
+
+    Returns (PriceBook | None, SheetSize | None) — ``None`` means "use the
+    server defaults", so requests that omit pricing behave exactly as before.
+    """
+    prices = pricebook_from_dict(payload["prices"]) if payload.get("prices") else None
+    sheet = sheetsize_from_dict(payload["sheet"]) if payload.get("sheet") else None
+    return prices, sheet
+
+
 def _parse_spec(payload: dict[str, Any]) -> CabinetSpec | TableSpec | ComponentGroup:
     """Build a furniture spec (cabinet, table, project, or assembly) from a payload."""
     if not isinstance(payload, dict):
@@ -77,8 +99,10 @@ def _parse_spec(payload: dict[str, Any]) -> CabinetSpec | TableSpec | ComponentG
 def api_build(payload: dict[str, Any]) -> JSONResponse:
     """Build a full design bundle from a spec dict."""
     spec = _parse_spec(payload)
+    prices, sheet = _pricing_overrides(payload)
     try:
-        return JSONResponse(build_result(spec, want_glb=payload.get("glb", True)))
+        return JSONResponse(build_result(
+            spec, want_glb=payload.get("glb", True), prices=prices, sheet=sheet))
     except Exception as exc:  # defensive: never 500 with a stack trace
         raise HTTPException(status_code=500, detail=f"build failed: {exc}")
 
@@ -99,7 +123,9 @@ def api_design(payload: dict[str, Any]) -> JSONResponse:
         res = design_from_prompt(prompt, max_attempts=payload.get("attempts", 3))
     except Exception as exc:  # surface the agent error to the UI
         raise HTTPException(status_code=502, detail=f"designer failed: {exc}")
-    bundle = build_result(res.spec, want_glb=payload.get("glb", True))
+    prices, sheet = _pricing_overrides(payload)
+    bundle = build_result(res.spec, want_glb=payload.get("glb", True),
+                          prices=prices, sheet=sheet)
     bundle["attempts"] = res.attempts
     return JSONResponse(bundle)
 

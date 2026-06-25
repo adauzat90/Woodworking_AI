@@ -64,6 +64,53 @@ def test_build_glb_present_with_build123d():
     assert (d["glb"] or "").startswith("data:model/gltf-binary;base64,")
 
 
+def test_pricing_defaults_endpoint():
+    r = client.get("/api/pricing")
+    assert r.status_code == 200
+    body = r.json()
+    assert "shop_rate_per_hour" in body["prices"]
+    assert "frame" in body["prices"]["board_foot_price"]
+    assert body["sheet"]["length"] > 0
+
+
+def test_build_accepts_price_overrides():
+    """A higher shop rate raises labour cost; the bundle echoes the new rate."""
+    base = client.post("/api/build", json={"spec": VALID_SPEC, "glb": False}).json()
+    dear = client.post("/api/build", json={
+        "spec": VALID_SPEC, "glb": False,
+        "prices": {"shop_rate_per_hour": 500.0}}).json()
+    assert dear["estimate"]["labour"] > base["estimate"]["labour"]
+    assert dear["estimate"]["total"] > base["estimate"]["total"]
+
+
+def test_build_board_foot_override_changes_lumber_cost():
+    table = {"kind": "table", "name": "T", "width": 1500, "depth": 850,
+             "height": 740}
+    base = client.post("/api/build", json={"spec": table, "glb": False}).json()
+    dear = client.post("/api/build", json={
+        "spec": table, "glb": False,
+        "prices": {"board_foot_price": {"top": 999.0}}}).json()
+    assert dear["estimate"]["lumber"] > base["estimate"]["lumber"]
+
+
+def test_build_sheet_size_override_changes_sheet_count():
+    """A tiny sheet forces more sheets than the standard 8x4."""
+    base = client.post("/api/build", json={"spec": VALID_SPEC, "glb": False}).json()
+    small = client.post("/api/build", json={
+        "spec": VALID_SPEC, "glb": False,
+        "sheet": {"length": 1000, "width": 600}}).json()
+    assert small["estimate"]["total_sheets"] >= base["estimate"]["total_sheets"]
+
+
+def test_build_garbage_prices_falls_back_to_defaults():
+    """Non-numeric overrides are ignored rather than 500-ing the build."""
+    r = client.post("/api/build", json={
+        "spec": VALID_SPEC, "glb": False,
+        "prices": {"shop_rate_per_hour": "free", "board_foot_price": {"top": None}}})
+    assert r.status_code == 200
+    assert r.json()["estimate"]["total"] > 0
+
+
 def test_build_invalid_spec_reports_errors():
     d = client.post("/api/build", json={"spec": {"cabinet_type": "base",
                                                  "width": -5}}).json()
