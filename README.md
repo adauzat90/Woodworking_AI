@@ -53,6 +53,7 @@ pip install -e .            # core: DSL, validator, cut list (no heavy deps)
 pip install -e ".[agent]"   # + the Claude designer agent
 pip install -e ".[cad]"     # + build123d for 3D geometry / STEP / STL / GLB
 pip install -e ".[render]"  # + matplotlib for snapshot renders / visual review
+pip install -e ".[pdf]"     # + reportlab for the printable build-package PDF
 pip install -e ".[all]"     # everything, incl. pytest
 ```
 
@@ -197,14 +198,32 @@ front end.
 - **Tables:** a `table` furniture type — top, four legs, and aprons, with the
   same critique / cut list / cost / render / STEP-export pipeline.
 - **Construction:** `frameless` (Euro, overlay doors) and `face_frame`
-  (hardwood stiles/rails + inset doors).
+  (hardwood stiles/rails + inset doors); sheet-good or **solid-wood glue-up**
+  carcasses (panels broken into edge-glued boards, priced by the board foot).
 - **Fronts:** any mix of doors (0–2), a center mullion, and a stack of drawers
   (with real drawer **boxes**, or false fronts for sink tip-outs), plus
-  configurable reveal, back style, joinery, shelves, and toe kick.
-- **Outputs:** validated spec, geometry critique, headless render + optional
-  visual review, cut list + hardware schedule (CSV), a **drilling schedule**
-  (32 mm system shelf pins, hinge bores, slide lines), a sheet-nesting **cost
-  estimate**, a **DXF cut-layout**, and STEP/STL/GLB when build123d is installed.
+  **door styles** — slab or 5-piece **stile-and-rail** (shaker / raised panel /
+  cope-and-stick) — configurable reveal, back style, joinery, shelves, toe kick,
+  and a **finish** (oil / clear / paint / stain).
+- **Kitchen accessories:** countertops (with sink/cooktop **cutout** checks),
+  **fillers**, finished **end panels**, and crown / light-rail / scribe
+  **moldings**; a **room/wall planner** fits a run to a real wall and sizes the
+  filler + scribe for an out-of-square, out-of-level room.
+- **Hardware:** an orderable **catalogue** (generic / Blum / Hettich / Grass)
+  with brand part numbers and the exact boring each part needs — hinge cups +
+  mounting-plate screws, side-mount vs **undermount** slides (box notch +
+  locking holes), and a complete **BOM** including assembly fasteners.
+- **Outputs:** validated spec, geometry critique (now incl. **machinability**
+  and clearance checks), headless render + optional visual review, **dimensioned
+  2D shop drawings** (front/side/plan SVG), a labelled **cut list** with stable
+  part IDs cross-referenced across every output, the **hardware BOM**, a
+  **joinery setup sheet** (dado/rabbet/cope-and-stick dimensions), a
+  step-by-step **assembly sequence**, a **drilling schedule** (32 mm system),
+  a grain-aware sheet-nesting **cost estimate** (with finishing), a **DXF
+  cut-layout**, a one-click **build-package PDF** (reportlab), and STEP/STL/GLB
+  when build123d is installed. A **shop profile** sets your standards, hardware
+  brand, sheet size, and prices once; **design revisions** track and compare
+  versions.
 
 ## The design language (example)
 
