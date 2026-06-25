@@ -100,6 +100,20 @@
                gap:8px; margin:3px 0; }
   .price-row span { font-size:11.5px; color:var(--muted); }
   input.price-input { width:96px; flex:0 0 auto; padding:5px 7px; }
+  /* Starter-project gallery (G3). */
+  .gallery-summary { font-weight:600; cursor:pointer; padding:4px 0;
+                     color:var(--wood); }
+  .gallery { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin:4px 0 8px; }
+  .gcard { text-align:left; padding:7px 9px; border:1px solid var(--line);
+           border-radius:7px; background:var(--card); cursor:pointer;
+           display:flex; flex-direction:column; gap:2px; transition:.12s; }
+  .gcard:hover { border-color:var(--wood); background:var(--bg);
+                 transform:translateY(-1px); }
+  .gcard .gtitle { font-weight:600; font-size:12.5px; }
+  .gcard .gcat { font-size:10px; text-transform:uppercase; letter-spacing:.04em;
+                 color:var(--wood); }
+  .gcard .gblurb { font-size:10.5px; color:var(--muted); line-height:1.25; }
+  .ph-mini { font-size:11px; color:var(--muted); padding:6px; }
 </style>
 </head>
 <body>
@@ -109,6 +123,12 @@
 </header>
 <div class="wrap">
   <div class="controls">
+    <details id="galleryWrap" open>
+      <summary class="gallery-summary">🧰 Start from a project</summary>
+      <p class="muted" style="font-size:11px;margin:6px 0">
+        Pick a starter design to build now, then tweak the parameters.</p>
+      <div id="gallery" class="gallery"><div class="ph-mini">Loading…</div></div>
+    </details>
     <fieldset>
       <legend>Describe it</legend>
       <textarea id="prompt" placeholder="e.g. 900mm sink base, two shaker doors, soft-close, one shelf"></textarea>
@@ -1429,10 +1449,43 @@ $("planWallBtn").onclick = async () => {
   } catch (e) { $("wallPlan").textContent = e.message; }
 };
 
+// Starter-project gallery (G3): fetch the curated set and let a click build it.
+const FORM_KINDS = new Set(["cabinet", "table", "project", "assembly"]);
+async function loadGallery() {
+  const box = $("gallery");
+  if (!box) return;
+  let items;
+  try { items = (await (await fetch("/api/templates")).json()).templates || []; }
+  catch (e) { box.innerHTML = '<div class="ph-mini">Gallery unavailable</div>'; return; }
+  if (!items.length) { box.innerHTML = '<div class="ph-mini">No starters</div>'; return; }
+  box.innerHTML = "";
+  for (const t of items) {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "gcard";
+    card.innerHTML = `<span class="gcat">${esc(t.category)}</span>` +
+      `<span class="gtitle">${esc(t.label)}</span>` +
+      `<span class="gblurb">${esc(t.blurb)}</span>`;
+    card.onclick = async () => {
+      setBusy(true);
+      try {
+        // Reflect the design in the form where it has fields for that kind;
+        // every kind still builds + renders from its spec.
+        if (t.spec && FORM_KINDS.has(t.spec.kind || "cabinet")) syncForm(t.spec);
+        render(await post("/api/build",
+          {spec: t.spec, ...currentPricing(), profile: currentProfile()}));
+      } catch (e) { showError(e.message); }
+      finally { setBusy(false); health(); }
+    };
+    box.appendChild(card);
+  }
+}
+
 // Initialise the form to the default display unit (inches for US shops): the
 // HTML defaults are authored in mm, so convert them once on load.
 setUnitLabels();
 applyUnitChange();
+loadGallery();
 
 health();
 loadPricing();

@@ -199,6 +199,13 @@ def profile() -> dict[str, Any]:
     return profile_to_dict(ShopProfile())
 
 
+@app.get("/api/templates")
+def templates() -> dict[str, Any]:
+    """The starter-project gallery (G3): ready-to-build designs for a cold start."""
+    from .templates import gallery
+    return {"templates": gallery()}
+
+
 def _profile_of(body) -> ShopProfile | None:
     """The :class:`ShopProfile` in *body*, or ``None`` when absent."""
     return profile_from_dict(body.profile) if body.profile else None
