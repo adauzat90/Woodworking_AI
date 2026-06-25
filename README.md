@@ -147,6 +147,28 @@ woodai build out/spec.json --out ./out --step --stl --glb --dxf --drill --estima
 Pick the model with `WOODAI_MODEL` (default `claude-opus-4-8`; e.g.
 `claude-sonnet-4-6` for cheaper runs).
 
+**Design against the tools you own.** Tell it what's in your shop and it only
+uses joinery you can actually cut — the AI designer is constrained to feasible
+joints, and a hand-authored spec gets each unmakeable joint flagged with a
+substitute you *can* make. Use a preset or list your tools:
+
+```bash
+woodai build out/spec.json --shop hand        # hand tools + a drill only
+woodai build out/spec.json --shop hobbyist    # table saw, router, jigs (no Domino)
+woodai design "30 inch drawer base, 3 drawers" \
+    --tools "table_saw,router,drill,pocket_jig,dovetail_jig,forstner_35,shelf_pin_jig"
+woodai build out/spec.json --tools-list       # just print the tool/jig checklist
+```
+
+So a Domino joint in a hand-tool shop becomes *"switch to a dado joint (you can
+make that)"*, and a dovetailed drawer with no dovetail jig (and no hand tools)
+becomes *"switch to box / finger joints."* It's advisory — a tool gap never
+blocks the math — and every build prints a **tools-needed checklist** marking
+what you own vs. what you'd have to borrow or buy. The web UI carries the same
+inventory in the shop profile. Tools modelled: hand tools, table saw, dado set,
+router/router table, drill, drill press, doweling / pocket / dovetail / box-joint
+jigs, Domino, biscuit joiner, mortiser, shelf-pin jig, and a 35 mm Forstner.
+
 ## Web app
 
 A FastAPI backend serves a single-page designer with a live 3D preview:
@@ -164,6 +186,10 @@ browser. Plus:
 - **Furniture / Project modes** — design a single cabinet or table, or switch to
   **Project (run)** to build a multi-cabinet run from JSON: one combined cut list,
   quote, drilling schedule, and an assembled view (placement collisions flagged).
+- **Shop tooling** — tick the tools you own in the **My shop tooling** panel
+  (or start from a preset) and the design is constrained to joinery you can make
+  (unmakeable joints are flagged with a feasible substitute); the **Tools** tab
+  lists every tool/jig the build needs, marked have / missing.
 - **Units toggle** — view the cut list and reports in fractional inches or mm.
 - **Live update** — toggle on to rebuild as you change parameters.
 - **Downloads** — STEP, STL, GLB, DXF cut-layout, cut-list & drilling CSV.
@@ -274,4 +300,7 @@ pytest
 MVP: frameless **base cabinets** end to end, including the **Critic** verify
 loop with both computational and render-based (visual) review. Next: wall/tall
 cabinets, face-frame construction, sheet nesting + cost, and a web UI with live
-GLB preview. Full roadmap in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+GLB preview. Full roadmap in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md); the
+hobbyist-focused plan (more furniture types, cut-from-your-lumber, skill/time
+estimates, finishing depth, a species database) is in
+[`docs/HOBBYIST_ROADMAP.md`](docs/HOBBYIST_ROADMAP.md).

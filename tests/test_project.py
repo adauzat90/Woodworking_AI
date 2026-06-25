@@ -75,6 +75,64 @@ def test_project_estimate_sums_components():
     assert "Cost estimate" in whole.report_text()
 
 
+# --- declarative `runs` placement -------------------------------------------
+
+def test_runs_expand_to_placed_components():
+    p = spec_from_dict({"kind": "project", "name": "Galley", "runs": [
+        {"start": [0, 0], "angle": 0, "gap": 0, "items": [
+            {"spec": {"cabinet_type": "base", "width": 600}, "label": "B1"},
+            {"spec": {"cabinet_type": "base", "width": 400}, "label": "B2"}]}]})
+    assert isinstance(p, Project) and len(p.components) == 2
+    assert [round(c.x) for c in p.components] == [0, 600]
+    assert [c.label for c in p.components] == ["B1", "B2"]
+    assert validate(p).ok
+
+
+def test_runs_match_equivalent_place_run():
+    p = spec_from_dict({"kind": "project", "runs": [
+        {"start": [0, 0], "angle": 0, "items": [
+            {"spec": {"cabinet_type": "base", "width": 600}},
+            {"spec": {"cabinet_type": "base", "width": 400}}]}]})
+    ref = place_run([CabinetSpec(cabinet_type="base", width=600),
+                     CabinetSpec(cabinet_type="base", width=400)],
+                    start=(0, 0), angle=0)
+    assert [round(c.x) for c in p.components] == [round(c.x) for c in ref]
+
+
+def test_runs_turn_a_corner_without_overlap():
+    # An L-kitchen: two perpendicular runs meeting at a corner gap.
+    p = spec_from_dict({"kind": "project", "name": "L", "runs": [
+        {"start": [0, 0], "angle": 0, "items": [
+            {"spec": {"cabinet_type": "base", "width": 600}},
+            {"spec": {"cabinet_type": "base", "width": 600}}]},
+        {"start": [1200, 560], "angle": 90, "items": [
+            {"spec": {"cabinet_type": "base", "width": 600}},
+            {"spec": {"cabinet_type": "base", "width": 600}}]}]})
+    assert len(p.components) == 4
+    assert validate(p).ok
+    assert all(round(c.rotation) == 90 for c in p.components[2:])
+
+
+def test_runs_resolve_refs_against_definitions():
+    p = spec_from_dict({
+        "kind": "project", "name": "Wall",
+        "definitions": {"wp": {"kind": "assembly", "components": [
+            {"spec": {"cabinet_type": "wall", "width": 600, "toe_kick": None}}]}},
+        "runs": [{"start": [0, 0], "angle": 0, "gap": 0, "items": [
+            {"ref": "wp"}, {"ref": "wp"}]}]})
+    assert len(p.components) == 2
+    assert [round(c.x) for c in p.components] == [0, 600]
+
+
+def test_runs_append_after_explicit_components():
+    p = spec_from_dict({"kind": "project", "components": [
+        {"spec": {"cabinet_type": "base", "width": 900}, "x": 0, "label": "EXP"}],
+        "runs": [{"start": [900, 0], "angle": 0, "items": [
+            {"spec": {"cabinet_type": "base", "width": 600}, "label": "R1"}]}]})
+    assert [c.label for c in p.components] == ["EXP", "R1"]
+    assert validate(p).ok
+
+
 # --- assembled geometry (the single-3D-model step) --------------------------
 
 def test_project_layout_places_components_in_one_frame():

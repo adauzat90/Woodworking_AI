@@ -1,0 +1,460 @@
+{
+  "cutlist": {
+    "hardware": [
+      {
+        "brand": "",
+        "category": "hardware",
+        "name": "Corner bracket",
+        "notes": "leg-to-apron",
+        "qty": 4,
+        "sku": ""
+      },
+      {
+        "brand": "",
+        "category": "hardware",
+        "name": "Seat fastener",
+        "notes": "expansion clip",
+        "qty": 6,
+        "sku": ""
+      }
+    ],
+    "parts": [
+      {
+        "banded_edges": "",
+        "category": "solid",
+        "form": "solid",
+        "grain": "length",
+        "id": "T1",
+        "length": 1200,
+        "material": "top",
+        "name": "Seat",
+        "notes": "solid/sheet seat",
+        "openings": [],
+        "qty": 1,
+        "species": "ash",
+        "thickness": 30.0,
+        "width": 350
+      },
+      {
+        "banded_edges": "",
+        "category": "solid",
+        "form": "solid",
+        "grain": "length",
+        "id": "T2",
+        "length": 420.0,
+        "material": "leg",
+        "name": "Leg",
+        "notes": "square stock",
+        "openings": [],
+        "qty": 4,
+        "species": "ash",
+        "thickness": 45,
+        "width": 45
+      },
+      {
+        "banded_edges": "",
+        "category": "solid",
+        "form": "solid",
+        "grain": "length",
+        "id": "T3",
+        "length": 1040.0,
+        "material": "apron",
+        "name": "Apron (long)",
+        "notes": "",
+        "openings": [],
+        "qty": 2,
+        "species": "ash",
+        "thickness": 20.0,
+        "width": 70.0
+      },
+      {
+        "banded_edges": "",
+        "category": "solid",
+        "form": "solid",
+        "grain": "length",
+        "id": "T4",
+        "length": 190.0,
+        "material": "apron",
+        "name": "Apron (short)",
+        "notes": "",
+        "openings": [],
+        "qty": 2,
+        "species": "ash",
+        "thickness": 20.0,
+        "width": 70.0
+      },
+      {
+        "banded_edges": "",
+        "category": "solid",
+        "form": "solid",
+        "grain": "length",
+        "id": "T5",
+        "length": 1040.0,
+        "material": "apron",
+        "name": "Stretcher",
+        "notes": "lower rail, resists racking",
+        "openings": [],
+        "qty": 2,
+        "species": "ash",
+        "thickness": 20.0,
+        "width": 30.0
+      }
+    ],
+    "spec_name": "Dining bench"
+  },
+  "drilling": {
+    "ops": [],
+    "spec_name": "Dining bench"
+  },
+  "dxf": "0\nSECTION\n2\nTABLES\n0\nTABLE\n2\nLAYER\n70\n8\n0\nLAYER\n2\nPANEL\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nSHEET\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nLABEL\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nWARN\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nBORE\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nDADO\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nRABBET\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nCUTOUT\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nENDTAB\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n0\nLINE\n8\nSHEET\n10\n0.00\n20\n0.00\n30\n0.0\n11\n2440.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n2440.00\n20\n0.00\n30\n0.0\n11\n2440.00\n21\n1220.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n2440.00\n20\n1220.00\n30\n0.0\n11\n0.00\n21\n1220.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n0.00\n20\n1220.00\n30\n0.0\n11\n0.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nSHEET\n10\n5.00\n20\n1250.00\n30\n0.0\n40\n40.0\n1\nSheet 1\n0\nLINE\n8\nPANEL\n10\n0.00\n20\n0.00\n30\n0.0\n11\n1200.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1200.00\n20\n0.00\n30\n0.0\n11\n1200.00\n21\n350.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1200.00\n20\n350.00\n30\n0.0\n11\n0.00\n21\n350.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n0.00\n20\n350.00\n30\n0.0\n11\n0.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n8.00\n20\n167.00\n30\n0.0\n40\n16.0\n1\nT1 Seat 1200x350\n0\nLINE\n8\nPANEL\n10\n1203.00\n20\n0.00\n30\n0.0\n11\n2243.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n2243.00\n20\n0.00\n30\n0.0\n11\n2243.00\n21\n70.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n2243.00\n20\n70.00\n30\n0.0\n11\n1203.00\n21\n70.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1203.00\n20\n70.00\n30\n0.0\n11\n1203.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n1211.00\n20\n27.00\n30\n0.0\n40\n16.0\n1\nT3 Apron (long) 1 1040x70\n0\nLINE\n8\nPANEL\n10\n0.00\n20\n353.00\n30\n0.0\n11\n1040.00\n21\n353.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1040.00\n20\n353.00\n30\n0.0\n11\n1040.00\n21\n423.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1040.00\n20\n423.00\n30\n0.0\n11\n0.00\n21\n423.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n0.00\n20\n423.00\n30\n0.0\n11\n0.00\n21\n353.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n8.00\n20\n380.00\n30\n0.0\n40\n16.0\n1\nT3 Apron (long) 2 1040x70\n0\nLINE\n8\nPANEL\n10\n1043.00\n20\n353.00\n30\n0.0\n11\n1233.00\n21\n353.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1233.00\n20\n353.00\n30\n0.0\n11\n1233.00\n21\n423.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1233.00\n20\n423.00\n30\n0.0\n11\n1043.00\n21\n423.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1043.00\n20\n423.00\n30\n0.0\n11\n1043.00\n21\n353.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n1051.00\n20\n380.00\n30\n0.0\n40\n16.0\n1\nT4 Apron (short) 1 190x70\n0\nLINE\n8\nPANEL\n10\n1236.00\n20\n353.00\n30\n0.0\n11\n1426.00\n21\n353.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1426.00\n20\n353.00\n30\n0.0\n11\n1426.00\n21\n423.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1426.00\n20\n423.00\n30\n0.0\n11\n1236.00\n21\n423.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1236.00\n20\n423.00\n30\n0.0\n11\n1236.00\n21\n353.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n1244.00\n20\n380.00\n30\n0.0\n40\n16.0\n1\nT4 Apron (short) 2 190x70\n0\nLINE\n8\nPANEL\n10\n1429.00\n20\n353.00\n30\n0.0\n11\n1849.00\n21\n353.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1849.00\n20\n353.00\n30\n0.0\n11\n1849.00\n21\n398.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1849.00\n20\n398.00\n30\n0.0\n11\n1429.00\n21\n398.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1429.00\n20\n398.00\n30\n0.0\n11\n1429.00\n21\n353.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n1437.00\n20\n367.50\n30\n0.0\n40\n16.0\n1\nT2 Leg 1 420x45\n0\nLINE\n8\nPANEL\n10\n1852.00\n20\n353.00\n30\n0.0\n11\n2272.00\n21\n353.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n2272.00\n20\n353.00\n30\n0.0\n11\n2272.00\n21\n398.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n2272.00\n20\n398.00\n30\n0.0\n11\n1852.00\n21\n398.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1852.00\n20\n398.00\n30\n0.0\n11\n1852.00\n21\n353.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n1860.00\n20\n367.50\n30\n0.0\n40\n16.0\n1\nT2 Leg 2 420x45\n0\nLINE\n8\nPANEL\n10\n0.00\n20\n426.00\n30\n0.0\n11\n420.00\n21\n426.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n420.00\n20\n426.00\n30\n0.0\n11\n420.00\n21\n471.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n420.00\n20\n471.00\n30\n0.0\n11\n0.00\n21\n471.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n0.00\n20\n471.00\n30\n0.0\n11\n0.00\n21\n426.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n8.00\n20\n440.50\n30\n0.0\n40\n16.0\n1\nT2 Leg 3 420x45\n0\nLINE\n8\nPANEL\n10\n423.00\n20\n426.00\n30\n0.0\n11\n843.00\n21\n426.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n843.00\n20\n426.00\n30\n0.0\n11\n843.00\n21\n471.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n843.00\n20\n471.00\n30\n0.0\n11\n423.00\n21\n471.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n423.00\n20\n471.00\n30\n0.0\n11\n423.00\n21\n426.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n431.00\n20\n440.50\n30\n0.0\n40\n16.0\n1\nT2 Leg 4 420x45\n0\nLINE\n8\nPANEL\n10\n846.00\n20\n426.00\n30\n0.0\n11\n1886.00\n21\n426.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1886.00\n20\n426.00\n30\n0.0\n11\n1886.00\n21\n456.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1886.00\n20\n456.00\n30\n0.0\n11\n846.00\n21\n456.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n846.00\n20\n456.00\n30\n0.0\n11\n846.00\n21\n426.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n854.00\n20\n433.00\n30\n0.0\n40\n16.0\n1\nT5 Stretcher 1 1040x30\n0\nLINE\n8\nPANEL\n10\n0.00\n20\n474.00\n30\n0.0\n11\n1040.00\n21\n474.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1040.00\n20\n474.00\n30\n0.0\n11\n1040.00\n21\n504.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1040.00\n20\n504.00\n30\n0.0\n11\n0.00\n21\n504.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n0.00\n20\n504.00\n30\n0.0\n11\n0.00\n21\n474.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n8.00\n20\n481.00\n30\n0.0\n40\n16.0\n1\nT5 Stretcher 2 1040x30\n0\nENDSEC\n0\nEOF\n",
+  "estimate": {
+    "_rate": 65.0,
+    "banding_groups": [],
+    "currency": "$",
+    "edge_banding_cost": 0.0,
+    "edge_banding_m": 0.0,
+    "finish_cost": 0.0,
+    "finish_m2": 0.0,
+    "groups": [],
+    "hardware_cost": 0.0,
+    "labour_cost": 68.25,
+    "labour_hours": 1.05,
+    "lumber_cost": 80.6805,
+    "lumber_groups": [
+      {
+        "board_feet": 1.9884,
+        "cost": 18.2929,
+        "form": "solid",
+        "material": "apron",
+        "part_count": 6,
+        "species": "ash",
+        "thickness": 20.0
+      },
+      {
+        "board_feet": 1.4417,
+        "cost": 13.2635,
+        "form": "solid",
+        "material": "leg",
+        "part_count": 4,
+        "species": "ash",
+        "thickness": 45
+      },
+      {
+        "board_feet": 5.3396,
+        "cost": 49.1241,
+        "form": "solid",
+        "material": "top",
+        "part_count": 1,
+        "species": "ash",
+        "thickness": 30.0
+      }
+    ],
+    "material_cost": 0.0,
+    "spec_name": "Dining bench"
+  },
+  "issues": [],
+  "joinery": {
+    "ops": [
+      {
+        "depth": 27.0,
+        "note": "haunched M&T into the leg",
+        "operation": "leg-to-apron joint",
+        "part": "Leg / apron",
+        "part_id": "T2",
+        "reference": "apron into leg",
+        "tool": "mortiser / saw",
+        "width": 6.7
+      },
+      {
+        "depth": 27.0,
+        "note": "lower rail tenons into the leg",
+        "operation": "leg-to-stretcher joint",
+        "part": "Leg / stretcher",
+        "part_id": "T5",
+        "reference": "stretcher into leg",
+        "tool": "mortiser / saw",
+        "width": 6.7
+      }
+    ],
+    "spec_name": "Dining bench"
+  },
+  "panels": [
+    {
+      "category": "top",
+      "center": [
+        0,
+        0,
+        435.0
+      ],
+      "label": "Seat",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        1200,
+        350,
+        30.0
+      ],
+      "subassembly": "Seat"
+    },
+    {
+      "category": "leg",
+      "center": [
+        -542.5,
+        -117.5,
+        210.0
+      ],
+      "label": "Leg 1",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        45,
+        45,
+        420.0
+      ],
+      "subassembly": "Base"
+    },
+    {
+      "category": "leg",
+      "center": [
+        -542.5,
+        117.5,
+        210.0
+      ],
+      "label": "Leg 2",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        45,
+        45,
+        420.0
+      ],
+      "subassembly": "Base"
+    },
+    {
+      "category": "leg",
+      "center": [
+        542.5,
+        -117.5,
+        210.0
+      ],
+      "label": "Leg 3",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        45,
+        45,
+        420.0
+      ],
+      "subassembly": "Base"
+    },
+    {
+      "category": "leg",
+      "center": [
+        542.5,
+        117.5,
+        210.0
+      ],
+      "label": "Leg 4",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        45,
+        45,
+        420.0
+      ],
+      "subassembly": "Base"
+    },
+    {
+      "category": "apron",
+      "center": [
+        0,
+        -117.5,
+        385.0
+      ],
+      "label": "Apron long",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        1040.0,
+        20.0,
+        70.0
+      ],
+      "subassembly": "Base"
+    },
+    {
+      "category": "apron",
+      "center": [
+        0,
+        117.5,
+        385.0
+      ],
+      "label": "Apron long",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        1040.0,
+        20.0,
+        70.0
+      ],
+      "subassembly": "Base"
+    },
+    {
+      "category": "apron",
+      "center": [
+        -542.5,
+        0,
+        385.0
+      ],
+      "label": "Apron short",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        20.0,
+        190.0,
+        70.0
+      ],
+      "subassembly": "Base"
+    },
+    {
+      "category": "apron",
+      "center": [
+        542.5,
+        0,
+        385.0
+      ],
+      "label": "Apron short",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        20.0,
+        190.0,
+        70.0
+      ],
+      "subassembly": "Base"
+    },
+    {
+      "category": "stretcher",
+      "center": [
+        0,
+        -117.5,
+        120.0
+      ],
+      "label": "Stretcher",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        1040.0,
+        20.0,
+        30.0
+      ],
+      "subassembly": "Stretchers"
+    },
+    {
+      "category": "stretcher",
+      "center": [
+        0,
+        117.5,
+        120.0
+      ],
+      "label": "Stretcher",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        1040.0,
+        20.0,
+        30.0
+      ],
+      "subassembly": "Stretchers"
+    }
+  ],
+  "purchasing": {
+    "currency": "$",
+    "lines": [
+      {
+        "brand": "",
+        "category": "lumber",
+        "item": "Ash solid lumber",
+        "line_total": 18.2929,
+        "qty": 1.99,
+        "sku": "",
+        "spec": "20mm S4S",
+        "supplier": "Lumber yard",
+        "unit": "bd ft",
+        "unit_price": 9.2
+      },
+      {
+        "brand": "",
+        "category": "lumber",
+        "item": "Ash solid lumber",
+        "line_total": 13.2635,
+        "qty": 1.44,
+        "sku": "",
+        "spec": "45mm S4S",
+        "supplier": "Lumber yard",
+        "unit": "bd ft",
+        "unit_price": 9.2
+      },
+      {
+        "brand": "",
+        "category": "lumber",
+        "item": "Ash solid lumber",
+        "line_total": 49.1241,
+        "qty": 5.34,
+        "sku": "",
+        "spec": "30mm S4S",
+        "supplier": "Lumber yard",
+        "unit": "bd ft",
+        "unit_price": 9.2
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "Corner bracket",
+        "line_total": 0.0,
+        "qty": 4,
+        "sku": "",
+        "spec": "leg-to-apron",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.0
+      },
+      {
+        "brand": "generic",
+        "category": "hardware",
+        "item": "Seat fastener",
+        "line_total": 0.0,
+        "qty": 6,
+        "sku": "",
+        "spec": "expansion clip",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.0
+      },
+      {
+        "brand": "",
+        "category": "labour",
+        "item": "Shop labour",
+        "line_total": 68.25,
+        "qty": 1.05,
+        "sku": "",
+        "spec": "cut, process, assemble, finish",
+        "supplier": "Shop labour (in-house)",
+        "unit": "h",
+        "unit_price": 65.0
+      }
+    ],
+    "name": "Dining bench"
+  },
+  "valid": true
+}

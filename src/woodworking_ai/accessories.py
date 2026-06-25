@@ -20,6 +20,8 @@ validator (e.g. a sink cutout must fit the cabinet). Pure data — no CAD.
 
 from __future__ import annotations
 
+from .materials import MAT_COUNTERTOP, MAT_DOOR_FRONT, MAT_FRAME, MAT_MOLDING
+
 
 def _num(d: dict, key: str, default: float) -> float:
     v = d.get(key, default)
@@ -96,20 +98,20 @@ def add_accessory_parts(cl, spec) -> None:
                 note += f" — sink/cooktop cutout ({sizes})"
             cl.parts.append(Part(
                 "Countertop", 1, length=spec.width, width=depth + overhang,
-                thickness=thick, material="countertop", grain="length",
+                thickness=thick, material=MAT_COUNTERTOP, grain="length",
                 notes=note, openings=cutouts))
         elif kind == "filler":
             w = _num(a, "width", 75.0)
             side = str(a.get("side", ""))
             cl.parts.append(Part(
                 "Filler", 1, length=spec.box_height, width=w,
-                thickness=spec.material.carcass, material="frame", grain="length",
+                thickness=spec.material.carcass, material=MAT_FRAME, grain="length",
                 notes=f"scribe to wall{f' ({side})' if side else ''}"))
         elif kind == "end_panel":
             side = str(a.get("side", ""))
             cl.parts.append(Part(
                 "End panel", 1, length=spec.box_height, width=spec.depth,
-                thickness=spec.material.door, material="door/front", grain="length",
+                thickness=spec.material.door, material=MAT_DOOR_FRONT, grain="length",
                 notes=f"finished exposed side{f' ({side})' if side else ''}"))
         elif kind == "molding":
             mtype = str(a.get("type", "crown"))
@@ -117,7 +119,7 @@ def add_accessory_parts(cl, spec) -> None:
             cl.parts.append(Part(
                 f"{mtype.replace('_', ' ').title()} molding", 1,
                 length=spec.width, width=height, thickness=spec.material.carcass,
-                material="molding", grain="length",
+                material=MAT_MOLDING, grain="length",
                 notes=str(a.get("profile", "")) or mtype))
         # "appliance" adds no part — it's the cutout, checked by the validator.
 
@@ -179,6 +181,33 @@ def accessory_issues(spec) -> list:
                 out.append((
                     "warning", "countertop",
                     "counter overhang over 100mm needs support brackets"))
+
+    # --- kind / enum-value sanity (additive; advisory) -------------------
+    from .dsl import ACCESSORY_SIDES, MOLDING_TYPES
+    known_kinds = {"countertop", "appliance", "filler", "end_panel",
+                   "door_panel", "molding"}
+    for a in getattr(spec, "accessories", None) or []:
+        if not isinstance(a, dict):
+            continue
+        kind = str(a.get("kind", "")).strip().lower()
+        if kind and kind not in known_kinds:
+            out.append((
+                "warning", "accessory",
+                f"unknown accessory kind {kind!r}; expected one of "
+                f"{', '.join(sorted(known_kinds))}"))
+        if kind in ("filler", "end_panel"):
+            side = str(a.get("side", "")).strip().lower()
+            if side and side not in ACCESSORY_SIDES:
+                out.append((
+                    "warning", kind,
+                    f"side {side!r} should be one of {', '.join(ACCESSORY_SIDES)}"))
+        if kind == "molding":
+            mtype = str(a.get("type", "crown")).strip().lower()
+            if mtype and mtype not in MOLDING_TYPES:
+                out.append((
+                    "warning", "molding",
+                    f"molding type {mtype!r} not recognized; expected one of "
+                    f"{', '.join(MOLDING_TYPES)}"))
     return out
 
 

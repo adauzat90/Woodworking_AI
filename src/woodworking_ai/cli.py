@@ -22,20 +22,39 @@ from .dsl import spec_from_dict, ComponentGroup
 from . import service
 
 
-def _emit(spec, args) -> int:
+def _tooling_from_args(args):
+    """A :class:`ShopTooling` from ``--shop``/``--tools``, or ``None``.
+
+    ``--shop`` picks a preset; ``--tools`` is an explicit comma-list of owned
+    capabilities (turning everything else off). ``--tools`` wins when both are
+    given. ``None`` (neither flag) leaves the design unconstrained.
+    """
+    from .tooling import PRESETS, ShopTooling
+    tools = getattr(args, "tools", None)
+    shop = getattr(args, "shop", None)
+    if tools:
+        names = [t for t in tools.replace(",", " ").split() if t]
+        return ShopTooling.from_names(names)
+    if shop:
+        return PRESETS.get(shop)
+    return None
+
+
+def _emit(spec, args, tooling=None) -> int:
     """Validate, critique, and report a spec (cabinet/table or whole project).
 
     Runs the design pipeline exactly once through :func:`service.assemble` and
     writes every requested export through :func:`service.export_bytes`; this
     function only does presentation (stdout text/CSV and choosing filenames).
     A :class:`ComponentGroup` is reported as one aggregated run; the few places
-    the two paths read differently are gated on ``is_group``.
+    the two paths read differently are gated on ``is_group``. ``tooling`` (a
+    :class:`~tooling.ShopTooling`) constrains validation to makeable joinery.
     """
     is_group = isinstance(spec, ComponentGroup)
     noun = "project" if is_group else "design"
     unit = "imperial" if getattr(args, "imperial", False) else "metric"
 
-    asm = service.assemble(spec)
+    asm = service.assemble(spec, tooling=tooling)
 
     print(spec.to_json())
     print()
@@ -107,9 +126,48 @@ def _emit(spec, args) -> int:
     if not is_group and args.assembly:
         print("\n" + asm.assembly.report_text())
 
+    # Build plan: skill rating + method-aware phase time breakdown. The time
+    # model reflects the supplied tooling (hand vs. jig vs. machine); with no
+    # --shop/--tools it uses a stable well-equipped default.
+    _print_plan(asm.plan)
+
+    if getattr(args, "from_stock", None):
+        import json as _json
+        from .cutplan import boards_from_dicts, cut_plan
+        data = _json.loads(Path(args.from_stock).read_text(encoding="utf-8"))
+        boards = boards_from_dicts(data)
+        plan = cut_plan(spec, boards, cutlist=cutlist)
+        print("\n" + plan.report_text(unit))
+
+    if tooling is not None or getattr(args, "tools_list", False):
+        from .tooling import tools_needed
+        print("\nTools needed:")
+        for t in tools_needed(spec, tooling):
+            mark = "" if t.owned is None else ("  ✓ have" if t.owned
+                                               else "  ✗ MISSING")
+            print(f"  {t.operation:<26} {t.tool}{mark}")
+
     if args.out:
         _write_outputs(spec, asm, args, unit, is_group=is_group)
     return 0
+
+
+def _print_plan(plan: dict) -> None:
+    """Print the skill rating and the method-aware phase time breakdown."""
+    skill = plan.get("skill", {})
+    time = plan.get("time", {})
+    print("\nBuild plan:")
+    print(f"  skill level: {skill.get('level', '?')}")
+    for d in skill.get("drivers", []):
+        print(f"    - {d}")
+    phases = time.get("hours_by_phase", {})
+    print(f"  estimated time: {time.get('total', 0):.1f} h")
+    for phase in ("mill", "joinery", "assembly", "finish", "hardware"):
+        hrs = phases.get(phase, 0.0)
+        if hrs:
+            print(f"    {phase:<10} {hrs:5.2f} h")
+    for d in time.get("drivers", []):
+        print(f"    · {d}")
 
 
 def _write_outputs(spec, asm, args, unit: str, *, is_group: bool) -> None:
@@ -136,11 +194,19 @@ def _write_outputs(spec, asm, args, unit: str, *, is_group: bool) -> None:
     if not is_group and args.drawings:
         write("drawings", "drawings.svg")
         print("Wrote drawings.svg")
+    if getattr(args, "from_stock", None):
+        import json as _json
+        from .cutplan import boards_from_dicts, cut_plan
+        data = _json.loads(Path(args.from_stock).read_text(encoding="utf-8"))
+        plan = cut_plan(spec, boards_from_dicts(data), cutlist=asm.cutlist)
+        (out / "cutplan.csv").write_text(plan.to_csv(unit) + "\n",
+                                         encoding="utf-8")
+        print("Wrote cutplan.csv")
     if not is_group and getattr(args, "package", False):
         write("package", "build_package.pdf")
         print("Wrote build_package.pdf")
 
-    if args.step or args.stl or args.glb:
+    if args.step or args.stl or args.glb or getattr(args, "dae", False):
         from .builder import build_model, measure
         joinery_geometry = getattr(args, "joinery_geometry", False)
         model = build_model(spec, joinery_geometry=joinery_geometry)
@@ -157,6 +223,9 @@ def _write_outputs(spec, asm, args, unit: str, *, is_group: bool) -> None:
         if args.glb:
             exporters.export_glb(model, out / f"{base}.glb")
             print(f"Wrote {base}.glb")
+        if getattr(args, "dae", False):
+            exporters.export_dae(model, out / f"{base}.dae")
+            print(f"Wrote {base}.dae")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -168,6 +237,8 @@ def main(argv: list[str] | None = None) -> int:
     common.add_argument("--step", action="store_true", help="export STEP (needs build123d)")
     common.add_argument("--stl", action="store_true", help="export STL (needs build123d)")
     common.add_argument("--glb", action="store_true", help="export GLB (needs build123d)")
+    common.add_argument("--dae", action="store_true",
+                        help="export Collada DAE for SketchUp (needs build123d + trimesh)")
     common.add_argument("--dxf", action="store_true",
                         help="export a DXF cut-layout nest (no build123d needed)")
     common.add_argument("--drawings", action="store_true",
@@ -194,6 +265,20 @@ def main(argv: list[str] | None = None) -> int:
                         help="show cut list and reports in fractional inches "
                              "(engine stays metric; the 32mm drilling schedule "
                              "remains in mm)")
+    common.add_argument("--shop", choices=["full", "hobbyist", "hand"],
+                        help="design against a preset tool inventory: 'hand' "
+                             "(hand tools + drill), 'hobbyist' (table saw, "
+                             "router, jigs — no Domino/dovetail jig), or 'full'")
+    common.add_argument("--tools",
+                        help="comma-list of tools you own, e.g. "
+                             "'table_saw,router,pocket_jig,dovetail_jig'; only "
+                             "joinery these can make is allowed (overrides --shop)")
+    common.add_argument("--tools-list", action="store_true", dest="tools_list",
+                        help="print the tool/jig checklist the design requires")
+    common.add_argument("--from-stock", dest="from_stock", metavar="BOARDS.JSON",
+                        help="assign parts to boards you already own (a JSON "
+                             "list of {length,width,thickness,species,form,qty}) "
+                             "and print the cut plan + what's still to buy")
 
     p_design = sub.add_parser("design", parents=[common],
                               help="natural language -> design (uses Claude)")
@@ -207,17 +292,20 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
 
+    tooling = _tooling_from_args(args)
+
     if args.cmd == "design":
         from .agents import design_from_prompt
         print(f"Designing: {args.prompt!r}\n")
-        res = design_from_prompt(args.prompt, max_attempts=args.attempts, model=args.model)
+        res = design_from_prompt(args.prompt, max_attempts=args.attempts,
+                                 model=args.model, tooling=tooling)
         print(f"(agent converged in {res.attempts} attempt(s))\n")
-        return _emit(res.spec, args)
+        return _emit(res.spec, args, tooling=tooling)
 
     if args.cmd == "build":
         import json as _json
         data = _json.loads(Path(args.spec_file).read_text(encoding="utf-8"))
-        return _emit(spec_from_dict(data), args)
+        return _emit(spec_from_dict(data), args, tooling=tooling)
 
     return 2
 

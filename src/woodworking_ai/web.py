@@ -65,6 +65,8 @@ _PKG_CAPS = {
 # Read the SPA template once at startup; per-request we only splice in the
 # (request-time) Convex URL, which is cheap and lets the env var change live.
 _INDEX_TEMPLATE = (STATIC / "index.html").read_text(encoding="utf-8")
+# Rendered SPA HTML keyed by the spliced-in CONVEX_URL (usually one entry).
+_INDEX_CACHE: dict[str, str] = {}
 
 
 def _live_capabilities() -> dict[str, bool]:
@@ -158,10 +160,16 @@ class RoomRequest(BaseModel):
 @app.get("/", response_class=HTMLResponse)
 def index() -> str:
     # Expose an optional Convex deployment URL to the front end. Read live so the
-    # value can change without a restart (and so the test harness can flip it).
+    # value can change without a restart (and so the test harness can flip it),
+    # but cache the spliced HTML per distinct URL so the common case is a dict
+    # lookup, not an O(n) string replace over the whole template every request.
     convex = os.environ.get("CONVEX_URL", "")
-    inject = f'<script>window.__CONVEX_URL__={convex!r};</script>'
-    return _INDEX_TEMPLATE.replace("<!--CONVEX_URL-->", inject)
+    html = _INDEX_CACHE.get(convex)
+    if html is None:
+        inject = f'<script>window.__CONVEX_URL__={convex!r};</script>'
+        html = _INDEX_TEMPLATE.replace("<!--CONVEX_URL-->", inject)
+        _INDEX_CACHE[convex] = html
+    return html
 
 
 @app.get("/api/config")
@@ -196,6 +204,17 @@ def _profile_of(body) -> ShopProfile | None:
     return profile_from_dict(body.profile) if body.profile else None
 
 
+def _tooling_of(body):
+    """The shop tooling inventory from *body*'s profile, or ``None``.
+
+    ``None`` means "design against any joinery" (unchanged behaviour); a
+    declared inventory constrains validation and the AI designer to makeable
+    joints.
+    """
+    prof = _profile_of(body)
+    return prof.tooling if prof else None
+
+
 def _pricing_overrides(body):
     """Pull optional ``prices`` / ``sheet`` overrides from a request body.
 
@@ -223,8 +242,11 @@ def _parse_spec(body: _SpecBody) -> CabinetSpec | TableSpec | ComponentGroup:
         spec_data = prof.apply_defaults(spec_data)
     try:
         return spec_from_dict(spec_data)
-    except (TypeError, ValueError, AttributeError) as exc:
-        raise HTTPException(status_code=400, detail=f"bad spec: {exc}")
+    except (TypeError, ValueError, AttributeError):
+        # Log the detail server-side; the parse error is built from
+        # user-influenced spec data, so do not echo it back to the client.
+        logger.exception("spec parse failed")
+        raise HTTPException(status_code=400, detail="invalid spec")
 
 
 @app.post("/api/build")
@@ -234,7 +256,8 @@ def api_build(body: BuildRequest) -> JSONResponse:
     prices, sheet = _pricing_overrides(body)
     try:
         return JSONResponse(build_result(
-            spec, want_glb=body.glb, prices=prices, sheet=sheet))
+            spec, want_glb=body.glb, prices=prices, sheet=sheet,
+            tooling=_tooling_of(body)))
     except Exception:  # defensive: never 500 with a stack trace
         logger.exception("build failed")
         raise HTTPException(status_code=500, detail="build failed")
@@ -252,13 +275,16 @@ def api_design(body: DesignRequest) -> JSONResponse:
             detail="LLM unavailable: install 'anthropic' and set ANTHROPIC_API_KEY",
         )
     from .agents import design_from_prompt
+    tooling = _tooling_of(body)
     try:
-        res = design_from_prompt(prompt, max_attempts=body.attempts)
+        res = design_from_prompt(prompt, max_attempts=body.attempts,
+                                 tooling=tooling)
     except Exception:  # surface a generic agent error to the UI
         logger.exception("designer failed")
         raise HTTPException(status_code=502, detail="designer failed")
     prices, sheet = _pricing_overrides(body)
-    bundle = build_result(res.spec, want_glb=body.glb, prices=prices, sheet=sheet)
+    bundle = build_result(res.spec, want_glb=body.glb, prices=prices, sheet=sheet,
+                          tooling=tooling)
     bundle["attempts"] = res.attempts
     return JSONResponse(bundle)
 
@@ -303,8 +329,9 @@ def api_diff(body: DiffRequest) -> dict[str, Any]:
     try:
         spec_a = spec_from_dict(body.from_ or {})
         spec_b = spec_from_dict(body.to or {})
-    except (TypeError, ValueError, AttributeError) as exc:
-        raise HTTPException(status_code=400, detail=f"bad spec: {exc}")
+    except (TypeError, ValueError, AttributeError):
+        logger.exception("diff spec parse failed")
+        raise HTTPException(status_code=400, detail="invalid spec")
     changes = spec_diff(spec_a.to_dict(), spec_b.to_dict())
     prices, sheet = _pricing_overrides(body)
     try:

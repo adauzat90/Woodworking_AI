@@ -141,7 +141,8 @@ def _interferences(panels: list[PanelBox]) -> list[tuple[str, str, float]]:
 
 
 def _brep_interferences(model: Any, eps_volume: float = 1.0,
-                        skip: set[str] | None = None
+                        skip: set[str] | None = None,
+                        failures: list[tuple[str, str]] | None = None
                         ) -> list[tuple[str, str, float]]:
     """True solid-boolean interferences between a model's panels (mm³).
 
@@ -149,6 +150,12 @@ def _brep_interferences(model: Any, eps_volume: float = 1.0,
     rotated, mitred or otherwise non-axis-aligned parts a future construction
     style might introduce. O(n²) boolean intersections, so it is opt-in.
     ``skip`` names panels excluded from the check (e.g. trim-to-fit blanks).
+
+    Disjoint solids legitimately raise instead of returning an empty
+    intersection, so an exception is *treated* as no overlap — but it is never
+    swallowed silently: every failed pair is logged at WARNING and appended to
+    ``failures`` (when provided) so the caller can surface a ``warning`` issue
+    rather than let a real kernel bug masquerade as a clean model.
     """
     skip = skip or set()
     children = [c for c in getattr(model, "children", [])
@@ -157,20 +164,28 @@ def _brep_interferences(model: Any, eps_volume: float = 1.0,
     for i in range(len(children)):
         for j in range(i + 1, len(children)):
             a, b = children[i], children[j]
+            la = getattr(a, "label", f"#{i}")
+            lb = getattr(b, "label", f"#{j}")
             try:
                 vol = (a & b).volume
             except Exception as exc:
-                # Disjoint solids legitimately raise instead of returning an
-                # empty intersection — treat as no overlap, but never swallow
-                # the failure silently: a real kernel bug must be observable
-                # rather than masquerading as a clean model.
                 vol = 0.0
-                _log.debug("B-Rep intersection of %r & %r failed: %s",
-                           getattr(a, "label", i), getattr(b, "label", j), exc)
+                if failures is not None:
+                    failures.append((la, lb))
+                _log.warning("B-Rep intersection of %r & %r could not be "
+                             "evaluated (treated as no overlap): %s", la, lb, exc)
             if vol > eps_volume:
-                hits.append((getattr(a, "label", f"#{i}"),
-                             getattr(b, "label", f"#{j}"), vol))
+                hits.append((la, lb, vol))
     return hits
+
+
+def _brep_failure_message(failures: list[tuple[str, str]]) -> str:
+    """One-line summary of unevaluable B-Rep pairs for a ``warning`` issue."""
+    sample = ", ".join(f"'{a}'∩'{b}'" for a, b in failures[:3])
+    more = "" if len(failures) <= 3 else f" (+{len(failures) - 3} more)"
+    return (f"{len(failures)} panel-pair interference check(s) could not be "
+            f"evaluated by the B-Rep kernel and were assumed clear: "
+            f"{sample}{more}")
 
 
 def _negative_material_regions(spec: Any, b3d: Any
@@ -341,10 +356,16 @@ def _critique_project(project: ComponentGroup, *, use_cad: bool = False,
                 skip = {p.label for p in panels
                         if getattr(p, "oversized", False)
                         or p.category in _APPLIED_CATEGORIES}
-                for a, b, vol in _brep_interferences(model, skip=skip):
+                brep_fail: list[tuple[str, str]] = []
+                for a, b, vol in _brep_interferences(
+                        model, skip=skip, failures=brep_fail):
                     result.issues.append(CritiqueIssue(
                         "error", "interference",
                         f"B-Rep: '{a}' and '{b}' intersect (~{vol/1000:.1f} cm³)"))
+                if brep_fail:
+                    result.issues.append(CritiqueIssue(
+                        "warning", "interference",
+                        _brep_failure_message(brep_fail)))
         except RuntimeError as exc:
             result.issues.append(CritiqueIssue(
                 "warning", "geometry", f"could not build B-Rep for cross-check: {exc}"))
@@ -496,11 +517,15 @@ def critique(spec, *, use_cad: bool = False, brep: bool = False,
                 skip = {p.label for p in panels
                         if getattr(p, "oversized", False)
                         or p.category in _APPLIED_CATEGORIES}
-                brep_hits = _brep_interferences(model, skip=skip)
+                brep_fail = []
+                brep_hits = _brep_interferences(
+                    model, skip=skip, failures=brep_fail)
                 result.report["brep_interference_count"] = len(brep_hits)
                 for a, b, vol in brep_hits:
                     err("interference",
                         f"B-Rep: '{a}' and '{b}' intersect (~{vol/1000:.1f} cm³)")
+                if brep_fail:
+                    warn("interference", _brep_failure_message(brep_fail))
         except RuntimeError as exc:
             warn("geometry", f"could not build B-Rep for cross-check: {exc}")
 

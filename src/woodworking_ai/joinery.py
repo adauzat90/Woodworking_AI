@@ -16,7 +16,8 @@ from dataclasses import dataclass, field
 
 from .dsl import (CabinetSpec, TableSpec, ComponentGroup, BackStyle,
                   Joinery)
-from .dispatch import spec_kind, VOID, GROUP, TABLE
+from .dispatch import spec_kind, VOID, GROUP, TABLE, CABINET
+from . import furniture
 from .cutlist import generate_cutlist
 from .geometry import component_tag
 from .constants import (
@@ -58,27 +59,67 @@ class JoinerySchedule:
         return "\n".join(lines)
 
 
+# --- joint geometry, data-driven -------------------------------------------
+# Each joint name (the spec's lower-cased enum value) maps to its machining
+# numbers, so adding/retuning a joint is a one-line data edit, not a new branch.
+
+# Housed carcass joints whose *width* follows the mating panel thickness and
+# *depth* follows the stock (computed in _housed_joint): name -> (tool, note).
+_HOUSED_MATING = {
+    "dado": ("dado stack / straight bit",
+             "cut to the mating panel thickness for a snug fit"),
+    "rabbet": ("rabbet bit / dado", "rabbet at the panel end"),
+}
+# Carcass joints with a fixed tool geometry: name -> (tool, width, depth, note).
+_HOUSED_FIXED = {
+    "dowel": ("doweling jig (8mm)", 8.0, 30.0, "8mm dowels ~64mm on centre"),
+    "domino": ("Festool Domino (5mm)", 5.0, 25.0, "tenons ~128mm on centre"),
+    "pocket": ("pocket-hole jig", 0.0, 0.0, "pocket screws from the inside face"),
+    "screw": ("drill (pilot)", 0.0, 0.0, "pilot + countersink, glue optional"),
+}
+_HOUSED_BUTT = ("drill / glue", 0.0, 0.0,
+                "butt joint — weak; prefer a housed joint")
+
+
 def _housed_joint(joint: Joinery, mating_thickness: float, stock: float
                   ) -> tuple[str, float, float, str]:
     """(tool, width, depth, note) for a carcass panel-into-side joint."""
-    depth = round(stock * HOUSED_DEPTH_FRACTION, 1)
     j = str(joint).lower()
-    if j == "dado":
-        return ("dado stack / straight bit", round(mating_thickness, 1), depth,
-                "cut to the mating panel thickness for a snug fit")
-    if j == "rabbet":
-        return ("rabbet bit / dado", round(mating_thickness, 1), depth,
-                "rabbet at the panel end")
-    if j == "dowel":
-        return ("doweling jig (8mm)", 8.0, 30.0,
-                "8mm dowels ~64mm on centre")
-    if j == "domino":
-        return ("Festool Domino (5mm)", 5.0, 25.0, "tenons ~128mm on centre")
-    if j == "pocket":
-        return ("pocket-hole jig", 0.0, 0.0, "pocket screws from the inside face")
-    if j == "screw":
-        return ("drill (pilot)", 0.0, 0.0, "pilot + countersink, glue optional")
-    return ("drill / glue", 0.0, 0.0, "butt joint — weak; prefer a housed joint")
+    if j in _HOUSED_MATING:
+        tool, note = _HOUSED_MATING[j]
+        return (tool, round(mating_thickness, 1),
+                round(stock * HOUSED_DEPTH_FRACTION, 1), note)
+    return _HOUSED_FIXED.get(j, _HOUSED_BUTT)
+
+
+# Drawer-box corner joints: name -> (operation, tool, width×, depth×, reference,
+# note). The width/depth multipliers scale the box stock thickness (0 = not a
+# width-defined cut). ``{cj}`` in an operation is filled with the joint name.
+_DRAWER_CORNER = {
+    "dovetail": ("dovetail corners", "dovetail jig / saw", 0.0, 1.0,
+                 "tails on the sides",
+                 "tails on the sides so the front can't pull off"),
+    "box": ("box/finger joint", "box-joint jig", 1.0, 1.0, "corners",
+            "finger width = box stock thickness"),
+    "rabbet": ("rabbet corners", "dado / router", 1.0, 0.5, "corners",
+               "glue + brad the rabbet"),
+    "locking_rabbet": ("locking rabbet corners", "dado / router", 1.0, 0.5,
+                       "corners", "glue + brad the rabbet"),
+}
+_DRAWER_CORNER_DEFAULT = ("{cj} corners", "doweling jig / glue", 0.0, 0.0,
+                          "corners",
+                          "weak corner; prefer dovetail/box/locking rabbet")
+
+# Table leg-to-apron joints with fixed geometry: name -> (tool, w, d, note).
+# Mortise & tenon is spec-derived, so it is handled in _table_joinery.
+_TABLE_JOINT = {
+    "domino": ("Festool Domino (10mm)", 10.0, 28.0,
+               "two 10×50 Dominoes per leg-apron joint"),
+    "dowel": ("doweling jig (10mm)", 10.0, 30.0,
+              "two 10mm dowels per joint + corner block"),
+}
+_TABLE_JOINT_DEFAULT = ("pocket-hole jig", 0.0, 0.0,
+                        "pocket screws + glue blocks (racks more than M&T)")
 
 
 def _cabinet_joinery(spec: CabinetSpec, cl) -> list[JoineryOp]:
@@ -139,30 +180,13 @@ def _cabinet_joinery(spec: CabinetSpec, cl) -> list[JoineryOp]:
         cj = str(dr.corner_joint).lower()
         label = f"Drawer {i} box"
         box_pid = pid(f"Drawer {i} box side")
-        if cj == "dovetail":
-            ops.append(JoineryOp(
-                part=label, operation="dovetail corners",
-                tool="dovetail jig / saw", width=0.0,
-                depth=round(m.drawer_box, 1),
-                reference="tails on the sides", part_id=box_pid,
-                note="tails on the sides so the front can't pull off"))
-        elif cj == "box":
-            ops.append(JoineryOp(
-                part=label, operation="box/finger joint",
-                tool="box-joint jig", width=round(m.drawer_box, 1),
-                depth=round(m.drawer_box, 1), reference="corners",
-                part_id=box_pid, note="finger width = box stock thickness"))
-        elif cj in ("rabbet", "locking_rabbet"):
-            ops.append(JoineryOp(
-                part=label, operation=f"{cj.replace('_', ' ')} corners",
-                tool="dado / router", width=round(m.drawer_box, 1),
-                depth=round(m.drawer_box * 0.5, 1), reference="corners",
-                part_id=box_pid, note="glue + brad the rabbet"))
-        else:
-            ops.append(JoineryOp(
-                part=label, operation=f"{cj} corners", tool="doweling jig / glue",
-                width=0.0, depth=0.0, reference="corners", part_id=box_pid,
-                note="weak corner; prefer dovetail/box/locking rabbet"))
+        operation, tool, wx, dx, reference, note = _DRAWER_CORNER.get(
+            cj, _DRAWER_CORNER_DEFAULT)
+        ops.append(JoineryOp(
+            part=label, operation=operation.format(cj=cj), tool=tool,
+            width=round(m.drawer_box * wx, 1) if wx else 0.0,
+            depth=round(m.drawer_box * dx, 1) if dx else 0.0,
+            reference=reference, part_id=box_pid, note=note))
         # The drawer bottom rides in a groove in the box sides.
         ops.append(JoineryOp(
             part=f"{label} sides", operation="groove for bottom",
@@ -176,18 +200,11 @@ def _cabinet_joinery(spec: CabinetSpec, cl) -> list[JoineryOp]:
 def _table_joinery(spec: TableSpec, cl) -> list[JoineryOp]:
     pid = cl.part_id_for_label
     j = str(spec.joinery).lower()
-    if j == "mortise_tenon":
+    if j == "mortise_tenon":   # spec-derived geometry, not a fixed tool
         tool, w, d, note = ("mortiser / saw", round(spec.apron_thickness / 3, 1),
                             round(spec.leg * 0.6, 1), "haunched M&T into the leg")
-    elif j == "domino":
-        tool, w, d, note = ("Festool Domino (10mm)", 10.0, 28.0,
-                            "two 10×50 Dominoes per leg-apron joint")
-    elif j == "dowel":
-        tool, w, d, note = ("doweling jig (10mm)", 10.0, 30.0,
-                            "two 10mm dowels per joint + corner block")
     else:
-        tool, w, d, note = ("pocket-hole jig", 0.0, 0.0,
-                            "pocket screws + glue blocks (racks more than M&T)")
+        tool, w, d, note = _TABLE_JOINT.get(j, _TABLE_JOINT_DEFAULT)
     return [JoineryOp(
         part="Leg / apron", operation="leg-to-apron joint", tool=tool,
         width=w, depth=d, reference="apron into leg", part_id=pid("Leg"),
@@ -208,14 +225,24 @@ def _project_joinery(project: ComponentGroup) -> JoinerySchedule:
 
 
 def joinery_schedule(spec) -> JoinerySchedule:
-    """Setup sheet of machining ops for a cabinet, table, or group."""
+    """Setup sheet of machining ops for a leaf, or aggregate a group.
+
+    VOID/GROUP are handled here; every *leaf* type dispatches its machining ops
+    through the :mod:`furniture` registry, so a new furniture type adds joinery
+    by registering, not by editing this function.
+    """
     kind = spec_kind(spec)
     if kind == VOID:
         return JoinerySchedule(spec_name=spec.name)   # a gap has no joinery
     if kind == GROUP:
         return _project_joinery(spec)
     cl = generate_cutlist(spec)
-    if kind == TABLE:
-        return JoinerySchedule(spec_name=spec.name, ops=_table_joinery(spec, cl))
-    # Cabinets (including the diagonal corner) use the same housed box joints.
-    return JoinerySchedule(spec_name=spec.name, ops=_cabinet_joinery(spec, cl))
+    ops = furniture.get(kind).joinery_ops(spec, cl)
+    return JoinerySchedule(spec_name=spec.name, ops=ops)
+
+
+# Register the built-in leaf joinery. Cabinets (including the diagonal corner)
+# use the housed box joints; tables use the leg-to-apron joint. A new furniture
+# type registers its own ``joinery_ops`` and routes with no edit here.
+furniture.register(CABINET, joinery_ops=_cabinet_joinery)
+furniture.register(TABLE, joinery_ops=_table_joinery)

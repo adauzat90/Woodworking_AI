@@ -1,12 +1,38 @@
 """Tests for wall and tall cabinet types (no CAD / API key)."""
 
 
+import pytest
+
 from woodworking_ai import (
-    CabinetSpec, CabinetType, ToeKick, Drawer,
-    validate, generate_cutlist,
+    CabinetSpec, CabinetType, TableSpec, ToeKick, Drawer,
+    validate, generate_cutlist, spec_from_dict,
 )
 from woodworking_ai.geometry import panel_layout
 from woodworking_ai.agents.critic import critique
+
+
+# --- the `kind` discriminator -------------------------------------------
+
+def test_explicit_cabinet_kind_routes_to_cabinet():
+    spec = spec_from_dict({"kind": "cabinet", "width": 600, "leg": 999})
+    # Explicit kind wins over the table-shape heuristic ("leg" present).
+    assert isinstance(spec, CabinetSpec)
+
+
+def test_no_kind_cabinet_still_loads():
+    assert isinstance(spec_from_dict({"cabinet_type": "base", "width": 600}),
+                      CabinetSpec)
+
+
+def test_no_kind_table_shape_still_infers_table():
+    assert isinstance(spec_from_dict({"width": 1600, "leg": 70}), TableSpec)
+
+
+def test_unknown_kind_is_rejected_with_helpful_message():
+    with pytest.raises(ValueError) as exc:
+        spec_from_dict({"kind": "wardrobe", "width": 600})
+    msg = str(exc.value)
+    assert "wardrobe" in msg and "cabinet" in msg and "table" in msg
 
 
 def wall(**o) -> CabinetSpec:

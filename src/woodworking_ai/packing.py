@@ -67,6 +67,75 @@ def _normalize(item: tuple) -> tuple[float, float, str, str, str]:
     return (length, width, label, grain, seq)
 
 
+class _Bin:
+    """A lightweight nesting target with ``length``/``width``/``kerf``.
+
+    The shelf packer reads only those three attributes off a sheet, so a single
+    owned board (or any arbitrary rectangle) can stand in for a standard sheet.
+    """
+
+    __slots__ = ("length", "width", "kerf")
+
+    def __init__(self, length: float, width: float, kerf: float = 0.0):
+        self.length = float(length)
+        self.width = float(width)
+        self.kerf = float(kerf)
+
+
+def pack_into_bin(items: list[tuple], length: float, width: float,
+                  kerf: float = 0.0
+                  ) -> tuple[list[Placement], list[str], list[str]]:
+    """Shelf-pack *items* into ONE bin of ``length`` x ``width``.
+
+    This generalises :func:`pack` to an arbitrary single bin (e.g. a board the
+    shop already owns) instead of an unbounded run of identical sheets. Items
+    are placed greedily, grain-aware, until the bin is full; whatever does not
+    fit is returned rather than spilling onto a second bin.
+
+    Returns ``(placed, leftover, oversize)``:
+
+    * ``placed`` — :data:`Placement` tuples on this one bin.
+    * ``leftover`` — labels of items that fit a bin this size in principle but
+      ran out of room on *this* bin (a shop would cut these from another board).
+    * ``oversize`` — labels of items too big for a bin this size in any allowed
+      orientation (grain-respecting); they can never fit this board.
+
+    The orientation/grain/sequence rules are identical to :func:`pack`, so a
+    board layout and a sheet layout choose the same rotation for a given part.
+    """
+    bin_ = _Bin(length, width, kerf)
+    norm = [_normalize(it) for it in items]
+    oriented = [(*_oriented(l, w, grain), label, seq)
+                for (l, w, label, grain, seq) in norm]
+    oversize = [lbl for (l, w, _lock, lbl, _seq) in oriented
+                if l > bin_.length + 1e-9 or w > bin_.width + 1e-9]
+    fit = [(l, w, lbl, seq) for (l, w, _lock, lbl, seq) in oriented
+           if l <= bin_.length + 1e-9 and w <= bin_.width + 1e-9]
+
+    seq_items = [r for r in fit if r[3]]
+    free_items = [r for r in fit if not r[3]]
+    free_items.sort(key=lambda r: r[1], reverse=True)
+    ordered = seq_items + free_items
+
+    placed: list[Placement] = []
+    leftover: list[str] = []
+    shelf_y = shelf_h = cursor_x = 0.0
+    for (l, w, label, _seq) in ordered:
+        if cursor_x + l > bin_.length + 1e-9:      # start a new shelf
+            new_y = shelf_y + shelf_h + bin_.kerf
+            if new_y + w > bin_.width + 1e-9:      # ...no room: cannot place here
+                leftover.append(label)
+                continue
+            shelf_y, shelf_h, cursor_x = new_y, 0.0, 0.0
+        if shelf_y + w > bin_.width + 1e-9:        # first item already too tall
+            leftover.append(label)
+            continue
+        placed.append((cursor_x, shelf_y, l, w, label))
+        cursor_x += l + bin_.kerf
+        shelf_h = max(shelf_h, w)
+    return (placed, leftover, oversize)
+
+
 def pack(items: list[tuple], sheet: Any
          ) -> tuple[list[list[Placement]], list[str]]:
     """Shelf-pack *items* onto *sheet*.

@@ -13,6 +13,32 @@ CAD, no heavy imports — so it is fast and trivially unit-testable.
 
 from __future__ import annotations
 
+# --- material *usage labels* ------------------------------------------------
+# A Part.material value (and the key the stock descriptions / finish face-count
+# sets / estimator price book share). Defined once here so producers (cutlist,
+# furniture_types, accessories) and every consumer reference one symbol — a
+# rename can no longer silently desync finishing, stock, or pricing.
+MAT_SHEET = "sheet"
+MAT_BACK = "back panel"
+MAT_DOOR_FRONT = "door/front"
+MAT_DOOR_PANEL = "door panel"
+MAT_DRAWER_BOX = "drawer box"
+MAT_COUNTERTOP = "countertop"
+MAT_MOLDING = "molding"
+MAT_FRAME = "frame"
+MAT_SOLID_PANEL = "solid panel"
+MAT_TOP = "top"
+MAT_LEG = "leg"
+MAT_APRON = "apron"
+MAT_SOLID = "solid"
+
+# Every canonical usage label, for drift-guard tests.
+MATERIAL_LABELS = frozenset({
+    MAT_SHEET, MAT_BACK, MAT_DOOR_FRONT, MAT_DOOR_PANEL, MAT_DRAWER_BOX,
+    MAT_COUNTERTOP, MAT_MOLDING, MAT_FRAME, MAT_SOLID_PANEL, MAT_TOP, MAT_LEG,
+    MAT_APRON, MAT_SOLID,
+})
+
 # Sheet goods are bought by the sheet; "solid" is lumber bought by the board
 # foot. Mirrors dsl.MATERIAL_FORMS (kept here too to avoid an import cycle).
 SHEET_FORMS = ("plywood", "mdf", "particleboard", "melamine", "hardboard")
@@ -190,4 +216,44 @@ def build_hints(spec) -> list[tuple[str, str, str]]:
         out.append(("info", "species",
                     f"Buy {woods} stock with consistent colour/figure across the "
                     "piece; order ~15% extra solid lumber for milling and defects."))
+    out.extend(species_finishing_hints(species_used))
+    return out
+
+
+def species_finishing_hints(species_used) -> list[tuple[str, str, str]]:
+    """Species-aware finishing advisories for the declared woods.
+
+    Additive ``info`` notes that fire only when a species is declared and the
+    species database knows a finishing gotcha for it (blotch-prone, oily, or
+    open-pore). Identical messages are de-duplicated so several oak parts emit
+    one open-pore note, not many.
+    """
+    from . import species as _species
+
+    # One canonical message per finishing class; woods are listed in the message.
+    bins: dict[str, list[str]] = {}
+    for sp in species_used:
+        cat = _species.finishing_category(sp)
+        if cat in (_species.FINISH_BLOTCH, _species.FINISH_OILY,
+                   _species.FINISH_OPEN_PORE):
+            bins.setdefault(cat, []).append(str(sp).strip().lower())
+
+    out: list[tuple[str, str, str]] = []
+    if _species.FINISH_BLOTCH in bins:
+        woods = ", ".join(sorted(set(bins[_species.FINISH_BLOTCH])))
+        out.append(("info", "species",
+                    f"{woods} blotch when stained — apply a wood conditioner (or "
+                    "a wash-coat of dewaxed shellac) before stain, or use a gel "
+                    "stain/dye, for even colour."))
+    if _species.FINISH_OILY in bins:
+        woods = ", ".join(sorted(set(bins[_species.FINISH_OILY])))
+        out.append(("info", "species",
+                    f"{woods} is oily — wipe the glue and finish surfaces with a "
+                    "solvent (acetone/naphtha) just before assembly and finishing "
+                    "so the glue bonds and the finish cures."))
+    if _species.FINISH_OPEN_PORE in bins:
+        woods = ", ".join(sorted(set(bins[_species.FINISH_OPEN_PORE])))
+        out.append(("info", "species",
+                    f"{woods} has open pores — grain-fill before topcoat for a "
+                    "glass-smooth surface, or accept (and embrace) the open texture."))
     return out

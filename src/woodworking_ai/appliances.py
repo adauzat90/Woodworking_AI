@@ -14,10 +14,8 @@ placed in a run, so a single cabinet *or* a whole :class:`~dsl.Project` works.
 
 from __future__ import annotations
 
-from .dsl import (
-    Appliance, ApplianceVoid, ComponentGroup, appliances_of,
-    APPLIANCE_VOID_WIDTHS,
-)
+from .dsl import ApplianceVoid, appliances_of, APPLIANCE_VOID_WIDTHS
+from .dispatch import spec_kind, is_group, VOID
 from .geometry import component_tag
 
 # Free-text rough-in notes per appliance type: what the trades need to bring to
@@ -100,21 +98,21 @@ def appliance_schedule(spec) -> list[dict]:
     and free-text ``rough_in`` notes. Empty when the design has no appliances, so
     the report/web bundle can show the section only when it has rows.
     """
-    if isinstance(spec, ComponentGroup):
+    if is_group(spec):
         out: list[dict] = []
         for i, comp in enumerate(spec.components, start=1):
             tag = component_tag(comp, i)
             sub = comp.spec
-            if isinstance(sub, ApplianceVoid):
+            if spec_kind(sub) == VOID:
                 atype = _type_str(sub.type)
                 out.append(_entry(
                     atype, host=f"{tag} ({sub.name})", cutout=None,
                     panel_ready=False, void=sub))
-            elif isinstance(sub, ComponentGroup):
+            elif is_group(sub):
                 out.extend(appliance_schedule(sub))
             else:
                 out.extend(_spec_entries(sub, host=tag))
         return out
-    if isinstance(spec, (Appliance, ApplianceVoid)):
+    if spec_kind(spec) == VOID:
         return []
     return _spec_entries(spec, host=getattr(spec, "name", "") or "cabinet")

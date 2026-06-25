@@ -6,9 +6,11 @@ from woodworking_ai.dsl import CabinetSpec, Drawer, Project, Component
 
 reportlab = pytest.importorskip("reportlab")
 
-from woodworking_ai.report import build_package_pdf  # noqa: E402
+from woodworking_ai.report import (  # noqa: E402
+    build_package_pdf, build_template_pdf)
 from woodworking_ai.proposal import build_proposal_pdf  # noqa: E402
 from woodworking_ai.service import export_bytes  # noqa: E402
+from woodworking_ai.cutlist import generate_cutlist  # noqa: E402
 
 
 def _cab():
@@ -94,6 +96,56 @@ def test_package_shows_appliance_section_only_when_present():
     assert "Appliance schedule" in with_app
     without = _text(_cab())
     assert "Appliance schedule" not in without
+
+
+# --- 1:1 tiled template (H6) ---------------------------------------------
+
+def test_template_is_a_pdf():
+    data = build_template_pdf(_cab())
+    assert data[:5] == b"%PDF-"
+    assert len(data) > 1000
+
+
+def test_template_via_export_bytes():
+    data, mime, fname = export_bytes(_cab(), "template")
+    assert mime == "application/pdf"
+    assert fname.endswith("_template.pdf")
+    assert data[:5] == b"%PDF-"
+
+
+def test_template_specific_part_and_a4():
+    cl = generate_cutlist(_cab())
+    pid = cl.parts[0].id
+    data = build_template_pdf(_cab(), part_id=pid, page="a4")
+    assert data[:5] == b"%PDF-"
+
+
+def test_template_unknown_part_raises():
+    with pytest.raises(ValueError, match="part id"):
+        build_template_pdf(_cab(), part_id="ZZ999")
+
+
+def test_template_unknown_page_raises():
+    with pytest.raises(ValueError, match="page size"):
+        build_template_pdf(_cab(), page="tabloid")
+
+
+def _pdf_page_count(data):
+    # The page tree's /Count is authoritative; reportlab writes it once.
+    import re
+    m = re.search(rb"/Count\s+(\d+)", data)
+    return int(m.group(1)) if m else 0
+
+
+def test_template_large_part_tiles_multiple_pages():
+    # A 2.1m tall pantry side won't fit one Letter/A4 page, so the template must
+    # span several pages.
+    tall = CabinetSpec(name="Pantry", width=600, height=2100, depth=600,
+                       doors=2, shelves=6)
+    cl = generate_cutlist(tall)
+    side = max(cl.parts, key=lambda p: p.length * p.width)
+    data = build_template_pdf(tall, part_id=side.id)
+    assert _pdf_page_count(data) >= 2
 
 
 # --- customer proposal (D3) ----------------------------------------------

@@ -147,3 +147,82 @@ def test_front_plan_is_pure_and_repeatable():
     a = front_plan(_spec(doors=2, drawers=[Drawer(150)]))
     b = front_plan(_spec(doors=2, drawers=[Drawer(150)]))
     assert [vars(i) for i in a.items] == [vars(i) for i in b.items]
+
+
+# --- one shared material-usage-label vocabulary --------------------------
+# The stock descriptions, finish face-count sets, and estimator price book all
+# key off Part.material. They now reference the canonical labels in materials.py,
+# so a rename can't silently desync them. These guards lock that in.
+
+def test_material_label_tables_use_canonical_vocabulary():
+    from woodworking_ai.materials import MATERIAL_LABELS
+    from woodworking_ai.stock import STOCK_DESCRIPTIONS
+    from woodworking_ai.finishing import _HIDDEN, _BOTH_FACES
+    from woodworking_ai.estimator import PriceBook
+
+    assert set(STOCK_DESCRIPTIONS) <= MATERIAL_LABELS
+    assert _HIDDEN <= MATERIAL_LABELS
+    assert _BOTH_FACES <= MATERIAL_LABELS
+    assert set(PriceBook().sheet_price) <= MATERIAL_LABELS
+
+
+def test_appliance_facet_tables_key_off_one_vocabulary():
+    # Void widths (dsl), rough-in + clearance guidance (appliances) are separate
+    # *facets* keyed by the same ApplianceType vocabulary. Guard that none drifts
+    # to an unknown appliance type.
+    from woodworking_ai.dsl import ApplianceType, APPLIANCE_VOID_WIDTHS
+    from woodworking_ai.appliances import _ROUGH_IN, _CLEARANCES
+    known = {t.value for t in ApplianceType}
+    for table in (APPLIANCE_VOID_WIDTHS, _ROUGH_IN, _CLEARANCES):
+        assert set(table) <= known, f"unknown appliance type in {set(table) - known}"
+
+
+def test_llm_model_is_resolved_at_call_time(monkeypatch):
+    # get_model() reads WOODAI_MODEL when called, not once at import.
+    monkeypatch.delenv("WOODAI_MODEL", raising=False)
+    assert llm.get_model() == llm.DEFAULT_MODEL
+    monkeypatch.setenv("WOODAI_MODEL", "claude-sonnet-4-6")
+    assert llm.get_model() == "claude-sonnet-4-6"
+
+
+def test_llm_client_is_injectable(monkeypatch):
+    # A fake client can be injected without the SDK or an API key, and the
+    # requested model flows through to it.
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    seen = {}
+
+    class _Block:
+        type = "text"
+        text = "hello"
+
+    class _Resp:
+        content = [_Block()]
+
+    class _Messages:
+        def create(self, **kw):
+            seen.update(kw)
+            return _Resp()
+
+    class _Fake:
+        messages = _Messages()
+
+    fake = _Fake()
+    assert isinstance(fake, llm.LLMClient)
+    llm.set_client(fake)
+    try:
+        out = llm.complete("sys", [{"role": "user", "content": "hi"}],
+                           model="claude-haiku-4-5-20251001")
+    finally:
+        llm.set_client(None)
+    assert out == "hello"
+    assert seen["model"] == "claude-haiku-4-5-20251001"
+
+
+def test_generated_part_materials_are_canonical():
+    # Every material a real cut list produces is a canonical label (or a declared
+    # physical form like "plywood"); none is an ad-hoc string.
+    from woodworking_ai.materials import MATERIAL_LABELS, MATERIAL_FORMS
+    spec = _spec(doors=2, drawers=[Drawer(150)], construction=Construction.FACE_FRAME)
+    allowed = MATERIAL_LABELS | set(MATERIAL_FORMS)
+    for p in generate_cutlist(spec).parts:
+        assert p.material in allowed, f"non-canonical material {p.material!r}"

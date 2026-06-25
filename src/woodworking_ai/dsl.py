@@ -91,6 +91,13 @@ class TopFixing(StrEnum):
     FIXED = "fixed"           # rigid — cracks a solid top across the grain
 
 
+class ShelfFixing(StrEnum):
+    """How a wall shelf attaches to the wall."""
+    FRENCH_CLEAT = "french_cleat"   # a 45deg-bevel cleat pair (wall + shelf)
+    BRACKETS = "brackets"           # a pair (or more) of L-brackets
+    HIDDEN = "hidden"               # concealed rod/blind-shelf hardware
+
+
 class ApplianceType(StrEnum):
     SINK = "sink"             # drop-in/undermount, hosted by a countertop cutout
     COOKTOP = "cooktop"       # surface unit, also a countertop cutout
@@ -302,6 +309,7 @@ class ApplianceVoid:
             "kind": "appliance_void",
             "type": self.type.value if isinstance(self.type, Enum) else self.type,
             "width": self.width, "depth": self.depth, "name": self.name,
+            "schema_version": SCHEMA_VERSION,
         }
 
     def to_json(self, indent: int = 2) -> str:
@@ -327,6 +335,109 @@ def appliances_of(spec) -> list[Appliance]:
         elif isinstance(a, dict) and str(a.get("kind", "")).lower() == "appliance":
             out.append(Appliance.from_dict(a))
     return out
+
+
+# ---------------------------------------------------------------------------
+# Typed accessories. The accessory list is stored as plain ``{"kind": ...}``
+# dicts (so the six consumers — cut list, geometry, estimate, render, validator,
+# diffing — read one shape). These dataclasses are an *authoring convenience*:
+# build a piece with ``Countertop(...)`` instead of a raw dict, and
+# :meth:`CabinetSpec.__post_init__` normalizes it straight back to the canonical
+# dict on construction, so storage and every consumer are unchanged.
+# ---------------------------------------------------------------------------
+
+# Allowed enum-ish accessory values (validated; not strict-coerced so a loose
+# spec still loads and the validator flags it).
+ACCESSORY_SIDES = ("left", "right")
+MOLDING_TYPES = ("crown", "cove", "base", "light_rail", "scribe")
+COUNTERTOP_MATERIALS = (
+    "laminate", "butcher_block", "solid_surface", "quartz", "granite", "stone")
+
+
+@dataclass
+class Countertop:
+    """A countertop slab over a cabinet/run; may host a sink/cooktop cutout."""
+    depth: float = 0.0           # 0 -> derive from the cabinet depth on use
+    thickness: float = 38.0
+    material: str = "laminate"
+    overhang: float = 25.0
+
+    def to_dict(self) -> dict[str, Any]:
+        d: dict[str, Any] = {"kind": "countertop", "thickness": self.thickness,
+                             "material": self.material, "overhang": self.overhang}
+        if self.depth:
+            d["depth"] = self.depth
+        return d
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Countertop":
+        return cls(depth=float(data.get("depth", 0.0) or 0.0),
+                   thickness=float(data.get("thickness", 38.0) or 38.0),
+                   material=str(data.get("material", "laminate") or "laminate"),
+                   overhang=float(data.get("overhang", 25.0) or 25.0))
+
+
+@dataclass
+class Filler:
+    """A scribe filler that closes the gap from a cabinet/run to the wall."""
+    width: float = 75.0
+    side: str = ""               # "" | left | right
+
+    def to_dict(self) -> dict[str, Any]:
+        d: dict[str, Any] = {"kind": "filler", "width": self.width}
+        if self.side:
+            d["side"] = self.side
+        return d
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Filler":
+        return cls(width=float(data.get("width", 75.0) or 75.0),
+                   side=str(data.get("side", "") or "").strip().lower())
+
+
+@dataclass
+class EndPanel:
+    """A finished panel applied to an exposed cabinet end."""
+    side: str = ""               # "" | left | right
+
+    def to_dict(self) -> dict[str, Any]:
+        d: dict[str, Any] = {"kind": "end_panel"}
+        if self.side:
+            d["side"] = self.side
+        return d
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "EndPanel":
+        return cls(side=str(data.get("side", "") or "").strip().lower())
+
+
+@dataclass
+class Molding:
+    """Crown / light-rail / scribe molding run along the top or bottom."""
+    type: str = "crown"
+    height: float = 0.0          # 0 -> derived per type on use
+    profile: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        d: dict[str, Any] = {"kind": "molding", "type": self.type}
+        if self.height:
+            d["height"] = self.height
+        if self.profile:
+            d["profile"] = self.profile
+        return d
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Molding":
+        return cls(type=str(data.get("type", "crown") or "crown").strip().lower(),
+                   height=float(data.get("height", 0.0) or 0.0),
+                   profile=str(data.get("profile", "") or "").strip().lower())
+
+
+def _accessory_to_dict(a: Any) -> Any:
+    """Normalize one accessory to its canonical dict (typed -> dict; dict as-is)."""
+    if hasattr(a, "to_dict") and not isinstance(a, dict):
+        return a.to_dict()
+    return a
 
 
 def _to_mm(d: dict, fields: tuple[str, ...]) -> None:
@@ -392,6 +503,12 @@ class CabinetSpec:
     # drawer fronts) | door_panel | drawer_box | frame (face frame) | accessory.
     stock: dict[str, Stock] = field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        # Typed accessories (Countertop/Filler/...) are an authoring convenience;
+        # store them as the canonical dicts every consumer reads.
+        if self.accessories:
+            self.accessories = [_accessory_to_dict(a) for a in self.accessories]
+
     @property
     def has_full_top(self) -> bool:
         """Enclosed-top units; base/corner cabinets use top rails instead."""
@@ -444,6 +561,7 @@ class CabinetSpec:
             d["stock"] = {a: s.to_dict() for a, s in self.stock.items()}
         else:
             d.pop("stock", None)
+        d["schema_version"] = SCHEMA_VERSION
         return d
 
     def to_json(self, indent: int = 2) -> str:
@@ -551,6 +669,7 @@ class TableSpec:
         for k in ("top_fixing", "grain", "joinery"):
             if isinstance(getattr(self, k), Enum):
                 d[k] = getattr(self, k).value
+        d["schema_version"] = SCHEMA_VERSION
         return d
 
     def to_json(self, indent: int = 2) -> str:
@@ -568,6 +687,228 @@ class TableSpec:
 
     @classmethod
     def from_json(cls, text: str) -> "TableSpec":
+        return cls.from_dict(json.loads(text))
+
+
+@dataclass
+class WallShelfSpec:
+    """A wall-mounted shelf: one board fixed to the wall by a cleat or brackets.
+
+    The simplest leaf furniture — a board plus its fixing — so it is the proving
+    ground for the H0 leaf-furniture path. Coordinates match the shared frame:
+    X = length, Y = depth (front to wall), Z = height (the mounting height).
+    """
+
+    kind: str = "wall_shelf"
+    units: str = "mm"
+    name: str = "Wall shelf"
+    length: float = 800.0        # along the wall (X)
+    depth: float = 200.0         # out from the wall (Y)
+    thickness: float = 25.0      # board thickness (Z)
+    mount_height: float = 1400.0  # where the shelf top hangs off the floor (install)
+    fixing: ShelfFixing = ShelfFixing.FRENCH_CLEAT
+    brackets: int = 2            # bracket count (fixing="brackets")
+
+    # --- engineering inputs (optional; drive the deflection check) ------------
+    load_kg_per_m: float = 15.0  # distributed load along the shelf (books ~20-40)
+
+    # --- finishing / material (optional; feed the BOM, cost, build hints) -----
+    finish: str = "none"
+    finish_sheen: str = "satin"
+    material_form: str = "solid"   # a shelf board is usually solid stock
+    species: str = ""              # wood species, e.g. oak | pine | walnut
+
+    def __post_init__(self) -> None:
+        self.fixing = _coerce_enum(ShelfFixing, self.fixing)
+
+    @property
+    def width(self) -> float:
+        """Alias for the placement layer: a shelf's plan width is its length.
+
+        The project frame anchors a leaf by its front-left corner over ``width``
+        (X) × ``depth`` (Y); a shelf is centred on X over its ``length`` with its
+        front at Y=0 — the same convention — so exposing ``width`` lets a shelf
+        place and overlap-check inside a Project with no special case.
+        """
+        return self.length
+
+    @property
+    def cleat_height(self) -> float:
+        """Height (Z) of each French-cleat strip — a fraction of the depth."""
+        return min(max(self.depth * 0.4, 40.0), 100.0)
+
+    @property
+    def bracket_height(self) -> float:
+        """Height (Z) of a wall bracket below the board."""
+        return min(max(self.depth * 0.6, 60.0), max(self.mount_height, 60.0))
+
+    @property
+    def height(self) -> float:
+        """The built artifact's own Z-extent (board + the fixing that hangs below).
+
+        Distinct from ``mount_height`` (where it sits on the wall). Equals the
+        Z-span of the panels, so the Critic's envelope check measures the real
+        object — the single source of truth holds for this leaf too.
+        """
+        if self.fixing == ShelfFixing.FRENCH_CLEAT:
+            return self.thickness + self.cleat_height
+        if self.fixing == ShelfFixing.BRACKETS:
+            return self.thickness + self.bracket_height
+        return self.thickness
+
+    def to_dict(self) -> dict[str, Any]:
+        d = asdict(self)
+        if isinstance(self.fixing, Enum):
+            d["fixing"] = self.fixing.value
+        d["schema_version"] = SCHEMA_VERSION
+        return d
+
+    def to_json(self, indent: int = 2) -> str:
+        return json.dumps(self.to_dict(), indent=indent)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "WallShelfSpec":
+        data = dict(data)
+        if normalize_unit(data.get("units")) == IMPERIAL:
+            _to_mm(data, ("length", "depth", "thickness", "mount_height"))
+            data["units"] = "mm"
+        known = {f for f in cls.__dataclass_fields__}
+        return cls(**{k: v for k, v in data.items() if k in known})
+
+    @classmethod
+    def from_json(cls, text: str) -> "WallShelfSpec":
+        return cls.from_dict(json.loads(text))
+
+
+@dataclass
+class BoxSpec:
+    """A six-board box / chest: four sides, a bottom, and a lid.
+
+    The corner joint reuses the drawer-box :class:`CornerJoint` vocabulary
+    (dovetail / box / locking_rabbet / rabbet / butt). An optional hinged lid
+    adds hinges. Coordinates match the shared frame: X = width, Y = depth,
+    Z = height; the box sits on the floor (Z=0 at its base).
+    """
+
+    kind: str = "box"
+    units: str = "mm"
+    name: str = "Box"
+    width: float = 600.0         # X (left-right)
+    depth: float = 400.0         # Y (front-back)
+    height: float = 350.0        # Z (overall, including lid)
+    thickness: float = 18.0      # side/bottom/lid board thickness
+    corner_joint: CornerJoint = CornerJoint.DOVETAIL
+    lid: bool = True             # a hinged lid on top (vs. an open box)
+    hinges: int = 2              # lid hinge count (lid only)
+
+    # --- finishing / material (optional) --------------------------------------
+    finish: str = "none"
+    finish_sheen: str = "satin"
+    material_form: str = "solid"
+    species: str = ""
+
+    def __post_init__(self) -> None:
+        self.corner_joint = _coerce_enum(CornerJoint, self.corner_joint)
+
+    @property
+    def body_height(self) -> float:
+        """Height of the box body below the lid (Z)."""
+        return self.height - (self.thickness if self.lid else 0.0)
+
+    def to_dict(self) -> dict[str, Any]:
+        d = asdict(self)
+        if isinstance(self.corner_joint, Enum):
+            d["corner_joint"] = self.corner_joint.value
+        d["schema_version"] = SCHEMA_VERSION
+        return d
+
+    def to_json(self, indent: int = 2) -> str:
+        return json.dumps(self.to_dict(), indent=indent)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "BoxSpec":
+        data = dict(data)
+        if normalize_unit(data.get("units")) == IMPERIAL:
+            _to_mm(data, ("width", "depth", "height", "thickness"))
+            data["units"] = "mm"
+        known = {f for f in cls.__dataclass_fields__}
+        return cls(**{k: v for k, v in data.items() if k in known})
+
+    @classmethod
+    def from_json(cls, text: str) -> "BoxSpec":
+        return cls.from_dict(json.loads(text))
+
+
+@dataclass
+class BenchSpec:
+    """A bench / stool: a seat on four legs joined by aprons and stretchers.
+
+    Largely a low :class:`TableSpec` with leg stretchers added for a piece that
+    takes a sitting load. Kept a standalone leaf (rather than refactoring a
+    shared ``LeggedSpec`` base under TableSpec) so the existing table outputs are
+    untouched; the shared base is a follow-up. Coordinates match the shared
+    frame: X = length, Y = depth (seat width), Z = height (floor to seat top).
+    """
+
+    kind: str = "bench"
+    units: str = "mm"
+    name: str = "Bench"
+    width: float = 1200.0        # length of the seat (X)
+    depth: float = 350.0         # depth of the seat (Y)
+    height: float = 450.0        # floor to seat surface (Z); ~450 bench, ~750 stool
+    top_thickness: float = 30.0
+    leg: float = 45.0            # square leg cross-section
+    apron_height: float = 70.0
+    apron_thickness: float = 20.0
+    leg_inset: float = 35.0      # leg outer face set in from the seat edge
+    stretchers: bool = True      # lower rails between the legs (rack resistance)
+    stretcher_height: float = 30.0     # stretcher cross-section (Z)
+    stretcher_thickness: float = 20.0  # stretcher cross-section (Y/X)
+    stretcher_setback: float = 120.0   # stretcher centre height off the floor
+
+    # --- material/movement (optional; defaults describe a well-built seat) -----
+    solid_top: bool = True
+    top_fixing: TopFixing = TopFixing.FLOATING
+    grain: Grain = Grain.FLATSAWN
+    joinery: Joinery = Joinery.MORTISE_TENON
+    finish: str = "none"
+    finish_sheen: str = "satin"
+    material_form: str = ""      # usually "solid"
+    species: str = ""            # wood species, e.g. oak | maple | ash
+
+    def __post_init__(self) -> None:
+        self.top_fixing = _coerce_enum(TopFixing, self.top_fixing)
+        self.grain = _coerce_enum(
+            Grain, self.grain, aliases={"quarter": "quartersawn",
+                                        "quarter_sawn": "quartersawn",
+                                        "flat": "flatsawn", "flat_sawn": "flatsawn"})
+        self.joinery = _coerce_enum(Joinery, self.joinery)
+
+    def to_dict(self) -> dict[str, Any]:
+        d = asdict(self)
+        for k in ("top_fixing", "grain", "joinery"):
+            if isinstance(getattr(self, k), Enum):
+                d[k] = getattr(self, k).value
+        d["schema_version"] = SCHEMA_VERSION
+        return d
+
+    def to_json(self, indent: int = 2) -> str:
+        return json.dumps(self.to_dict(), indent=indent)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "BenchSpec":
+        data = dict(data)
+        if normalize_unit(data.get("units")) == IMPERIAL:
+            _to_mm(data, ("width", "depth", "height", "top_thickness", "leg",
+                          "apron_height", "apron_thickness", "leg_inset",
+                          "stretcher_height", "stretcher_thickness",
+                          "stretcher_setback"))
+            data["units"] = "mm"
+        known = {f for f in cls.__dataclass_fields__}
+        return cls(**{k: v for k, v in data.items() if k in known})
+
+    @classmethod
+    def from_json(cls, text: str) -> "BenchSpec":
         return cls.from_dict(json.loads(text))
 
 
@@ -685,6 +1026,7 @@ class ComponentGroup:
                 item["spec"] = c.spec.to_dict()
             comps.append(item)
         d["components"] = comps
+        d["schema_version"] = SCHEMA_VERSION
         return d
 
     def to_json(self, indent: int = 2) -> str:
@@ -700,6 +1042,13 @@ class ComponentGroup:
             _component_from_dict(c, defs, _stack)
             for c in data.get("components", []) if isinstance(c, dict)
         ]
+        # Declarative layout: a `runs` block lays its items end-to-end along a
+        # wall (via place_run), so the author expresses intent ("a row on this
+        # wall") and the loader computes each x/y/rotation. Runs are appended
+        # after any explicit components; on save the group serializes back to
+        # resolved components (runs are an input convenience, not stored).
+        for run in (data.get("runs") or []):
+            comps.extend(_run_components(run, defs, _stack))
         return cls(
             name=str(data.get("name", cls().name)),
             units="mm", components=comps,
@@ -739,6 +1088,20 @@ class Assembly(ComponentGroup):
     kind: str = "assembly"
 
 
+def _plan_width(spec) -> float:
+    """The piece's extent *along the wall* for run-stepping.
+
+    A leaf steps by its ``width``. A sub-assembly has no single width, so it
+    steps by the X-extent of its placed children (``geometry.local_plan_bounds``,
+    imported lazily to avoid a module cycle).
+    """
+    if isinstance(spec, ComponentGroup):
+        from .geometry import local_plan_bounds
+        x0, x1, _, _ = local_plan_bounds(spec)
+        return x1 - x0
+    return float(getattr(spec, "width", 0.0) or 0.0)
+
+
 def place_run(specs, *, start: tuple[float, float] = (0.0, 0.0),
               angle: float = 0.0, gap: float = 0.0,
               labels: list[str] | None = None) -> list[Component]:
@@ -754,13 +1117,15 @@ def place_run(specs, *, start: tuple[float, float] = (0.0, 0.0),
 
     Each piece is offset along the wall by the previous piece's width (+ ``gap``)
     and rotated to face out of the wall, so the footprints abut without
-    overlapping. Leave a gap (or drop in a corner unit) where two runs meet.
+    overlapping. Leave a gap (or drop in a corner unit) where two runs meet. A
+    placed piece may be a leaf or a sub-:class:`Assembly`; a group steps by its
+    plan extent along the wall (it has no single ``width``).
     """
     ux, uy = math.cos(math.radians(angle)), math.sin(math.radians(angle))
     out: list[Component] = []
     cursor = 0.0
     for i, spec in enumerate(specs):
-        w = float(getattr(spec, "width", 0.0) or 0.0)
+        w = _plan_width(spec)
         out.append(Component(
             spec=spec, x=start[0] + ux * cursor, y=start[1] + uy * cursor,
             rotation=angle,
@@ -769,16 +1134,83 @@ def place_run(specs, *, start: tuple[float, float] = (0.0, 0.0),
     return out
 
 
+# Discriminators the loader recognizes. A spec *without* a ``kind`` still routes
+# by shape — every stored cabinet/table/project predates the field, so the
+# heuristic fallback keeps them loading. A spec that names an **unknown** kind is
+# rejected (rather than silently built as a cabinet) so a hallucinated type
+# surfaces as a repairable error in the designer loop.
+KNOWN_KINDS = frozenset({
+    "cabinet", "table", "wall_shelf", "box", "chest", "bench", "stool",
+    "project", "assembly", "appliance_void",
+})
+
+# Stamped onto every serialized spec (see ``to_dict``) so a future breaking
+# change has something to branch on. Accepted and ignored on input.
+SCHEMA_VERSION = "1.0"
+
+
+def _run_components(run: dict, defs: "_Defs", stack: frozenset) -> list[Component]:
+    """Expand one declarative ``run`` block into placed :class:`Component`s.
+
+    A run is ``{"start": [x, y], "angle": deg, "gap": mm, "items": [...]}`` where
+    each item is a component dict (``spec`` inline or a ``ref``). The items'
+    specs are laid end-to-end by :func:`place_run`; any ``x``/``y`` on an item is
+    ignored — the run computes placement. An item's ``label`` is kept; otherwise
+    a run-level ``labels`` list is used.
+    """
+    if not isinstance(run, dict):
+        return []
+    specs: list[Any] = []
+    labels: list[str] = []
+    for it in (run.get("items") or []):
+        if not isinstance(it, dict):
+            continue
+        comp = _component_from_dict(it, defs, stack)
+        specs.append(comp.spec)
+        labels.append(comp.label)
+    start = run.get("start", (0.0, 0.0))
+    if isinstance(start, (list, tuple)) and len(start) >= 2:
+        start = (float(start[0]), float(start[1]))
+    else:
+        start = (0.0, 0.0)
+    if not any(labels):
+        labels = [str(v) for v in (run.get("labels") or [])]
+    return place_run(
+        specs, start=start, angle=float(run.get("angle", 0.0)),
+        gap=float(run.get("gap", 0.0)), labels=labels or None,
+    )
+
+
 def _spec_from_dict(data: dict[str, Any], defs: "_Defs | None", stack: frozenset):
-    """Pick the right spec, threading the definition registry into groups."""
-    kind = str(data.get("kind", "")).lower()
+    """Pick the right spec, threading the definition registry into groups.
+
+    ``kind`` is the explicit discriminator; a named-but-unknown kind raises
+    ``ValueError`` instead of falling through to a cabinet. When ``kind`` is
+    absent the spec is routed by shape for backward compatibility.
+    """
+    kind = str(data.get("kind", "")).strip().lower()
+    if kind and kind not in KNOWN_KINDS:
+        raise ValueError(
+            f"unknown kind {kind!r}; expected one of "
+            f"{', '.join(sorted(KNOWN_KINDS))}")
     if kind == "appliance_void":
         return ApplianceVoid.from_dict(data)
     if kind == "assembly":
         return Assembly.from_dict(data, parent_defs=defs, _stack=stack)
-    if kind == "project" or "components" in data:
+    if kind == "project" or "components" in data or "runs" in data:
         return Project.from_dict(data, parent_defs=defs, _stack=stack)
-    if kind == "table" or "leg" in data or "top_thickness" in data:
+    if kind == "wall_shelf":
+        return WallShelfSpec.from_dict(data)
+    if kind == "box" or kind == "chest":
+        return BoxSpec.from_dict(data)
+    if kind == "bench" or kind == "stool":
+        return BenchSpec.from_dict(data)
+    if kind == "table":
+        return TableSpec.from_dict(data)
+    if kind == "cabinet":
+        return CabinetSpec.from_dict(data)
+    # No explicit kind: infer a table from its tell-tale fields, else a cabinet.
+    if "leg" in data or "top_thickness" in data:
         return TableSpec.from_dict(data)
     return CabinetSpec.from_dict(data)
 
@@ -805,9 +1237,42 @@ def _opts(enum_cls: type[Enum]) -> str:
 
 
 DSL_SCHEMA_HINT = f"""\
-Output ONE furniture spec as a JSON object. It is either a CABINET or a TABLE.
-Set "units" to "mm" (default) or "in"; give every dimension in that unit and do
-not mix — inches are converted to millimetres on load.
+Output ONE furniture spec as a JSON object. Set "units" to "mm" (default) or
+"in"; give every dimension in that unit and do not mix — inches are converted to
+millimetres on load.
+
+STEP 1 — choose the "kind" first, then fill in that type's fields below:
+  "cabinet"     a single box of casework (use "cabinet_type" for the variant)
+  "table"       a top on four legs + aprons
+  "wall_shelf"  one board fixed to the wall
+  "box"         a six-board box / chest
+  "bench"       a seat on legs (a low table; "stool" too)
+  "project"     more than one piece — a run / built-in (place components)
+
+STEP 2 — copy the matching MINIMAL example, then adjust. Every field not shown
+has a sensible default, so a minimal spec is already buildable; add fields only
+to override a default.
+
+-- minimal cabinet -------------------------------------------------------------
+{{"kind": "cabinet", "cabinet_type": "base", "name": "Base", "width": 600,
+ "height": 720, "depth": 560, "doors": 2, "shelves": 1}}
+-- minimal table ---------------------------------------------------------------
+{{"kind": "table", "name": "Table", "width": 1200, "depth": 750, "height": 740}}
+-- minimal wall shelf ----------------------------------------------------------
+{{"kind": "wall_shelf", "name": "Shelf", "length": 800, "depth": 200,
+ "thickness": 25, "fixing": "french_cleat"}}
+-- minimal box -----------------------------------------------------------------
+{{"kind": "box", "name": "Box", "width": 600, "depth": 400, "height": 350,
+ "thickness": 18, "corner_joint": "dovetail", "lid": true}}
+-- minimal bench ---------------------------------------------------------------
+{{"kind": "bench", "name": "Bench", "width": 1200, "depth": 350, "height": 450}}
+-- minimal project (a row of two cabinets via a declarative run) ----------------
+{{"kind": "project", "name": "Run", "runs": [
+  {{"start": [0, 0], "angle": 0, "gap": 0, "items": [
+    {{"spec": {{"kind": "cabinet", "cabinet_type": "base", "width": 600}}}},
+    {{"spec": {{"kind": "cabinet", "cabinet_type": "base", "width": 800}}}}]}}]}}
+
+Full field reference for each kind follows.
 
 == CABINET ==
 {{
@@ -885,6 +1350,71 @@ not mix — inches are converted to millimetres on load.
   "species": "walnut" | "oak" | ...             // optional wood species
 }}
 
+== WALL SHELF ==
+A single board fixed to the wall by a French cleat or a pair of brackets.
+{{
+  "kind": "wall_shelf",
+  "name": "Oak Shelf",
+  "units": "mm",
+  "length": <along the wall>,
+  "depth": <out from the wall, e.g. 200>,
+  "thickness": <board thickness, e.g. 25>,
+  "mount_height": <where the shelf top hangs off the floor, e.g. 1400>,
+  "fixing": {_opts(ShelfFixing)},
+  "brackets": <bracket count when fixing="brackets", >=2>,
+  "load_kg_per_m": <expected load along the shelf, e.g. 15 (books ~20-40)>,
+  "material_form": "solid" | "plywood" | ...,   // optional
+  "species": "oak" | "pine" | "walnut" | ...,   // optional wood species
+  "finish": "none" | "oil" | "clear" | "paint" | "stain_clear"
+}}
+The validator checks the shelf for sag (deflection vs span/360) from the length,
+depth, thickness, species and load — thicken the board, use a stiffer species,
+or add a center bracket for a long or heavily-loaded shelf.
+
+== BOX / CHEST ==
+A six-board box: four sides, a captured bottom, and an optional hinged lid.
+{{
+  "kind": "box",
+  "name": "Blanket Chest",
+  "units": "mm",
+  "width": <left-right>,
+  "depth": <front-back>,
+  "height": <overall, including the lid>,
+  "thickness": <side/bottom/lid board thickness, e.g. 18>,
+  "corner_joint": {_opts(CornerJoint)},
+  "lid": true | false,
+  "hinges": <lid hinge count when lid=true, >=2>,
+  "material_form": "solid" | "plywood" | ...,   // optional
+  "species": "walnut" | "oak" | "pine" | ...,   // optional wood species
+  "finish": "none" | "oil" | "clear" | "paint" | "stain_clear"
+}}
+Box corners should be "dovetail", "box", or a locking rabbet (a "butt" corner is
+weak and pulls apart); the bottom rides in a groove. A hinged lid takes butt
+hinges (and usually a lid stay).
+
+== BENCH / STOOL ==
+A seat on four legs joined by aprons and (for rack resistance) lower stretchers.
+A low table superset — use for a dining bench (~430mm) or a stool (~650mm).
+{{
+  "kind": "bench",
+  "name": "Dining Bench",
+  "units": "mm",
+  "width": <length of the seat>,
+  "depth": <depth of the seat, e.g. 350>,
+  "height": <floor to seat surface; bench ~430, stool ~650>,
+  "top_thickness": 30,
+  "leg": <square leg cross-section, e.g. 45>,
+  "apron_height": 70,
+  "apron_thickness": 20,
+  "leg_inset": <leg outer face set in from the seat edge, e.g. 35>,
+  "stretchers": true | false,        // lower rails between the legs
+  "joinery": {_opts(Joinery)},       // mortise_tenon / domino resist racking
+  "material_form": "solid" | ...,    // optional
+  "species": "oak" | "maple" | "ash" | ...   // optional wood species
+}}
+Keep mortise_tenon or domino leg joints and the stretchers for a seat that takes
+a sitting load; a tall stool without stretchers racks.
+
 == PROJECT / ASSEMBLY (multi-part) ==
 For anything with more than one piece — a kitchen run, a built-in, a wall of
 cabinets — emit a PROJECT: a list of placed components. Each component sits at
@@ -909,15 +1439,29 @@ an (x, y) origin in millimetres (front-left corner for a cabinet) and an optiona
     {{"ref": "drawer_bank", "x": 1200, "y": 0, "label": "B2"}}  // place a copy of
   ]                                                             // a definition
 }}
+PREFER a declarative "runs" block over hand-computed coordinates: each run lays
+its "items" end-to-end along a wall and the loader computes every x/y/rotation
+for you, so you never do the cumulative-width arithmetic (the #1 source of
+overlap errors). A run is {{"start": [x, y], "angle": <deg, 0=+X, 90=+Y>,
+"gap": <mm between pieces>, "items": [<components>]}}; an L-/U-kitchen is just
+two or more runs at right angles. Drop in a "ref" item to place a definition.
+Use explicit "components" with x/y only when you need a piece somewhere a run
+can't express. Either way the validator checks plan collisions across the whole
+run (including sub-assemblies); do not let footprints overlap.
+
 An ASSEMBLY ("kind": "assembly") is the same shape as a project but is meant to
 nest: use it for a repeated group (a drawer bank, a wall-cabinet pair) so it
 moves as one unit. Place a sub-assembly either inline (a component whose "spec"
 is the assembly) or by reference — declare it once under "definitions" and drop
 it in many times with "ref": "<name>" (each ref is an independent copy, so give
 each its own x/y). Assemblies may nest, but a reference must not form a cycle.
-Lay pieces edge-to-edge by stepping x by the previous piece's width; do not let
-footprints overlap (the validator checks plan collisions across the whole run,
-including sub-assemblies).
+
+APPLIANCES come in two shapes by how they mount: a SINK or COOKTOP is a cutout
+*hosted by a countertop* — add it to a cabinet's "accessories" as
+{{"kind": "appliance", "type": "sink", ...}} alongside a "countertop". A RANGE,
+DISHWASHER, or FRIDGE is a free-standing GAP in the run — place it as its own
+component with {{"kind": "appliance_void", "type": "dishwasher", "width": 600}},
+not a cabinet box.
 
 The validator checks shelf sag (deflection vs span/360) from shelf_species,
 shelf thickness, span and load — prefer thicker/stiffer shelves or shorter

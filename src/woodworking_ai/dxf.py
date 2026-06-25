@@ -14,9 +14,12 @@ from pathlib import Path
 
 from .dsl import CabinetSpec
 from .cutlist import CutList, generate_cutlist
+from .materials import MAT_DOOR_FRONT
+from .geometry import trailing_index
+from .constants import GEOMETRY_EPSILON
 from .drilling import (
-    _placement_rotated, drilling_schedule, holes_by_part_id, ops_for_instance,
-    place_holes,
+    placement_rotated, place_rect, drilling_schedule, holes_by_part_id,
+    ops_for_instance, place_holes,
 )
 from .joinery import joinery_schedule
 from .estimator import SheetSize
@@ -36,7 +39,7 @@ def _line(x1, y1, x2, y2, layer="PANEL") -> list[str]:
             "11", f"{x2:.2f}", "21", f"{y2:.2f}", "31", "0.0"]
 
 
-def _rect(x, y, w, h, layer="PANEL") -> list[str]:
+def rect(x, y, w, h, layer="PANEL") -> list[str]:
     return (_line(x, y, x + w, y, layer) + _line(x + w, y, x + w, y + h, layer)
             + _line(x + w, y + h, x, y + h, layer) + _line(x, y + h, x, y, layer))
 
@@ -46,13 +49,13 @@ def _circle(cx, cy, r, layer="BORE") -> list[str]:
             "10", f"{cx:.2f}", "20", f"{cy:.2f}", "30", "0.0", "40", f"{r:.2f}"]
 
 
-def _text(x, y, height, s, layer="LABEL") -> list[str]:
+def text(x, y, height, s, layer="LABEL") -> list[str]:
     return ["0", "TEXT", "8", layer,
             "10", f"{x:.2f}", "20", f"{y:.2f}", "30", "0.0",
             "40", f"{height:.1f}", "1", s]
 
 
-def _layer_table() -> list[str]:
+def layer_table() -> list[str]:
     """A minimal R12 LAYER table so every machining layer exists in the file."""
     out = ["0", "SECTION", "2", "TABLES", "0", "TABLE", "2", "LAYER",
            "70", str(len(_LAYERS))]
@@ -68,7 +71,7 @@ def _bore_tag(h, thickness: float) -> str:
     A bore is "stopped" when it does not pass through the stock (depth < the
     part thickness); those carry the depth so the post drills to it.
     """
-    stopped = 0 < h.depth < thickness - 1e-6
+    stopped = 0 < h.depth < thickness - GEOMETRY_EPSILON
     return f"⌀{h.dia:g}x{h.depth:g}" if stopped else f"⌀{h.dia:g}"
 
 
@@ -76,7 +79,7 @@ def _cutlist_items(cl: CutList) -> list[tuple]:
     items: list[tuple] = []
     for p in cl.parts:
         code = f"{p.id} " if p.id else ""
-        seq = "front" if p.material == "door/front" else ""
+        seq = "front" if p.material == MAT_DOOR_FRONT else ""
         for i in range(p.qty):
             label = (f"{code}{p.name}" if p.qty == 1
                      else f"{code}{p.name} {i + 1}")
@@ -97,8 +100,7 @@ def _placement_part(label: str, by_id: dict):
         return None, 1
     instance = 1
     if part.qty > 1:
-        last = label.rsplit(" ", 1)[-1]
-        instance = int(last) if last.isdigit() else 1
+        instance = trailing_index(label, default=1)
     return part, instance
 
 
@@ -110,16 +112,12 @@ def _cutouts_for_placement(part, x, y, l, w) -> list[str]:
     (the same convention :func:`place_holes` uses), then drawn as a rectangle
     on the CUTOUT layer.
     """
-    from .drilling import _placement_rotated
     out: list[str] = []
     openings = getattr(part, "openings", None) or []
-    rotated = _placement_rotated(part.length, part.width, l, w)
+    rotated = placement_rotated(part.length, part.width, l, w)
     for (ox, oy, ow, od) in openings:
-        if rotated:              # part.width runs along the sheet x-axis
-            rx, ry, rw, rh = x + oy, y + ox, od, ow
-        else:                    # part.length runs along the sheet x-axis
-            rx, ry, rw, rh = x + ox, y + oy, ow, od
-        out += _rect(rx, ry, rw, rh, layer="CUTOUT")
+        rx, ry, rw, rh = place_rect(rotated, x, y, oy, ox, od, ow)
+        out += rect(rx, ry, rw, rh, layer="CUTOUT")
     return out
 
 
@@ -130,7 +128,7 @@ def _bores_for_placement(part, instance, ops, x, y, l, w) -> list[str]:
              for h in op.holes]
     for (cx, cy, h) in place_holes(holes, part.length, part.width, x, y, l, w):
         out += _circle(cx, cy, h.dia / 2.0, layer="BORE")
-        out += _text(cx + h.dia / 2.0 + 1, cy - 4, 7,
+        out += text(cx + h.dia / 2.0 + 1, cy - 4, 7,
                      _bore_tag(h, part.thickness), layer="BORE")
     return out
 
@@ -227,14 +225,11 @@ def _joinery_for_placement(part, ops, x, y, l, w) -> list[str]:
     instance of a qty-N panel carries its housings.
     """
     out: list[str] = []
-    rotated = _placement_rotated(part.length, part.width, l, w)
+    rotated = placement_rotated(part.length, part.width, l, w)
     for op in ops:
         u0, v0, su, sv = _housing_band(op, part.length, part.width)
-        if rotated:              # part.width runs along the sheet x-axis (u→x)
-            rx, ry, rw, rh = x + u0, y + v0, su, sv
-        else:                    # part.length runs along the sheet x-axis (v→x)
-            rx, ry, rw, rh = x + v0, y + u0, sv, su
-        out += _rect(rx, ry, rw, rh, layer=_housing_layer(op))
+        rx, ry, rw, rh = place_rect(rotated, x, y, u0, v0, su, sv)
+        out += rect(rx, ry, rw, rh, layer=_housing_layer(op))
     return out
 
 
@@ -266,16 +261,16 @@ def export_cutlayout_dxf(spec: CabinetSpec, path: str | Path, *,
     joinery_by_id = (joinery_by_part_id(joinery_schedule(spec))
                      if joinery else {})
 
-    out: list[str] = _layer_table()
+    out: list[str] = layer_table()
     out += ["0", "SECTION", "2", "ENTITIES"]
     for s_idx, placements in enumerate(sheets):
         ox = s_idx * (sheet.length + gap)
-        out += _rect(ox, 0, sheet.length, sheet.width, layer="SHEET")
-        out += _text(ox + 5, sheet.width + 30, 40, f"Sheet {s_idx + 1}",
+        out += rect(ox, 0, sheet.length, sheet.width, layer="SHEET")
+        out += text(ox + 5, sheet.width + 30, 40, f"Sheet {s_idx + 1}",
                      layer="SHEET")
         for (x, y, l, w, label) in placements:
-            out += _rect(ox + x, y, l, w)
-            out += _text(ox + x + 8, y + w / 2 - 8, 16,
+            out += rect(ox + x, y, l, w)
+            out += text(ox + x + 8, y + w / 2 - 8, 16,
                          f"{label} {l:.0f}x{w:.0f}")
             part, instance = _placement_part(label, by_id)
             ops = ops_by_id.get(part.id) if part is not None else None
@@ -288,7 +283,7 @@ def export_cutlayout_dxf(spec: CabinetSpec, path: str | Path, *,
             if part is not None and getattr(part, "openings", None):
                 out += _cutouts_for_placement(part, ox + x, y, l, w)
     if oversize:
-        out += _text(0, -60, 24,
+        out += text(0, -60, 24,
                      f"OVERSIZE (not nested): {', '.join(oversize)}", "WARN")
     out += ["0", "ENDSEC", "0", "EOF"]
 

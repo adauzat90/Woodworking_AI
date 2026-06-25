@@ -14,6 +14,7 @@ from dataclasses import dataclass
 
 from ..dsl import (CabinetSpec, TableSpec, Project, Assembly, spec_from_dict,
                    DSL_SCHEMA_HINT)
+from ..dsl_lint import lint_spec_dict
 from ..validator import validate, ValidationResult
 from .critic import critique, CritiqueResult
 from . import llm
@@ -52,12 +53,20 @@ def design_from_prompt(
     max_attempts: int = 3,
     model: str | None = None,
     run_critic: bool = True,
+    tooling=None,
 ) -> DesignResult:
     """Run the NL -> DSL design loop with validate-and-repair.
 
     When ``run_critic`` is set, a spec that passes validation is additionally
-    built and critiqued; geometry problems are fed back for repair too.
+    built and critiqued; geometry problems are fed back for repair too. When a
+    :class:`~tooling.ShopTooling` inventory is given, the agent is told to use
+    only joinery the shop can make, and the same constraint is enforced in
+    validation so an infeasible joint is repaired like any other problem.
     """
+    system = SYSTEM_PROMPT
+    if tooling is not None:
+        from ..tooling import designer_constraint
+        system = SYSTEM_PROMPT + "\n" + designer_constraint(tooling)
     messages: list[dict[str, str]] = [{"role": "user", "content": prompt}]
     raw_responses: list[str] = []
     last_spec: CabinetSpec | TableSpec | Project | Assembly | None = None
@@ -65,7 +74,7 @@ def design_from_prompt(
     last_critique: CritiqueResult | None = None
 
     for attempt in range(1, max_attempts + 1):
-        text = llm.complete(SYSTEM_PROMPT, messages, model=model)
+        text = llm.complete(system, messages, model=model)
         raw_responses.append(text)
 
         try:
@@ -83,25 +92,45 @@ def design_from_prompt(
             })
             continue
 
-        result = validate(spec)
+        result = validate(spec, tooling=tooling)
         last_spec, last_validation = spec, result
+
+        # Keys the model set that the language silently dropped (typos, guessed
+        # field names). Non-fatal, but surfaced so the agent can repair them
+        # rather than believing it set a value it didn't.
+        lint = lint_spec_dict(data)
+        lint_note = ""
+        if lint:
+            lint_note = (
+                "\n\nThese fields were not recognized and were ignored "
+                "(use the correct names or remove them):\n"
+                + "\n".join(f"- {i}" for i in lint)
+            )
 
         if result.ok:
             # Spec is sane — now verify the geometry it produces.
             crit = critique(spec) if run_critic else None
             last_critique = crit
-            if crit is None or crit.ok:
+            if (crit is None or crit.ok) and not lint:
                 return DesignResult(spec, result, raw_responses, attempt, crit)
-            feedback = (
-                "The geometry built from this spec has problems:\n"
-                f"{crit.as_feedback()}\n"
-                "Return a corrected JSON object that resolves every error."
-            )
+            if crit is not None and not crit.ok:
+                feedback = (
+                    "The geometry built from this spec has problems:\n"
+                    f"{crit.as_feedback()}{lint_note}\n"
+                    "Return a corrected JSON object that resolves every error."
+                )
+            else:
+                # Validates and the geometry is sound; only dropped fields remain.
+                feedback = (
+                    "The spec is otherwise sound, but some fields were ignored:"
+                    f"{lint_note}\n"
+                    "Return a corrected JSON object using the right field names."
+                )
         else:
             # Valid JSON but a broken design.
             feedback = (
                 "The specification has problems that must be fixed:\n"
-                f"{result.as_feedback()}\n"
+                f"{result.as_feedback()}{lint_note}\n"
                 "Return a corrected JSON object that resolves every error."
             )
 

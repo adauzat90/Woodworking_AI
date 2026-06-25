@@ -14,10 +14,10 @@ from dataclasses import dataclass
 
 from .dsl import (
     TableSpec, ComponentGroup, CabinetType, Joinery, ApplianceVoid,
-    APPLIANCE_VOID_TOLERANCE,
+    CornerJoint, DovetailTails, SlideType, APPLIANCE_VOID_TOLERANCE,
 )
-from .dispatch import spec_kind, VOID, GROUP, TABLE
-from . import engineering, stock, proportion
+from .dispatch import spec_kind, VOID, GROUP, TABLE, CABINET
+from . import engineering, stock, proportion, furniture
 from .hardware import longest_slide_for
 from .geometry import front_plan, footprints_overlap, component_tag
 from .constants import (
@@ -145,7 +145,8 @@ def _validate_table(spec: TableSpec) -> ValidationResult:
     # The top's width (depth, Y) runs across the grain and moves seasonally.
     if getattr(spec, "solid_top", True):
         move = engineering.seasonal_movement(
-            spec.depth, getattr(spec, "grain", "flatsawn"))
+            spec.depth, getattr(spec, "grain", "flatsawn"),
+            species=getattr(spec, "species", None))
         if str(getattr(spec, "top_fixing", "floating")).lower() == "fixed":
             err("top_fixing",
                 f"a solid top {spec.depth:.0f}mm across the grain moves about "
@@ -344,14 +345,30 @@ def joinery_feasibility(spec) -> list[Issue]:
     return issues
 
 
-def validate(spec) -> ValidationResult:
+def validate(spec, *, tooling=None) -> ValidationResult:
+    """Validate *spec*; when a :class:`~tooling.ShopTooling` inventory is given,
+    also flag any joinery the declared tools can't make (advisory)."""
+    result = _validate_core(spec)
+    if tooling is not None:
+        from .tooling import tooling_advisories
+        for severity, field_, msg in tooling_advisories(spec, tooling):
+            result.issues.append(Issue(severity, field_, msg))
+    return result
+
+
+def _validate_core(spec) -> ValidationResult:
     kind = spec_kind(spec)
     if kind == VOID:
         return _validate_void(spec)
     if kind == GROUP:
         return _validate_project(spec)
-    if kind == TABLE:
-        return _validate_table(spec)
+    # Every leaf type validates through the furniture registry, which returns a
+    # flat list of issues; a new type adds its checks by registering.
+    return ValidationResult(furniture.get(kind).validate(spec))
+
+
+def _validate_cabinet(spec) -> list[Issue]:
+    """Sanity checks for a cabinet (every CabinetType variant)."""
     issues: list[Issue] = []
 
     def err(fieldname: str, msg: str) -> None:
@@ -387,7 +404,7 @@ def validate(spec) -> ValidationResult:
 
     # Stop here if fundamentals are broken — later checks would divide nonsense.
     if any(i.severity == "error" for i in issues):
-        return ValidationResult(issues)
+        return issues
 
     # --- geometric consistency -------------------------------------------
     if spec.width < 2 * m.carcass + 50:
@@ -521,8 +538,8 @@ def validate(spec) -> ValidationResult:
         interior_depth = spec.interior_depth
 
         # Corner joints — dedupe so N identical drawers don't spam N warnings.
-        for cj in {str(d.corner_joint).strip().lower() for d in boxed}:
-            if cj == "butt":
+        for cj in {d.corner_joint for d in boxed}:
+            if cj == CornerJoint.BUTT:
                 warn("drawers",
                      "drawer corners use a butt joint (end-grain glue, weak and "
                      "pulls apart when opened); use dovetail, box, or a locking "
@@ -534,9 +551,9 @@ def validate(spec) -> ValidationResult:
 
         # STRUCT-012: a front dovetail must have its tails on the drawer SIDES
         # so the interlock resists the front being pulled off when opened.
-        for tails in {str(d.dovetail_tails).strip().lower() for d in boxed
-                      if str(d.corner_joint).strip().lower() == "dovetail"}:
-            if tails not in ("sides", "side"):
+        for tails in {d.dovetail_tails for d in boxed
+                      if d.corner_joint == CornerJoint.DOVETAIL}:
+            if tails != DovetailTails.SIDES:
                 err("drawers",
                     f"dovetail tails are on the '{tails}'; put the tails on the "
                     "drawer sides (pins on the front) so the front can't pull "
@@ -544,7 +561,7 @@ def validate(spec) -> ValidationResult:
 
         # Side-mount slide clearance (HW-001) + resulting box width.
         for clr in {round(d.slide_clearance, 2) for d in boxed
-                    if str(d.slide_type).strip().lower() == "side_mount"}:
+                    if d.slide_type == SlideType.SIDE_MOUNT}:
             if not (10.0 <= clr <= 14.0):
                 warn("drawers",
                      f"side-mount slides need ~{SIDE_MOUNT_CLEARANCE:.1f}mm "
@@ -671,7 +688,15 @@ def validate(spec) -> ValidationResult:
     for severity, field_, msg in build_hints(spec):
         issues.append(Issue(severity, field_, msg))
 
-    return ValidationResult(issues)
+    return issues
+
 
 # Backwards-compatible private alias (promoted to public API).
 _joinery_feasibility = joinery_feasibility
+
+
+# Register the built-in leaf validators. Each returns a flat ``list[Issue]``; a
+# new furniture type registers its own ``validate`` and routes with no edit to
+# ``_validate_core``.
+furniture.register(CABINET, validate=_validate_cabinet)
+furniture.register(TABLE, validate=lambda spec: _validate_table(spec).issues)
