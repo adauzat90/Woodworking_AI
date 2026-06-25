@@ -107,11 +107,14 @@ def export_bytes(spec, fmt: str,
     fmt = fmt.lower()
     base = (spec.name or "cabinet").replace(" ", "_")
 
-    if fmt in ("cutlist", "hardware", "drilling", "joinery"):
+    if fmt in ("cutlist", "hardware", "drilling", "joinery", "purchase_order"):
         if fmt == "drilling":
             text = drilling_schedule(spec).to_csv()
         elif fmt == "joinery":
             text = joinery_schedule(spec).to_csv()
+        elif fmt == "purchase_order":
+            from .purchasing import purchase_order
+            text = purchase_order(spec).to_csv()
         else:
             cl = generate_cutlist(spec)
             text = cl.to_csv(units) if fmt == "cutlist" else cl.hardware_csv()
@@ -137,6 +140,11 @@ def export_bytes(spec, fmt: str,
         from .proposal import build_proposal_pdf
         data = build_proposal_pdf(spec, units=units)
         return data, "application/pdf", f"{base}_proposal.pdf"
+
+    if fmt == "purchase_order_pdf":
+        from .report import build_purchase_order_pdf
+        data = build_purchase_order_pdf(spec, units=units)
+        return data, "application/pdf", f"{base}_purchase_order.pdf"
 
     if fmt in ("step", "stl", "glb"):
         from .builder import build_model
@@ -246,6 +254,27 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
              "parts": g.part_count, "board_feet": round(g.board_feet, 2),
              "cost": round(g.cost, 2)}
             for g in est.lumber_groups
+        ],
+    }
+
+    # Purchase order — the orderable buy-list grouped by supplier/brand. Its
+    # grand total reconciles with the estimate above (same prices/sheet).
+    from .purchasing import purchase_order
+    po = purchase_order(spec, prices=prices, sheet=sheet, cutlist=cl)
+    result["purchase_order"] = {
+        "currency": po.currency,
+        "grand_total": round(po.grand_total, 2),
+        "suppliers": [
+            {"supplier": s, "subtotal": round(po.supplier_total(s), 2)}
+            for s in po.suppliers
+        ],
+        "lines": [
+            {"supplier": ln.supplier, "category": ln.category, "item": ln.item,
+             "spec": ln.spec, "qty": round(ln.qty, 3), "unit": ln.unit,
+             "brand": ln.brand, "sku": ln.sku,
+             "unit_price": round(ln.unit_price, 4),
+             "line_total": round(ln.line_total, 2)}
+            for ln in po.lines
         ],
     }
 
