@@ -131,6 +131,14 @@ def _emit(spec, args, tooling=None) -> int:
     # --shop/--tools it uses a stable well-equipped default.
     _print_plan(asm.plan)
 
+    if getattr(args, "from_stock", None):
+        import json as _json
+        from .cutplan import boards_from_dicts, cut_plan
+        data = _json.loads(Path(args.from_stock).read_text(encoding="utf-8"))
+        boards = boards_from_dicts(data)
+        plan = cut_plan(spec, boards, cutlist=cutlist)
+        print("\n" + plan.report_text(unit))
+
     if tooling is not None or getattr(args, "tools_list", False):
         from .tooling import tools_needed
         print("\nTools needed:")
@@ -186,6 +194,14 @@ def _write_outputs(spec, asm, args, unit: str, *, is_group: bool) -> None:
     if not is_group and args.drawings:
         write("drawings", "drawings.svg")
         print("Wrote drawings.svg")
+    if getattr(args, "from_stock", None):
+        import json as _json
+        from .cutplan import boards_from_dicts, cut_plan
+        data = _json.loads(Path(args.from_stock).read_text(encoding="utf-8"))
+        plan = cut_plan(spec, boards_from_dicts(data), cutlist=asm.cutlist)
+        (out / "cutplan.csv").write_text(plan.to_csv(unit) + "\n",
+                                         encoding="utf-8")
+        print("Wrote cutplan.csv")
     if not is_group and getattr(args, "package", False):
         write("package", "build_package.pdf")
         print("Wrote build_package.pdf")
@@ -254,6 +270,10 @@ def main(argv: list[str] | None = None) -> int:
                              "joinery these can make is allowed (overrides --shop)")
     common.add_argument("--tools-list", action="store_true", dest="tools_list",
                         help="print the tool/jig checklist the design requires")
+    common.add_argument("--from-stock", dest="from_stock", metavar="BOARDS.JSON",
+                        help="assign parts to boards you already own (a JSON "
+                             "list of {length,width,thickness,species,form,qty}) "
+                             "and print the cut plan + what's still to buy")
 
     p_design = sub.add_parser("design", parents=[common],
                               help="natural language -> design (uses Claude)")
