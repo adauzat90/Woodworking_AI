@@ -9,6 +9,14 @@ include it. Pure arithmetic — no CAD dependency.
 
 from __future__ import annotations
 
+# Optional bridge to the species database (owned by another workstream, H5). If
+# it ships a richer per-species finishing note we prefer it; otherwise we fall
+# back to the local table below. Never a hard dependency.
+try:  # pragma: no cover - exercised only when species.py exists
+    from .species import finishing_note as _sp_note
+except Exception:  # species module absent or has no such helper
+    _sp_note = None
+
 # (grit sequence, total coats, description). Coats count sealer/primer + topcoats.
 FINISHES = {
     "none": ([], 0, "Leave unfinished / pre-finished"),
@@ -18,6 +26,106 @@ FINISHES = {
     "stain_clear": ([120, 150, 180, 220], 4, "Stain + sealer + 2 topcoats"),
 }
 COVERAGE_M2_PER_L = 10.0     # one coat covers ~10 m² per litre
+
+# Drying / recoat window per finish family, in hours. Hobbyists routinely recoat
+# too soon and trap solvent or witness-line the film; these are the
+# manufacturer-typical windows at ~20°C / normal humidity. (min, max) hours.
+RECOAT_WINDOW_H = {
+    "none": (0.0, 0.0),
+    "oil": (6.0, 8.0),          # wipe-on oil / hardwax-oil
+    "clear": (2.0, 2.0),        # waterborne clear
+    "paint": (2.0, 4.0),        # waterborne / latex
+    "stain_clear": (24.0, 24.0),  # oil-based topcoat over stain
+}
+
+
+def recoat_window(ftype: str) -> tuple[float, float]:
+    """`(min, max)` hours to wait before recoating *ftype* (0,0 if no coats)."""
+    return RECOAT_WINDOW_H.get(str(ftype).lower(), (0.0, 0.0))
+
+
+def _recoat_text(ftype: str) -> str:
+    lo, hi = recoat_window(ftype)
+    if hi <= 0:
+        return ""
+    span = f"{lo:g}h" if lo == hi else f"{lo:g}-{hi:g}h"
+    return (f"Allow ~{span} between coats (recoat window); de-nib with a fine "
+            "pad before the next coat.")
+
+
+# Per-species finishing notes, grouped by the failure mode the species invites.
+# Local, additive table — kept here so finishing has no hard dependency on the
+# species database (H5). A species can appear in more than one group (e.g.
+# walnut is both oily and open-pore), so each matching note is surfaced.
+_BLOTCH_PRONE = ("pine", "cherry", "soft maple", "maple", "birch", "alder",
+                 "poplar")
+_OILY = ("walnut", "teak", "rosewood", "cocobolo", "ipe", "wenge")
+_OPEN_PORE = ("oak", "ash", "walnut", "mahogany", "wenge")
+
+_BLOTCH_NOTE = ("blotch-prone — condition before staining (wash-coat / "
+                "gel stain) so the colour lands even.")
+_OILY_NOTE = ("naturally oily — wipe with solvent (acetone/naphtha) just "
+              "before glue-up and before finishing so glue and film bond.")
+_OPEN_PORE_NOTE = ("open-pore — grain-fill for a glass-smooth finish (or "
+                   "leave the texture if you want an open-grain look).")
+
+
+def _species_note(species: str) -> str | None:
+    """Finishing note for one *species*, or None. Prefers the H5 database."""
+    sp = str(species or "").strip().lower()
+    if not sp:
+        return None
+    if _sp_note is not None:                       # pragma: no cover
+        try:
+            note = _sp_note(sp)
+            if note:
+                return note
+        except Exception:
+            pass
+    hits = []
+    if any(sp == w or sp.endswith(" " + w) for w in _BLOTCH_PRONE):
+        hits.append(_BLOTCH_NOTE)
+    if any(sp == w or sp.endswith(" " + w) for w in _OILY):
+        hits.append(_OILY_NOTE)
+    if any(sp == w or sp.endswith(" " + w) for w in _OPEN_PORE):
+        hits.append(_OPEN_PORE_NOTE)
+    if not hits:
+        return None
+    return f"{species.strip().title()}: " + " ".join(hits)
+
+
+def species_finishing_notes(spec) -> list[str]:
+    """Per-species finishing advice for every species declared on *spec*.
+
+    Resolves species the same way the BOM does (global ``species`` + per-area
+    ``stock`` overrides, via :func:`materials.declared_materials`), so the notes
+    match the wood actually being bought. Falls back to scanning resolved part
+    species when nothing is declared globally. Deterministic, de-duplicated.
+    """
+    species: set[str] = set()
+    try:
+        from .materials import declared_materials
+        _forms, declared = declared_materials(spec)
+        species |= {s for s in declared}
+    except Exception:
+        pass
+    # Also pick up species stamped on resolved parts (e.g. shelf_species), so a
+    # cabinet with a species only on one area still gets its note.
+    try:
+        from .cutlist import generate_cutlist
+        for p in generate_cutlist(spec).parts:
+            if getattr(p, "species", ""):
+                species.add(str(p.species).strip().title())
+    except Exception:
+        pass
+    notes: list[str] = []
+    seen: set[str] = set()
+    for sp in sorted(species):
+        note = _species_note(sp)
+        if note and note not in seen:
+            seen.add(note)
+            notes.append(note)
+    return notes
 
 # How many faces of a part see finish, by material.
 _HIDDEN = {"back panel", "drawer box"}
@@ -46,9 +154,16 @@ def finishing_schedule(spec) -> dict:
     grits, coats, desc = FINISHES.get(ftype, FINISHES["none"])
     area = finish_area_m2(spec) if coats else 0.0
     litres = area * coats / COVERAGE_M2_PER_L if coats else 0.0
+    species_notes = species_finishing_notes(spec)
+    recoat_lo, recoat_hi = recoat_window(ftype) if coats else (0.0, 0.0)
+    recoat_note = _recoat_text(ftype) if coats else ""
     steps = [f"Sand to {g} grit" for g in grits]
     if coats:
+        for n in species_notes:
+            steps.append(n)
         steps.append(desc)
+        if recoat_note:
+            steps.append(recoat_note)
         steps.append("Final scuff between coats; ease all edges")
     return {
         "type": ftype,
@@ -59,6 +174,10 @@ def finishing_schedule(spec) -> dict:
         "litres": round(litres, 2),
         "description": desc,
         "steps": steps,
+        # H4 additions (additive; all existing keys above are unchanged).
+        "species_notes": species_notes,
+        "recoat_hours": [recoat_lo, recoat_hi],
+        "recoat_note": recoat_note,
     }
 
 

@@ -23,6 +23,68 @@ from .cutlist import generate_cutlist
 from .geometry import component_tag
 
 
+# --- glue-up / clamping guidance (H4) ---------------------------------------
+# A glued joint wants ~1 clamp every 150-200mm of glue line and clamps long
+# enough to span what's being closed. Below that the clamp pressure cones leave
+# starved gaps between clamps; above it you're just buying clamps.
+CLAMP_SPACING_MM = 175.0      # nominal clamp spacing along the glue line
+PVA_OPEN_TIME_MIN = (5, 10)   # working/open time of ordinary PVA before tack
+
+
+def clamp_plan(glue_line_mm: float, span_mm: float,
+               spacing_mm: float = CLAMP_SPACING_MM) -> dict:
+    """Clamp schedule for one glue-up: count + nominal clamp length.
+
+    *glue_line_mm* is the length of joint being closed (sets the **count**, ~1
+    clamp per ``spacing_mm``); *span_mm* is the distance the clamps must reach
+    across (sets the **length** — round up ~100mm of working slack). Returns
+    ``{count, length_mm, spacing_mm}``; an empty/zero glue-up yields no clamps.
+    """
+    glue_line = max(float(glue_line_mm or 0.0), 0.0)
+    span = max(float(span_mm or 0.0), 0.0)
+    if glue_line <= 0 or span <= 0:
+        return {"count": 0, "length_mm": 0.0, "spacing_mm": spacing_mm}
+    import math
+    count = max(2, math.ceil(glue_line / spacing_mm) + 1)
+    # Real clamps come in nominal lengths; round the reach up to a sensible 50mm.
+    length = math.ceil((span + 100.0) / 50.0) * 50.0
+    return {"count": count, "length_mm": float(length), "spacing_mm": spacing_mm}
+
+
+def _span_of(parts_by_id: dict, ids) -> tuple[float, float]:
+    """``(glue_line, span)`` mm from the parts in *ids*.
+
+    Glue line ≈ the longest part dimension involved (the run being glued); span
+    ≈ the largest cross-measure the clamps must close (the second dimension).
+    """
+    longs: list[float] = []
+    shorts: list[float] = []
+    for pid in ids or ():
+        p = parts_by_id.get(pid)
+        if p is None:
+            continue
+        longs.append(max(p.length, p.width))
+        shorts.append(min(p.length, p.width))
+    if not longs:
+        return 0.0, 0.0
+    return max(longs), max(shorts)
+
+
+def _clamp_step(n, parts_by_id, ids, category="carcass",
+                title="Clamp schedule"):
+    """Build an AssemblyStep describing the clamp plan for *ids* (or None)."""
+    glue_line, span = _span_of(parts_by_id, ids)
+    plan = clamp_plan(glue_line, span)
+    if plan["count"] <= 0:
+        return None
+    detail = (f"Use ~{plan['count']} clamps (about 1 per "
+              f"{int(plan['spacing_mm'])}mm of glue line), each at least "
+              f"~{int(plan['length_mm'])}mm long to span the joint. "
+              "Alternate clamps over and under to keep the panel flat.")
+    return _step(n, title, detail, list(ids or []), ["Bar/parallel clamps"],
+                 category)
+
+
 @dataclass
 class AssemblyStep:
     number: int
@@ -102,6 +164,61 @@ def _step(n, title, detail, part_ids=None, hardware=None, category="assembly"):
     return AssemblyStep(n, title, detail, part_ids or [], hardware or [], category)
 
 
+def _renumber(steps: list["AssemblyStep"]) -> None:
+    """Renumber *steps* 1..N in place (after we splice extra steps in)."""
+    for i, s in enumerate(steps, start=1):
+        s.number = i
+
+
+def _augment_glue_up(sub: "SubAssembly", parts_by_id: dict, glue_ids,
+                     category: str = "carcass", *, cross_grain: bool = False,
+                     float_panel: bool = False) -> None:
+    """Add dry-fit, square-check, open-time and clamp-schedule steps to *sub*.
+
+    Additive: the unit's existing glue step is kept; these augment it. The new
+    steps are appended and the whole unit is renumbered. *glue_ids* drive the
+    clamp plan (and are referenced by the steps). ``cross_grain`` surfaces the
+    don't-glue-wide-panels-rigidly caution; ``float_panel`` is set for a
+    frame-around-a-floating-panel glue-up (door leaf) so the caution fits.
+    """
+    if not sub.steps:
+        return
+    ids = list(glue_ids or [])
+    extra: list[AssemblyStep] = []
+    n0 = len(sub.steps)
+    extra.append(_step(
+        n0 + 1, "Dry-fit before glue",
+        "Assemble dry with clamps and a square: confirm every joint closes and "
+        "nothing racks before any glue is spread.", ids, category=category))
+    extra.append(_step(
+        n0 + 2, "Glue open-time caution",
+        f"Ordinary PVA has only ~{PVA_OPEN_TIME_MIN[0]}-{PVA_OPEN_TIME_MIN[1]} "
+        "min of open time — lay clamps and cauls out first, and use a slower "
+        "glue for a big glue-up.", ids, category=category))
+    extra.append(_step(
+        n0 + 3, "Check diagonals for square",
+        "With the joint clamped, measure both diagonals: equal means square. "
+        "Adjust clamp angle until they match, then leave it to cure.", ids,
+        category=category))
+    clamp = _clamp_step(n0 + 4, parts_by_id, ids, category=category)
+    if clamp is not None:
+        extra.append(clamp)
+    if cross_grain:
+        extra.append(_step(
+            n0 + 5, "Cross-grain caution",
+            "Don't glue a wide solid panel rigidly cross-grain — it will move "
+            "with the seasons and split. Let wide panels float, or fasten with "
+            "slotted/expansion hardware.", ids, category=category))
+    elif float_panel:
+        extra.append(_step(
+            n0 + 5, "Leave the panel floating",
+            "Glue the frame corners only — leave the centre panel floating in "
+            "its groove so it can move cross-grain without splitting the frame.",
+            ids, category=category))
+    sub.steps.extend(extra)
+    _renumber(sub.steps)
+
+
 def _classify_parts(parts) -> dict[str, list[str]]:
     """Group cut-list part IDs into the sub-assemblies that build them.
 
@@ -144,6 +261,7 @@ def _classify_parts(parts) -> dict[str, list[str]]:
 
 def _cabinet_plan(spec: CabinetSpec, cl) -> list[SubAssembly]:
     parts = cl.parts
+    by_id = {p.id: p for p in parts if p.id}
     all_ids = [p.id for p in parts if p.id]
     g = _classify_parts(parts)
     door_parts = g["door"]
@@ -194,6 +312,11 @@ def _cabinet_plan(spec: CabinetSpec, cl) -> list[SubAssembly]:
         carc.steps.append(_step(
             len(carc.steps) + 1, "Attach the toe kick",
             "Fix the toe kick to the cabinet base.", toe, category="carcass"))
+    # A solid-wood (edge-glued) carcass has wide cross-grain panels to watch.
+    carc_cross_grain = any(by_id[i].material in ("solid panel", "solid")
+                           for i in carcass if i in by_id)
+    _augment_glue_up(carc, by_id, sorted(set(carcass + back)),
+                     category="carcass", cross_grain=carc_cross_grain)
     subs.append(carc)
 
     # --- face frame (its own sub-assembly) ------------------------------
@@ -208,6 +331,7 @@ def _cabinet_plan(spec: CabinetSpec, cl) -> list[SubAssembly]:
                   "Glue/screw the frame to the carcass front and flush-trim the "
                   "overhang.", frame, category="carcass"),
         ]
+        _augment_glue_up(ff, by_id, frame, category="carcass")
         subs.append(ff)
 
     # --- one sub-assembly per drawer box --------------------------------
@@ -226,6 +350,7 @@ def _cabinet_plan(spec: CabinetSpec, cl) -> list[SubAssembly]:
                   "groove, and check it is flat and not in wind.", box_ids,
                   category="drawer"),
         ]
+        _augment_glue_up(sub, by_id, box_ids, category="drawer")
         subs.append(sub)
 
     # --- one sub-assembly per 5-piece door leaf -------------------------
@@ -248,6 +373,8 @@ def _cabinet_plan(spec: CabinetSpec, cl) -> list[SubAssembly]:
                       "floating so it can move — and clamp flat.", leaf_ids,
                       category="door"),
             ]
+            _augment_glue_up(sub, by_id, leaf_ids, category="door",
+                             float_panel=True)
             subs.append(sub)
 
     # --- final assembly: bring the sub-assemblies together --------------
@@ -293,6 +420,7 @@ def _cabinet_plan(spec: CabinetSpec, cl) -> list[SubAssembly]:
 
 def _table_plan(spec: TableSpec, cl) -> list[SubAssembly]:
     parts = cl.parts
+    by_id = {p.id: p for p in parts if p.id}
     legs = _ids(parts, "leg")
     aprons = _ids(parts, "apron")
     top = _ids(parts, "top")
@@ -306,12 +434,18 @@ def _table_plan(spec: TableSpec, cl) -> list[SubAssembly]:
               "Glue the two end assemblies, then join with the long aprons; check "
               "for square and wind.", legs + aprons, category="carcass"),
     ]
+    _augment_glue_up(base, by_id, legs + aprons, category="carcass")
     top_sub = SubAssembly("Top", "The tabletop", part_ids=top, category="carcass")
     top_sub.steps = [
         _step(1, "Prepare the top",
               "Edge-glue the boards into a flat panel (or dimension the sheet) and "
               "sand level.", top, category="carcass"),
     ]
+    # A solid edge-glued top is the canonical wide cross-grain panel.
+    top_cross_grain = any(by_id[i].material in ("top", "solid panel", "solid")
+                          for i in top if i in by_id)
+    _augment_glue_up(top_sub, by_id, top, category="carcass",
+                     cross_grain=top_cross_grain)
     final = SubAssembly("Final assembly", "Join top to base and finish",
                         category="final")
     final.steps = [
