@@ -4,7 +4,7 @@ import pytest
 
 from woodworking_ai import (
     WorkbenchSpec, Project, Component,
-    validate, generate_cutlist, estimate, spec_from_dict,
+    validate, generate_cutlist, estimate,
 )
 from woodworking_ai.dsl import MM_PER_IN
 from woodworking_ai.dispatch import spec_kind, WORKBENCH
