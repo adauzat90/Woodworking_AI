@@ -19,7 +19,7 @@ from .cutlist import generate_cutlist
 from .estimator import estimate
 from .drilling import drilling_schedule
 from .joinery import joinery_schedule
-from .assembly_steps import assembly_sequence
+from .assembly_steps import assembly_plan
 from .drawings import projected_views
 from .units import format_length
 
@@ -112,7 +112,7 @@ def build_package_pdf(spec, units: str = "metric") -> bytes:
     est = estimate(spec, cutlist=cl)
     drill = drilling_schedule(spec)
     joint = joinery_schedule(spec)
-    seq = assembly_sequence(spec)
+    plan = assembly_plan(spec)
 
     styles = getSampleStyleSheet()
     h1 = styles["Heading1"]
@@ -208,15 +208,26 @@ def build_package_pdf(spec, units: str = "metric") -> bytes:
           o.reference] for o in joint.ops]))
     story.append(PageBreak())
 
-    # --- assembly --------------------------------------------------------
-    story.append(Paragraph("Assembly sequence", h2))
-    for s in seq.steps:
-        ids = f"  [{', '.join(s.part_ids)}]" if s.part_ids else ""
-        story.append(Paragraph(f"<b>{s.number}. {s.title}</b>{ids}", body))
-        story.append(Paragraph(s.detail, small))
-        if s.hardware:
-            story.append(Paragraph("↳ " + ", ".join(s.hardware), small))
-        story.append(Spacer(1, 3))
+    # --- assembly: one section per sub-assembly --------------------------
+    story.append(Paragraph("Build plan — by sub-assembly", h2))
+    story.append(Paragraph(
+        f"Build each of the {len(plan.subassemblies)} sub-assemblies below, then "
+        "bring them together in Final assembly.", small))
+    story.append(Spacer(1, 4))
+    sub_style = ParagraphStyle("sub", parent=h2, fontSize=11, spaceBefore=8,
+                               textColor=colors.HexColor("#9c6b43"))
+    for sub in plan.subassemblies:
+        ids = f"  <font size=7 color='#888'>[{', '.join(sub.part_ids)}]</font>" \
+            if sub.part_ids else ""
+        story.append(Paragraph(f"■ {sub.name}", sub_style))
+        story.append(Paragraph(f"<i>{sub.detail}</i>{ids}", small))
+        for s in sub.steps:
+            sids = f"  [{', '.join(s.part_ids)}]" if s.part_ids else ""
+            story.append(Paragraph(f"<b>{s.number}. {s.title}</b>{sids}", body))
+            story.append(Paragraph(s.detail, small))
+            if s.hardware:
+                story.append(Paragraph("↳ " + ", ".join(s.hardware), small))
+        story.append(Spacer(1, 4))
 
     doc.build(story)
     return buf.getvalue()

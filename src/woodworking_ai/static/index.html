@@ -707,13 +707,20 @@ function paint() {
   } else if (tab === "drilling") {
     h = drillingPane(d);
   } else if (tab === "steps") {
-    const steps = d.assembly || [];
-    h = steps.length ? steps.map(s => {
-      const ids = (s.part_ids||[]).length ? ` <span class="muted">[${s.part_ids.join(", ")}]</span>` : "";
-      const hw = (s.hardware||[]).length ? `<div class="muted" style="font-size:11px">↳ ${s.hardware.join(", ")}</div>` : "";
-      return `<div style="margin:8px 0;padding-bottom:6px;border-bottom:1px solid var(--line)">
-        <b>${s.number}. ${s.title}</b>${ids}<div style="font-size:12.5px">${s.detail}</div>${hw}</div>`;
-    }).join("") : '<p class="muted">No assembly steps for this design.</p>';
+    const subs = d.assembly || [];
+    h = subs.length ? `<p class="muted" style="font-size:11.5px;margin:0 0 8px">
+        Build each sub-assembly, then bring them together in Final assembly.</p>` +
+      subs.map(sub => {
+        const sids = (sub.part_ids||[]).length ? ` <span class="muted" style="font-size:11px">[${sub.part_ids.join(", ")}]</span>` : "";
+        const steps = (sub.steps||[]).map(s => {
+          const ids = (s.part_ids||[]).length ? ` <span class="muted">[${s.part_ids.join(", ")}]</span>` : "";
+          const hw = (s.hardware||[]).length ? `<div class="muted" style="font-size:11px">↳ ${s.hardware.join(", ")}</div>` : "";
+          return `<div style="margin:5px 0 5px 10px">
+            <b>${s.number}. ${s.title}</b>${ids}<div style="font-size:12.5px">${s.detail}</div>${hw}</div>`;
+        }).join("");
+        return `<details open style="margin:6px 0"><summary style="font-weight:600;color:var(--wood)">▪ ${sub.name}${sids}</summary>
+          <div class="muted" style="font-size:11.5px;margin:2px 0 4px 10px">${sub.detail}</div>${steps}</details>`;
+      }).join("") : '<p class="muted">No assembly steps for this design.</p>';
   } else if (tab === "drawings") {
     h = d.drawings_svg
       ? `<div style="overflow:auto;padding:4px">${d.drawings_svg}</div>`

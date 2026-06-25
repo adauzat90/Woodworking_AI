@@ -167,8 +167,8 @@ def _emit(spec, args) -> int:
         print("\n" + joinery_schedule(spec).report_text())
 
     if args.assembly:
-        from .assembly_steps import assembly_sequence
-        print("\n" + assembly_sequence(spec).report_text())
+        from .assembly_steps import assembly_plan
+        print("\n" + assembly_plan(spec).report_text())
 
     if args.out:
         out = Path(args.out)

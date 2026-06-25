@@ -20,7 +20,7 @@ from .cutlist import generate_cutlist
 from .estimator import estimate
 from .drilling import drilling_schedule
 from .joinery import joinery_schedule
-from .assembly_steps import assembly_sequence
+from .assembly_steps import assembly_plan
 from .agents.critic import critique
 
 
@@ -229,11 +229,16 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
     from .finishing import finishing_schedule
     result["finishing"] = finishing_schedule(spec)
 
-    seq = assembly_sequence(spec)
+    plan = assembly_plan(spec)
     result["assembly"] = [
-        {"number": s.number, "title": s.title, "detail": s.detail,
-         "part_ids": s.part_ids, "hardware": s.hardware, "category": s.category}
-        for s in seq.steps
+        {"name": sub.name, "detail": sub.detail, "part_ids": sub.part_ids,
+         "category": sub.category,
+         "steps": [
+             {"number": s.number, "title": s.title, "detail": s.detail,
+              "part_ids": s.part_ids, "hardware": s.hardware,
+              "category": s.category}
+             for s in sub.steps]}
+        for sub in plan.subassemblies
     ]
 
     try:

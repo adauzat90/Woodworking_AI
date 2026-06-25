@@ -3,7 +3,7 @@
 from woodworking_ai.dsl import (CabinetSpec, TableSpec, Drawer, Project,
                                 Component, Construction)
 from woodworking_ai.cutlist import generate_cutlist
-from woodworking_ai.assembly_steps import assembly_sequence
+from woodworking_ai.assembly_steps import assembly_sequence, assembly_plan
 
 
 def _cab(**kw):
@@ -48,7 +48,7 @@ def test_finish_is_last():
 
 def test_table_sequence_attaches_top_with_movement():
     seq = assembly_sequence(TableSpec())
-    top_step = next(s for s in seq.steps if "top" in s.title.lower())
+    top_step = next(s for s in seq.steps if "attach the top" in s.title.lower())
     assert "movement" in top_step.detail.lower()
 
 
@@ -61,3 +61,69 @@ def test_project_sequence_ends_with_install_and_namespaces_ids():
     assert seq.steps[-1].category == "install"
     ids = {pid for s in seq.steps for pid in s.part_ids}
     assert any(i.startswith("B1-") for i in ids)
+
+
+# --- hierarchical plan: sub-assemblies, each with their own steps ---------
+
+def _names(plan):
+    return [s.name for s in plan.subassemblies]
+
+
+def test_plan_breaks_into_named_subassemblies():
+    plan = assembly_plan(_cab(drawers=[Drawer(140), Drawer(160)]))
+    names = _names(plan)
+    assert "Carcass" in names
+    assert "Drawer box 1" in names and "Drawer box 2" in names
+    assert names[0] == "Preparation"
+    assert names[-1] == "Final assembly"
+
+
+def test_each_subassembly_has_its_own_steps():
+    plan = assembly_plan(_cab())
+    for sub in plan.subassemblies:
+        assert sub.steps, f"{sub.name} should have build steps"
+        assert sub.steps[0].number == 1   # steps numbered within the unit
+
+
+def test_five_piece_door_gets_a_door_subassembly():
+    plan = assembly_plan(_cab(door_style="shaker", doors=2))
+    names = _names(plan)
+    assert any(n.startswith("Door") for n in names)
+
+
+def test_slab_door_has_no_door_subassembly():
+    plan = assembly_plan(_cab(door_style="slab", doors=2))
+    assert not any(s.name.startswith("Door") for s in plan.subassemblies)
+
+
+def test_face_frame_is_its_own_subassembly():
+    plan = assembly_plan(_cab(construction=Construction.FACE_FRAME))
+    assert "Face frame" in _names(plan)
+
+
+def test_flat_sequence_matches_the_plan():
+    spec = _cab(drawers=[Drawer(140)])
+    plan = assembly_plan(spec)
+    flat = assembly_sequence(spec).steps
+    assert len(flat) == sum(len(s.steps) for s in plan.subassemblies)
+    assert [s.number for s in flat] == list(range(1, len(flat) + 1))
+
+
+def test_drawer_box_subassembly_owns_only_its_parts():
+    spec = _cab(doors=0, drawers=[Drawer(140), Drawer(160)])
+    cl = generate_cutlist(spec)
+    plan = assembly_plan(spec)
+    box1 = next(s for s in plan.subassemblies if s.name == "Drawer box 1")
+    # Its part IDs are the box-1 parts, not box-2's.
+    box1_ids = {p.id for p in cl.parts if "drawer 1 box" in p.name.lower()}
+    assert set(box1.part_ids) == box1_ids
+
+
+def test_project_plan_namespaces_and_ends_with_run_install():
+    proj = Project(name="Run", components=[
+        Component(spec=_cab(), label="B1"),
+        Component(spec=_cab(), label="B2"),
+    ])
+    plan = assembly_plan(proj)
+    assert plan.subassemblies[-1].name == "Set & join the run"
+    assert any(s.name.startswith("[B1]") for s in plan.subassemblies)
