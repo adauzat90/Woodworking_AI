@@ -144,12 +144,10 @@ _SLIDES_UNDER = {
                        slide_type="undermount", box_clearance_total=42.0,
                        rear_notch=True, locking_holes=2),
 }
-_PULLS = {
-    "generic": PullSpec("Bar pull 96mm", "generic", "", hole_spacing=96.0),
-    "blum": PullSpec("Bar pull 96mm", "blum", "PULL96", hole_spacing=96.0),
-    "hettich": PullSpec("Bar pull 96mm", "hettich", "PULL96", hole_spacing=96.0),
-    "grass": PullSpec("Bar pull 96mm", "grass", "PULL96", hole_spacing=96.0),
-}
+# Every brand currently stocks the same generic 96mm bar pull, so the part is
+# built per brand rather than kept as four identical catalogue rows. (Add a real
+# per-brand table here once distinct pulls are actually sourced.)
+DEFAULT_PULL_SPACING = 96.0
 
 # Carcass assembly hardware (per joinery family).
 CONFIRMAT = Fastener("Confirmat screw 7×50", "CONF-7x50", "carcass assembly")
@@ -172,7 +170,10 @@ def select_slide(brand: str, slide_type: str = "side_mount",
 
 
 def select_pull(brand: str) -> PullSpec:
-    return _PULLS[normalize_brand(brand)]
+    brand = normalize_brand(brand)
+    sku = "" if brand == "generic" else "PULL96"
+    return PullSpec("Bar pull 96mm", brand, sku,
+                    hole_spacing=DEFAULT_PULL_SPACING)
 
 
 def hinge_count(door_height: float) -> int:

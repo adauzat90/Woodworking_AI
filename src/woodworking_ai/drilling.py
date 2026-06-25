@@ -32,7 +32,9 @@ PIN_DEPTH = 12.0
 ROW_SETBACK = 37.0          # each pin row in from the front / back edge
 PIN_END_MARGIN = 64.0       # first/last pin in from the panel ends
 HINGE_END_MARGIN = 90.0     # top/bottom hinge in from the door ends
-SLIDE_SCREW_DEPTHS = (37.0, 0.5, -50.0)  # 0.5 means "mid-depth" sentinel
+# Depths of the three slide screws along the side panel: a fixed inset from the
+# front, mid-depth (None), and an inset from the back (negative => from rear).
+SLIDE_SCREW_DEPTHS = (37.0, None, -50.0)
 
 
 @dataclass
@@ -209,7 +211,7 @@ def drilling_schedule(spec) -> DrillingSchedule:
                     part=side.label, operation=f"slide line — {df.label}",
                     note=slide.name, part_id=pid(side.label))
                 for d in SLIDE_SCREW_DEPTHS:
-                    u = depth / 2 if d == 0.5 else (d if d > 0 else depth + d)
+                    u = depth / 2 if d is None else (d if d > 0 else depth + d)
                     op.holes.append(Hole("slide screw", u, slide_v, 4.0, 12.0))
             sched.ops.append(op)
 

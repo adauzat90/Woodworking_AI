@@ -19,7 +19,7 @@ Pure data — no CAD dependency. JSON round-trips so the web UI can persist it i
 from __future__ import annotations
 
 import copy
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 
 from .estimator import (
     PriceBook, SheetSize, pricebook_to_dict, pricebook_from_dict,
@@ -66,41 +66,47 @@ class ShopProfile:
 
     # ---- serialization ------------------------------------------------------
 
+    # ``prices``/``sheet`` are nested dataclasses with their own (de)serializers;
+    # every other field is a scalar driven straight off ``fields()`` so the list
+    # lives in exactly one place — the dataclass definition above.
+    _NESTED = {
+        "prices": (pricebook_to_dict, pricebook_from_dict),
+        "sheet": (sheetsize_to_dict, sheetsize_from_dict),
+    }
+
     def to_dict(self) -> dict:
-        return {
-            "name": self.name,
-            "construction": self.construction,
-            "back": self.back,
-            "joinery": self.joinery,
-            "reveal": self.reveal,
-            "edge_banding": self.edge_banding,
-            "carcass_thickness": self.carcass_thickness,
-            "carcass_thickness_actual": self.carcass_thickness_actual,
-            "hardware_brand": self.hardware_brand,
-            "prices": pricebook_to_dict(self.prices),
-            "sheet": sheetsize_to_dict(self.sheet),
-        }
+        out: dict = {}
+        for f in fields(self):
+            value = getattr(self, f.name)
+            to_d = self._NESTED.get(f.name)
+            out[f.name] = to_d[0](value) if to_d else value
+        return out
 
     @classmethod
     def from_dict(cls, data) -> "ShopProfile":
         p = cls()
         if not isinstance(data, dict):
             return p
-        for f in ("name", "construction", "back", "joinery", "hardware_brand"):
-            if isinstance(data.get(f), str):
-                setattr(p, f, data[f])
-        if isinstance(data.get("reveal"), (int, float)):
-            p.reveal = float(data["reveal"])
-        if isinstance(data.get("carcass_thickness"), (int, float)):
-            p.carcass_thickness = float(data["carcass_thickness"])
-        if isinstance(data.get("carcass_thickness_actual"), (int, float)):
-            p.carcass_thickness_actual = float(data["carcass_thickness_actual"])
-        if "edge_banding" in data:
-            p.edge_banding = bool(data["edge_banding"])
-        if data.get("prices"):
-            p.prices = pricebook_from_dict(data["prices"])
-        if data.get("sheet"):
-            p.sheet = sheetsize_from_dict(data["sheet"])
+        for f in fields(p):
+            if f.name not in data:
+                continue
+            nested = cls._NESTED.get(f.name)
+            if nested:
+                if data.get(f.name):
+                    setattr(p, f.name, nested[1](data[f.name]))
+                continue
+            # Coerce by the field's own type — bool before float (bool is an int
+            # subclass), then float (any number), then str — matching the prior
+            # per-field validation exactly.
+            current, value = getattr(p, f.name), data[f.name]
+            if isinstance(current, bool):
+                setattr(p, f.name, bool(value))
+            elif isinstance(current, float):
+                if isinstance(value, (int, float)):
+                    setattr(p, f.name, float(value))
+            elif isinstance(current, str):
+                if isinstance(value, str):
+                    setattr(p, f.name, value)
         return p
 
     # ---- defaulting ---------------------------------------------------------
