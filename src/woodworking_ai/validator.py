@@ -145,7 +145,8 @@ def _validate_table(spec: TableSpec) -> ValidationResult:
     # The top's width (depth, Y) runs across the grain and moves seasonally.
     if getattr(spec, "solid_top", True):
         move = engineering.seasonal_movement(
-            spec.depth, getattr(spec, "grain", "flatsawn"))
+            spec.depth, getattr(spec, "grain", "flatsawn"),
+            species=getattr(spec, "species", None))
         if str(getattr(spec, "top_fixing", "floating")).lower() == "fixed":
             err("top_fixing",
                 f"a solid top {spec.depth:.0f}mm across the grain moves about "

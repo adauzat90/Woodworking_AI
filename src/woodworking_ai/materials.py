@@ -190,4 +190,44 @@ def build_hints(spec) -> list[tuple[str, str, str]]:
         out.append(("info", "species",
                     f"Buy {woods} stock with consistent colour/figure across the "
                     "piece; order ~15% extra solid lumber for milling and defects."))
+    out.extend(species_finishing_hints(species_used))
+    return out
+
+
+def species_finishing_hints(species_used) -> list[tuple[str, str, str]]:
+    """Species-aware finishing advisories for the declared woods.
+
+    Additive ``info`` notes that fire only when a species is declared and the
+    species database knows a finishing gotcha for it (blotch-prone, oily, or
+    open-pore). Identical messages are de-duplicated so several oak parts emit
+    one open-pore note, not many.
+    """
+    from . import species as _species
+
+    # One canonical message per finishing class; woods are listed in the message.
+    bins: dict[str, list[str]] = {}
+    for sp in species_used:
+        cat = _species.finishing_category(sp)
+        if cat in (_species.FINISH_BLOTCH, _species.FINISH_OILY,
+                   _species.FINISH_OPEN_PORE):
+            bins.setdefault(cat, []).append(str(sp).strip().lower())
+
+    out: list[tuple[str, str, str]] = []
+    if _species.FINISH_BLOTCH in bins:
+        woods = ", ".join(sorted(set(bins[_species.FINISH_BLOTCH])))
+        out.append(("info", "species",
+                    f"{woods} blotch when stained — apply a wood conditioner (or "
+                    "a wash-coat of dewaxed shellac) before stain, or use a gel "
+                    "stain/dye, for even colour."))
+    if _species.FINISH_OILY in bins:
+        woods = ", ".join(sorted(set(bins[_species.FINISH_OILY])))
+        out.append(("info", "species",
+                    f"{woods} is oily — wipe the glue and finish surfaces with a "
+                    "solvent (acetone/naphtha) just before assembly and finishing "
+                    "so the glue bonds and the finish cures."))
+    if _species.FINISH_OPEN_PORE in bins:
+        woods = ", ".join(sorted(set(bins[_species.FINISH_OPEN_PORE])))
+        out.append(("info", "species",
+                    f"{woods} has open pores — grain-fill before topcoat for a "
+                    "glass-smooth surface, or accept (and embrace) the open texture."))
     return out

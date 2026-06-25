@@ -127,10 +127,17 @@ def sheet_price(prices: "PriceBook", label: str, form: str,
 
 
 def _board_foot_price(prices: "PriceBook", label: str, species: str) -> float:
-    """Board-foot price: per-species table, else label price × species premium."""
+    """Board-foot price: the PriceBook's per-species table first (user override),
+    then the wood-species database's $/bd-ft for a known wood, else the label
+    price × species premium."""
     sp = species.strip().lower()
     if sp and sp in prices.species_board_foot_price:
         return prices.species_board_foot_price[sp]
+    if sp:
+        from . import species as _species
+        db_price = _species.price_per_bdft(sp)
+        if db_price is not None:
+            return db_price
     base = prices.board_foot_price.get(label, prices.board_foot_price_default)
     return base * prices.species_multiplier.get(
         sp, prices.species_multiplier_default)

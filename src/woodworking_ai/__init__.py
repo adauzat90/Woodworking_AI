@@ -10,7 +10,7 @@ from .dsl import (
     Component, ComponentGroup, Project, Assembly, place_run,
 )
 from .validator import validate, ValidationResult
-from . import engineering, stock, proportion, units
+from . import engineering, stock, proportion, units, species
 from .cutlist import generate_cutlist, CutList, Part, Hardware
 from .estimator import estimate, Estimate, PriceBook, SheetSize, pack_sheets
 from .drilling import (
@@ -49,6 +49,7 @@ __all__ = [
     "validate",
     "ValidationResult",
     "engineering",
+    "species",
     "stock",
     "proportion",
     "generate_cutlist",
