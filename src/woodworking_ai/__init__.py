@@ -6,7 +6,7 @@ from .dsl import (
     CabinetSpec, CabinetType, TableSpec, spec_from_dict, Material, ToeKick,
     Drawer, Construction, BackStyle, Joinery,
     CornerJoint, DovetailTails, SlideType, Grain, TopFixing,
-    ApplianceType, Appliance, appliances_of,
+    ApplianceType, Appliance, appliances_of, ApplianceVoid,
     Component, ComponentGroup, Project, Assembly, place_run,
 )
 from .validator import validate, ValidationResult
@@ -35,6 +35,7 @@ __all__ = [
     "ApplianceType",
     "Appliance",
     "appliances_of",
+    "ApplianceVoid",
     "Component",
     "ComponentGroup",
     "Project",

@@ -180,3 +180,47 @@ def accessory_issues(spec) -> list:
                     "warning", "countertop",
                     "counter overhang over 100mm needs support brackets"))
     return out
+
+
+# --- appliance voids in a run -----------------------------------------------
+
+def void_end_panels(project) -> dict[int, list[str]]:
+    """Cabinet sides left exposed by an adjacent appliance gap, per component.
+
+    A free-standing appliance in a run (a :class:`~dsl.ApplianceVoid`) leaves the
+    sides of the cabinets on either side of it on show, so they want a finished
+    end panel. Returns ``{component_index: [side, ...]}`` (1-based, "left"/
+    "right" in the cabinet's own frame) for the cabinets that abut a void; a run
+    with no void returns ``{}``.
+
+    Adjacency is decided from each component's plan footprint, so it works for a
+    straight run laid left-to-right (the common kitchen case). The side facing
+    the gap is the one whose edge touches the void.
+    """
+    from .dsl import ApplianceVoid
+    from .geometry import footprint_corners
+
+    comps = list(getattr(project, "components", []) or [])
+    if not comps:
+        return {}
+
+    def x_span(comp):
+        xs = [p[0] for p in footprint_corners(comp)]
+        return min(xs), max(xs)
+
+    spans = [x_span(c) for c in comps]
+    out: dict[int, list[str]] = {}
+    tol = 5.0
+    for vi, comp in enumerate(comps):
+        if not isinstance(comp.spec, ApplianceVoid):
+            continue
+        vlo, vhi = spans[vi]
+        for ci, other in enumerate(comps):
+            if ci == vi or isinstance(other.spec, ApplianceVoid):
+                continue
+            olo, ohi = spans[ci]
+            if abs(ohi - vlo) <= tol:        # cabinet sits to the LEFT of the gap
+                out.setdefault(ci + 1, []).append("right")
+            elif abs(olo - vhi) <= tol:      # cabinet sits to the RIGHT of the gap
+                out.setdefault(ci + 1, []).append("left")
+    return {k: sorted(set(v)) for k, v in out.items()}

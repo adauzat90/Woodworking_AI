@@ -1,6 +1,7 @@
 """Room-aware planning: wall fit, filler sizing, scribe allowances."""
 
-from woodworking_ai.room import Wall, Room, fit_run, scribe_plan, plan_wall
+from woodworking_ai import CabinetSpec, ApplianceVoid, Project, Component
+from woodworking_ai.room import Wall, Room, fit_run, scribe_plan, plan_wall, run_widths
 
 
 def test_fit_run_reports_the_gap():
@@ -50,3 +51,22 @@ def test_room_roundtrip():
 def test_wide_gap_warns_to_add_a_cabinet():
     plan = plan_wall([600], Wall(length=900))
     assert any("wide" in m for (_s, _f, m) in plan["issues"])
+
+
+# --- B3: appliance voids count toward the run width ----------------------
+
+def _cab(x, lbl):
+    return Component(spec=CabinetSpec(name=lbl, width=600, height=720, depth=600),
+                     x=x, label=lbl)
+
+
+def test_run_widths_include_an_appliance_void():
+    proj = Project(name="Run", components=[
+        _cab(0, "B1"),
+        Component(spec=ApplianceVoid(type="dishwasher", width=600, depth=600),
+                  x=600, label="DW"),
+        _cab(1200, "B3")])
+    assert run_widths(proj) == [600.0, 600.0, 600.0]
+    # A 600 DW gap between two 600 cabinets needs an 1800mm wall.
+    assert fit_run(run_widths(proj), 1800)["fits"]
+    assert fit_run(run_widths(proj), 1800)["total"] == 1800

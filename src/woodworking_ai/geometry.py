@@ -17,7 +17,7 @@ from dataclasses import dataclass
 
 from .dsl import (
     CabinetSpec, TableSpec, ComponentGroup, Component, BackStyle,
-    Construction, CabinetType,
+    Construction, CabinetType, ApplianceVoid,
 )
 
 # Construction constants shared with the cut list (neutral module, no cycle).
@@ -324,6 +324,8 @@ def project_layout(project: ComponentGroup) -> list[PanelBox]:
 
 def panel_layout(spec) -> list[PanelBox]:
     """Return every panel of *spec* placed in the shared coordinate frame."""
+    if isinstance(spec, ApplianceVoid):
+        return []                      # a reserved gap builds no carcass
     if isinstance(spec, ComponentGroup):
         return project_layout(spec)
     if isinstance(spec, TableSpec):

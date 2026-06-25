@@ -15,7 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from .dsl import (CabinetSpec, TableSpec, ComponentGroup, BackStyle,
-                  CabinetType, Joinery)
+                  CabinetType, Joinery, ApplianceVoid)
 from .cutlist import generate_cutlist
 from .geometry import component_tag
 from .constants import DOOR_PANEL_GROOVE
@@ -209,6 +209,8 @@ def _project_joinery(project: ComponentGroup) -> JoinerySchedule:
 
 def joinery_schedule(spec) -> JoinerySchedule:
     """Setup sheet of machining ops for a cabinet, table, or group."""
+    if isinstance(spec, ApplianceVoid):
+        return JoinerySchedule(spec_name=spec.name)   # a gap has no joinery
     if isinstance(spec, ComponentGroup):
         return _project_joinery(spec)
     cl = generate_cutlist(spec)

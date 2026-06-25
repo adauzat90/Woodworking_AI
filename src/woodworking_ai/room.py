@@ -74,8 +74,23 @@ class Room:
                    if isinstance(w, dict)])
 
 
+def run_widths(project) -> list[float]:
+    """Each component's run width along the wall, cabinets *and* appliance gaps.
+
+    A reserved :class:`~dsl.ApplianceVoid` is a SPACE that still consumes run
+    width, so it is included — :func:`fit_run` then totals the real wall the run
+    needs. Components with no ``width`` (e.g. a nested sub-assembly) contribute 0.
+    """
+    return [float(getattr(c.spec, "width", 0.0) or 0.0)
+            for c in getattr(project, "components", []) or []]
+
+
 def fit_run(widths: list[float], wall_length: float) -> dict:
-    """Fit cabinet *widths* to a wall: totals, the gap, and the filler needed."""
+    """Fit cabinet *widths* to a wall: totals, the gap, and the filler needed.
+
+    *widths* may include appliance-gap widths (see :func:`run_widths`); a gap
+    consumes wall length just like a cabinet, so the total reflects the real run.
+    """
     total = sum(float(w) for w in widths)
     gap = wall_length - total
     return {

@@ -16,7 +16,7 @@ import math
 from dataclasses import dataclass, field, replace
 
 from .dsl import (CabinetSpec, TableSpec, ComponentGroup, BackStyle,
-                  Construction, CabinetType)
+                  Construction, CabinetType, ApplianceVoid)
 from .geometry import front_plan, component_tag
 # Construction constants now live in one neutral module shared with geometry.
 from .constants import (
@@ -525,6 +525,8 @@ def _project_cutlist(project: ComponentGroup) -> CutList:
 
 def generate_cutlist(spec) -> CutList:
     """Derive the full parts + hardware list for a cabinet, table, or group."""
+    if isinstance(spec, ApplianceVoid):
+        return CutList(spec_name=spec.name)   # a reserved gap adds no parts
     if isinstance(spec, ComponentGroup):
         return _project_cutlist(spec)
     if isinstance(spec, TableSpec):
