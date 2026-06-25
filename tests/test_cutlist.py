@@ -130,3 +130,42 @@ def test_applied_back_spans_full_width():
 
 def test_sheet_area_is_positive():
     assert generate_cutlist(base_spec()).sheet_area_m2 > 0
+
+
+# --- C2: per-edge edge banding ----------------------------------------------
+
+def test_frameless_base_bands_expected_edges():
+    cl = generate_cutlist(base_spec(doors=2, shelves=1, edge_banding=True))
+    by_name = {p.name: p for p in cl.parts}
+    # Frameless carcass: the front (long) edge of the gables, bottom and the
+    # front stretcher show and are banded.
+    assert by_name["Side"].banded_edges == "L"
+    assert by_name["Bottom"].banded_edges == "L"
+    assert by_name["Top stretcher"].banded_edges == "L"
+    # The shelf front edge shows.
+    assert by_name["Adjustable shelf"].banded_edges == "L"
+    # A slab door shows on all four edges.
+    assert by_name["Door"].banded_edges == "LLSS"
+
+
+def test_no_banding_when_disabled():
+    cl = generate_cutlist(base_spec(edge_banding=False))
+    assert all(p.banded_edges == "" for p in cl.parts)
+    assert cl.total_banding_m == 0.0
+
+
+def test_face_frame_hides_carcass_front_edges():
+    from woodworking_ai.dsl import Construction
+    cl = generate_cutlist(base_spec(construction=Construction.FACE_FRAME,
+                                    edge_banding=True))
+    side = next(p for p in cl.parts if p.name == "Side")
+    assert side.banded_edges == ""  # the face frame covers the gable edge
+
+
+def test_total_banding_matches_summed_edge_lengths():
+    cl = generate_cutlist(base_spec(doors=2, shelves=1, edge_banding=True))
+    expected = sum(p.banded_length_mm * p.qty for p in cl.parts) / 1000.0
+    assert cl.total_banding_m == pytest.approx(expected)
+    # Breakdown metres re-sum to the same total.
+    assert sum(g["metres"] for g in cl.banding_breakdown()) == \
+        pytest.approx(cl.total_banding_m)
