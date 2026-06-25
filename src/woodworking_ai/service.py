@@ -21,6 +21,7 @@ from .estimator import estimate
 from .drilling import drilling_schedule
 from .joinery import joinery_schedule
 from .assembly_steps import assembly_plan
+from .stock import stock_label as _stock_label, stock_product as _stock_product
 from .agents.critic import critique
 
 
@@ -180,7 +181,8 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
     result["lumber"] = {
         "board_feet": round(cl.total_board_feet, 2),
         "groups": [
-            {"material": g["material"], "thickness": g["thickness"],
+            {"material": g["material"], "stock": _stock_label(g["material"]),
+             "product": _stock_product(g["material"]), "thickness": g["thickness"],
              "parts": g["parts"], "board_feet": round(g["board_feet"], 2),
              "length_mm": round(g["length_mm"], 1)}
             for g in lumber_groups
@@ -202,13 +204,15 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
         "finish_m2": round(est.finish_m2, 2),
         "total_sheets": est.total_sheets,
         "groups": [
-            {"material": g.material, "thickness": g.thickness,
+            {"material": g.material, "stock": _stock_label(g.material),
+             "product": _stock_product(g.material), "thickness": g.thickness,
              "parts": g.part_count, "sheets": g.sheets,
              "utilization": round(g.utilization, 3), "oversize": g.oversize}
             for g in est.groups
         ],
         "lumber_groups": [
-            {"material": g.material, "thickness": g.thickness,
+            {"material": g.material, "stock": _stock_label(g.material),
+             "product": _stock_product(g.material), "thickness": g.thickness,
              "parts": g.part_count, "board_feet": round(g.board_feet, 2),
              "cost": round(g.cost, 2)}
             for g in est.lumber_groups

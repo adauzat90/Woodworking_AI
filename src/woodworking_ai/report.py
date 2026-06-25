@@ -317,21 +317,23 @@ def build_package_pdf(spec, units: str = "metric") -> bytes:
 
     # 1 · Shopping list — buy everything first ---------------------------
     from .finishing import finishing_schedule
+    from .stock import stock_label, stock_product
     heading("Shopping list — buy this first")
     story.append(Paragraph(
-        "Everything to buy and have on hand before you start.", small))
+        "Everything to buy and have on hand before you start. The stock below is "
+        "the raw sheet/board material — every part (§3) is cut from it.", small))
     story.append(Paragraph("Sheet goods (full sheets to buy)", mini))
     story.append(tbl(
-        ["Material", "Thickness", "Sheets", "Parts"],
-        [[g.material, fl(g.thickness), g.sheets, g.part_count]
-         for g in est.groups] or [["—", "", "", ""]]))
+        ["Stock to buy", "Typical product", "Thickness", "Sheets"],
+        [[stock_label(g.material), stock_product(g.material), fl(g.thickness),
+          g.sheets] for g in est.groups] or [["—", "", "", ""]]))
     if est.lumber_groups:
         story.append(Spacer(1, 6))
         story.append(Paragraph("Solid lumber (by the board foot)", mini))
         story.append(tbl(
-            ["Material", "Thickness", "Board feet"],
-            [[g.material, fl(g.thickness), f"{g.board_feet:.1f}"]
-             for g in est.lumber_groups]))
+            ["Stock to buy", "Typical product", "Thickness", "Board feet"],
+            [[stock_label(g.material), stock_product(g.material), fl(g.thickness),
+              f"{g.board_feet:.1f}"] for g in est.lumber_groups]))
     extras = []
     if est.edge_banding_m:
         extras.append(f"Edge banding: ~{est.edge_banding_m:.1f} m")

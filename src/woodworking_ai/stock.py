@@ -38,6 +38,35 @@ HARDWOOD_QUARTERS: dict[str, tuple[float, float]] = {
 THICKNESS_TOL = 1.0  # mm tolerance when matching a spec thickness to stock
 
 
+# The cut list groups parts by an internal *usage* label ("door/front", "drawer
+# box", ...). For a shopping list those read like part names, so map each to the
+# raw stock a shop actually buys plus the typical product. (name, typical_product)
+STOCK_DESCRIPTIONS: dict[str, tuple[str, str]] = {
+    "sheet": ("Carcass sheet", "plywood / MDF / melamine"),
+    "back panel": ("Back & drawer-bottom panel", "thin ply or hardboard"),
+    "door/front": ("Door & drawer-front panel", "veneer ply / MDF"),
+    "door panel": ("Door centre-panel stock", "thin ply or solid"),
+    "drawer box": ("Drawer-box sheet", "Baltic birch / solid"),
+    "countertop": ("Countertop slab", "laminate / solid surface / butcher block"),
+    "molding": ("Molding stock", "solid profile"),
+    "frame": ("Face-frame hardwood", "solid stock"),
+    "solid panel": ("Solid-wood boards", "for edge-glued panels"),
+    "top": ("Tabletop stock", "solid / sheet"),
+    "leg": ("Leg stock", "solid hardwood"),
+    "apron": ("Apron stock", "solid hardwood"),
+}
+
+
+def stock_label(material: str) -> str:
+    """Buyer-friendly name for an internal cut-list material label."""
+    return STOCK_DESCRIPTIONS.get(material, (material.title(), ""))[0]
+
+
+def stock_product(material: str) -> str:
+    """The typical product you'd buy for an internal material label (or '')."""
+    return STOCK_DESCRIPTIONS.get(material, ("", ""))[1]
+
+
 def nearest_sheet_thickness(t: float) -> float:
     """Closest commonly stocked sheet thickness (mm)."""
     return min(SHEET_THICKNESSES_MM, key=lambda s: abs(s - t))

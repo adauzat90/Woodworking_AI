@@ -826,16 +826,17 @@ function lumberPane(d) {
   // --- sheet goods -----------------------------------------------------
   if (sheetGroups.length) {
     h += '<div class="chips">' + sheetGroups.map(g =>
-      `<span class="chip"><b>${g.sheets}×</b> ${g.material} ${fmtLen(g.thickness, true)}</span>`
+      `<span class="chip"><b>${g.sheets}×</b> ${g.stock || g.material} ${fmtLen(g.thickness, true)}</span>`
     ).join("") + "</div>";
-    h += "<h4>Sheet goods</h4>";
+    h += "<h4>Sheet goods to buy</h4>";
     h += table(
-      ["Material", `Thk (${u})`, "Parts", "Sheets", "Used", "Area"],
+      ["Stock to buy", "Product", `Thk (${u})`, "Sheets", "Used", "Area"],
       sheetGroups.map(g => {
         const area = areaByKey[g.material + "@" + g.thickness] || 0;
         const util = Math.round(g.utilization * 100) + "%";
         const flag = g.oversize ? ` ⚠ ${g.oversize} oversize` : "";
-        return [g.material + flag, fmtLen(g.thickness), g.parts, g.sheets, util, fmtArea(area)];
+        return [(g.stock || g.material) + flag, g.product || "",
+                fmtLen(g.thickness), g.sheets, util, fmtArea(area)];
       }));
     h += `<p class="muted" style="margin-top:8px">Sheet counts include nesting
       waste from a guillotine pack; “Used” is the packed area per sheet. ` +
@@ -850,14 +851,14 @@ function lumberPane(d) {
     for (const g of (e.lumber_groups || [])) costByKey[g.material + "@" + g.thickness] = g.cost;
     const lumberCost = e.lumber || 0;
     h += '<div class="chips" style="margin-top:14px">' + solidGroups.map(g =>
-      `<span class="chip"><b>${g.board_feet.toFixed(1)}</b> bd ft · ${g.material} ${fmtLen(g.thickness, true)}</span>`
+      `<span class="chip"><b>${g.board_feet.toFixed(1)}</b> bd ft · ${g.stock || g.material} ${fmtLen(g.thickness, true)}</span>`
     ).join("") + "</div>";
-    h += "<h4>Solid lumber (board feet)</h4>";
+    h += "<h4>Solid lumber to buy (board feet)</h4>";
     h += table(
-      ["Material", `Thk (${u})`, "Parts", "Length", "Board feet", "Cost"],
+      ["Stock to buy", `Thk (${u})`, "Parts", "Length", "Board feet", "Cost"],
       solidGroups.map(g => {
         const cost = costByKey[g.material + "@" + g.thickness];
-        return [g.material, fmtLen(g.thickness), g.parts, fmtRun(g.length_mm),
+        return [g.stock || g.material, fmtLen(g.thickness), g.parts, fmtRun(g.length_mm),
                 g.board_feet.toFixed(2) + " bd ft",
                 cost == null ? "" : e.currency + cost.toFixed(2)];
       }));
