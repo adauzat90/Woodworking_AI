@@ -109,15 +109,23 @@ def _overlap(a: PanelBox, b: PanelBox) -> tuple[float, float, float]:
     )
 
 
+# Applied trim (countertop, filler, end panel, moldings) is surface-mounted, not
+# a structural carcass part; it legitimately abuts the box and other trim, so it
+# is excluded from the hard structural-interference error.
+_APPLIED_CATEGORIES = {"counter", "filler", "endpanel", "molding"}
+
+
 def _interferences(panels: list[PanelBox]) -> list[tuple[str, str, float]]:
     """Pairs of panels that share positive volume (real collisions).
 
     Rotated panels are skipped: their AABB over-approximates the true footprint,
-    so an axis-aligned test would report false collisions. The opt-in B-Rep
-    check (``brep=True``) verifies those exactly.
+    so an axis-aligned test would report false collisions. Applied trim is
+    skipped too (it is surface-mounted). The opt-in B-Rep check (``brep=True``)
+    verifies the rest exactly.
     """
     checked = [p for p in panels if not getattr(p, "is_rotated", False)
-               and not getattr(p, "oversized", False)]
+               and not getattr(p, "oversized", False)
+               and p.category not in _APPLIED_CATEGORIES]
     hits: list[tuple[str, str, float]] = []
     for i in range(len(checked)):
         for j in range(i + 1, len(checked)):
@@ -264,7 +272,9 @@ def _critique_project(project: ComponentGroup, *, use_cad: bool = False,
                         "error", "geometry",
                         f"built {label} {got:.1f}mm != expected {want:.1f}mm"))
             if brep:
-                skip = {p.label for p in panels if getattr(p, "oversized", False)}
+                skip = {p.label for p in panels
+                        if getattr(p, "oversized", False)
+                        or p.category in _APPLIED_CATEGORIES}
                 for a, b, vol in _brep_interferences(model, skip=skip):
                     result.issues.append(CritiqueIssue(
                         "error", "interference",
@@ -391,7 +401,8 @@ def critique(spec, *, use_cad: bool = False,
                         f"built {label} {got:.1f}mm != expected {want:.1f}mm")
             if brep:
                 skip = {p.label for p in panels
-                        if getattr(p, "oversized", False)}
+                        if getattr(p, "oversized", False)
+                        or p.category in _APPLIED_CATEGORIES}
                 brep_hits = _brep_interferences(model, skip=skip)
                 result.report["brep_interference_count"] = len(brep_hits)
                 for a, b, vol in brep_hits:

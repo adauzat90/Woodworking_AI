@@ -24,6 +24,7 @@ from .dsl import (
 from .constants import (
     STRETCHER_WIDTH, SHELF_SIDE_CLEARANCE, SHELF_SETBACK,
     FRAME_WIDTH, FRAME_THICKNESS, MULLION_WIDTH,
+    DOOR_STILE_WIDTH, DOOR_RAIL_WIDTH,
 )
 
 
@@ -398,18 +399,107 @@ def panel_layout(spec) -> list[PanelBox]:
     # --- fronts: doors, drawers, mullion, blind filler (shared layout) ---
     # The same plan the cut list consumes, so panels and parts never disagree.
     for it in front_plan(spec).items:
+        if it.kind == "door":
+            # Slab or 5-piece (stile-and-rail) depending on door_style.
+            panels.extend(_door_panels(it, spec))
+            continue
         if it.kind == "mullion":
             label, category = ("Center stile" if is_ff else "Mullion"), "frame"
         elif it.kind == "drawer":
             label, category = f"Drawer front {it.index}", "front"
-        elif it.kind == "filler":
+        else:  # blind filler
             label, category = "Blind filler", "front"
-        else:  # door
-            label, category = ("Door" if not it.hand else f"Door {it.hand}"), "front"
         add(label, (it.width, it.thickness, it.height), (it.x, it.y, it.z),
             category=category)
 
+    # --- accessories: countertop, filler, end panel, molding -------------
+    panels.extend(_accessory_panels(spec))
+
     return panels
+
+
+def _door_panels(it: "FrontItem", spec: CabinetSpec) -> list[PanelBox]:
+    """Panels for one door leaf — a single slab, or a 5-piece frame + panel.
+
+    For a non-slab ``door_style`` the leaf becomes two stiles, two rails and a
+    recessed centre panel. The hinge-side stile keeps the leaf's ``Door``/``Door
+    L``/``Door R`` label so the drilling schedule still bores the hinge cup into
+    it; the other parts take non-colliding labels. The five parts tile the leaf
+    (touching, not overlapping), so the Critic's coverage and interference
+    checks are unaffected.
+    """
+    label = "Door" if not it.hand else f"Door {it.hand}"
+    style = str(getattr(spec, "door_style", "slab")).lower()
+    if style == "slab":
+        return [PanelBox(label, (it.width, it.thickness, it.height),
+                         (it.x, it.y, it.z), "front")]
+
+    w, h, t = it.width, it.height, it.thickness
+    pt = getattr(spec.material, "door_panel", 6.0)
+    stile, rail = DOOR_STILE_WIDTH, DOOR_RAIL_WIDTH
+    suf = f" {it.hand}" if it.hand else ""
+    hinge_left = it.hand != "R"          # L door / single door hinge on the left
+    sign = -1.0 if hinge_left else 1.0
+    edge = w / 2 - stile / 2
+    inner_w = max(w - 2 * stile, 10.0)
+    inner_h = max(h - 2 * rail, 10.0)
+    # Centre panel recessed: thinner stock, set flush to the frame's back face.
+    panel_y = it.y + t / 2 - pt / 2
+    return [
+        PanelBox(label, (stile, t, h), (it.x + sign * edge, it.y, it.z), "front"),
+        PanelBox(f"Stile{suf} latch", (stile, t, h),
+                 (it.x - sign * edge, it.y, it.z), "front"),
+        PanelBox(f"Rail{suf} top", (inner_w, t, rail),
+                 (it.x, it.y, it.z + h / 2 - rail / 2), "front"),
+        PanelBox(f"Rail{suf} bottom", (inner_w, t, rail),
+                 (it.x, it.y, it.z - h / 2 + rail / 2), "front"),
+        PanelBox(f"Panel{suf}", (inner_w, pt, inner_h),
+                 (it.x, panel_y, it.z), "front"),
+    ]
+
+
+def _accessory_panels(spec: CabinetSpec) -> list[PanelBox]:
+    """Geometry for the accessories on *spec*: countertop, filler, end panel,
+    molding. Each sits just outside/above the carcass (touching, not
+    overlapping), with its own category so it never distorts the carcass
+    envelope the Critic measures.
+    """
+    out: list[PanelBox] = []
+    m = spec.material
+    box_top = spec.toe_kick_height + spec.box_height
+    for a in getattr(spec, "accessories", None) or []:
+        if not isinstance(a, dict):
+            continue
+        kind = str(a.get("kind", "")).lower()
+        if kind == "countertop":
+            ct = float(a.get("thickness", 38.0))
+            overhang = float(a.get("overhang", 25.0))
+            total_d = spec.depth + overhang
+            out.append(PanelBox(
+                "Countertop", (spec.width + 2 * overhang, total_d, ct),
+                (0.0, spec.depth / 2 - overhang / 2, box_top + ct / 2), "counter"))
+        elif kind == "filler":
+            fw = float(a.get("width", 75.0))
+            right = str(a.get("side", "")).lower() == "right"
+            sign = 1.0 if right else -1.0
+            out.append(PanelBox(
+                "Filler", (fw, spec.depth, spec.box_height),
+                (sign * (spec.width / 2 + fw / 2), spec.depth / 2,
+                 spec.toe_kick_height + spec.box_height / 2), "filler"))
+        elif kind == "end_panel":
+            right = str(a.get("side", "")).lower() == "right"
+            sign = 1.0 if right else -1.0
+            out.append(PanelBox(
+                "End panel", (m.door, spec.depth, spec.box_height),
+                (sign * (spec.width / 2 + m.door / 2), spec.depth / 2,
+                 spec.toe_kick_height + spec.box_height / 2), "endpanel"))
+        elif kind == "molding":
+            mtype = str(a.get("type", "crown"))
+            mh = float(a.get("height", 90.0 if mtype == "crown" else 40.0))
+            out.append(PanelBox(
+                f"{mtype.title()} molding", (spec.width, m.carcass, mh),
+                (0.0, m.carcass / 2, box_top + mh / 2), "molding"))
+    return out
 
 
 def _diagonal_layout(spec: CabinetSpec) -> list[PanelBox]:

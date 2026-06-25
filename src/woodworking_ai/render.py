@@ -23,8 +23,13 @@ CATEGORY_COLORS = {
     "toe": "#6b4f3a",
     "frame": "#7a5230",
     "front": "#9c6b43",
+    # applied trim / accessories
+    "counter": "#3f3a36",
+    "filler": "#8a6a47",
+    "endpanel": "#9c6b43",
+    "molding": "#7a5230",
 }
-CATEGORY_ALPHA = {"front": 0.92}
+CATEGORY_ALPHA = {"front": 0.92, "counter": 0.97}
 
 
 def _require_mpl() -> Any:
