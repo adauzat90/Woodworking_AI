@@ -1,6 +1,5 @@
 """Dimensioned 2D shop drawings (SVG)."""
 
-import re
 import xml.dom.minidom as minidom
 
 from woodworking_ai.dsl import CabinetSpec, Drawer, TableSpec

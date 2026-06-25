@@ -97,6 +97,76 @@ def _drawings_flowable(spec, unit, avail_w):
     return _Views()
 
 
+def _parts_diagram(parts, avail_w, unit):
+    """A Flowable laying each part out as a scaled, labelled rectangle.
+
+    The IKEA-style "here are the pieces" view: one tile per part, drawn to a
+    shared scale so relative sizes read true, captioned with its ID, quantity
+    and finished size.
+    """
+    from reportlab.platypus import Flowable
+
+    faces = [(max(p.length, p.width), min(p.length, p.width)) for p in parts]
+    max_dim = max((f[0] for f in faces), default=1.0)
+    scale = min(96.0 / max_dim, 0.12)
+    label_h, gap = 18.0, 12.0
+    placed, x, y, row_h = [], 0.0, 0.0, 0.0
+    for p, (lng, wid) in zip(parts, faces):
+        pw, ph = max(lng * scale, 8.0), max(wid * scale, 8.0)
+        cell_w = max(pw, 46.0)
+        if x + cell_w > avail_w and x > 0:
+            y += row_h + gap
+            x, row_h = 0.0, 0.0
+        placed.append((p, x, y, pw, ph))
+        x += cell_w + gap
+        row_h = max(row_h, ph + label_h)
+    total_h = y + row_h
+
+    class _PD(Flowable):
+        def wrap(self, _w, _h):
+            return (avail_w, total_h)
+
+        def draw(self):
+            c = self.canv
+            for (p, px, py, pw, ph) in placed:
+                top = total_h - py
+                yb = top - ph
+                c.setStrokeColorRGB(0.61, 0.42, 0.26)
+                c.setFillColorRGB(0.95, 0.91, 0.84)
+                c.rect(px, yb, pw, ph, stroke=1, fill=1)
+                c.setFillColorRGB(0.23, 0.18, 0.13)
+                c.setFont("Helvetica-Bold", 6.5)
+                c.drawString(px, yb - 9, f"{p.id}×{p.qty} {p.name[:16]}")
+                c.setFont("Helvetica", 5.5)
+                c.setFillColorRGB(0.4, 0.36, 0.3)
+                c.drawString(px, yb - 15,
+                             f"{format_length(p.length, unit)}×"
+                             f"{format_length(p.width, unit)}")
+    return _PD()
+
+
+def _model_image(spec, avail_w, *, exploded: bool):
+    """A reportlab Image of the model (exploded or assembled), or None.
+
+    Rendered headlessly with matplotlib; returns None when matplotlib is
+    unavailable so the package still builds without it.
+    """
+    try:
+        import os
+        import tempfile
+        from reportlab.platypus import Image
+        from .render import render_cabinet
+        from .geometry import explode_panels
+        panels = explode_panels(spec, 0.8) if exploded else None
+        path = os.path.join(tempfile.mkdtemp(), "model.png")
+        render_cabinet(spec, path, panels=panels)
+        w = avail_w
+        h = avail_w * 4.2 / 12.0          # render_cabinet uses a 12×4.2 figure
+        return Image(path, width=w, height=h)
+    except Exception:
+        return None
+
+
 def build_package_pdf(spec, units: str = "metric") -> bytes:
     """Render the full build package for *spec* as PDF bytes."""
     _require_reportlab()
@@ -145,10 +215,33 @@ def build_package_pdf(spec, units: str = "metric") -> bytes:
         ]))
         return t
 
+    sub_style = ParagraphStyle("sub", parent=h2, fontSize=13, spaceBefore=6,
+                               textColor=colors.HexColor("#9c6b43"))
+    mini = ParagraphStyle("mini", parent=h2, fontSize=9.5, spaceBefore=4,
+                          textColor=colors.HexColor("#6b4f3a"))
+    by_id = {p.id: p for p in cl.parts}
+
+    def parts_of(sub):
+        seen, out = set(), []
+        for pid in sub.part_ids:
+            p = by_id.get(pid)
+            if p and pid not in seen:
+                seen.add(pid)
+                out.append(p)
+        return out
+
+    def joinery_of(sub):
+        ids = set(sub.part_ids)
+        return [o for o in joint.ops if o.part_id in ids]
+
+    def drilling_of(sub):
+        ids = set(sub.part_ids)
+        return [o for o in drill.ops if o.part_id in ids]
+
     # --- cover -----------------------------------------------------------
     story.append(Paragraph(f"🪵 {spec.name}", h1))
-    story.append(Paragraph("Build package — drawings, cut list, BOM, drilling, "
-                           "joinery and assembly", small))
+    story.append(Paragraph("Assembly instructions — overview, then make &amp; "
+                           "build each sub-assembly, then put it together", small))
     overall = []
     for attr in ("width", "height", "depth"):
         v = getattr(spec, attr, None)
@@ -161,73 +254,110 @@ def build_package_pdf(spec, units: str = "metric") -> bytes:
         f"{sum(h.qty for h in cl.hardware)} hardware items · "
         f"{est.total_sheets} sheet(s) · {est.currency}{est.total:.2f} estimated",
         body))
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 6))
 
-    # --- drawings --------------------------------------------------------
-    story.append(Paragraph("Drawings", h2))
+    # --- overview: exploded view + everything you need -------------------
+    story.append(Paragraph("1 · Overview — what it's made of", h2))
+    img = _model_image(spec, avail_w, exploded=True)
+    if img is not None:
+        story.append(img)
+    story.append(Paragraph(
+        "The piece breaks into the sub-assemblies below. Build each one, then "
+        "join them in Final assembly.", small))
+    names = [s.name for s in plan.subassemblies
+             if s.name not in ("Preparation", "Final assembly")]
+    story.append(Paragraph("Sub-assemblies: " + ", ".join(names), small))
+    story.append(Spacer(1, 6))
+    story.append(Paragraph("Dimensioned drawings", mini))
     story.append(_drawings_flowable(spec, unit, avail_w))
     story.append(PageBreak())
 
-    # --- cut list --------------------------------------------------------
-    story.append(Paragraph("Cut list", h2))
+    # --- all parts + hardware + nesting (the "in the box" inventory) -----
+    story.append(Paragraph("2 · All parts &amp; hardware", h2))
+    story.append(Paragraph("Cut list", mini))
     story.append(tbl(
         ["ID", "Part", "Qty", f"L ({unit[:3]})", "W", "Thk", "Material", "Grain"],
         [[p.id, p.name, p.qty, fl(p.length), fl(p.width), fl(p.thickness),
           p.material, p.grain] for p in cl.parts]))
-    story.append(Spacer(1, 10))
-
-    # --- hardware / BOM --------------------------------------------------
-    story.append(Paragraph("Hardware / BOM", h2))
+    story.append(Spacer(1, 8))
+    story.append(Paragraph("Hardware / BOM", mini))
     story.append(tbl(
         ["Item", "Qty", "Brand", "SKU", "Notes"],
         [[h.name, h.qty, h.brand, h.sku, h.notes] for h in cl.hardware]))
-    story.append(Spacer(1, 10))
-
-    # --- nesting summary -------------------------------------------------
-    story.append(Paragraph("Sheet nesting", h2))
+    story.append(Spacer(1, 8))
+    story.append(Paragraph("Sheet nesting", mini))
     story.append(tbl(
         ["Material", "Thk", "Parts", "Sheets", "Used %", "Oversize"],
         [[g.material, fl(g.thickness), g.part_count, g.sheets,
           f"{g.utilization * 100:.0f}", g.oversize] for g in est.groups]))
+
+    # Before you begin: the preparation steps (mill + drill).
+    prep = next((s for s in plan.subassemblies if s.name == "Preparation"), None)
+    if prep:
+        story.append(Spacer(1, 8))
+        story.append(Paragraph("Before you begin", mini))
+        for s in prep.steps:
+            story.append(Paragraph(f"<b>{s.number}. {s.title}</b>", body))
+            story.append(Paragraph(s.detail, small))
     story.append(PageBreak())
 
-    # --- drilling --------------------------------------------------------
-    story.append(Paragraph("Drilling schedule (32mm system)", h2))
-    story.append(tbl(
-        ["ID", "Part", "Operation", "Holes", "Note"],
-        [[o.part_id, o.part, o.operation, len(o.holes), o.note]
-         for o in drill.ops]))
-    story.append(Spacer(1, 10))
-
-    # --- joinery ---------------------------------------------------------
-    story.append(Paragraph("Joinery setup", h2))
-    story.append(tbl(
-        ["ID", "Part", "Operation", "Tool", "W", "D", "Where"],
-        [[o.part_id, o.part, o.operation, o.tool,
-          fl(o.width) if o.width else "", fl(o.depth) if o.depth else "",
-          o.reference] for o in joint.ops]))
-    story.append(PageBreak())
-
-    # --- assembly: one section per sub-assembly --------------------------
-    story.append(Paragraph("Build plan — by sub-assembly", h2))
-    story.append(Paragraph(
-        f"Build each of the {len(plan.subassemblies)} sub-assemblies below, then "
-        "bring them together in Final assembly.", small))
-    story.append(Spacer(1, 4))
-    sub_style = ParagraphStyle("sub", parent=h2, fontSize=11, spaceBefore=8,
-                               textColor=colors.HexColor("#9c6b43"))
+    # --- one detailed section per buildable sub-assembly -----------------
+    step_no = 3
     for sub in plan.subassemblies:
-        ids = f"  <font size=7 color='#888'>[{', '.join(sub.part_ids)}]</font>" \
-            if sub.part_ids else ""
-        story.append(Paragraph(f"■ {sub.name}", sub_style))
-        story.append(Paragraph(f"<i>{sub.detail}</i>{ids}", small))
+        if sub.name in ("Preparation", "Final assembly"):
+            continue
+        sp = parts_of(sub)
+        story.append(Paragraph(f"{step_no} · {sub.name}", sub_style))
+        story.append(Paragraph(f"<i>{sub.detail}</i>", small))
+        if sp:
+            story.append(Paragraph("Parts you'll need", mini))
+            story.append(_parts_diagram(sp, avail_w, unit))
+            story.append(tbl(
+                ["ID", "Part", "Qty", f"L ({unit[:3]})", "W", "Thk", "Material"],
+                [[p.id, p.name, p.qty, fl(p.length), fl(p.width),
+                  fl(p.thickness), p.material] for p in sp]))
+            story.append(Spacer(1, 6))
+        make = joinery_of(sub)
+        drills = drilling_of(sub)
+        if make or drills:
+            story.append(Paragraph("Make the parts", mini))
+            if make:
+                story.append(tbl(
+                    ["ID", "Part", "Operation", "Tool", "W", "D", "Where"],
+                    [[o.part_id, o.part, o.operation, o.tool,
+                      fl(o.width) if o.width else "",
+                      fl(o.depth) if o.depth else "", o.reference]
+                     for o in make]))
+            if drills:
+                story.append(Paragraph(
+                    "Drilling: " + "; ".join(
+                        f"{o.part_id or o.part} — {o.operation} "
+                        f"({len(o.holes)} holes)" for o in drills), small))
+            story.append(Spacer(1, 6))
+        story.append(Paragraph("Assemble", mini))
         for s in sub.steps:
-            sids = f"  [{', '.join(s.part_ids)}]" if s.part_ids else ""
-            story.append(Paragraph(f"<b>{s.number}. {s.title}</b>{sids}", body))
+            story.append(Paragraph(f"<b>{s.number}. {s.title}</b>", body))
             story.append(Paragraph(s.detail, small))
             if s.hardware:
                 story.append(Paragraph("↳ " + ", ".join(s.hardware), small))
-        story.append(Spacer(1, 4))
+        story.append(Spacer(1, 10))
+        step_no += 1
+
+    # --- final assembly: put the sub-assemblies together -----------------
+    final = next((s for s in plan.subassemblies if s.name == "Final assembly"),
+                 None)
+    if final:
+        story.append(PageBreak())
+        story.append(Paragraph(f"{step_no} · Final assembly", sub_style))
+        story.append(Paragraph(f"<i>{final.detail}</i>", small))
+        img2 = _model_image(spec, avail_w, exploded=False)
+        if img2 is not None:
+            story.append(img2)
+        for s in final.steps:
+            story.append(Paragraph(f"<b>{s.number}. {s.title}</b>", body))
+            story.append(Paragraph(s.detail, small))
+            if s.hardware:
+                story.append(Paragraph("↳ " + ", ".join(s.hardware), small))
 
     doc.build(story)
     return buf.getvalue()

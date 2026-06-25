@@ -127,3 +127,27 @@ def test_project_plan_namespaces_and_ends_with_run_install():
     plan = assembly_plan(proj)
     assert plan.subassemblies[-1].name == "Set & join the run"
     assert any(s.name.startswith("[B1]") for s in plan.subassemblies)
+
+
+def test_carcass_excludes_drawer_box_and_accessory_parts():
+    # Regression: loose substring matching used to pull "box side" and
+    # "countertop" into the carcass. Each part must live in exactly one unit.
+    spec = _cab(door_style="shaker", drawers=[Drawer(140)],
+                accessories=[{"kind": "countertop", "depth": 600},
+                             {"kind": "end_panel", "side": "right"}])
+    cl = generate_cutlist(spec)
+    by_id = {p.id: p.name.lower() for p in cl.parts}
+    plan = assembly_plan(spec)
+    carcass = next(s for s in plan.subassemblies if s.name == "Carcass")
+    for pid in carcass.part_ids:
+        n = by_id[pid]
+        assert "box" not in n and "countertop" not in n and "door" not in n, n
+
+
+def test_drawer_box_section_holds_only_box_parts():
+    spec = _cab(doors=0, drawers=[Drawer(140)])
+    cl = generate_cutlist(spec)
+    by_id = {p.id: p.name.lower() for p in cl.parts}
+    plan = assembly_plan(spec)
+    box = next(s for s in plan.subassemblies if s.name == "Drawer box 1")
+    assert all("box" in by_id[pid] for pid in box.part_ids)
