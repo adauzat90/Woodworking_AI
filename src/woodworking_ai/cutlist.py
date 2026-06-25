@@ -268,19 +268,26 @@ class CutList:
         tag = ""
         if " · " in label:
             tag, label = label.split(" · ", 1)
-        by_name = {p.name: p for p in self.parts}
+        # In a project cut list every part is stored as ``"{tag} · {name}"`` with a
+        # namespaced ``"{tag}-{id}"``. A tagged panel label must resolve against its
+        # *own* component's parts, so restrict the candidate pool to that tag and
+        # match on the de-tagged part name.
+        if tag:
+            prefix = f"{tag} · "
+            parts = [(p.name[len(prefix):], p) for p in self.parts
+                     if p.name.startswith(prefix)]
+        else:
+            parts = [(p.name, p) for p in self.parts]
+        by_name = {name: p for name, p in parts}
         cand = (by_name.get(label)
                 or by_name.get(_PANEL_LABEL_TO_PART.get(label, label))
                 or by_name.get(_PANEL_LABEL_TO_PART.get(
                     _panel_label_base(label), "")))
         if cand is None:
             base = _panel_label_base(label)
-            cand = next((p for p in self.parts if p.name.startswith(base)), None)
+            cand = next((p for name, p in parts if name.startswith(base)), None)
         if cand is None:
             return ""
-        if tag:
-            # Project IDs are already namespaced on the part; match the tag.
-            return cand.id
         return cand.id
 
     def hardware_csv(self) -> str:
