@@ -49,3 +49,21 @@ def test_apply_defaults_does_not_mutate_input():
     raw = {"cabinet_type": "base", "width": 600, "height": 720, "depth": 560}
     profile.apply_defaults(raw)
     assert "construction" not in raw   # original untouched
+
+
+def test_units_defaults_to_mm():
+    assert ShopProfile().units == "mm"
+    # A blank profile round-trips with the metric default.
+    assert profile_from_dict({}).units == "mm"
+
+
+def test_units_roundtrip():
+    p = ShopProfile(units="in")
+    assert p.to_dict()["units"] == "in"
+    assert profile_from_dict(p.to_dict()).units == "in"
+
+
+def test_units_non_string_ignored():
+    # A garbage (non-string) units value falls back to the default, like the
+    # other str fields' coercion.
+    assert profile_from_dict({"units": 5}).units == "mm"

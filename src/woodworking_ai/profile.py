@@ -61,6 +61,13 @@ class ShopProfile:
     # --- hardware ------------------------------------------------------------
     hardware_brand: str = "generic"   # generic | blum | hettich | grass
 
+    # --- display units -------------------------------------------------------
+    # The shop's preferred display unit for cut lists / drawings / reports.
+    # 'mm' (default) is the engine-native metric behaviour, unchanged;
+    # 'in' lets an imperial-first shop see fractional inches. Display only —
+    # the engine stays millimetre-native.
+    units: str = "mm"                 # mm | in
+
     # --- pricing & stock -----------------------------------------------------
     prices: PriceBook = field(default_factory=PriceBook)
     sheet: SheetSize = field(default_factory=SheetSize)
