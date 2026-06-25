@@ -10,4 +10,13 @@ export default defineSchema({
     spec: v.any(),
     createdAt: v.number(),
   }).index("by_createdAt", ["createdAt"]),
+
+  // A revision history: each save of a named design appends a snapshot, so a
+  // user can review and compare earlier versions of the same piece.
+  revisions: defineTable({
+    name: v.string(),       // the design name this revision belongs to
+    spec: v.any(),          // the furniture-DSL JSON at this revision
+    note: v.optional(v.string()),
+    createdAt: v.number(),
+  }).index("by_name_createdAt", ["name", "createdAt"]),
 });

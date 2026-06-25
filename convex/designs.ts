@@ -28,3 +28,27 @@ export const remove = mutation({
     await ctx.db.delete(id);
   },
 });
+
+// --- revision history --------------------------------------------------------
+
+// Append a revision snapshot for a named design.
+export const saveRevision = mutation({
+  args: { name: v.string(), spec: v.any(), note: v.optional(v.string()) },
+  handler: async (ctx, { name, spec, note }) => {
+    return await ctx.db.insert("revisions", {
+      name, spec, note, createdAt: Date.now(),
+    });
+  },
+});
+
+// Revisions for one design, newest first.
+export const listRevisions = query({
+  args: { name: v.string() },
+  handler: async (ctx, { name }) => {
+    return await ctx.db
+      .query("revisions")
+      .withIndex("by_name_createdAt", (q) => q.eq("name", name))
+      .order("desc")
+      .take(50);
+  },
+});

@@ -153,6 +153,23 @@ def api_design(payload: dict[str, Any]) -> JSONResponse:
     return JSONResponse(bundle)
 
 
+@app.post("/api/diff")
+def api_diff(payload: dict[str, Any]) -> dict[str, Any]:
+    """Field-level diff between two specs (e.g. an earlier revision vs current).
+
+    Body: ``{"from": <spec>, "to": <spec>}``. Specs are normalised through the
+    DSL first so cosmetic differences (defaults, key order) don't show up.
+    """
+    from .diffing import spec_diff, diff_summary
+    try:
+        a = spec_from_dict(payload.get("from") or {}).to_dict()
+        b = spec_from_dict(payload.get("to") or {}).to_dict()
+    except (TypeError, ValueError, AttributeError) as exc:
+        raise HTTPException(status_code=400, detail=f"bad spec: {exc}")
+    changes = spec_diff(a, b)
+    return {"changes": changes, "summary": diff_summary(changes)}
+
+
 @app.post("/api/room/plan")
 def api_room_plan(payload: dict[str, Any]) -> dict[str, Any]:
     """Fit a run to a wall: filler sizing + scribe allowances.

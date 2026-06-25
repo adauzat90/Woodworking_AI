@@ -301,6 +301,13 @@
         <div><button id="delBtn" class="secondary">Delete</button></div>
       </div>
       <div id="storeNote" class="muted" style="font-size:11px;margin-top:6px"></div>
+      <label style="margin-top:10px">Revisions (this design)</label>
+      <select id="revList"><option value="">— none —</option></select>
+      <div class="row" style="margin-top:8px">
+        <div><button id="revLoadBtn" class="secondary">Load revision</button></div>
+        <div><button id="revDiffBtn" class="secondary">Compare to current</button></div>
+      </div>
+      <div id="revNote" class="muted" style="font-size:11px;margin-top:6px"></div>
     </fieldset>
   </div>
 
@@ -1055,7 +1062,55 @@ $("saveBtn").onclick = async () => {
   const spec = last ? last.spec : specFromForm();
   const name = prompt("Name this design:", spec.name || "Cabinet");
   if (!name) return;
-  await store.save(name, spec); refreshSaved();
+  await store.save(name, spec);
+  pushRevision(name, spec);     // every save also snapshots a revision
+  refreshSaved(); refreshRevisions(name);
+};
+
+// --- revision history (localStorage; mirrors the Convex revisions table) -----
+const REV_KEY = "woodai_revisions";
+function allRevisions() {
+  try { return JSON.parse(localStorage.getItem(REV_KEY) || "{}"); }
+  catch (e) { return {}; }
+}
+function pushRevision(name, spec) {
+  const all = allRevisions();
+  (all[name] = all[name] || []).unshift(
+    {spec, at: new Date().toISOString().slice(0, 19).replace("T", " ")});
+  all[name] = all[name].slice(0, 50);
+  try { localStorage.setItem(REV_KEY, JSON.stringify(all)); } catch (e) {}
+}
+function currentDesignName() {
+  return (last && last.spec && last.spec.name) || $("name").value || "";
+}
+function refreshRevisions(name) {
+  name = name || currentDesignName();
+  const revs = allRevisions()[name] || [];
+  $("revList").innerHTML = '<option value="">— none —</option>' +
+    revs.map((r, i) => `<option value="${i}">${r.at}</option>`).join("");
+  $("revNote").textContent = revs.length
+    ? `${revs.length} revision(s) of "${name}"` : "";
+}
+$("revLoadBtn").onclick = async () => {
+  const revs = allRevisions()[currentDesignName()] || [];
+  const r = revs[+$("revList").value];
+  if (!r) return;
+  syncForm(r.spec);
+  try { render(await post("/api/build", {spec: r.spec, ...currentPricing(), profile: currentProfile()})); }
+  catch (e) { showError(e.message); }
+};
+$("revDiffBtn").onclick = async () => {
+  const revs = allRevisions()[currentDesignName()] || [];
+  const r = revs[+$("revList").value];
+  if (!r || !last) { $("revNote").textContent = "Pick a revision and build a design first."; return; }
+  try {
+    const d = await post("/api/diff", {from: r.spec, to: last.spec});
+    $("revNote").innerHTML = d.changes.length
+      ? "<b>" + d.summary + "</b><ul style='margin:4px 0 0;padding-left:16px'>" +
+        d.changes.slice(0, 12).map(c =>
+          `<li>${c.path}: ${JSON.stringify(c.from)} → ${JSON.stringify(c.to)}</li>`).join("") + "</ul>"
+      : "No changes from the selected revision.";
+  } catch (e) { $("revNote").textContent = e.message; }
 };
 $("loadBtn").onclick = async () => {
   const d = savedCache.find(x => x._id === $("savedList").value);
@@ -1132,6 +1187,7 @@ health();
 loadPricing();
 loadStandards();
 refreshSaved();
+refreshRevisions();
 loadFromHash();
 window.addEventListener("hashchange", loadFromHash);
 </script>
