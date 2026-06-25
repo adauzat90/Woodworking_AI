@@ -18,6 +18,7 @@ from .dsl import (CabinetSpec, TableSpec, ComponentGroup, BackStyle,
                   CabinetType, Joinery)
 from .cutlist import generate_cutlist
 from .geometry import component_tag
+from .constants import DOOR_PANEL_GROOVE
 
 HOUSED_DEPTH_FRACTION = 0.5     # dado/groove depth as a fraction of stock
 GROOVE_BACK_INSET = 12.0        # a grooved back sits this far in from the rear
@@ -112,6 +113,16 @@ def _cabinet_joinery(spec: CabinetSpec, cl) -> list[JoineryOp]:
             depth=round(m.carcass * HOUSED_DEPTH_FRACTION, 1),
             reference=f"{GROOVE_BACK_INSET:.0f}mm in from the rear edge",
             part_id=pid("Side"), note="back captured in the groove"))
+
+    # Five-piece doors are coped-and-sticked with a panel groove.
+    style = str(getattr(spec, "door_style", "slab")).lower()
+    if spec.doors and style != "slab":
+        ops.append(JoineryOp(
+            part="Door stile/rail", operation="cope-and-stick + panel groove",
+            tool="rail-and-stile router set", width=round(m.door_panel, 1),
+            depth=round(DOOR_PANEL_GROOVE, 1), reference="frame inner edge",
+            part_id=pid("Door stile"),
+            note="cope the rail ends to the stile sticking; panel floats"))
 
     # Face-frame stiles/rails (solid) are typically pocket/domino/dowel joined.
     if spec.construction.value == "face_frame":

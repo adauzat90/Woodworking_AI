@@ -149,6 +149,15 @@
         <div><label>Reveal (mm)</label><input id="reveal" type="number" value="3" /></div>
         <div><label>Toe kick (mm, 0=none)</label><input id="toe" type="number" value="100" /></div>
       </div>
+      <div class="row">
+        <div><label>Door style</label>
+          <select id="door_style">
+            <option value="slab">Slab</option>
+            <option value="shaker">Shaker (5-piece)</option>
+            <option value="raised_panel">Raised panel</option>
+            <option value="cope_stick">Cope &amp; stick</option>
+          </select></div>
+      </div>
       <div class="check"><input id="mullion" type="checkbox" /><label style="margin:0">Center mullion</label></div>
       <div id="blindWrap" style="display:none"><label>Blind width (mm)</label><input id="blind_width" type="number" value="350" /></div>
       <div id="diagWrap" style="display:none"><label>Corner cut (mm)</label><input id="corner_cut" type="number" value="450" /></div>
@@ -477,6 +486,7 @@ function specFromForm() {
     doors: +$("doors").value, shelves: Math.max(0, +$("shelves").value | 0),
     drawers: Array.from({length: nd}, () => ({front_height: 140})),
     reveal: L("reveal"),
+    door_style: $("door_style").value,
     center_mullion: $("mullion").checked,
     blind_width: $("blind_width").value ? L("blind_width") : 0,
     corner_cut: $("corner_cut").value ? L("corner_cut") : 0,
@@ -532,6 +542,7 @@ function syncForm(s) {
   for (const k of ["name","cabinet_type","construction","width","height","depth",
                    "doors","shelves","reveal","blind_width","corner_cut"])
     put(k, s[k]);
+  if (s.door_style) put("door_style", s.door_style);
   $("drawers").value = (s.drawers || []).length;
   $("mullion").checked = !!s.center_mullion;
   put("toe", s.toe_kick ? s.toe_kick.height : 0);

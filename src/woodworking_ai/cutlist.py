@@ -23,6 +23,7 @@ from .constants import (
     SHELF_SIDE_CLEARANCE, SHELF_SETBACK, STRETCHER_WIDTH,
     FRAME_WIDTH, FRAME_THICKNESS,
     SLIDE_SIDE_CLEARANCE, DRAWER_BOX_HEIGHT_DROP, DRAWER_BOX_DEPTH_GAP,
+    DOOR_STILE_WIDTH, DOOR_RAIL_WIDTH, DOOR_PANEL_GROOVE,
 )
 from .hardware import (
     select_hinge, select_slide, select_pull, hinge_count,
@@ -86,7 +87,7 @@ def _part_category(p: "Part") -> str:
     n = p.name.lower()
     if "box" in n and "drawer" in n:
         return "drawer_box"
-    if p.material == "door/front":
+    if p.material in ("door/front", "door panel"):
         return "front"
     if p.material == "frame":
         return "frame"
@@ -267,6 +268,41 @@ def _add_drawer_box(cl: "CutList", spec: CabinetSpec, index: int,
         thickness=m.back, material="back panel", grain="none",
         notes="captured in groove",
     ))
+
+
+def _add_door_parts(cl: "CutList", spec: CabinetSpec, doors, front_note: str) -> None:
+    """Append door parts: one slab, or 5-piece stile-and-rail components.
+
+    For a non-slab ``door_style`` each leaf becomes two stiles, two rails and a
+    centre panel (flat for shaker/cope-and-stick, solid for raised panel), sized
+    so the rails tenon into the stiles and the panel floats in the frame groove.
+    """
+    m = spec.material
+    d0 = doors[0]
+    n = len(doors)
+    style = str(getattr(spec, "door_style", "slab")).lower()
+    if style == "slab":
+        cl.parts.append(Part(
+            "Door", n, length=d0.height, width=d0.width, thickness=m.door,
+            material="door/front", notes=f"{front_note} slab ({n})"))
+        return
+    # Five-piece frame-and-panel door.
+    cl.parts.append(Part(
+        "Door stile", 2 * n, length=d0.height, width=DOOR_STILE_WIDTH,
+        thickness=m.door, material="door/front", grain="length",
+        notes=f"{style} door, vertical"))
+    rail_len = d0.width - 2 * DOOR_STILE_WIDTH + 2 * DOOR_PANEL_GROOVE
+    cl.parts.append(Part(
+        "Door rail", 2 * n, length=max(rail_len, 50.0), width=DOOR_RAIL_WIDTH,
+        thickness=m.door, material="door/front",
+        notes="cope-and-stick into stiles"))
+    panel_h = d0.height - 2 * DOOR_RAIL_WIDTH + 2 * DOOR_PANEL_GROOVE
+    panel_w = d0.width - 2 * DOOR_STILE_WIDTH + 2 * DOOR_PANEL_GROOVE
+    solid = style == "raised_panel"
+    cl.parts.append(Part(
+        "Door panel", n, length=max(panel_h, 50.0), width=max(panel_w, 50.0),
+        thickness=m.door_panel, material="door panel", grain="length",
+        notes="raised, solid" if solid else "flat panel, floats in groove"))
 
 
 def _add_assembly_hardware(cl: "CutList", spec: CabinetSpec) -> None:
@@ -521,11 +557,7 @@ def generate_cutlist(spec) -> CutList:
     doors = plan.doors
     if doors:
         d0 = doors[0]
-        cl.parts.append(Part(
-            "Door", len(doors), length=d0.height, width=d0.width,
-            thickness=d0.thickness, material="door/front",
-            notes=f"{front_note} ({len(doors)})",
-        ))
+        _add_door_parts(cl, spec, doors, front_note)
         overlay = "inset" if is_ff else getattr(spec, "hinge_overlay", "overlay")
         hinge = select_hinge(brand, overlay)
         n_hinges = len(doors) * hinge_count(d0.height)

@@ -116,6 +116,7 @@ class Material:
     door: float = 18.0
     shelf: float = 18.0
     drawer_box: float = 12.0     # drawer box sides/front/back stock
+    door_panel: float = 6.0      # centre panel of a 5-piece (stile-and-rail) door
 
 
 @dataclass
@@ -174,6 +175,7 @@ class CabinetSpec:
     drawers: list[Drawer] = field(default_factory=list)
 
     reveal: float = 3.0          # gap around overlay doors/drawers
+    door_style: str = "slab"     # slab | shaker | raised_panel | cope_stick
     center_mullion: bool = False # vertical post/stile between a pair of doors
     blind_width: float = 0.0     # corner_blind: width of the blind/filler return
     corner_cut: float = 0.0      # corner_diagonal: leg length of the 45° chamfer
@@ -598,8 +600,9 @@ not mix — inches are converted to millimetres on load.
   "height": <overall height, including toe kick>,
   "depth": <overall depth>,
   "material": {{"carcass": 18, "back": 6, "door": 18, "shelf": 18,
-               "drawer_box": 12}},
+               "drawer_box": 12, "door_panel": 6}},
   "construction": {_opts(Construction)},
+  "door_style": "slab" | "shaker" | "raised_panel" | "cope_stick",
   "back": {_opts(BackStyle)},
   "joinery": {_opts(Joinery)},
   "toe_kick": {{"height": 100, "setback": 50}}  | null,
