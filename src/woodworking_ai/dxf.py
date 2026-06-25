@@ -23,8 +23,9 @@ from .packing import pack as _pack_positions  # shared shelf nester
 # DXF layers a CAM post can map to tools. PANEL/SHEET/LABEL carry the nest; the
 # machining layers split bores (drilled) from grooves (routed) so a post can
 # assign a drill vs a router bit per layer. A1 populates BORE; DADO/RABBET are
-# declared here but filled by a later item.
-_LAYERS = ("PANEL", "SHEET", "LABEL", "WARN", "BORE", "DADO", "RABBET")
+# declared here but filled by a later item. CUTOUT carries sink/cooktop openings
+# routed clean through a countertop.
+_LAYERS = ("PANEL", "SHEET", "LABEL", "WARN", "BORE", "DADO", "RABBET", "CUTOUT")
 
 
 def _line(x1, y1, x2, y2, layer="PANEL") -> list[str]:
@@ -99,6 +100,27 @@ def _placement_part(label: str, by_id: dict):
     return part, instance
 
 
+def _cutouts_for_placement(part, x, y, l, w) -> list[str]:
+    """DXF closed polylines for every cut-out on one placed part.
+
+    Each opening is ``(ox, oy, ow, od)`` in the part's own (length × width)
+    frame; mapped into the placed rectangle honouring the nester's rotation
+    (the same convention :func:`place_holes` uses), then drawn as a rectangle
+    on the CUTOUT layer.
+    """
+    from .drilling import _placement_rotated
+    out: list[str] = []
+    openings = getattr(part, "openings", None) or []
+    rotated = _placement_rotated(part.length, part.width, l, w)
+    for (ox, oy, ow, od) in openings:
+        if rotated:              # part.width runs along the sheet x-axis
+            rx, ry, rw, rh = x + oy, y + ox, od, ow
+        else:                    # part.length runs along the sheet x-axis
+            rx, ry, rw, rh = x + ox, y + oy, ow, od
+        out += _rect(rx, ry, rw, rh, layer="CUTOUT")
+    return out
+
+
 def _bores_for_placement(part, instance, ops, x, y, l, w) -> list[str]:
     """DXF entities for every bore on one placed part instance."""
     out: list[str] = []
@@ -144,6 +166,8 @@ def export_cutlayout_dxf(spec: CabinetSpec, path: str | Path, *,
             if ops:
                 out += _bores_for_placement(part, instance, ops,
                                             ox + x, y, l, w)
+            if part is not None and getattr(part, "openings", None):
+                out += _cutouts_for_placement(part, ox + x, y, l, w)
     if oversize:
         out += _text(0, -60, 24,
                      f"OVERSIZE (not nested): {', '.join(oversize)}", "WARN")

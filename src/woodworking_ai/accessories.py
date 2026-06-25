@@ -30,6 +30,50 @@ def _bool(d: dict, key: str, default: bool = False) -> bool:
     return bool(d.get(key, default))
 
 
+def _counter_dims(a: dict, spec) -> tuple[float, float]:
+    """The countertop blank's ``(length, width)`` for accessory dict *a*.
+
+    Mirrors the part the cut list emits: length runs the cabinet width, width is
+    the counter depth plus its front overhang.
+    """
+    depth = _num(a, "depth", spec.depth + 25.0)
+    overhang = _num(a, "overhang", 25.0)
+    return spec.width, depth + overhang
+
+
+def countertop_cutouts(spec) -> list[tuple[float, float, float, float]]:
+    """Sink/cooktop cut-outs to remove from the countertop, in its own frame.
+
+    Each opening is ``(x, y, w, d)`` — the front-left corner plus size — within
+    the countertop blank (``length`` along the cabinet width, ``width`` along the
+    counter depth). A sink/cooktop appliance's ``cutout_w``/``cutout_d`` size the
+    hole; it is centred over the host unless the accessory carries an explicit
+    ``cutout_x``/``cutout_y`` (front-left corner, same frame). Returns ``[]``
+    when there is no countertop or no sink/cooktop appliance to host.
+    """
+    accs = [a for a in getattr(spec, "accessories", None) or []
+            if isinstance(a, dict)]
+    counter = next(
+        (a for a in accs if str(a.get("kind", "")).lower() == "countertop"), None)
+    if counter is None:
+        return []
+    length, width = _counter_dims(counter, spec)
+    out: list[tuple[float, float, float, float]] = []
+    for a in accs:
+        if str(a.get("kind", "")).lower() != "appliance":
+            continue
+        if str(a.get("type", "")).lower() not in ("sink", "cooktop"):
+            continue
+        cw = _num(a, "cutout_w", 0.0)
+        cd = _num(a, "cutout_d", 0.0)
+        if cw <= 0 or cd <= 0:
+            continue
+        x = _num(a, "cutout_x", (length - cw) / 2.0)
+        y = _num(a, "cutout_y", (width - cd) / 2.0)
+        out.append((x, y, cw, cd))
+    return out
+
+
 def add_accessory_parts(cl, spec) -> None:
     """Append cut-list parts for every accessory on *spec* (in place)."""
     from .cutlist import Part   # local import avoids a cycle
@@ -43,10 +87,17 @@ def add_accessory_parts(cl, spec) -> None:
             thick = _num(a, "thickness", 38.0)
             overhang = _num(a, "overhang", 25.0)
             mat = str(a.get("material", "laminate"))
+            cutouts = countertop_cutouts(spec)
+            note = f"{mat}, {overhang:.0f}mm overhang"
+            if cutouts:
+                # CNC/joinery op: each opening is cut out of the slab; the
+                # quoted/finishable area drops by it (see Part.area_m2).
+                sizes = "; ".join(f"{w:.0f}×{d:.0f}mm" for (_x, _y, w, d) in cutouts)
+                note += f" — sink/cooktop cutout ({sizes})"
             cl.parts.append(Part(
                 "Countertop", 1, length=spec.width, width=depth + overhang,
                 thickness=thick, material="countertop", grain="length",
-                notes=f"{mat}, {overhang:.0f}mm overhang"))
+                notes=note, openings=cutouts))
         elif kind == "filler":
             w = _num(a, "width", 75.0)
             side = str(a.get("side", ""))

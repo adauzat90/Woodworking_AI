@@ -38,6 +38,12 @@ def _compound_from_panels(panels, label: str) -> Any:
     solids: list[Any] = []
     for p in panels:
         solid = Box(*p.size)
+        # Sink/cooktop cut-outs: subtract a through box per opening (offsets are
+        # relative to the panel centre; over-tall in Z so the cut passes through).
+        for (ocx, ocy, ow, od) in getattr(p, "openings", ()) or ():
+            _sx, _sy, sz = p.size
+            cutter = Pos(ocx, ocy, 0) * Box(ow, od, sz * 2)
+            solid = solid - cutter
         if p.is_rotated:
             solid = Rot(0, 0, p.rot_z) * solid
         solid = Pos(*p.center) * solid

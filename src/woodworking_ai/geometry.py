@@ -44,6 +44,11 @@ class PanelBox:
     rot_z: float = 0.0
     oversized: bool = False     # a blank trimmed to shape on site (corner units)
     subassembly: str = ""       # which buildable unit this panel belongs to
+    # Rectangular openings cut through this panel, each ``(cx, cy, w, d)`` — the
+    # opening centre relative to the panel centre (mm) plus its size in X/Y. Used
+    # for a countertop's sink/cooktop cut-out; the compiler subtracts a box (only
+    # when build123d is present, so a CAD-free run is unaffected).
+    openings: tuple = ()
 
     @property
     def is_front(self) -> bool:
@@ -312,7 +317,8 @@ def project_layout(project: ComponentGroup) -> list[PanelBox]:
             out.append(PanelBox(
                 label=f"{tag} · {p.label}", size=p.size, center=(wx, wy, cz),
                 category=p.category, rot_z=p.rot_z + comp.rotation,
-                oversized=p.oversized, subassembly=tag))   # a run sections by cabinet
+                oversized=p.oversized, subassembly=tag,
+                openings=p.openings))   # a run sections by cabinet
     return out
 
 
@@ -531,7 +537,8 @@ def explode_panels(spec, factor: float = 1.0,
         ox, oy, oz = _explode_offset(p, dims, factor)
         cx, cy, cz = p.center
         out.append(PanelBox(p.label, p.size, (cx + ox, cy + oy, cz + oz),
-                            p.category, p.rot_z, p.oversized, p.subassembly))
+                            p.category, p.rot_z, p.oversized, p.subassembly,
+                            p.openings))
     return out
 
 
@@ -629,10 +636,20 @@ def _accessory_panels(spec: CabinetSpec) -> list[PanelBox]:
             ct = float(a.get("thickness", 38.0))
             overhang = float(a.get("overhang", 25.0))
             total_d = spec.depth + overhang
+            # Sink/cooktop cut-outs, mapped from the cut-list blank frame
+            # (length=spec.width, width=depth+overhang, front-left origin) to
+            # offsets from the counter panel's centre, so the compiler can
+            # subtract a box for each.
+            from .accessories import countertop_cutouts
+            blank_w = float(a.get("depth", spec.depth + 25.0)) + overhang
+            openings = tuple(
+                (cx + cw / 2 - spec.width / 2,
+                 cy + cd / 2 - blank_w / 2, cw, cd)
+                for (cx, cy, cw, cd) in countertop_cutouts(spec))
             out.append(PanelBox(
                 "Countertop", (spec.width + 2 * overhang, total_d, ct),
                 (0.0, spec.depth / 2 - overhang / 2, box_top + ct / 2), "counter",
-                subassembly="Countertop"))
+                subassembly="Countertop", openings=openings))
         elif kind == "filler":
             fw = float(a.get("width", 75.0))
             right = str(a.get("side", "")).lower() == "right"

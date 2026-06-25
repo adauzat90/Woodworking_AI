@@ -43,9 +43,32 @@ def _circles(text: str) -> list[tuple[float, float, float]]:
 def test_dxf_declares_machining_layers(tmp_path):
     text = export_cutlayout_dxf(spec(), tmp_path / "l.dxf").read_text()
     assert "TABLES" in text and "LAYER" in text
-    for layer in ("BORE", "DADO", "RABBET"):
+    for layer in ("BORE", "DADO", "RABBET", "CUTOUT"):
         assert layer in _LAYERS
         assert f"\n2\n{layer}\n" in text   # the layer is declared in the table
+
+
+# --- B2: sink/cooktop cut-out drawn on the CUTOUT layer ------------------
+
+def _cutout_lines(text: str) -> int:
+    """Count LINE entities on the CUTOUT layer."""
+    return len(re.findall(r"\nLINE\n8\nCUTOUT\n", text))
+
+
+def test_countertop_cutout_polyline_on_cutout_layer(tmp_path):
+    s = spec(width=900, accessories=[
+        {"kind": "countertop", "depth": 600, "thickness": 38, "overhang": 30},
+        {"kind": "appliance", "type": "sink", "cutout_w": 700, "cutout_d": 450}])
+    text = export_cutlayout_dxf(s, tmp_path / "l.dxf").read_text()
+    # One rectangle = four LINE segments, all on the CUTOUT layer.
+    assert _cutout_lines(text) == 4
+
+
+def test_no_cutout_layer_geometry_without_a_sink(tmp_path):
+    s = spec(width=900, accessories=[
+        {"kind": "countertop", "depth": 600, "thickness": 38, "overhang": 30}])
+    text = export_cutlayout_dxf(s, tmp_path / "l.dxf").read_text()
+    assert _cutout_lines(text) == 0
 
 
 # --- hinge cups on doors -------------------------------------------------
