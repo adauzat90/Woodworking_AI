@@ -53,6 +53,7 @@ class PriceBook:
         "Drawer slide (pair)": 12.0, "Shelf pin": 0.15,
     })
     edge_banding_per_m: float = 1.5
+    finish_per_m2_per_coat: float = 2.5   # finish material + labour per coat·m²
     shop_rate_per_hour: float = 65.0
     # Simple labour model (hours).
     labour_base_h: float = 0.5
@@ -92,13 +93,15 @@ class Estimate:
     labour_cost: float
     lumber_groups: list[LumberGroup] = field(default_factory=list)
     lumber_cost: float = 0.0
+    finish_cost: float = 0.0
+    finish_m2: float = 0.0
     currency: str = "$"
     _rate: float = 65.0       # shop_rate_per_hour, echoed for report_text()
 
     @property
     def total(self) -> float:
         return (self.material_cost + self.lumber_cost + self.hardware_cost
-                + self.edge_banding_cost + self.labour_cost)
+                + self.edge_banding_cost + self.labour_cost + self.finish_cost)
 
     @property
     def total_sheets(self) -> int:
@@ -140,6 +143,12 @@ class Estimate:
             f"({banding})",
             f"  labour:          {c}{self.labour_cost:8.2f} "
             f"({self.labour_hours:.1f} h @ {c}{self._rate:.0f}/h)",
+        ]
+        if self.finish_cost:
+            lines.append(
+                f"  finishing:       {c}{self.finish_cost:8.2f} "
+                f"({self.finish_m2:.1f} m²)")
+        lines += [
             f"  {'-'*30}",
             f"  TOTAL:           {c}{self.total:8.2f}",
         ]
@@ -186,6 +195,7 @@ def _estimate_project(project: ComponentGroup, prices: PriceBook,
     lumber: dict[tuple[str, float], LumberGroup] = {}
     material_cost = hardware_cost = banding_cost = banding_m = 0.0
     labour_hours = labour_cost = lumber_cost = 0.0
+    finish_cost = finish_m2 = 0.0
     for comp in project.components:
         e = estimate(comp.spec, prices=prices, sheet=sheet)
         material_cost += e.material_cost
@@ -195,6 +205,8 @@ def _estimate_project(project: ComponentGroup, prices: PriceBook,
         labour_hours += e.labour_hours
         labour_cost += e.labour_cost
         lumber_cost += e.lumber_cost
+        finish_cost += e.finish_cost
+        finish_m2 += e.finish_m2
         for g in e.groups:
             key = (g.material, g.thickness)
             if key in groups:
@@ -224,7 +236,7 @@ def _estimate_project(project: ComponentGroup, prices: PriceBook,
         labour_hours=labour_hours, labour_cost=labour_cost,
         lumber_groups=sorted(lumber.values(),
                              key=lambda g: (g.material, g.thickness)),
-        lumber_cost=lumber_cost,
+        lumber_cost=lumber_cost, finish_cost=finish_cost, finish_m2=finish_m2,
     )
     est._rate = prices.shop_rate_per_hour
     return est
@@ -293,12 +305,19 @@ def estimate(spec, *, cutlist: CutList | None = None,
              + prices.labour_per_drawer_h * len(getattr(spec, "drawers", [])))
     labour_cost = hours * prices.shop_rate_per_hour
 
+    # Finishing (sand + coat the shown faces), when a finish is specified.
+    fin_cost = fin_m2 = 0.0
+    if str(getattr(spec, "finish", "none")).lower() != "none":
+        from .finishing import finish_cost as _finish_cost
+        fin_cost, fin_m2 = _finish_cost(spec, prices.finish_per_m2_per_coat)
+
     est = Estimate(
         spec_name=spec.name, groups=sheet_groups,
         material_cost=material_cost, hardware_cost=hardware_cost,
         edge_banding_cost=banding_cost, edge_banding_m=banding_m,
         labour_hours=hours, labour_cost=labour_cost,
         lumber_groups=lumber_groups, lumber_cost=lumber_cost,
+        finish_cost=fin_cost, finish_m2=fin_m2,
     )
     est._rate = prices.shop_rate_per_hour
     return est

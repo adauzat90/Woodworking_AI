@@ -158,6 +158,16 @@
             <option value="cope_stick">Cope &amp; stick</option>
           </select></div>
       </div>
+      <div class="row">
+        <div><label>Finish</label>
+          <select id="finish">
+            <option value="none">Unfinished</option>
+            <option value="oil">Oil / hardwax</option>
+            <option value="clear">Clear (sealer + topcoats)</option>
+            <option value="stain_clear">Stain + clear</option>
+            <option value="paint">Paint</option>
+          </select></div>
+      </div>
       <div class="check"><input id="mullion" type="checkbox" /><label style="margin:0">Center mullion</label></div>
       <div id="blindWrap" style="display:none"><label>Blind width (mm)</label><input id="blind_width" type="number" value="350" /></div>
       <div id="diagWrap" style="display:none"><label>Corner cut (mm)</label><input id="corner_cut" type="number" value="450" /></div>
@@ -500,6 +510,7 @@ function specFromForm() {
     drawers: Array.from({length: nd}, () => ({front_height: 140})),
     reveal: L("reveal"),
     door_style: $("door_style").value,
+    finish: $("finish").value,
     center_mullion: $("mullion").checked,
     blind_width: $("blind_width").value ? L("blind_width") : 0,
     corner_cut: $("corner_cut").value ? L("corner_cut") : 0,
@@ -556,6 +567,7 @@ function syncForm(s) {
                    "doors","shelves","reveal","blind_width","corner_cut"])
     put(k, s[k]);
   if (s.door_style) put("door_style", s.door_style);
+  if (s.finish) put("finish", s.finish);
   $("drawers").value = (s.drawers || []).length;
   $("mullion").checked = !!s.center_mullion;
   put("toe", s.toe_kick ? s.toe_kick.height : 0);
@@ -670,8 +682,9 @@ function paint() {
           ? `<div>Solid lumber (${(e.board_feet || 0).toFixed(1)} bd ft)</div><div>${m(e.lumber || 0)}</div>` : "")
       + `<div>Hardware</div><div>${m(e.hardware)}</div>
       <div>Edge banding</div><div>${m(e.edge_banding)}</div>
-      <div>Labour (${e.labour_hours}h)</div><div>${m(e.labour)}</div>
-      <div class="total">Total</div><div class="total">${m(e.total)}</div></div>`;
+      <div>Labour (${e.labour_hours}h)</div><div>${m(e.labour)}</div>`
+      + (e.finish ? `<div>Finishing (${(e.finish_m2||0).toFixed(1)} m²)</div><div>${m(e.finish)}</div>` : "")
+      + `<div class="total">Total</div><div class="total">${m(e.total)}</div></div>`;
     if (e.groups.length) {
       h += "<h4>Sheets</h4>" +
         table(["Material", `Thk (${u})`, "Parts", "Sheets", "Used"],

@@ -186,6 +186,8 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
         "edge_banding": round(est.edge_banding_cost, 2),
         "labour": round(est.labour_cost, 2),
         "labour_hours": round(est.labour_hours, 1),
+        "finish": round(est.finish_cost, 2),
+        "finish_m2": round(est.finish_m2, 2),
         "total_sheets": est.total_sheets,
         "groups": [
             {"material": g.material, "thickness": g.thickness,
@@ -223,6 +225,9 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
          "reference": o.reference, "note": o.note}
         for o in joint.ops
     ]
+
+    from .finishing import finishing_schedule
+    result["finishing"] = finishing_schedule(spec)
 
     seq = assembly_sequence(spec)
     result["assembly"] = [

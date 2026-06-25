@@ -195,6 +195,10 @@ class CabinetSpec:
     # --- accessories: countertop, appliance cutout, filler, end panel, molding
     accessories: list = field(default_factory=list)
 
+    # --- finishing (optional; drives the finish schedule + cost) -------------
+    finish: str = "none"         # none | oil | clear | paint | stain_clear
+    finish_sheen: str = "satin"  # matte | satin | semi_gloss | gloss
+
     @property
     def has_full_top(self) -> bool:
         """Enclosed-top units; base/corner cabinets use top rails instead."""
@@ -325,6 +329,8 @@ class TableSpec:
     top_fixing: TopFixing = TopFixing.FLOATING  # movement allowed vs. rigid
     grain: Grain = Grain.FLATSAWN               # affects seasonal movement
     joinery: Joinery = Joinery.MORTISE_TENON    # leg-to-apron; drives racking
+    finish: str = "none"         # none | oil | clear | paint | stain_clear
+    finish_sheen: str = "satin"
 
     def __post_init__(self) -> None:
         self.top_fixing = _coerce_enum(TopFixing, self.top_fixing)
@@ -628,6 +634,7 @@ not mix — inches are converted to millimetres on load.
   "anti_tip": true | false,
   "hardware_brand": "generic" | "blum" | "hettich" | "grass",
   "hinge_overlay": "overlay" | "half" | "inset",
+  "finish": "none" | "oil" | "clear" | "paint" | "stain_clear",
   "accessories": [        // optional countertop / appliance / filler / molding
     {{"kind": "countertop", "depth": 640, "thickness": 38,
       "material": "butcher_block", "overhang": 25}},
