@@ -31,6 +31,7 @@ from .estimator import (
     PriceBook, SheetSize, pricebook_to_dict, pricebook_from_dict,
     sheetsize_to_dict, sheetsize_from_dict,
 )
+from .profile import ShopProfile, profile_to_dict, profile_from_dict
 
 STATIC = Path(__file__).parent / "static"
 
@@ -73,22 +74,44 @@ def pricing() -> dict[str, Any]:
             "sheet": sheetsize_to_dict(SheetSize())}
 
 
+@app.get("/api/profile")
+def profile() -> dict[str, Any]:
+    """The shop's default standards profile, for the UI to seed its editor."""
+    return profile_to_dict(ShopProfile())
+
+
+def _profile_of(payload: dict[str, Any]) -> ShopProfile | None:
+    """The :class:`ShopProfile` in *payload*, or ``None`` when absent."""
+    return profile_from_dict(payload["profile"]) if payload.get("profile") else None
+
+
 def _pricing_overrides(payload: dict[str, Any]):
     """Pull optional ``prices`` / ``sheet`` overrides from a request payload.
 
-    Returns (PriceBook | None, SheetSize | None) — ``None`` means "use the
-    server defaults", so requests that omit pricing behave exactly as before.
+    An explicit ``prices``/``sheet`` wins; otherwise a supplied ``profile``
+    provides them; otherwise ``None`` means "use the server defaults", so
+    requests that omit pricing behave exactly as before.
     """
-    prices = pricebook_from_dict(payload["prices"]) if payload.get("prices") else None
-    sheet = sheetsize_from_dict(payload["sheet"]) if payload.get("sheet") else None
+    prof = _profile_of(payload)
+    prices = (pricebook_from_dict(payload["prices"]) if payload.get("prices")
+              else (prof.prices if prof else None))
+    sheet = (sheetsize_from_dict(payload["sheet"]) if payload.get("sheet")
+             else (prof.sheet if prof else None))
     return prices, sheet
 
 
 def _parse_spec(payload: dict[str, Any]) -> CabinetSpec | TableSpec | ComponentGroup:
-    """Build a furniture spec (cabinet, table, project, or assembly) from a payload."""
+    """Build a furniture spec (cabinet, table, project, or assembly) from a payload.
+
+    A ``profile`` in the payload fills the shop's construction defaults into any
+    field the design left unset before the spec is parsed.
+    """
     if not isinstance(payload, dict):
         raise HTTPException(status_code=400, detail="expected a JSON object")
     spec_data = payload.get("spec", payload)
+    prof = _profile_of(payload)
+    if prof is not None and isinstance(spec_data, dict):
+        spec_data = prof.apply_defaults(spec_data)
     try:
         return spec_from_dict(spec_data)
     except (TypeError, ValueError, AttributeError) as exc:
@@ -128,6 +151,63 @@ def api_design(payload: dict[str, Any]) -> JSONResponse:
                           prices=prices, sheet=sheet)
     bundle["attempts"] = res.attempts
     return JSONResponse(bundle)
+
+
+@app.post("/api/model")
+def api_model(payload: dict[str, Any]) -> Response:
+    """A GLB of the model — assembled, exploded, or a progressive subset.
+
+    Body: ``{"spec": ..., "factor": 0..1, "include": ["Carcass", ...]}``.
+    ``factor`` > 0 explodes the sub-assemblies; ``include`` keeps only those
+    named sub-assemblies (for the build-view stepper). Needs build123d.
+    """
+    spec = _parse_spec(payload)
+    v = validate(spec)
+    if not v.ok:
+        raise HTTPException(status_code=422, detail=v.as_feedback())
+    from .service import model_glb_bytes
+    factor = float(payload.get("factor", 0.0) or 0.0)
+    inc = payload.get("include")
+    include = set(inc) if inc else None
+    try:
+        data = model_glb_bytes(spec, factor=factor, include=include)
+    except RuntimeError as exc:   # build123d missing
+        raise HTTPException(status_code=503, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"model build failed: {exc}")
+    return Response(content=data, media_type="model/gltf-binary")
+
+
+@app.post("/api/diff")
+def api_diff(payload: dict[str, Any]) -> dict[str, Any]:
+    """Field-level diff between two specs (e.g. an earlier revision vs current).
+
+    Body: ``{"from": <spec>, "to": <spec>}``. Specs are normalised through the
+    DSL first so cosmetic differences (defaults, key order) don't show up.
+    """
+    from .diffing import spec_diff, diff_summary
+    try:
+        a = spec_from_dict(payload.get("from") or {}).to_dict()
+        b = spec_from_dict(payload.get("to") or {}).to_dict()
+    except (TypeError, ValueError, AttributeError) as exc:
+        raise HTTPException(status_code=400, detail=f"bad spec: {exc}")
+    changes = spec_diff(a, b)
+    return {"changes": changes, "summary": diff_summary(changes)}
+
+
+@app.post("/api/room/plan")
+def api_room_plan(payload: dict[str, Any]) -> dict[str, Any]:
+    """Fit a run to a wall: filler sizing + scribe allowances.
+
+    Body: ``{"widths": [600, 600, 900], "wall": {"length": 3658, ...},
+    "room": {"floor_drop": 8, "out_of_square": 6, ...}}``.
+    """
+    from .room import Wall, Room, plan_wall
+    widths = [float(w) for w in payload.get("widths", [])
+              if isinstance(w, (int, float))]
+    wall = Wall.from_dict(payload.get("wall") or {})
+    room = Room.from_dict(payload["room"]) if payload.get("room") else None
+    return plan_wall(widths, wall, room)
 
 
 @app.post("/api/export/{fmt}")

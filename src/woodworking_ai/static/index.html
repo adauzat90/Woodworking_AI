@@ -24,6 +24,16 @@
            justify-content:center; min-height:240px; position:relative; }
   model-viewer, .stage img { width:100%; height:100%; }
   .stage .ph { color:var(--muted); }
+  .buildbar { position:absolute; left:50%; bottom:12px; transform:translateX(-50%);
+    display:flex; align-items:center; gap:12px; background:rgba(28,26,23,.86);
+    border:1px solid var(--line); border-radius:10px; padding:8px 14px;
+    backdrop-filter:blur(4px); max-width:92%; }
+  .buildbar label { margin:0; color:var(--text); font-size:12px; display:flex;
+    align-items:center; gap:6px; white-space:nowrap; }
+  .buildbar input[type=range] { width:160px; accent-color:var(--accent); }
+  .buildbar .sec { color:var(--wood); font-weight:600; font-size:12px;
+    min-width:120px; }
+  .buildbar input[type=checkbox] { width:auto; accent-color:var(--accent); }
   .results { height:42%; border-top:1px solid var(--line); display:flex;
              flex-direction:column; }
   fieldset { border:1px solid var(--line); border-radius:8px; margin:0 0 14px;
@@ -149,6 +159,25 @@
         <div><label>Reveal (mm)</label><input id="reveal" type="number" value="3" /></div>
         <div><label>Toe kick (mm, 0=none)</label><input id="toe" type="number" value="100" /></div>
       </div>
+      <div class="row">
+        <div><label>Door style</label>
+          <select id="door_style">
+            <option value="slab">Slab</option>
+            <option value="shaker">Shaker (5-piece)</option>
+            <option value="raised_panel">Raised panel</option>
+            <option value="cope_stick">Cope &amp; stick</option>
+          </select></div>
+      </div>
+      <div class="row">
+        <div><label>Finish</label>
+          <select id="finish">
+            <option value="none">Unfinished</option>
+            <option value="oil">Oil / hardwax</option>
+            <option value="clear">Clear (sealer + topcoats)</option>
+            <option value="stain_clear">Stain + clear</option>
+            <option value="paint">Paint</option>
+          </select></div>
+      </div>
       <div class="check"><input id="mullion" type="checkbox" /><label style="margin:0">Center mullion</label></div>
       <div id="blindWrap" style="display:none"><label>Blind width (mm)</label><input id="blind_width" type="number" value="350" /></div>
       <div id="diagWrap" style="display:none"><label>Corner cut (mm)</label><input id="corner_cut" type="number" value="450" /></div>
@@ -199,9 +228,66 @@
       <textarea id="projectJson"
         style="height:220px;font-family:ui-monospace,Menlo,monospace;font-size:11px"></textarea>
     </fieldset>
+    <fieldset>
+      <legend>Wall planner</legend>
+      <p class="muted" style="font-size:11px;margin:0 0 6px">
+        Fit this run to a real wall: get the filler width and scribe notes for an
+        out-of-square / out-of-level room.</p>
+      <div class="row">
+        <div><label>Wall length (mm)</label><input id="wall_len" type="number" value="3658" /></div>
+        <div><label>Floor drop (mm)</label><input id="floor_drop" type="number" value="0" /></div>
+        <div><label>Out of square (mm)</label><input id="out_sq" type="number" value="0" /></div>
+      </div>
+      <button id="planWallBtn" class="secondary" type="button">📐 Plan run to wall</button>
+      <div id="wallPlan" class="muted" style="font-size:11.5px;margin-top:6px"></div>
+    </fieldset>
     </div><!-- /projectFields -->
     <button id="buildBtn">🔨 Build design</button>
     <div class="check"><input id="auto" type="checkbox" /><label style="margin:0">Live update as I change values</label></div>
+    <fieldset style="margin-top:14px">
+      <legend>Shop standards</legend>
+      <details id="standardsDetails">
+        <summary>Set your shop's defaults &amp; hardware brand</summary>
+        <p class="muted" style="font-size:11px;margin:6px 0">
+          Applied to any field a design leaves unset (AI, project JSON, or API),
+          so work comes out in your standards. Saved in this browser.</p>
+        <div class="row">
+          <div><label>Construction</label>
+            <select id="std_construction">
+              <option value="frameless">Frameless</option>
+              <option value="face_frame">Face frame</option>
+            </select></div>
+          <div><label>Hardware brand</label>
+            <select id="std_hardware_brand">
+              <option value="generic">Generic</option>
+              <option value="blum">Blum</option>
+              <option value="hettich">Hettich</option>
+              <option value="grass">Grass</option>
+            </select></div>
+        </div>
+        <div class="row">
+          <div><label>Back</label>
+            <select id="std_back">
+              <option value="rabbeted">Rabbeted</option>
+              <option value="applied">Applied</option>
+              <option value="grooved">Grooved</option>
+            </select></div>
+          <div><label>Joinery</label>
+            <select id="std_joinery">
+              <option value="dado">Dado</option>
+              <option value="rabbet">Rabbet</option>
+              <option value="dowel">Dowel</option>
+              <option value="domino">Domino</option>
+              <option value="pocket">Pocket</option>
+              <option value="screw">Screw</option>
+            </select></div>
+        </div>
+        <div class="row">
+          <div><label>Reveal (mm)</label><input id="std_reveal" type="number" value="3" step="0.5" /></div>
+          <div><label>Carcass thk (mm)</label><input id="std_carcass" type="number" value="18" step="1" /></div>
+        </div>
+      </details>
+    </fieldset>
     <fieldset style="margin-top:14px">
       <legend>Pricing &amp; rates</legend>
       <details id="pricingDetails">
@@ -225,6 +311,13 @@
         <div><button id="delBtn" class="secondary">Delete</button></div>
       </div>
       <div id="storeNote" class="muted" style="font-size:11px;margin-top:6px"></div>
+      <label style="margin-top:10px">Revisions (this design)</label>
+      <select id="revList"><option value="">— none —</option></select>
+      <div class="row" style="margin-top:8px">
+        <div><button id="revLoadBtn" class="secondary">Load revision</button></div>
+        <div><button id="revDiffBtn" class="secondary">Compare to current</button></div>
+      </div>
+      <div id="revNote" class="muted" style="font-size:11px;margin-top:6px"></div>
     </fieldset>
   </div>
 
@@ -236,13 +329,18 @@
         <span class="muted" style="font-size:12px">Download:</span>
         <button data-f="step">STEP</button><button data-f="stl">STL</button>
         <button data-f="glb">GLB</button><button data-f="dxf">DXF</button>
+        <button data-f="drawings">Drawings</button>
         <button data-f="cutlist">Cut list</button><button data-f="drilling">Drilling</button>
+        <button data-f="package">📄 Build package PDF</button>
         <button id="shareBtn" class="share">🔗 Share</button>
       </div>
       <div class="tabs" id="tabs">
         <button data-t="cutlist" class="active">Cut list</button>
+        <button data-t="drawings">Drawings</button>
+        <button data-t="steps">Build steps</button>
         <button data-t="lumber">Lumber</button>
         <button data-t="drilling">Drilling</button>
+        <button data-t="joinery">Joinery</button>
         <button data-t="hardware">Hardware</button>
         <button data-t="cost">Cost</button>
         <label class="units-toggle" title="Display units for the cut list and reports (the engine is millimetre-native)">
@@ -428,6 +526,8 @@ function specFromForm() {
     doors: +$("doors").value, shelves: Math.max(0, +$("shelves").value | 0),
     drawers: Array.from({length: nd}, () => ({front_height: 140})),
     reveal: L("reveal"),
+    door_style: $("door_style").value,
+    finish: $("finish").value,
     center_mullion: $("mullion").checked,
     blind_width: $("blind_width").value ? L("blind_width") : 0,
     corner_cut: $("corner_cut").value ? L("corner_cut") : 0,
@@ -447,7 +547,7 @@ async function post(url, body) {
 }
 $("buildBtn").onclick = async () => {
   setBusy(true);
-  try { render(await post("/api/build", {spec: specFromForm(), ...currentPricing()})); }
+  try { render(await post("/api/build", {spec: specFromForm(), ...currentPricing(), profile: currentProfile()})); }
   catch (e) { showError(e.message); } finally { setBusy(false); health(); }
 };
 $("designBtn").onclick = async () => {
@@ -455,7 +555,7 @@ $("designBtn").onclick = async () => {
   if (!prompt) return;
   setBusy(true);
   try {
-    const d = await post("/api/design", {prompt, ...currentPricing()});
+    const d = await post("/api/design", {prompt, ...currentPricing(), profile: currentProfile()});
     syncForm(d.spec); render(d);
   } catch (e) { showError(e.message); } finally { setBusy(false); health(); }
 };
@@ -483,6 +583,8 @@ function syncForm(s) {
   for (const k of ["name","cabinet_type","construction","width","height","depth",
                    "doors","shelves","reveal","blind_width","corner_cut"])
     put(k, s[k]);
+  if (s.door_style) put("door_style", s.door_style);
+  if (s.finish) put("finish", s.finish);
   $("drawers").value = (s.drawers || []).length;
   $("mullion").checked = !!s.center_mullion;
   put("toe", s.toe_kick ? s.toe_kick.height : 0);
@@ -500,9 +602,12 @@ function render(d) {
   }
   // 3D / image stage
   if (d.glb) {
+    const sections = d.model_sections || [];
+    const bar = sections.length > 1 ? buildBarHtml(sections) : "";
     $("stage").innerHTML =
-      `<model-viewer camera-controls auto-rotate shadow-intensity="1"
-        exposure="1.1" src="${d.glb}"></model-viewer>`;
+      `<model-viewer id="mv" camera-controls auto-rotate shadow-intensity="1"
+        exposure="1.1" src="${d.glb}"></model-viewer>${bar}`;
+    if (sections.length > 1) wireBuildBar(sections);
   } else if (d.render_png) {
     $("stage").innerHTML = `<img src="${d.render_png}" style="object-fit:contain" />`;
   } else $("stage").innerHTML = '<div class="ph">No preview available</div>';
@@ -519,6 +624,44 @@ function render(d) {
   $("status").innerHTML = bits.join("");
   $("downloads").style.display = "flex";
   paint();
+}
+
+// --- 3D build view: explode + step through the sub-assemblies ----------------
+function buildBarHtml(sections) {
+  const n = sections.length;
+  return `<div class="buildbar">
+    <label title="Separate the sub-assemblies to see how it goes together">
+      <input type="checkbox" id="explodeChk"> Exploded</label>
+    <label>Build
+      <input type="range" id="buildStep" min="1" max="${n}" value="${n}"></label>
+    <span class="sec" id="buildSec">Assembled (${n})</span>
+  </div>`;
+}
+// Load a GLB variant (exploded factor + the sub-assemblies up to the step).
+let _mvBlob = null;
+async function loadModel(sections) {
+  const mv = $("mv"); if (!mv || !last) return;
+  const factor = $("explodeChk") && $("explodeChk").checked ? 1.0 : 0.0;
+  const step = $("buildStep") ? +$("buildStep").value : sections.length;
+  const include = step >= sections.length ? null : sections.slice(0, step);
+  if ($("buildSec")) $("buildSec").textContent = include
+    ? `+ ${sections[step - 1]} (${step}/${sections.length})`
+    : `Assembled (${sections.length})`;
+  try {
+    const r = await fetch("/api/model", {method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({spec: last.spec, factor, include})});
+    if (!r.ok) return;
+    const blob = await r.blob();
+    if (_mvBlob) URL.revokeObjectURL(_mvBlob);
+    _mvBlob = URL.createObjectURL(blob);
+    mv.src = _mvBlob;
+  } catch (e) { /* keep the current model on error */ }
+}
+function wireBuildBar(sections) {
+  const go = () => loadModel(sections);
+  if ($("explodeChk")) $("explodeChk").onchange = go;
+  if ($("buildStep")) $("buildStep").oninput = go;
 }
 
 async function download(fmt) {
@@ -553,7 +696,7 @@ function loadFromHash() {
   try {
     const spec = JSON.parse(decodeURIComponent(escape(atob(m[1]))));
     syncForm(spec);
-    post("/api/build", {spec, ...currentPricing()}).then(render).catch(e => showError(e.message));
+    post("/api/build", {spec, ...currentPricing(), profile: currentProfile()}).then(render).catch(e => showError(e.message));
   } catch (e) {}
 }
 
@@ -574,9 +717,9 @@ function paint() {
   const d = last; let h = "";
   const u = unitLabel();
   if (tab === "cutlist") {
-    h = table([`Part`,`Qty`,`L (${u})`,`W (${u})`,`Thk (${u})`,`Material`,`Notes`],
-      d.cutlist.map(p => [p.name,p.qty,fmtLen(p.length),fmtLen(p.width),
-                          fmtLen(p.thickness),p.material,p.notes]));
+    h = table([`ID`,`Part`,`Qty`,`L (${u})`,`W (${u})`,`Thk (${u})`,`From stock`,`Notes`],
+      d.cutlist.map(p => [p.id||"",p.name,p.qty,fmtLen(p.length),fmtLen(p.width),
+                          fmtLen(p.thickness),p.stock||p.material,p.notes]));
     const panels = d.cutlist.reduce((n,p)=>n+p.qty,0);
     const hw = (d.hardware||[]).reduce((n,x)=>n+x.qty,0);
     const area = d.cutlist.reduce((a,p)=>a+(p.length/1000)*(p.width/1000)*p.qty,0);
@@ -586,7 +729,8 @@ function paint() {
   } else if (tab === "lumber") {
     h = lumberPane(d);
   } else if (tab === "hardware") {
-    h = table(["Item","Qty","Notes"], d.hardware.map(x=>[x.name,x.qty,x.notes]));
+    h = table(["Item","Qty","Brand","SKU","Notes"],
+      d.hardware.map(x=>[x.name,x.qty,x.brand||"",x.sku||"",x.notes]));
   } else if (tab === "cost") {
     const e = d.estimate, m = v => e.currency + v.toFixed(2);
     const lumberGroups = e.lumber_groups || [];
@@ -596,22 +740,49 @@ function paint() {
           ? `<div>Solid lumber (${(e.board_feet || 0).toFixed(1)} bd ft)</div><div>${m(e.lumber || 0)}</div>` : "")
       + `<div>Hardware</div><div>${m(e.hardware)}</div>
       <div>Edge banding</div><div>${m(e.edge_banding)}</div>
-      <div>Labour (${e.labour_hours}h)</div><div>${m(e.labour)}</div>
-      <div class="total">Total</div><div class="total">${m(e.total)}</div></div>`;
+      <div>Labour (${e.labour_hours}h)</div><div>${m(e.labour)}</div>`
+      + (e.finish ? `<div>Finishing (${(e.finish_m2||0).toFixed(1)} m²)</div><div>${m(e.finish)}</div>` : "")
+      + `<div class="total">Total</div><div class="total">${m(e.total)}</div></div>`;
     if (e.groups.length) {
       h += "<h4>Sheets</h4>" +
-        table(["Material", `Thk (${u})`, "Parts", "Sheets", "Used"],
-          e.groups.map(g => [g.material, fmtLen(g.thickness), g.parts, g.sheets,
+        table(["Stock", `Thk (${u})`, "Parts", "Sheets", "Used"],
+          e.groups.map(g => [g.stock || g.material, fmtLen(g.thickness), g.parts, g.sheets,
                              Math.round(g.utilization * 100) + "%"]));
     }
     if (lumberGroups.length) {
       h += "<h4>Solid lumber (board feet)</h4>" +
-        table(["Material", `Thk (${u})`, "Parts", "Board feet", "Cost"],
-          lumberGroups.map(g => [g.material, fmtLen(g.thickness), g.parts,
+        table(["Stock", `Thk (${u})`, "Parts", "Board feet", "Cost"],
+          lumberGroups.map(g => [g.stock || g.material, fmtLen(g.thickness), g.parts,
                                  g.board_feet.toFixed(2) + " bd ft", m(g.cost)]));
     }
   } else if (tab === "drilling") {
     h = drillingPane(d);
+  } else if (tab === "steps") {
+    const subs = d.assembly || [];
+    h = subs.length ? `<p class="muted" style="font-size:11.5px;margin:0 0 8px">
+        Build each sub-assembly, then bring them together in Final assembly.</p>` +
+      subs.map(sub => {
+        const sids = (sub.part_ids||[]).length ? ` <span class="muted" style="font-size:11px">[${sub.part_ids.join(", ")}]</span>` : "";
+        const steps = (sub.steps||[]).map(s => {
+          const ids = (s.part_ids||[]).length ? ` <span class="muted">[${s.part_ids.join(", ")}]</span>` : "";
+          const hw = (s.hardware||[]).length ? `<div class="muted" style="font-size:11px">↳ ${s.hardware.join(", ")}</div>` : "";
+          return `<div style="margin:5px 0 5px 10px">
+            <b>${s.number}. ${s.title}</b>${ids}<div style="font-size:12.5px">${s.detail}</div>${hw}</div>`;
+        }).join("");
+        return `<details open style="margin:6px 0"><summary style="font-weight:600;color:var(--wood)">▪ ${sub.name}${sids}</summary>
+          <div class="muted" style="font-size:11.5px;margin:2px 0 4px 10px">${sub.detail}</div>${steps}</details>`;
+      }).join("") : '<p class="muted">No assembly steps for this design.</p>';
+  } else if (tab === "drawings") {
+    h = d.drawings_svg
+      ? `<div style="overflow:auto;padding:4px">${d.drawings_svg}</div>`
+      : '<p class="muted">Drawings unavailable for this design.</p>';
+  } else if (tab === "joinery") {
+    const j = d.joinery || [];
+    h = j.length ? table(["ID","Part","Operation","Tool","Width","Depth","Where","Note"],
+        j.map(o => [o.part_id||"", o.part, o.operation, o.tool,
+                    o.width?fmtLen(o.width):"", o.depth?fmtLen(o.depth):"",
+                    o.reference, o.note]))
+      : '<p class="muted">No joinery operations for this design.</p>';
   }
   $("pane").innerHTML = h;
 }
@@ -655,16 +826,17 @@ function lumberPane(d) {
   // --- sheet goods -----------------------------------------------------
   if (sheetGroups.length) {
     h += '<div class="chips">' + sheetGroups.map(g =>
-      `<span class="chip"><b>${g.sheets}×</b> ${g.material} ${fmtLen(g.thickness, true)}</span>`
+      `<span class="chip"><b>${g.sheets}×</b> ${g.stock || g.material} ${fmtLen(g.thickness, true)}</span>`
     ).join("") + "</div>";
-    h += "<h4>Sheet goods</h4>";
+    h += "<h4>Sheet goods to buy</h4>";
     h += table(
-      ["Material", `Thk (${u})`, "Parts", "Sheets", "Used", "Area"],
+      ["Stock to buy", "Product", `Thk (${u})`, "Sheets", "Used", "Area"],
       sheetGroups.map(g => {
         const area = areaByKey[g.material + "@" + g.thickness] || 0;
         const util = Math.round(g.utilization * 100) + "%";
         const flag = g.oversize ? ` ⚠ ${g.oversize} oversize` : "";
-        return [g.material + flag, fmtLen(g.thickness), g.parts, g.sheets, util, fmtArea(area)];
+        return [(g.stock || g.material) + flag, g.product || "",
+                fmtLen(g.thickness), g.sheets, util, fmtArea(area)];
       }));
     h += `<p class="muted" style="margin-top:8px">Sheet counts include nesting
       waste from a guillotine pack; “Used” is the packed area per sheet. ` +
@@ -679,14 +851,14 @@ function lumberPane(d) {
     for (const g of (e.lumber_groups || [])) costByKey[g.material + "@" + g.thickness] = g.cost;
     const lumberCost = e.lumber || 0;
     h += '<div class="chips" style="margin-top:14px">' + solidGroups.map(g =>
-      `<span class="chip"><b>${g.board_feet.toFixed(1)}</b> bd ft · ${g.material} ${fmtLen(g.thickness, true)}</span>`
+      `<span class="chip"><b>${g.board_feet.toFixed(1)}</b> bd ft · ${g.stock || g.material} ${fmtLen(g.thickness, true)}</span>`
     ).join("") + "</div>";
-    h += "<h4>Solid lumber (board feet)</h4>";
+    h += "<h4>Solid lumber to buy (board feet)</h4>";
     h += table(
-      ["Material", `Thk (${u})`, "Parts", "Length", "Board feet", "Cost"],
+      ["Stock to buy", `Thk (${u})`, "Parts", "Length", "Board feet", "Cost"],
       solidGroups.map(g => {
         const cost = costByKey[g.material + "@" + g.thickness];
-        return [g.material, fmtLen(g.thickness), g.parts, fmtRun(g.length_mm),
+        return [g.stock || g.material, fmtLen(g.thickness), g.parts, fmtRun(g.length_mm),
                 g.board_feet.toFixed(2) + " bd ft",
                 cost == null ? "" : e.currency + cost.toFixed(2)];
       }));
@@ -726,8 +898,8 @@ function drillingPane(d) {
     </div>`;
   h += '<div class="chips">' + Object.entries(cats).map(([c, n]) =>
     `<span class="chip"><b>${n}</b> ${c}</span>`).join("") + "</div>";
-  h += table(["Part", "Operation", "Holes", "Note"],
-    dr.ops.map(o => [o.part, o.operation, o.holes, o.note]));
+  h += table(["ID", "Part", "Operation", "Holes", "Note"],
+    dr.ops.map(o => [o.part_id || "", o.part, o.operation, o.holes, o.note]));
   // Exact positions, collapsible per operation. u = along depth/width,
   // v = up from the panel's bottom edge.
   h += "<h4>Hole positions</h4>";
@@ -862,6 +1034,41 @@ $("resetPricing").onclick = () => {
   maybeAuto();
 };
 
+// --- Shop standards (construction defaults + hardware brand) ------------------
+// Persisted to localStorage and sent as `profile` on every build, so anything a
+// design leaves unset (AI output, project JSON, API) inherits the shop's way.
+const STANDARDS_LS = "woodai_standards";
+const STD_FIELDS = ["construction", "back", "joinery", "hardware_brand",
+                    "reveal", "carcass"];
+function loadStandards() {
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(STANDARDS_LS) || "null"); } catch (e) {}
+  if (saved) for (const f of STD_FIELDS) if (saved[f] != null && $("std_" + f))
+    $("std_" + f).value = saved[f];
+  for (const f of STD_FIELDS) {
+    const el = $("std_" + f);
+    if (el) el.addEventListener("input", () => { saveStandards(); maybeAuto(); });
+  }
+}
+function saveStandards() {
+  const o = {};
+  for (const f of STD_FIELDS) if ($("std_" + f)) o[f] = $("std_" + f).value;
+  try { localStorage.setItem(STANDARDS_LS, JSON.stringify(o)); } catch (e) {}
+}
+// The profile sent with each request: construction defaults + the shop's rates.
+function currentProfile() {
+  const p = pricing ? readPricing() : {};
+  return {
+    construction: $("std_construction").value,
+    back: $("std_back").value,
+    joinery: $("std_joinery").value,
+    hardware_brand: $("std_hardware_brand").value,
+    reveal: parseFloat($("std_reveal").value) || 3,
+    carcass_thickness: parseFloat($("std_carcass").value) || 18,
+    prices: p.prices, sheet: p.sheet,
+  };
+}
+
 // --- Library: Convex when CONVEX_URL is configured, else localStorage --------
 const CONVEX_URL = window.__CONVEX_URL__ || "";
 const CONVEX_VER = "1.17.0";
@@ -914,13 +1121,61 @@ $("saveBtn").onclick = async () => {
   const spec = last ? last.spec : specFromForm();
   const name = prompt("Name this design:", spec.name || "Cabinet");
   if (!name) return;
-  await store.save(name, spec); refreshSaved();
+  await store.save(name, spec);
+  pushRevision(name, spec);     // every save also snapshots a revision
+  refreshSaved(); refreshRevisions(name);
+};
+
+// --- revision history (localStorage; mirrors the Convex revisions table) -----
+const REV_KEY = "woodai_revisions";
+function allRevisions() {
+  try { return JSON.parse(localStorage.getItem(REV_KEY) || "{}"); }
+  catch (e) { return {}; }
+}
+function pushRevision(name, spec) {
+  const all = allRevisions();
+  (all[name] = all[name] || []).unshift(
+    {spec, at: new Date().toISOString().slice(0, 19).replace("T", " ")});
+  all[name] = all[name].slice(0, 50);
+  try { localStorage.setItem(REV_KEY, JSON.stringify(all)); } catch (e) {}
+}
+function currentDesignName() {
+  return (last && last.spec && last.spec.name) || $("name").value || "";
+}
+function refreshRevisions(name) {
+  name = name || currentDesignName();
+  const revs = allRevisions()[name] || [];
+  $("revList").innerHTML = '<option value="">— none —</option>' +
+    revs.map((r, i) => `<option value="${i}">${r.at}</option>`).join("");
+  $("revNote").textContent = revs.length
+    ? `${revs.length} revision(s) of "${name}"` : "";
+}
+$("revLoadBtn").onclick = async () => {
+  const revs = allRevisions()[currentDesignName()] || [];
+  const r = revs[+$("revList").value];
+  if (!r) return;
+  syncForm(r.spec);
+  try { render(await post("/api/build", {spec: r.spec, ...currentPricing(), profile: currentProfile()})); }
+  catch (e) { showError(e.message); }
+};
+$("revDiffBtn").onclick = async () => {
+  const revs = allRevisions()[currentDesignName()] || [];
+  const r = revs[+$("revList").value];
+  if (!r || !last) { $("revNote").textContent = "Pick a revision and build a design first."; return; }
+  try {
+    const d = await post("/api/diff", {from: r.spec, to: last.spec});
+    $("revNote").innerHTML = d.changes.length
+      ? "<b>" + d.summary + "</b><ul style='margin:4px 0 0;padding-left:16px'>" +
+        d.changes.slice(0, 12).map(c =>
+          `<li>${c.path}: ${JSON.stringify(c.from)} → ${JSON.stringify(c.to)}</li>`).join("") + "</ul>"
+      : "No changes from the selected revision.";
+  } catch (e) { $("revNote").textContent = e.message; }
 };
 $("loadBtn").onclick = async () => {
   const d = savedCache.find(x => x._id === $("savedList").value);
   if (!d) return;
   syncForm(d.spec);
-  try { render(await post("/api/build", {spec: d.spec, ...currentPricing()})); }
+  try { render(await post("/api/build", {spec: d.spec, ...currentPricing(), profile: currentProfile()})); }
   catch (e) { showError(e.message); }
 };
 $("delBtn").onclick = async () => {
@@ -953,6 +1208,35 @@ $("formatJson").onclick = () => {
   catch (e) { showError("Project JSON: " + e.message); }
 };
 
+// Collect the run's cabinet widths from the project JSON (top-level components).
+function projectWidths() {
+  let p; try { p = JSON.parse($("projectJson").value); } catch (e) { return []; }
+  return (p.components || []).map(c =>
+    (c.spec && c.spec.width) || 0).filter(w => w > 0);
+}
+$("planWallBtn").onclick = async () => {
+  const widths = projectWidths();
+  if (!widths.length) { $("wallPlan").textContent =
+    "Add components with a width to the project JSON first."; return; }
+  const body = {widths,
+    wall: {length: +$("wall_len").value},
+    room: {floor_drop: +$("floor_drop").value, out_of_square: +$("out_sq").value}};
+  try {
+    const r = await post("/api/room/plan", body);
+    const f = r.fit;
+    let h = f.fits
+      ? `Run ${f.total}mm into a ${f.wall_length}mm wall — ` +
+        (f.filler_width > 0 ? `<b>${f.filler_width}mm filler</b> needed.`
+                            : "fills the wall exactly.")
+      : `<b style="color:#e7b6b6">Over by ${f.overrun}mm</b> — drop a cabinet.`;
+    const notes = ((r.scribe && r.scribe.notes) || []).concat(
+      (r.issues || []).map(i => i[2]));
+    if (notes.length) h += "<ul style='margin:4px 0 0;padding-left:16px'>" +
+      notes.map(n => `<li>${n}</li>`).join("") + "</ul>";
+    $("wallPlan").innerHTML = h;
+  } catch (e) { $("wallPlan").textContent = e.message; }
+};
+
 // Initialise the form to the default display unit (inches for US shops): the
 // HTML defaults are authored in mm, so convert them once on load.
 setUnitLabels();
@@ -960,7 +1244,9 @@ applyUnitChange();
 
 health();
 loadPricing();
+loadStandards();
 refreshSaved();
+refreshRevisions();
 loadFromHash();
 window.addEventListener("hashchange", loadFromHash);
 </script>

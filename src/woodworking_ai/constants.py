@@ -17,3 +17,11 @@ MULLION_WIDTH = 60.0           # frameless center post between a pair of doors
 SLIDE_SIDE_CLEARANCE = 13.0    # gap each side for ball-bearing slides
 DRAWER_BOX_HEIGHT_DROP = 40.0  # box height below the drawer front
 DRAWER_BOX_DEPTH_GAP = 25.0    # box shallower than the interior
+
+# Five-piece (stile-and-rail) door construction.
+DOOR_STILE_WIDTH = 57.0        # vertical stile width (~2-1/4in)
+DOOR_RAIL_WIDTH = 57.0         # horizontal rail width
+DOOR_PANEL_GROOVE = 10.0       # panel tongue captured this deep in the frame
+
+# Solid-wood glue-ups: panels wider than this are edge-glued from boards.
+GLUE_UP_BOARD_WIDTH = 140.0    # nominal board width (~5-1/2in) before jointing

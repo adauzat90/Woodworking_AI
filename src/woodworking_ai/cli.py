@@ -162,6 +162,14 @@ def _emit(spec, args) -> int:
         from .drilling import drilling_schedule
         print("\n" + drilling_schedule(spec).report_text())
 
+    if args.joinery:
+        from .joinery import joinery_schedule
+        print("\n" + joinery_schedule(spec).report_text())
+
+    if args.assembly:
+        from .assembly_steps import assembly_plan
+        print("\n" + assembly_plan(spec).report_text())
+
     if args.out:
         out = Path(args.out)
         out.mkdir(parents=True, exist_ok=True)
@@ -177,6 +185,14 @@ def _emit(spec, args) -> int:
         if args.dxf:
             exporters.export_cutlayout_dxf(spec, out / "cutlayout.dxf", cutlist=cutlist)
             print("Wrote cutlayout.dxf")
+        if args.drawings:
+            from .drawings import write_drawings_svg
+            write_drawings_svg(spec, out / "drawings.svg", unit)
+            print("Wrote drawings.svg")
+        if getattr(args, "package", False):
+            from .report import build_package_pdf
+            (out / "build_package.pdf").write_bytes(build_package_pdf(spec, unit))
+            print("Wrote build_package.pdf")
 
         if args.step or args.stl or args.glb:
             from .builder import build_model, measure
@@ -206,6 +222,10 @@ def main(argv: list[str] | None = None) -> int:
     common.add_argument("--glb", action="store_true", help="export GLB (needs build123d)")
     common.add_argument("--dxf", action="store_true",
                         help="export a DXF cut-layout nest (no build123d needed)")
+    common.add_argument("--drawings", action="store_true",
+                        help="export dimensioned 2D shop drawings (SVG)")
+    common.add_argument("--package", action="store_true",
+                        help="export the printable build-package PDF (needs reportlab)")
     common.add_argument("--render", action="store_true",
                         help="render PNG snapshots (needs matplotlib)")
     common.add_argument("--visual-review", action="store_true",
@@ -214,6 +234,10 @@ def main(argv: list[str] | None = None) -> int:
                         help="estimate sheet count and cost")
     common.add_argument("--drill", action="store_true",
                         help="print the drilling schedule (32mm system, hinges)")
+    common.add_argument("--joinery", action="store_true",
+                        help="print the joinery setup sheet (dado/rabbet/etc.)")
+    common.add_argument("--assembly", action="store_true",
+                        help="print the step-by-step assembly sequence")
     common.add_argument("--imperial", action="store_true",
                         help="show cut list and reports in fractional inches "
                              "(engine stays metric; the 32mm drilling schedule "

@@ -23,6 +23,24 @@ def test_index_served():
     assert "Woodworking AI" in r.text
 
 
+def test_profile_endpoint_returns_defaults():
+    r = client.get("/api/profile")
+    assert r.status_code == 200
+    d = r.json()
+    assert d["construction"] == "frameless"
+    assert "prices" in d and "sheet" in d
+
+
+def test_build_applies_profile_construction_default():
+    # A bare cabinet that omits construction; the profile should fill it.
+    bare = {"cabinet_type": "base", "name": "Bare", "width": 600,
+            "height": 720, "depth": 560, "doors": 2, "shelves": 1}
+    r = client.post("/api/build", json={
+        "spec": bare, "profile": {"construction": "face_frame"}})
+    assert r.status_code == 200
+    assert r.json()["spec"]["construction"] == "face_frame"
+
+
 def test_health_reports_capabilities():
     r = client.get("/api/health")
     assert r.status_code == 200
@@ -143,14 +161,14 @@ def test_export_cutlist_csv():
     r = client.post("/api/export/cutlist", json={"spec": VALID_SPEC})
     assert r.status_code == 200
     assert r.headers["content-type"].startswith("text/csv")
-    assert r.text.splitlines()[0].startswith("part,qty")
+    assert r.text.splitlines()[0].startswith("id,part,qty")
     assert "attachment" in r.headers["content-disposition"]
 
 
 def test_export_drilling_csv():
     r = client.post("/api/export/drilling", json={"spec": VALID_SPEC})
     assert r.status_code == 200
-    assert r.text.splitlines()[0].startswith("part,operation")
+    assert r.text.splitlines()[0].startswith("id,part,operation")
 
 
 def test_export_dxf():
@@ -210,7 +228,7 @@ def test_export_project_cutlist_imperial():
     r = client.post("/api/export/cutlist",
                     json={"spec": PROJECT_SPEC, "units": "imperial"})
     assert r.status_code == 200
-    assert r.text.splitlines()[0].startswith("part,qty,length_in")
+    assert r.text.splitlines()[0].startswith("id,part,qty,length_in")
 
 
 # --- sub-assemblies through the API (the SPA's "Project / assembly" samples) ---
@@ -277,3 +295,23 @@ def test_build_rejects_cyclic_subassembly():
            "components": [{"ref": "a"}]}
     r = client.post("/api/build", json={"spec": bad, "glb": False})
     assert r.status_code == 400          # bad spec, surfaced not 500'd
+
+
+def test_build_bundle_lists_model_sections():
+    d = client.post("/api/build", json={"spec": VALID_SPEC}).json()
+    assert "model_sections" in d
+    assert "Carcass" in d["model_sections"]
+
+
+def test_model_endpoint_degrades_without_build123d():
+    # Returns a GLB (200) when build123d is present, else a clean 503 — never 500.
+    r = client.post("/api/model", json={"spec": VALID_SPEC, "factor": 1.0})
+    assert r.status_code in (200, 503)
+    if r.status_code == 200:
+        assert r.headers["content-type"].startswith("model/gltf-binary")
+
+
+def test_model_endpoint_rejects_invalid_spec():
+    bad = dict(VALID_SPEC, width=-5)
+    r = client.post("/api/model", json={"spec": bad})
+    assert r.status_code == 422

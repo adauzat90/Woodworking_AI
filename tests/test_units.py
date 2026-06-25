@@ -61,20 +61,20 @@ def _spec():
 def test_cutlist_csv_metric_header_unchanged():
     csv = generate_cutlist(_spec()).to_csv()           # default metric
     assert csv.splitlines()[0] == (
-        "part,qty,length_mm,width_mm,thickness_mm,material,grain,notes")
+        "id,part,qty,length_mm,width_mm,thickness_mm,material,grain,notes")
 
 
 def test_cutlist_csv_imperial_header_and_values():
     csv = generate_cutlist(_spec()).to_csv("imperial")
     head, *rows = csv.splitlines()
     assert head == (
-        "part,qty,length_in,width_in,thickness_in,material,grain,notes")
+        "id,part,qty,length_in,width_in,thickness_in,material,grain,notes")
     # The dimensional columns (length/width/thickness) carry no mm values;
     # notes/metric hardware (e.g. 5mm pins) may legitimately stay metric.
     for r in rows:
         cols = r.split(",")
-        assert "mm" not in "".join(cols[2:5])
-    assert any(r.split(",")[4] == "11/16" for r in rows)   # 18mm carcass
+        assert "mm" not in "".join(cols[3:6])   # length/width/thickness columns
+    assert any(r.split(",")[5] == "11/16" for r in rows)   # 18mm carcass
     # CSV cells stay comma/quote-free so the file parses cleanly.
     assert '"' not in csv
 

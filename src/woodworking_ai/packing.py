@@ -5,9 +5,29 @@ Both the estimator (sheet *count* + utilization) and the DXF cut-layout export
 quote and the nest diagram can never disagree about how many sheets a job takes.
 
 A true optimal 2D bin-pack is NP-hard; shops use shelf heuristics like this too.
-Each item is ``(length, width, label)`` and is auto-oriented longest-side-along
-the sheet length. A ``sheet`` is any object exposing ``length``, ``width`` and
-``kerf`` (e.g. :class:`woodworking_ai.estimator.SheetSize`).
+
+**Grain.** A veneered or melamine sheet has a grain direction (run along the
+sheet *length*). A part whose face grain must run a fixed way therefore cannot
+be freely rotated when nested — so each item carries a ``grain`` token:
+
+* ``"length"`` — grain runs along the part's ``length``; placed length-along-
+  the-sheet, never rotated.
+* ``"width"``  — grain runs along the part's ``width``; rotated once so that
+  axis runs along the sheet, then locked.
+* ``"none"`` / ``""`` — isotropic (MDF, particleboard, hidden parts); free to
+  rotate longest-side-along-length for the best yield (the original behaviour).
+
+Locking grain can raise the sheet count — that is correct: a free pack that
+rotates a veneered gable would cross the grain on a visible face.
+
+**Sequence.** Items sharing a non-empty ``seq`` group (e.g. the door fronts of
+one run) are kept contiguous and in input order so they can be cut from one
+sheet in sequence for a grain/colour match, instead of being scattered by the
+height sort.
+
+Each item is ``(length, width, label)``, optionally extended with ``grain`` and
+``seq``: ``(length, width, label[, grain[, seq]])``. A ``sheet`` is any object
+exposing ``length``, ``width`` and ``kerf``.
 """
 
 from __future__ import annotations
@@ -17,13 +37,37 @@ from typing import Any
 # (x, y, length, width, label) of one placed panel on a sheet.
 Placement = tuple[float, float, float, float, str]
 
+# Grain tokens that pin a part's orientation when nesting.
+_LOCKED_GRAINS = ("length", "width")
+
 
 def orient(length: float, width: float) -> tuple[float, float]:
     """Longest side along the sheet length."""
     return (max(length, width), min(length, width))
 
 
-def pack(items: list[tuple[float, float, str]], sheet: Any
+def _oriented(length: float, width: float, grain: str) -> tuple[float, float, bool]:
+    """Return ``(along_length, along_width, locked)`` honouring *grain*.
+
+    ``locked`` is True when grain pins the orientation (no free rotation).
+    """
+    g = (grain or "none").strip().lower()
+    if g == "length":
+        return (length, width, True)
+    if g == "width":
+        return (width, length, True)
+    return (*orient(length, width), False)
+
+
+def _normalize(item: tuple) -> tuple[float, float, str, str, str]:
+    """Pad an item tuple to ``(length, width, label, grain, seq)``."""
+    length, width, label = item[0], item[1], item[2]
+    grain = item[3] if len(item) > 3 else "none"
+    seq = item[4] if len(item) > 4 else ""
+    return (length, width, label, grain, seq)
+
+
+def pack(items: list[tuple], sheet: Any
          ) -> tuple[list[list[Placement]], list[str]]:
     """Shelf-pack *items* onto *sheet*.
 
@@ -31,20 +75,27 @@ def pack(items: list[tuple[float, float, str]], sheet: Any
     list of :data:`Placement` tuples, and ``oversize`` is the labels of items
     too big to fit any single sheet (they are not placed).
     """
-    oriented = [(*orient(l, w), label) for (l, w, label) in items]
-    oversize = [n for (l, w, n) in oriented
+    norm = [_normalize(it) for it in items]
+    oriented = [(*_oriented(length, width, grain), label, seq)
+                for (length, width, label, grain, seq) in norm]
+    # (along_length, along_width, locked, label, seq)
+    oversize = [lbl for (l, w, _lock, lbl, _seq) in oriented
                 if l > sheet.length or w > sheet.width]
-    fit = [(l, w, n) for (l, w, n) in oriented
+    fit = [(l, w, lbl, seq) for (l, w, _lock, lbl, seq) in oriented
            if l <= sheet.length and w <= sheet.width]
     if not fit:
         return ([], oversize)
 
-    # Tallest shelves first packs cleaner.
-    fit.sort(key=lambda r: r[1], reverse=True)
+    # Sequence-grouped items keep their input order (for a grain/colour match);
+    # everything else is packed tallest-shelf-first, which packs cleaner.
+    seq_items = [r for r in fit if r[3]]
+    free_items = [r for r in fit if not r[3]]
+    free_items.sort(key=lambda r: r[1], reverse=True)
+    ordered = seq_items + free_items
 
     sheets: list[list[Placement]] = [[]]
     shelf_y = shelf_h = cursor_x = 0.0
-    for (l, w, label) in fit:
+    for (l, w, label, _seq) in ordered:
         if cursor_x + l > sheet.length:           # start a new shelf
             shelf_y += shelf_h + sheet.kerf
             shelf_h = 0.0

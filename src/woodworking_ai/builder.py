@@ -17,7 +17,7 @@ from __future__ import annotations
 from typing import Any
 
 from .dsl import CabinetSpec, ComponentGroup
-from .geometry import panel_layout, project_layout
+from .geometry import panel_layout, project_layout, explode_panels
 
 
 def _require_build123d() -> Any:
@@ -48,28 +48,32 @@ def _compound_from_panels(panels, label: str) -> Any:
     return model
 
 
-def build_model(spec: CabinetSpec) -> Any:
+def build_model(spec: CabinetSpec, *, factor: float = 0.0,
+                include: set | None = None) -> Any:
     """Return a build123d ``Compound`` of labelled panels for *spec*.
 
     Panel placement comes from :func:`woodworking_ai.geometry.panel_layout`, the
     same source the Critic agent measures against. Accepts a
-    :class:`ComponentGroup` (Project or sub-assembly) too, assembling the whole
-    group into one model.
+    :class:`ComponentGroup` (Project or sub-assembly) too.
+
+    ``factor`` > 0 returns an *exploded* model (sub-assemblies separated to show
+    how it goes together); ``include`` keeps only the named sub-assemblies (for a
+    progressive build view). With both defaults this is the assembled model.
     """
     if isinstance(spec, ComponentGroup):
-        return build_project(spec)
-    return _compound_from_panels(panel_layout(spec), spec.name)
+        return build_project(spec, factor=factor, include=include)
+    panels = (explode_panels(spec, factor, include)
+              if (factor or include is not None) else panel_layout(spec))
+    return _compound_from_panels(panels, spec.name)
 
 
-def build_project(project: ComponentGroup) -> Any:
-    """Assemble a whole group into one build123d ``Compound``.
-
-    Each component's panels are placed in the run frame by
-    :func:`woodworking_ai.geometry.project_layout`, so the assembled B-Rep is
-    exactly the sum of the per-component layouts — one model to export as a
-    combined GLB/STEP of the kitchen.
-    """
-    return _compound_from_panels(project_layout(project), project.name)
+def build_project(project: ComponentGroup, *, factor: float = 0.0,
+                  include: set | None = None) -> Any:
+    """Assemble a whole group into one build123d ``Compound`` (a run sections by
+    cabinet). Supports the same ``factor``/``include`` explode/reveal options."""
+    panels = (explode_panels(project, factor, include)
+              if (factor or include is not None) else project_layout(project))
+    return _compound_from_panels(panels, project.name)
 
 
 def measure(model: Any) -> dict[str, float]:

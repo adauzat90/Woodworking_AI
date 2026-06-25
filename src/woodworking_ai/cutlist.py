@@ -23,11 +23,17 @@ from .constants import (
     SHELF_SIDE_CLEARANCE, SHELF_SETBACK, STRETCHER_WIDTH,
     FRAME_WIDTH, FRAME_THICKNESS,
     SLIDE_SIDE_CLEARANCE, DRAWER_BOX_HEIGHT_DROP, DRAWER_BOX_DEPTH_GAP,
+    DOOR_STILE_WIDTH, DOOR_RAIL_WIDTH, DOOR_PANEL_GROOVE,
+    GLUE_UP_BOARD_WIDTH,
+)
+from .hardware import (
+    select_hinge, select_slide, select_pull, hinge_count,
+    CONFIRMAT, ASSEMBLY_SCREW,
 )
 
 # Materials cut from solid/dimensional lumber rather than sheet goods. A shop
 # buys these by the board foot (and often by the running length), not the sheet.
-SOLID_LUMBER_MATERIALS = frozenset({"frame", "top", "leg", "apron"})
+SOLID_LUMBER_MATERIALS = frozenset({"frame", "top", "leg", "apron", "solid panel"})
 # One board foot is 144 cubic inches; expressed in mm³ for our mm-native parts.
 BOARD_FOOT_MM3 = 144.0 * (25.4 ** 3)   # ≈ 2_359_737.2 mm³
 
@@ -39,9 +45,14 @@ class Part:
     length: float
     width: float
     thickness: float
-    material: str = "sheet"
+    material: str = "sheet"    # internal *usage* label (role), not the product
     grain: str = "length"      # grain direction runs along `length`
     notes: str = ""
+    id: str = ""               # stable part code (e.g. "A1"), set by assign_ids
+    # Physical make-up, resolved from the spec's material/species declaration
+    # (both optional; "" = generic / inherited). Drives the BOM and the quote.
+    form: str = ""             # plywood|mdf|particleboard|melamine|hardboard|solid
+    species: str = ""          # wood species, e.g. oak | maple | pine
 
     @property
     def area_m2(self) -> float:
@@ -49,9 +60,28 @@ class Part:
         return (self.length / 1000.0) * (self.width / 1000.0)
 
     @property
+    def stock_label(self) -> str:
+        """Display name of the physical stock: declared form, else usage label."""
+        return self.form or self.material
+
+    @property
+    def stock_key(self) -> tuple[str, str, str, float]:
+        """Merge key for parts that buy as one stock.
+
+        ``(stock_label, form, species, thickness)`` — parts sharing a declared
+        form+species+thickness nest as one buyable sheet; legacy parts fall back
+        to their usage label, keeping distinct products apart.
+        """
+        return (self.stock_label, self.form, self.species, self.thickness)
+
+    @property
     def is_solid_lumber(self) -> bool:
-        """True when this part is cut from solid stock (bought by the board foot)."""
-        return self.material in SOLID_LUMBER_MATERIALS
+        """True when this part is cut from solid stock (bought by the board foot).
+
+        Either an intrinsically-solid usage label (frame/leg/apron/top) or an
+        explicit ``form == "solid"`` declared on the spec.
+        """
+        return self.material in SOLID_LUMBER_MATERIALS or self.form == "solid"
 
     @property
     def board_feet(self) -> float:
@@ -59,11 +89,119 @@ class Part:
         return (self.length * self.width * self.thickness) / BOARD_FOOT_MM3
 
 
+# --- stable part identity ---------------------------------------------------
+# Every part gets a short code (e.g. "A1") grouped by a broad category, numbered
+# in cut-list order. The same code is referenced by the nesting diagram, the
+# drilling schedule, and the shop drawings, so a shop can cross-reference one
+# physical part across every output. Codes are deterministic because cut-list
+# generation is deterministic.
+_CATEGORY_PREFIX = {
+    "carcass": "A",        # sides, bottom, top, stretcher, toe kick
+    "back": "B",           # back panel(s) and captured drawer bottoms
+    "shelf": "C",
+    "front": "D",          # doors, drawer fronts, mullion, blind filler
+    "drawer_box": "E",
+    "frame": "F",          # face-frame stiles/rails
+    "solid": "T",          # table top / leg / apron (solid stock)
+    "accessory": "G",      # countertop / molding / end panel
+}
+
+
+def _part_category(p: "Part") -> str:
+    """Broad category key for *p*, used to pick its ID prefix."""
+    n = p.name.lower()
+    if "box" in n and "drawer" in n:
+        return "drawer_box"
+    if p.material in ("countertop", "molding"):
+        return "accessory"
+    if p.material in ("door/front", "door panel"):
+        return "front"
+    if p.material == "frame":
+        return "frame"
+    if p.material in ("top", "leg", "apron"):
+        return "solid"
+    if p.material == "back panel":
+        return "back"
+    if "shelf" in n:
+        return "shelf"
+    return "carcass"
+
+
+# Cut-list category (from _part_category) → the spec `stock` override area.
+_CATEGORY_TO_AREA = {
+    "carcass": "carcass", "back": "back", "shelf": "shelf", "front": "front",
+    "drawer_box": "drawer_box", "frame": "frame", "solid": "solid",
+}
+
+
+def _resolve_part_stock(parts: list["Part"], spec) -> None:
+    """Stamp each part's physical ``form``/``species`` from *spec*, in place.
+
+    The role→material declaration lives on the spec (global default + per-area
+    ``stock`` overrides); this resolves it once per part so every downstream
+    surface (BOM, quote, drawings) reads the same physical stock. Accessories
+    keep their own material unless an ``accessory`` override is given.
+    """
+    from .materials import resolve
+    table = getattr(spec, "stock", None) or {}
+    for p in parts:
+        cat = _part_category(p)
+        if cat == "accessory":
+            if "accessory" in table:
+                p.form, p.species = resolve(spec, "accessory")
+            continue
+        area = "door_panel" if p.material == "door panel" else \
+            _CATEGORY_TO_AREA.get(cat, "carcass")
+        p.form, p.species = resolve(spec, area)
+
+
+def assign_ids(parts: list["Part"], prefix: str = "") -> None:
+    """Assign a stable ``id`` to each part in *parts*, in place.
+
+    ``prefix`` namespaces the codes for one component of a project (e.g. the
+    component tag), so a run's parts read ``B2-A1`` without colliding.
+    """
+    counters: dict[str, int] = {}
+    for p in parts:
+        cat = _part_category(p)
+        letter = _CATEGORY_PREFIX[cat]
+        counters[letter] = counters.get(letter, 0) + 1
+        code = f"{letter}{counters[letter]}"
+        p.id = f"{prefix}-{code}" if prefix else code
+
+
+# Map a geometry panel label (e.g. "Side L", "Shelf 2", "Drawer front 1") to the
+# cut-list part name it belongs to, so the drilling schedule and drawings can
+# resolve the shared part ID. Both label sets are produced by this codebase, so
+# the table is small and stable.
+_PANEL_LABEL_TO_PART = {
+    "Side": "Side", "Bottom": "Bottom", "Top": "Top",
+    "Stretcher front": "Top stretcher", "Stretcher back": "Top stretcher",
+    "Back": "Back", "Shelf": "Adjustable shelf", "Corner shelf": "Corner shelf",
+    "Toe kick": "Toe kick", "Door": "Door", "Mullion": "Mullion",
+    "Stile": "Face-frame stile", "Rail": "Face-frame rail",
+    "Center stile": "Face-frame center stile", "Blind filler": "Blind filler",
+    "Front rail": "Front rail", "Side L": "Side L", "Side R": "Side R",
+    "Leg": "Leg", "Apron long": "Apron (long)", "Apron short": "Apron (short)",
+}
+
+
+def _panel_label_base(label: str) -> str:
+    """Strip a trailing hand ('L'/'R') or index ('1') from a panel label."""
+    parts = label.rsplit(" ", 1)
+    if len(parts) == 2 and (parts[1] in ("L", "R") or parts[1].isdigit()):
+        return parts[0]
+    return label
+
+
 @dataclass
 class Hardware:
     name: str
     qty: int
     notes: str = ""
+    sku: str = ""               # orderable part number (catalogue), if any
+    brand: str = ""             # hardware brand (blum/hettich/grass/generic)
+    category: str = "hardware"  # hardware | fastener | connector
 
 
 @dataclass
@@ -85,19 +223,45 @@ class CutList:
         def f(v: float) -> str:
             return format_length(v, unit, mark=False)
 
-        lines = [f"part,qty,length_{lbl},width_{lbl},thickness_{lbl},"
+        lines = [f"id,part,qty,length_{lbl},width_{lbl},thickness_{lbl},"
                  "material,grain,notes"]
         for p in self.parts:
             lines.append(
-                f"{p.name},{p.qty},{f(p.length)},{f(p.width)},"
+                f"{p.id},{p.name},{p.qty},{f(p.length)},{f(p.width)},"
                 f"{f(p.thickness)},{p.material},{p.grain},{p.notes}"
             )
         return "\n".join(lines)
 
+    def part_id_for_label(self, label: str) -> str:
+        """Resolve a geometry panel label to its cut-list part ID (or "").
+
+        Tries an exact part-name match, then the panel→part table, then a
+        prefix match (for indexed fronts like "Drawer front 1"). A project's
+        labels are tagged ("B2 · Side"); the tag is stripped and re-applied.
+        """
+        tag = ""
+        if " · " in label:
+            tag, label = label.split(" · ", 1)
+        by_name = {p.name: p for p in self.parts}
+        cand = (by_name.get(label)
+                or by_name.get(_PANEL_LABEL_TO_PART.get(label, label))
+                or by_name.get(_PANEL_LABEL_TO_PART.get(
+                    _panel_label_base(label), "")))
+        if cand is None:
+            base = _panel_label_base(label)
+            cand = next((p for p in self.parts if p.name.startswith(base)), None)
+        if cand is None:
+            return ""
+        if tag:
+            # Project IDs are already namespaced on the part; match the tag.
+            return cand.id
+        return cand.id
+
     def hardware_csv(self) -> str:
-        lines = ["item,qty,notes"]
+        lines = ["item,qty,brand,sku,category,notes"]
         for h in self.hardware:
-            lines.append(f"{h.name},{h.qty},{h.notes}")
+            lines.append(
+                f"{h.name},{h.qty},{h.brand},{h.sku},{h.category},{h.notes}")
         return "\n".join(lines)
 
     def lumber_breakdown(self) -> list[dict]:
@@ -108,12 +272,14 @@ class CutList:
         a shop can order solid stock the way it actually buys it: legs and
         aprons by the linear metre/foot, tops and frames by the board foot.
         """
-        groups: dict[tuple[str, float], dict] = {}
+        groups: dict[tuple[str, float, str, str], dict] = {}
         for p in self.parts:
             if not p.is_solid_lumber:
                 continue
-            g = groups.setdefault((p.material, p.thickness), {
+            key = (p.material, p.thickness, p.form, p.species)
+            g = groups.setdefault(key, {
                 "material": p.material, "thickness": p.thickness,
+                "form": p.form, "species": p.species,
                 "parts": 0, "board_feet": 0.0, "length_mm": 0.0,
             })
             g["parts"] += p.qty
@@ -137,6 +303,38 @@ class CutList:
         )
 
 
+def glue_up_boards(width: float, board_width: float = GLUE_UP_BOARD_WIDTH
+                   ) -> tuple[int, float]:
+    """Boards needed to edge-glue a panel of *width*: ``(count, board_width)``.
+
+    Splits the panel into the fewest equal boards no wider than *board_width*,
+    the way a shop rips and edge-glues a solid panel.
+    """
+    n = max(2, math.ceil(width / board_width)) if width > board_width else 1
+    return n, round(width / n, 1)
+
+
+def _expand_glue_ups(cl: "CutList", board_width: float = GLUE_UP_BOARD_WIDTH) -> None:
+    """Rewrite sheet carcass panels as edge-glued solid boards, in place.
+
+    Each carcass panel wider than a board becomes N solid boards (priced by the
+    board foot) with a note of the glue-line length, so a solid-wood cabinet
+    quotes and cuts as the boards a shop actually buys.
+    """
+    new_parts: list[Part] = []
+    for p in cl.parts:
+        if p.material == "sheet" and p.width > board_width:
+            n, bw = glue_up_boards(p.width, board_width)
+            glue_m = (n - 1) * p.length / 1000.0
+            new_parts.append(Part(
+                f"{p.name} board", p.qty * n, length=p.length, width=bw,
+                thickness=p.thickness, material="solid panel", grain="length",
+                notes=f"glue-up: {n} boards/panel, ~{glue_m:.1f}m glue line"))
+        else:
+            new_parts.append(p)
+    cl.parts = new_parts
+
+
 def _add_drawer_box(cl: "CutList", spec: CabinetSpec, index: int,
                     opening_w: float, front_height: float,
                     interior_depth: float) -> None:
@@ -148,16 +346,81 @@ def _add_drawer_box(cl: "CutList", spec: CabinetSpec, index: int,
     box_d = max(interior_depth - DRAWER_BOX_DEPTH_GAP, 100.0)
     cl.parts.append(Part(
         f"Drawer {index} box side", 2, length=box_d, width=box_h, thickness=t,
-        material="drawer box", notes="grooved for bottom",
+        material="drawer box", grain="none", notes="grooved for bottom",
     ))
     cl.parts.append(Part(
         f"Drawer {index} box front/back", 2, length=box_w - 2 * t, width=box_h,
-        thickness=t, material="drawer box",
+        thickness=t, material="drawer box", grain="none",
     ))
     cl.parts.append(Part(
         f"Drawer {index} box bottom", 1, length=box_w, width=box_d,
-        thickness=m.back, material="back panel", notes="captured in groove",
+        thickness=m.back, material="back panel", grain="none",
+        notes="captured in groove",
     ))
+
+
+def _add_door_parts(cl: "CutList", spec: CabinetSpec, doors, front_note: str) -> None:
+    """Append door parts: one slab, or 5-piece stile-and-rail components.
+
+    For a non-slab ``door_style`` each leaf becomes two stiles, two rails and a
+    centre panel (flat for shaker/cope-and-stick, solid for raised panel), sized
+    so the rails tenon into the stiles and the panel floats in the frame groove.
+    """
+    m = spec.material
+    d0 = doors[0]
+    n = len(doors)
+    style = str(getattr(spec, "door_style", "slab")).lower()
+    if style == "slab":
+        cl.parts.append(Part(
+            "Door", n, length=d0.height, width=d0.width, thickness=m.door,
+            material="door/front", notes=f"{front_note} slab ({n})"))
+        return
+    # Five-piece frame-and-panel door.
+    cl.parts.append(Part(
+        "Door stile", 2 * n, length=d0.height, width=DOOR_STILE_WIDTH,
+        thickness=m.door, material="door/front", grain="length",
+        notes=f"{style} door, vertical"))
+    rail_len = d0.width - 2 * DOOR_STILE_WIDTH + 2 * DOOR_PANEL_GROOVE
+    cl.parts.append(Part(
+        "Door rail", 2 * n, length=max(rail_len, 50.0), width=DOOR_RAIL_WIDTH,
+        thickness=m.door, material="door/front",
+        notes="cope-and-stick into stiles"))
+    panel_h = d0.height - 2 * DOOR_RAIL_WIDTH + 2 * DOOR_PANEL_GROOVE
+    panel_w = d0.width - 2 * DOOR_STILE_WIDTH + 2 * DOOR_PANEL_GROOVE
+    solid = style == "raised_panel"
+    cl.parts.append(Part(
+        "Door panel", n, length=max(panel_h, 50.0), width=max(panel_w, 50.0),
+        thickness=m.door_panel, material="door panel", grain="length",
+        notes="raised, solid" if solid else "flat panel, floats in groove"))
+
+
+def _add_assembly_hardware(cl: "CutList", spec: CabinetSpec) -> None:
+    """Append carcass assembly hardware (a buyable estimate) for *spec*.
+
+    Knock-down joinery (screw/pocket) uses Confirmats or cam-and-dowel
+    connectors; captured joinery (dado/rabbet/dowel/domino) is glued with a few
+    assembly screws. Counts are per-cabinet estimates a shop rounds up — the
+    point is that the BOM is orderable, not that it is exact to the screw.
+    """
+    j = str(spec.joinery).strip().lower()
+    # Four carcass corners; tall/dressers add fixed shelves/dividers → more.
+    base = 8 if spec.has_full_top else 6
+    if j in ("screw",):
+        cl.hardware.append(Hardware(
+            CONFIRMAT.name, base, CONFIRMAT.note, sku=CONFIRMAT.sku,
+            category="fastener"))
+    elif j in ("pocket",):
+        cl.hardware.append(Hardware(
+            "Pocket screw 1-1/4in", base, "pocket-hole assembly",
+            category="fastener"))
+    else:  # dado / rabbet / dowel / domino / butt: glue + a few screws
+        cl.hardware.append(Hardware(
+            ASSEMBLY_SCREW.name, max(base // 2, 4), "edge fixing + glue",
+            sku=ASSEMBLY_SCREW.sku, category="fastener"))
+    # Back panel fixing (screws/pins around the perimeter).
+    cl.hardware.append(Hardware(
+        "Back panel screw 4×16", 10, "fix back to rear edges",
+        category="fastener"))
 
 
 def _diagonal_cutlist(spec: CabinetSpec) -> CutList:
@@ -194,6 +457,8 @@ def _diagonal_cutlist(spec: CabinetSpec) -> CutList:
     cl.hardware.append(Hardware("Door pull", 1))
     if spec.edge_banding:
         cl.hardware.append(Hardware("Edge banding", 1, "match carcass front edges"))
+    _resolve_part_stock(cl.parts, spec)
+    assign_ids(cl.parts)
     return cl
 
 
@@ -204,9 +469,17 @@ def _table_cutlist(spec: TableSpec) -> CutList:
     li, leg = spec.leg_inset, spec.leg
     apron_x = (spec.width - 2 * li - leg) - leg
     apron_y = (spec.depth - 2 * li - leg) - leg
-    cl.parts.append(Part("Top", 1, length=spec.width, width=spec.depth,
-                         thickness=spec.top_thickness, material="top",
-                         notes="glued panel or solid"))
+    if getattr(spec, "solid_top", True) and spec.depth > GLUE_UP_BOARD_WIDTH:
+        n, bw = glue_up_boards(spec.depth)
+        glue_m = (n - 1) * spec.width / 1000.0
+        cl.parts.append(Part(
+            "Top board", n, length=spec.width, width=bw,
+            thickness=spec.top_thickness, material="top", grain="length",
+            notes=f"edge-glued top: {n} boards, ~{glue_m:.1f}m glue line"))
+    else:
+        cl.parts.append(Part("Top", 1, length=spec.width, width=spec.depth,
+                             thickness=spec.top_thickness, material="top",
+                             notes="solid/sheet top"))
     cl.parts.append(Part("Leg", 4, length=leg_h, width=leg, thickness=leg,
                          material="leg", notes="square stock"))
     cl.parts.append(Part("Apron (long)", 2, length=apron_x, width=spec.apron_height,
@@ -215,6 +488,8 @@ def _table_cutlist(spec: TableSpec) -> CutList:
                          thickness=spec.apron_thickness, material="apron"))
     cl.hardware.append(Hardware("Corner bracket", 4, "leg-to-apron"))
     cl.hardware.append(Hardware("Tabletop fastener", 8, "expansion clip"))
+    _resolve_part_stock(cl.parts, spec)
+    assign_ids(cl.parts)
     return cl
 
 
@@ -227,9 +502,10 @@ def _project_cutlist(project: ComponentGroup) -> CutList:
     cl = CutList(spec_name=project.name)
     for i, comp in enumerate(project.components, start=1):
         tag = component_tag(comp, i)
-        sub = generate_cutlist(comp.spec)
+        sub = generate_cutlist(comp.spec)   # already ID'd per component
         for p in sub.parts:
-            cl.parts.append(replace(p, name=f"{tag} · {p.name}"))
+            cl.parts.append(replace(
+                p, name=f"{tag} · {p.name}", id=f"{tag}-{p.id}" if p.id else ""))
         for h in sub.hardware:
             cl.hardware.append(replace(h, name=f"{tag} · {h.name}"))
     return cl
@@ -259,19 +535,19 @@ def generate_cutlist(spec) -> CutList:
     ))
     cl.parts.append(Part(
         "Bottom", 1, length=interior_width, width=interior_depth,
-        thickness=m.carcass, notes="between sides",
+        thickness=m.carcass, grain="none", notes="between sides",
     ))
     # Wall/tall cabinets are enclosed with a full top panel; base cabinets use
     # two top rails, leaving room for a sink/drawers and to fasten the counter.
     if spec.has_full_top:
         cl.parts.append(Part(
             "Top", 1, length=interior_width, width=interior_depth,
-            thickness=m.carcass, notes="enclosed top",
+            thickness=m.carcass, grain="none", notes="enclosed top",
         ))
     else:
         cl.parts.append(Part(
             "Top stretcher", 2, length=interior_width, width=STRETCHER_WIDTH,
-            thickness=m.carcass, notes="front & back top rail",
+            thickness=m.carcass, grain="none", notes="front & back top rail",
         ))
 
     # ---- back -----------------------------------------------------------
@@ -283,7 +559,7 @@ def generate_cutlist(spec) -> CutList:
         back_note = f"{spec.back.value} back"
     cl.parts.append(Part(
         "Back", 1, length=max(back_l, back_w), width=min(back_l, back_w),
-        thickness=m.back, material="back panel", notes=back_note,
+        thickness=m.back, material="back panel", grain="none", notes=back_note,
     ))
 
     # ---- shelves --------------------------------------------------------
@@ -292,7 +568,7 @@ def generate_cutlist(spec) -> CutList:
         shelf_d = interior_depth - SHELF_SETBACK
         cl.parts.append(Part(
             "Adjustable shelf", spec.shelves,
-            length=shelf_w, width=shelf_d, thickness=m.shelf,
+            length=shelf_w, width=shelf_d, thickness=m.shelf, grain="none",
             notes="on shelf pins",
         ))
         cl.hardware.append(Hardware("Shelf pin", spec.shelves * 4, "5mm"))
@@ -301,7 +577,7 @@ def generate_cutlist(spec) -> CutList:
     if spec.toe_kick and toe_h > 0:
         cl.parts.append(Part(
             "Toe kick", 1, length=spec.width, width=toe_h, thickness=m.carcass,
-            notes=f"set back {spec.toe_kick.setback:.0f}mm",
+            grain="none", notes=f"set back {spec.toe_kick.setback:.0f}mm",
         ))
 
     # ---- face frame (solid hardwood stiles + rails) ---------------------
@@ -323,6 +599,7 @@ def generate_cutlist(spec) -> CutList:
     # the parts list and the 3D model can never disagree about the fronts.
     plan = front_plan(spec)
     front_note = "inset" if is_ff else "overlay"
+    brand = getattr(spec, "hardware_brand", "generic")
 
     filler = next((it for it in plan.items if it.kind == "filler"), None)
     if filler is not None:
@@ -344,8 +621,22 @@ def generate_cutlist(spec) -> CutList:
         # The drawer box itself, sized for slide and depth clearance.
         _add_drawer_box(cl, spec, dr.index, plan.opening_w, dr.height,
                         interior_depth)
-        cl.hardware.append(Hardware("Drawer slide (pair)", 1, "ball-bearing"))
-        cl.hardware.append(Hardware("Drawer pull", 1))
+        sdr = spec.drawers[dr.index - 1] if dr.index - 1 < len(spec.drawers) else None
+        slide = select_slide(
+            brand, str(getattr(sdr, "slide_type", "side_mount")),
+            float(getattr(sdr, "slide_length", 0.0) or 0.0))
+        cl.hardware.append(Hardware(
+            "Drawer slide (pair)", 1, slide.name, sku=slide.sku, brand=slide.brand))
+        if slide.locking_holes:
+            cl.hardware.append(Hardware(
+                "Drawer slide locking device (pair)", 1,
+                f"{slide.rear_notch and 'box rear notch required' or ''}".strip(),
+                brand=slide.brand, category="connector"))
+        pull = select_pull(brand)
+        cl.hardware.append(Hardware(
+            "Drawer pull", 1,
+            f"{pull.hole_spacing:.0f}mm CC" if pull.hole_spacing else "knob",
+            sku=pull.sku, brand=pull.brand))
 
     mullion = plan.mullion
     if mullion is not None:
@@ -365,13 +656,24 @@ def generate_cutlist(spec) -> CutList:
     doors = plan.doors
     if doors:
         d0 = doors[0]
-        cl.parts.append(Part(
-            "Door", len(doors), length=d0.height, width=d0.width,
-            thickness=d0.thickness, material="door/front",
-            notes=f"{front_note} ({len(doors)})",
-        ))
-        cl.hardware.append(Hardware("Concealed hinge", len(doors) * 2, "soft-close"))
-        cl.hardware.append(Hardware("Door pull", len(doors)))
+        _add_door_parts(cl, spec, doors, front_note)
+        overlay = "inset" if is_ff else getattr(spec, "hinge_overlay", "overlay")
+        hinge = select_hinge(brand, overlay)
+        n_hinges = len(doors) * hinge_count(d0.height)
+        cl.hardware.append(Hardware(
+            "Concealed hinge", n_hinges, f"{hinge.name} ({overlay})",
+            sku=hinge.sku, brand=hinge.brand))
+        cl.hardware.append(Hardware(
+            "Hinge mounting plate", n_hinges, "one per hinge",
+            sku=hinge.plate_sku, brand=hinge.brand))
+        pull = select_pull(brand)
+        cl.hardware.append(Hardware(
+            "Door pull", len(doors),
+            f"{pull.hole_spacing:.0f}mm CC" if pull.hole_spacing else "knob",
+            sku=pull.sku, brand=pull.brand))
+
+    # ---- carcass assembly hardware (estimate from joinery) --------------
+    _add_assembly_hardware(cl, spec)
 
     # ---- edge banding (rough running length on exposed front edges) -----
     if spec.edge_banding:
@@ -380,4 +682,19 @@ def generate_cutlist(spec) -> CutList:
             "Edge banding", 1, "match carcass front edges (see estimate for run)",
         ))
 
+    # Solid-wood carcass: edge-glue the sheet panels from boards. Triggered by an
+    # explicit panel_construction, or by declaring the carcass form as "solid".
+    from .materials import resolve as _resolve_area
+    carcass_form, _ = _resolve_area(spec, "carcass")
+    if (str(getattr(spec, "panel_construction", "sheet")).lower() == "glue_up"
+            or carcass_form == "solid"):
+        _expand_glue_ups(cl)
+
+    # Accessories: countertop, filler, end panel, moldings.
+    if getattr(spec, "accessories", None):
+        from .accessories import add_accessory_parts
+        add_accessory_parts(cl, spec)
+
+    _resolve_part_stock(cl.parts, spec)
+    assign_ids(cl.parts)
     return cl

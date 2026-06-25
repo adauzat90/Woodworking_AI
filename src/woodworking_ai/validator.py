@@ -493,4 +493,15 @@ def validate(spec) -> ValidationResult:
              "(shorter drawers on top, taller toward the bottom) looks more "
              "intentional")
 
+    # --- accessories: countertop, appliance cutout, filler, molding ------
+    if getattr(spec, "accessories", None):
+        from .accessories import accessory_issues
+        for severity, field_, msg in accessory_issues(spec):
+            issues.append(Issue(severity, field_, msg))
+
+    # --- material-specific build hints (when form/species are declared) --
+    from .materials import build_hints
+    for severity, field_, msg in build_hints(spec):
+        issues.append(Issue(severity, field_, msg))
+
     return ValidationResult(issues)

@@ -23,8 +23,13 @@ CATEGORY_COLORS = {
     "toe": "#6b4f3a",
     "frame": "#7a5230",
     "front": "#9c6b43",
+    # applied trim / accessories
+    "counter": "#3f3a36",
+    "filler": "#8a6a47",
+    "endpanel": "#9c6b43",
+    "molding": "#7a5230",
 }
-CATEGORY_ALPHA = {"front": 0.92}
+CATEGORY_ALPHA = {"front": 0.92, "counter": 0.97}
 
 
 def _require_mpl() -> Any:
@@ -136,10 +141,16 @@ def _title(spec, panels: list[PanelBox]) -> str:
     return f"{spec.name} — {dims}  ({sub})"
 
 
-def render_cabinet(spec, path: str | Path, *, dpi: int = 110) -> Path:
-    """Render *spec* (cabinet, table, or project) to a multi-view PNG."""
+def render_cabinet(spec, path: str | Path, *, dpi: int = 110,
+                   panels: list[PanelBox] | None = None) -> Path:
+    """Render *spec* (cabinet, table, or project) to a multi-view PNG.
+
+    Pass ``panels`` to draw a specific panel set (e.g. an exploded view from
+    :func:`woodworking_ai.geometry.explode_panels`) instead of the assembled
+    layout.
+    """
     plt = _require_mpl()
-    panels = panel_layout(spec)
+    panels = panel_layout(spec) if panels is None else panels
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
 

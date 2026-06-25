@@ -27,11 +27,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from ..dsl import CabinetSpec, ComponentGroup
+from ..dsl import CabinetSpec, ComponentGroup, Construction, Joinery
 from ..geometry import (
     PanelBox, panel_layout, project_layout, footprints_overlap, component_tag,
 )
 from ..cutlist import generate_cutlist
+from ..constants import FRAME_WIDTH
+from ..tooling import DEFAULT_TOOLS
 from . import llm
 
 # Tolerances in mm. Panels that merely touch (shared faces) overlap by ~0; only
@@ -107,15 +109,24 @@ def _overlap(a: PanelBox, b: PanelBox) -> tuple[float, float, float]:
     )
 
 
+# Applied trim (countertop, filler, end panel, moldings) is surface-mounted and
+# a drawer box is an inserted sub-assembly that rides on slides — neither is a
+# fixed carcass part, so both legitimately abut the box/other parts and are
+# excluded from the hard structural-interference error.
+_APPLIED_CATEGORIES = {"counter", "filler", "endpanel", "molding", "drawer_box"}
+
+
 def _interferences(panels: list[PanelBox]) -> list[tuple[str, str, float]]:
     """Pairs of panels that share positive volume (real collisions).
 
     Rotated panels are skipped: their AABB over-approximates the true footprint,
-    so an axis-aligned test would report false collisions. The opt-in B-Rep
-    check (``brep=True``) verifies those exactly.
+    so an axis-aligned test would report false collisions. Applied trim is
+    skipped too (it is surface-mounted). The opt-in B-Rep check (``brep=True``)
+    verifies the rest exactly.
     """
     checked = [p for p in panels if not getattr(p, "is_rotated", False)
-               and not getattr(p, "oversized", False)]
+               and not getattr(p, "oversized", False)
+               and p.category not in _APPLIED_CATEGORIES]
     hits: list[tuple[str, str, float]] = []
     for i in range(len(checked)):
         for j in range(i + 1, len(checked)):
@@ -158,6 +169,59 @@ def _span(group: list[PanelBox], axis: int) -> float:
     lo = min(p.bounds()[axis][0] for p in group)
     hi = max(p.bounds()[axis][1] for p in group)
     return hi - lo
+
+
+def _buildability_issues(spec: CabinetSpec, tools=DEFAULT_TOOLS
+                         ) -> list[CritiqueIssue]:
+    """Shop-floor checks the envelope/interference math misses.
+
+    Catches the problems that bite at the machine or on install: a housing the
+    tooling can't cut in one pass, a box too deep to line-bore by hand, twin
+    doors whose pulls clash, and a face-frame drawer whose slides need build-out
+    blocks to reach the box.
+    """
+    out: list[CritiqueIssue] = []
+    m = spec.material
+
+    def warn(kind, msg):
+        out.append(CritiqueIssue("warning", kind, msg))
+
+    # --- machinability ---------------------------------------------------
+    if spec.joinery in (Joinery.DADO, Joinery.RABBET):
+        w = m.carcass
+        if (w > tools.dado_max or w < tools.dado_min) and \
+                not any(abs(w - b) < 0.6 for b in tools.router_bits):
+            warn("machinability",
+                 f"a {w:.0f}mm housing is outside the dado stack "
+                 f"({tools.dado_min:.0f}-{tools.dado_max:.0f}mm) and matches no "
+                 "router bit on hand — it needs multiple passes or a wider stack")
+    if spec.shelves > 0 and spec.depth > tools.max_handdrill_reach:
+        warn("machinability",
+             f"a {spec.depth:.0f}mm-deep box is past comfortable hand-drill reach "
+             f"(~{tools.max_handdrill_reach:.0f}mm); line-bore the shelf-pin rows "
+             "with a jig or CNC")
+
+    # --- door-swing / handle clash ---------------------------------------
+    # Inset (face-frame) twin doors with no centre stile have nothing to close
+    # against and their edges/pulls clash; overlay doors overlap the opening and
+    # are fine, so this is gated to inset construction.
+    if (spec.construction == Construction.FACE_FRAME and spec.doors == 2
+            and not spec.center_mullion and not spec.is_corner):
+        warn("clearance",
+             "inset twin doors meet with no centre stile — nothing to close "
+             "against and the pulls clash; add a centre mullion or a door stop")
+
+    # --- face-frame drawer slide stack-up --------------------------------
+    boxed = [d for d in spec.drawers
+             if not d.false_front and str(d.slide_type).lower() == "side_mount"]
+    if spec.construction == Construction.FACE_FRAME and boxed:
+        lip = FRAME_WIDTH - m.carcass    # frame overhang past the carcass side
+        if lip > 3.0:
+            warn("clearance",
+                 f"face-frame drawers: the frame overhangs the carcass side by "
+                 f"{lip:.0f}mm, so side-mount slides won't reach the box — add "
+                 "slide build-out blocks (or use undermount)")
+    return out
 
 
 def _critique_project(project: ComponentGroup, *, use_cad: bool = False,
@@ -209,7 +273,9 @@ def _critique_project(project: ComponentGroup, *, use_cad: bool = False,
                         "error", "geometry",
                         f"built {label} {got:.1f}mm != expected {want:.1f}mm"))
             if brep:
-                skip = {p.label for p in panels if getattr(p, "oversized", False)}
+                skip = {p.label for p in panels
+                        if getattr(p, "oversized", False)
+                        or p.category in _APPLIED_CATEGORIES}
                 for a, b, vol in _brep_interferences(model, skip=skip):
                     result.issues.append(CritiqueIssue(
                         "error", "interference",
@@ -309,6 +375,10 @@ def critique(spec, *, use_cad: bool = False,
             if spec.doors == 0 and not spec.drawers:
                 warn("coverage", "open cabinet: no doors or drawers specified")
 
+    # --- buildability: machinability + clearances (cabinets only) --------
+    if is_cabinet:
+        result.issues.extend(_buildability_issues(spec))
+
     # --- sheet goods (from the cut list) ---------------------------------
     result.report["sheet_area_m2"] = generate_cutlist(spec).sheet_area_m2
 
@@ -332,7 +402,8 @@ def critique(spec, *, use_cad: bool = False,
                         f"built {label} {got:.1f}mm != expected {want:.1f}mm")
             if brep:
                 skip = {p.label for p in panels
-                        if getattr(p, "oversized", False)}
+                        if getattr(p, "oversized", False)
+                        or p.category in _APPLIED_CATEGORIES}
                 brep_hits = _brep_interferences(model, skip=skip)
                 result.report["brep_interference_count"] = len(brep_hits)
                 for a, b, vol in brep_hits:
