@@ -248,15 +248,16 @@ def _add_drawer_box(cl: "CutList", spec: CabinetSpec, index: int,
     box_d = max(interior_depth - DRAWER_BOX_DEPTH_GAP, 100.0)
     cl.parts.append(Part(
         f"Drawer {index} box side", 2, length=box_d, width=box_h, thickness=t,
-        material="drawer box", notes="grooved for bottom",
+        material="drawer box", grain="none", notes="grooved for bottom",
     ))
     cl.parts.append(Part(
         f"Drawer {index} box front/back", 2, length=box_w - 2 * t, width=box_h,
-        thickness=t, material="drawer box",
+        thickness=t, material="drawer box", grain="none",
     ))
     cl.parts.append(Part(
         f"Drawer {index} box bottom", 1, length=box_w, width=box_d,
-        thickness=m.back, material="back panel", notes="captured in groove",
+        thickness=m.back, material="back panel", grain="none",
+        notes="captured in groove",
     ))
 
 
@@ -362,19 +363,19 @@ def generate_cutlist(spec) -> CutList:
     ))
     cl.parts.append(Part(
         "Bottom", 1, length=interior_width, width=interior_depth,
-        thickness=m.carcass, notes="between sides",
+        thickness=m.carcass, grain="none", notes="between sides",
     ))
     # Wall/tall cabinets are enclosed with a full top panel; base cabinets use
     # two top rails, leaving room for a sink/drawers and to fasten the counter.
     if spec.has_full_top:
         cl.parts.append(Part(
             "Top", 1, length=interior_width, width=interior_depth,
-            thickness=m.carcass, notes="enclosed top",
+            thickness=m.carcass, grain="none", notes="enclosed top",
         ))
     else:
         cl.parts.append(Part(
             "Top stretcher", 2, length=interior_width, width=STRETCHER_WIDTH,
-            thickness=m.carcass, notes="front & back top rail",
+            thickness=m.carcass, grain="none", notes="front & back top rail",
         ))
 
     # ---- back -----------------------------------------------------------
@@ -386,7 +387,7 @@ def generate_cutlist(spec) -> CutList:
         back_note = f"{spec.back.value} back"
     cl.parts.append(Part(
         "Back", 1, length=max(back_l, back_w), width=min(back_l, back_w),
-        thickness=m.back, material="back panel", notes=back_note,
+        thickness=m.back, material="back panel", grain="none", notes=back_note,
     ))
 
     # ---- shelves --------------------------------------------------------
@@ -395,7 +396,7 @@ def generate_cutlist(spec) -> CutList:
         shelf_d = interior_depth - SHELF_SETBACK
         cl.parts.append(Part(
             "Adjustable shelf", spec.shelves,
-            length=shelf_w, width=shelf_d, thickness=m.shelf,
+            length=shelf_w, width=shelf_d, thickness=m.shelf, grain="none",
             notes="on shelf pins",
         ))
         cl.hardware.append(Hardware("Shelf pin", spec.shelves * 4, "5mm"))
@@ -404,7 +405,7 @@ def generate_cutlist(spec) -> CutList:
     if spec.toe_kick and toe_h > 0:
         cl.parts.append(Part(
             "Toe kick", 1, length=spec.width, width=toe_h, thickness=m.carcass,
-            notes=f"set back {spec.toe_kick.setback:.0f}mm",
+            grain="none", notes=f"set back {spec.toe_kick.setback:.0f}mm",
         ))
 
     # ---- face frame (solid hardwood stiles + rails) ---------------------

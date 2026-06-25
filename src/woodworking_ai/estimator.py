@@ -145,14 +145,21 @@ class Estimate:
         return "\n".join(lines)
 
 
-def pack_sheets(rects: list[tuple[float, float]], sheet: SheetSize
+def pack_sheets(rects: list[tuple], sheet: SheetSize
                 ) -> tuple[int, float, int]:
     """Shelf-pack *rects* and report (sheets_used, utilization, oversize_count).
 
     Thin wrapper over :func:`woodworking_ai.packing.pack`, which the DXF
     cut-layout export shares, so the quote and the nest diagram always agree.
+    Each rect is ``(length, width)`` and may carry ``grain`` and a sequence
+    token: ``(length, width[, grain[, seq]])``.
     """
-    placed, oversize = pack([(l, w, "") for (l, w) in rects], sheet)
+    items = []
+    for r in rects:
+        grain = r[2] if len(r) > 2 else "none"
+        seq = r[3] if len(r) > 3 else ""
+        items.append((r[0], r[1], "", grain, seq))
+    placed, oversize = pack(items, sheet)
     if not placed:
         return (0, 0.0, len(oversize))
     packed_area = sum(l * w for shelf in placed for (_, _, l, w, _) in shelf)
@@ -240,7 +247,10 @@ def estimate(spec, *, cutlist: CutList | None = None,
             continue
         key = (p.material, p.thickness)
         groups.setdefault(key, [])
-        groups[key].extend([(p.length, p.width)] * p.qty)
+        # Door/drawer fronts cut from one sheet in sequence for a grain/colour
+        # match; grain locks each part's orientation on the sheet.
+        seq = "front" if p.material == "door/front" else ""
+        groups[key].extend([(p.length, p.width, p.grain, seq)] * p.qty)
 
     sheet_groups: list[SheetGroup] = []
     material_cost = 0.0
