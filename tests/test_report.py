@@ -54,3 +54,19 @@ def test_manual_orders_cut_then_process_then_build():
     build = text.index("Build: Carcass")
     final = text.rindex("Final assembly")   # the heading, not the overview mention
     assert cut < process < build < final, "cut → process → build → final order"
+
+
+def test_shopping_list_is_the_first_section():
+    import pytest
+    fitz = pytest.importorskip("fitz")
+    spec = _cab()
+    data = build_package_pdf(spec)
+    doc = fitz.open(stream=data, filetype="pdf")
+    text = "\n".join(p.get_text() for p in doc)
+    shop = text.index("Shopping list — buy this first")
+    overview = text.index("Overview — what you're building")
+    cut = text.index("Cut & label all parts")
+    # The BOM/shopping list comes before everything else.
+    assert shop < overview < cut
+    # It lists hardware to buy with SKUs and the sheet count.
+    assert "Hardware & fasteners" in text or "Hardware" in text

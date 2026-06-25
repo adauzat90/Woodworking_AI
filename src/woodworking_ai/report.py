@@ -292,8 +292,9 @@ def build_package_pdf(spec, units: str = "metric") -> bytes:
 
     # --- cover -----------------------------------------------------------
     story.append(Paragraph(f"🪵 {spec.name}", h1))
-    story.append(Paragraph("Assembly instructions — cut &amp; process all parts, "
-                           "build the sub-assemblies, then the final assembly", small))
+    story.append(Paragraph("Assembly instructions — shop the BOM, cut &amp; "
+                           "process all parts, build the sub-assemblies, then the "
+                           "final assembly", small))
     overall = []
     for attr in ("width", "height", "depth"):
         v = getattr(spec, attr, None)
@@ -314,7 +315,47 @@ def build_package_pdf(spec, units: str = "metric") -> bytes:
         sec[0] += 1
         story.append(Paragraph(f"{sec[0]} · {title}", h2))
 
-    # 1 · Overview -------------------------------------------------------
+    # 1 · Shopping list — buy everything first ---------------------------
+    from .finishing import finishing_schedule
+    heading("Shopping list — buy this first")
+    story.append(Paragraph(
+        "Everything to buy and have on hand before you start.", small))
+    story.append(Paragraph("Sheet goods (full sheets to buy)", mini))
+    story.append(tbl(
+        ["Material", "Thickness", "Sheets", "Parts"],
+        [[g.material, fl(g.thickness), g.sheets, g.part_count]
+         for g in est.groups] or [["—", "", "", ""]]))
+    if est.lumber_groups:
+        story.append(Spacer(1, 6))
+        story.append(Paragraph("Solid lumber (by the board foot)", mini))
+        story.append(tbl(
+            ["Material", "Thickness", "Board feet"],
+            [[g.material, fl(g.thickness), f"{g.board_feet:.1f}"]
+             for g in est.lumber_groups]))
+    extras = []
+    if est.edge_banding_m:
+        extras.append(f"Edge banding: ~{est.edge_banding_m:.1f} m")
+    fin = finishing_schedule(spec)
+    if fin["coats"]:
+        extras.append(
+            f"Finish ({fin['type']}): ~{fin['litres']:.1f} L for {fin['coats']} "
+            f"coats over {fin['area_m2']:.1f} m²")
+    if extras:
+        story.append(Spacer(1, 4))
+        story.append(Paragraph("Consumables: " + " · ".join(extras), small))
+    story.append(Spacer(1, 6))
+    story.append(Paragraph("Hardware &amp; fasteners (order list)", mini))
+    story.append(tbl(
+        ["Item", "Qty", "Brand", "SKU", "Notes"],
+        [[h.name, h.qty, h.brand, h.sku, h.notes] for h in cl.hardware]))
+    story.append(Spacer(1, 6))
+    story.append(Paragraph(
+        f"<b>Estimated total: {est.currency}{est.total:.2f}</b> — "
+        f"{est.total_sheets} sheet(s), {est.total_board_feet:.1f} bd ft, "
+        f"{sum(h.qty for h in cl.hardware)} hardware items.", body))
+    story.append(PageBreak())
+
+    # 2 · Overview -------------------------------------------------------
     heading("Overview — what you're building")
     img = _model_image(spec, avail_w, exploded=True)
     if img is not None:
@@ -375,13 +416,6 @@ def build_package_pdf(spec, units: str = "metric") -> bytes:
             ["ID", "Part", "Operation", "Holes", "Note"],
             [[o.part_id, o.part, o.operation, len(o.holes), o.note]
              for o in drill.ops]))
-    story.append(PageBreak())
-
-    # 4 · Gather the hardware --------------------------------------------
-    heading("Gather the hardware")
-    story.append(tbl(
-        ["Item", "Qty", "Brand", "SKU", "Notes"],
-        [[h.name, h.qty, h.brand, h.sku, h.notes] for h in cl.hardware]))
     story.append(PageBreak())
 
     # 5..N · Build each sub-assembly from the cut, processed parts --------
