@@ -28,7 +28,7 @@ from .constants import (
 )
 from .hardware import (
     select_hinge, select_slide, select_pull, hinge_count,
-    CONFIRMAT, ASSEMBLY_SCREW,
+    longest_slide_for, CONFIRMAT, ASSEMBLY_SCREW,
 )
 
 # Materials cut from solid/dimensional lumber rather than sheet goods. A shop
@@ -49,6 +49,11 @@ class Part:
     grain: str = "length"      # grain direction runs along `length`
     notes: str = ""
     id: str = ""               # stable part code (e.g. "A1"), set by assign_ids
+    # Which faces get edge banding, as a string of edge characters: "L" = a long
+    # edge (runs along `length`), "S" = a short edge (runs along `width`). So ""
+    # = none, "L" = one long edge, "LS" = one long + one short, "LLSS" = all four.
+    # Drives the banding run length and cost (see estimator).
+    banded_edges: str = ""
     # Physical make-up, resolved from the spec's material/species declaration
     # (both optional; "" = generic / inherited). Drives the BOM and the quote.
     form: str = ""             # plywood|mdf|particleboard|melamine|hardboard|solid
@@ -99,6 +104,15 @@ class Part:
     def board_feet(self) -> float:
         """Volume of a single part expressed in board feet (144 in³)."""
         return (self.length * self.width * self.thickness) / BOARD_FOOT_MM3
+
+    @property
+    def banded_length_mm(self) -> float:
+        """Run of edge banding on a single part, from its `banded_edges`.
+
+        Each "L" counts one `length`-long edge; each "S" one `width`-long edge.
+        """
+        b = self.banded_edges or ""
+        return b.count("L") * self.length + b.count("S") * self.width
 
 
 # --- stable part identity ---------------------------------------------------
@@ -304,14 +318,40 @@ class CutList:
         """Board feet of solid lumber across the whole cut list."""
         return sum(p.board_feet * p.qty for p in self.parts if p.is_solid_lumber)
 
+    def banding_breakdown(self) -> list[dict]:
+        """Edge banding required, grouped by the stock it must match.
+
+        Each visible (banded) edge of a part is banding the shop orders to match
+        that panel's face. Groups by ``stock_label`` so the run is orderable per
+        material (e.g. so much oak-ply banding, so much white melamine). Returns
+        ``[{stock, metres}]`` sorted by stock, only for parts that band an edge.
+        """
+        groups: dict[str, float] = {}
+        for p in self.parts:
+            run = p.banded_length_mm
+            if run <= 0:
+                continue
+            groups[p.stock_label] = groups.get(p.stock_label, 0.0) + run * p.qty
+        return [{"stock": k, "metres": groups[k] / 1000.0}
+                for k in sorted(groups)]
+
+    @property
+    def total_banding_m(self) -> float:
+        """Total edge-banding run across the whole cut list, in metres."""
+        return sum(p.banded_length_mm * p.qty for p in self.parts) / 1000.0
+
     def summary(self, unit: str = "metric") -> str:
-        from .units import format_area
+        from .units import format_area, format_run_mm
         n_panels = sum(p.qty for p in self.parts)
         n_hw = sum(h.qty for h in self.hardware)
+        band = ""
+        if self.total_banding_m > 0:
+            band = (f", {format_run_mm(self.total_banding_m * 1000.0, unit)} "
+                    "edge banding")
         return (
             f"{self.spec_name}: {n_panels} panels "
             f"({len(self.parts)} unique), {n_hw} hardware items, "
-            f"~{format_area(self.sheet_area_m2, unit)} sheet goods"
+            f"~{format_area(self.sheet_area_m2, unit)} sheet goods{band}"
         )
 
 
@@ -349,16 +389,31 @@ def _expand_glue_ups(cl: "CutList", board_width: float = GLUE_UP_BOARD_WIDTH) ->
 
 def _add_drawer_box(cl: "CutList", spec: CabinetSpec, index: int,
                     opening_w: float, front_height: float,
-                    interior_depth: float) -> None:
-    """Append the four box panels + bottom for one drawer."""
+                    interior_depth: float, slide_length: float = 0.0) -> float:
+    """Append the four box panels + bottom for one drawer.
+
+    When *slide_length* is 0 the box depth is snapped to the longest standard
+    slide that fits the interior depth (less the box/slide clearance), because a
+    shop buys a real slide length — not an arbitrary one. Returns the chosen
+    slide length (mm), or 0.0 when no fitting decision was made (an explicit
+    slide_length, or nothing standard fits).
+    """
     m = spec.material
     t = m.drawer_box
     box_w = opening_w - 2 * SLIDE_SIDE_CLEARANCE          # outer box width
     box_h = max(front_height - DRAWER_BOX_HEIGHT_DROP, 60.0)
     box_d = max(interior_depth - DRAWER_BOX_DEPTH_GAP, 100.0)
+    side_note = "grooved for bottom"
+    chosen = 0.0
+    if slide_length <= 0:
+        # Snap to a real slide: the longest standard length that fits the space.
+        chosen = longest_slide_for(interior_depth - DRAWER_BOX_DEPTH_GAP)
+        if chosen > 0:
+            box_d = chosen
+            side_note = f"grooved for bottom; sized for {chosen:.0f}mm slide"
     cl.parts.append(Part(
         f"Drawer {index} box side", 2, length=box_d, width=box_h, thickness=t,
-        material="drawer box", grain="none", notes="grooved for bottom",
+        material="drawer box", grain="none", notes=side_note,
     ))
     cl.parts.append(Part(
         f"Drawer {index} box front/back", 2, length=box_w - 2 * t, width=box_h,
@@ -369,6 +424,7 @@ def _add_drawer_box(cl: "CutList", spec: CabinetSpec, index: int,
         thickness=m.back, material="back panel", grain="none",
         notes="captured in groove",
     ))
+    return chosen
 
 
 def _add_door_parts(cl: "CutList", spec: CabinetSpec, doors, front_note: str) -> None:
@@ -385,7 +441,9 @@ def _add_door_parts(cl: "CutList", spec: CabinetSpec, doors, front_note: str) ->
     if style == "slab":
         cl.parts.append(Part(
             "Door", n, length=d0.height, width=d0.width, thickness=m.door,
-            material="door/front", notes=f"{front_note} slab ({n})"))
+            material="door/front", notes=f"{front_note} slab ({n})",
+            # A sheet-good slab door shows on all four edges → band all round.
+            banded_edges="LLSS" if spec.edge_banding else ""))
         return
     # Five-piece frame-and-panel door.
     cl.parts.append(Part(
@@ -543,13 +601,18 @@ def generate_cutlist(spec) -> CutList:
     interior_depth = spec.interior_depth  # back recessed by its thickness
 
     # ---- carcass --------------------------------------------------------
+    # Frameless: the front edges of the gables, bottom and front stretcher show
+    # and get banded ("L" = the front long edge). A face frame hides these.
+    band = bool(spec.edge_banding) and spec.construction != Construction.FACE_FRAME
     cl.parts.append(Part(
         "Side", 2, length=box_height, width=spec.depth, thickness=m.carcass,
         grain="length", notes="full-height gable",
+        banded_edges="L" if band else "",
     ))
     cl.parts.append(Part(
         "Bottom", 1, length=interior_width, width=interior_depth,
         thickness=m.carcass, grain="none", notes="between sides",
+        banded_edges="L" if band else "",
     ))
     # Wall/tall cabinets are enclosed with a full top panel; base cabinets use
     # two top rails, leaving room for a sink/drawers and to fasten the counter.
@@ -557,11 +620,14 @@ def generate_cutlist(spec) -> CutList:
         cl.parts.append(Part(
             "Top", 1, length=interior_width, width=interior_depth,
             thickness=m.carcass, grain="none", notes="enclosed top",
+            banded_edges="L" if band else "",
         ))
     else:
         cl.parts.append(Part(
             "Top stretcher", 2, length=interior_width, width=STRETCHER_WIDTH,
             thickness=m.carcass, grain="none", notes="front & back top rail",
+            # Only the front rail's front edge shows; banded on the front piece.
+            banded_edges="L" if band else "",
         ))
 
     # ---- back -----------------------------------------------------------
@@ -584,6 +650,8 @@ def generate_cutlist(spec) -> CutList:
             "Adjustable shelf", spec.shelves,
             length=shelf_w, width=shelf_d, thickness=m.shelf, grain="none",
             notes="on shelf pins",
+            # The front edge (along the shelf width) shows and is banded.
+            banded_edges="L" if spec.edge_banding else "",
         ))
         cl.hardware.append(Hardware("Shelf pin", spec.shelves * 4, "5mm"))
 
@@ -629,18 +697,25 @@ def generate_cutlist(spec) -> CutList:
             f"Drawer front #{dr.index}", 1,
             length=dr.width, width=dr.height, thickness=dr.thickness,
             material="door/front", notes=note,
+            # A sheet-good front shows on all four edges → band all round.
+            banded_edges="LLSS" if spec.edge_banding else "",
         ))
         if dr.false_front:
             continue  # fixed panel: no box, no slides
-        # The drawer box itself, sized for slide and depth clearance.
-        _add_drawer_box(cl, spec, dr.index, plan.opening_w, dr.height,
-                        interior_depth)
         sdr = spec.drawers[dr.index - 1] if dr.index - 1 < len(spec.drawers) else None
+        spec_slide_len = float(getattr(sdr, "slide_length", 0.0) or 0.0)
+        # The drawer box itself, sized for slide and depth clearance. When no
+        # slide length is given, the box depth snaps to a real (orderable) slide.
+        chosen = _add_drawer_box(cl, spec, dr.index, plan.opening_w, dr.height,
+                                 interior_depth, spec_slide_len)
+        slide_len = spec_slide_len or chosen
         slide = select_slide(
-            brand, str(getattr(sdr, "slide_type", "side_mount")),
-            float(getattr(sdr, "slide_length", 0.0) or 0.0))
+            brand, str(getattr(sdr, "slide_type", "side_mount")), slide_len)
+        slide_note = (f"{slide.name} — {slide.length:.0f}mm"
+                      if slide.length else slide.name)
         cl.hardware.append(Hardware(
-            "Drawer slide (pair)", 1, slide.name, sku=slide.sku, brand=slide.brand))
+            "Drawer slide (pair)", 1, slide_note, sku=slide.sku,
+            brand=slide.brand))
         if slide.locking_holes:
             cl.hardware.append(Hardware(
                 "Drawer slide locking device (pair)", 1,
@@ -689,11 +764,13 @@ def generate_cutlist(spec) -> CutList:
     # ---- carcass assembly hardware (estimate from joinery) --------------
     _add_assembly_hardware(cl, spec)
 
-    # ---- edge banding (rough running length on exposed front edges) -----
+    # ---- edge banding ---------------------------------------------------
+    # The actual run is summed per material from each part's banded_edges (see
+    # CutList.banding_breakdown / the estimate); this BOM line flags that banding
+    # is ordered and where it goes.
     if spec.edge_banding:
-        # Front edges of the two sides + bottom + stretcher front.
         cl.hardware.append(Hardware(
-            "Edge banding", 1, "match carcass front edges (see estimate for run)",
+            "Edge banding", 1, "match shown panel faces (see estimate for run)",
         ))
 
     # Solid-wood carcass: edge-glue the sheet panels from boards. Triggered by an

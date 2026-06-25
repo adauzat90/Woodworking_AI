@@ -96,6 +96,13 @@ class SheetGroup:
 
 
 @dataclass
+class BandingGroup:
+    """Edge banding to order, per stock it must match."""
+    stock: str
+    metres: float
+
+
+@dataclass
 class LumberGroup:
     material: str
     thickness: float
@@ -140,6 +147,7 @@ class Estimate:
     labour_cost: float
     lumber_groups: list[LumberGroup] = field(default_factory=list)
     lumber_cost: float = 0.0
+    banding_groups: list[BandingGroup] = field(default_factory=list)
     finish_cost: float = 0.0
     finish_m2: float = 0.0
     currency: str = "$"
@@ -188,6 +196,11 @@ class Estimate:
             f"  hardware:        {c}{self.hardware_cost:8.2f}",
             f"  edge banding:    {c}{self.edge_banding_cost:8.2f} "
             f"({banding})",
+        ]
+        for bg in self.banding_groups:
+            lines.append(
+                f"    {bg.stock:<22} {format_run_mm(bg.metres * 1000.0, unit)}")
+        lines += [
             f"  labour:          {c}{self.labour_cost:8.2f} "
             f"({self.labour_hours:.1f} h @ {c}{self._rate:.0f}/h)",
         ]
@@ -225,6 +238,7 @@ def pack_sheets(rects: list[tuple], sheet: SheetSize
 
 
 def _edge_banding_metres(spec: CabinetSpec) -> float:
+    """Rough banding run (fallback when no per-edge data is available)."""
     if not getattr(spec, "edge_banding", False):
         return 0.0
     return (2 * spec.box_height + spec.interior_width) / 1000.0
@@ -240,6 +254,7 @@ def _estimate_project(project: ComponentGroup, prices: PriceBook,
     """
     groups: dict[tuple[str, float], SheetGroup] = {}
     lumber: dict[tuple[str, float], LumberGroup] = {}
+    banding: dict[str, float] = {}
     material_cost = hardware_cost = banding_cost = banding_m = 0.0
     labour_hours = labour_cost = lumber_cost = 0.0
     finish_cost = finish_m2 = 0.0
@@ -249,6 +264,8 @@ def _estimate_project(project: ComponentGroup, prices: PriceBook,
         hardware_cost += e.hardware_cost
         banding_cost += e.edge_banding_cost
         banding_m += e.edge_banding_m
+        for bg in e.banding_groups:
+            banding[bg.stock] = banding.get(bg.stock, 0.0) + bg.metres
         labour_hours += e.labour_hours
         labour_cost += e.labour_cost
         lumber_cost += e.lumber_cost
@@ -285,7 +302,9 @@ def _estimate_project(project: ComponentGroup, prices: PriceBook,
         labour_hours=labour_hours, labour_cost=labour_cost,
         lumber_groups=sorted(lumber.values(),
                              key=lambda g: (g.material, g.thickness)),
-        lumber_cost=lumber_cost, finish_cost=finish_cost, finish_m2=finish_m2,
+        lumber_cost=lumber_cost,
+        banding_groups=[BandingGroup(k, banding[k]) for k in sorted(banding)],
+        finish_cost=finish_cost, finish_m2=finish_m2,
     )
     est._rate = prices.shop_rate_per_hour
     return est
@@ -355,8 +374,16 @@ def estimate(spec, *, cutlist: CutList | None = None,
         prices.hardware_price.get(h.name, 0.0) * h.qty for h in cl.hardware
     )
 
-    # Edge banding.
-    banding_m = _edge_banding_metres(spec)
+    # Edge banding. Prefer the actual banded-edge run from the cut list (per
+    # material), so the quote bands exactly the edges the build rules show; fall
+    # back to the rough whole-cabinet estimate for legacy parts with no per-edge
+    # data.
+    banding_groups = [BandingGroup(g["stock"], g["metres"])
+                      for g in cl.banding_breakdown()]
+    if banding_groups:
+        banding_m = cl.total_banding_m
+    else:
+        banding_m = _edge_banding_metres(spec)
     banding_cost = banding_m * prices.edge_banding_per_m
 
     # Labour.
@@ -378,6 +405,7 @@ def estimate(spec, *, cutlist: CutList | None = None,
         edge_banding_cost=banding_cost, edge_banding_m=banding_m,
         labour_hours=hours, labour_cost=labour_cost,
         lumber_groups=lumber_groups, lumber_cost=lumber_cost,
+        banding_groups=banding_groups,
         finish_cost=fin_cost, finish_m2=fin_m2,
     )
     est._rate = prices.shop_rate_per_hour

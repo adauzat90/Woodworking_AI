@@ -84,6 +84,22 @@ def fits_standard_sheet(length: float, width: float,
     return long_side <= sheet[0] + 1e-6 and short_side <= sheet[1] + 1e-6
 
 
+def actual_sheet_thickness(nominal: float, tol: float = THICKNESS_TOL) -> float:
+    """The thickness a nominal sheet *actually* machines to (mm).
+
+    Sheet goods are sold nominal (¾" / 18mm) but arrive thinner after sanding —
+    nominal 3/4" is ~18.3mm, an 18mm metric panel is 18.0mm. Joinery cut "to the
+    mating thickness" must use this actual value to seat snug. When *nominal*
+    already matches an imperial nominal entry within tolerance, the mapped actual
+    is returned; otherwise the value is taken as already-actual and returned as
+    given (an 18.0mm metric panel is its own actual thickness).
+    """
+    for actual in PLYWOOD_NOMINAL_ACTUAL_MM.values():
+        if abs(actual - nominal) <= tol:
+            return actual
+    return float(nominal)
+
+
 def required_quarter(finished_thickness: float) -> tuple[str, float] | None:
     """Smallest hardwood quarter whose *surfaced* thickness yields the finished
     dimension. Returns (name, surfaced_mm), or None if beyond 12/4 (must

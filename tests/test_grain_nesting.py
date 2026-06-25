@@ -57,3 +57,31 @@ def test_estimate_still_produces_sheets_for_a_cabinet():
                        drawers=[Drawer(front_height=150)])
     est = estimate(spec)
     assert est.total_sheets >= 1
+
+
+# --- C3: grain lock is honoured during cabinet nesting ----------------------
+
+def test_length_grain_gable_never_rotates_even_when_rotation_would_fit():
+    # A 2300x900 length-grain gable would fit a 1220-wide sheet only by rotating
+    # (2300 along the 2440 length); the grain lock must forbid that rotation, so
+    # it reports oversize instead of silently crossing the grain on a visible
+    # face. The free (isotropic) pack of the same panel fits by rotating.
+    sheet = SheetSize(length=2440, width=1220, kerf=0)
+    free, free_over = pack([(900, 2300, "g", "none", "")], sheet)
+    assert not free_over and free, "isotropic panel fits by rotating"
+    locked, locked_over = pack([(900, 2300, "g", "length", "")], sheet)
+    assert locked_over == ["g"], "length-grain gable is not rotated to fit"
+
+
+def test_cabinet_gables_carry_length_grain_into_the_pack():
+    from woodworking_ai import generate_cutlist
+    spec = CabinetSpec(width=600, height=720, depth=560, doors=2)
+    cl = generate_cutlist(spec)
+    side = next(p for p in cl.parts if p.name == "Side")
+    assert side.grain == "length", "gable grain must run along its height"
+    # And the lock survives into a placed nest: the gable keeps length>=width
+    # in the orientation chosen for it (never rotated to width-along-length).
+    sheet = SheetSize(length=2440, width=1220, kerf=0)
+    placed, _ = pack([(side.length, side.width, "Side", side.grain, "")], sheet)
+    (_, _, l, w, _) = placed[0][0]
+    assert (l, w) == (side.length, side.width)

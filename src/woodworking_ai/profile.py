@@ -51,6 +51,11 @@ class ShopProfile:
     reveal: float = 3.0
     edge_banding: bool = True
     carcass_thickness: float = 18.0
+    # The thickness the carcass sheet *actually* machines to (mm). A nominal ¾"
+    # panel is sold as 18mm but arrives ~18.3mm; joinery cut "to the mating
+    # thickness" must use this actual value to seat snug. 0 = use the nominal
+    # carcass_thickness as-is (a true 18.0mm metric panel is its own actual).
+    carcass_thickness_actual: float = 0.0
 
     # --- hardware ------------------------------------------------------------
     hardware_brand: str = "generic"   # generic | blum | hettich | grass
@@ -70,6 +75,7 @@ class ShopProfile:
             "reveal": self.reveal,
             "edge_banding": self.edge_banding,
             "carcass_thickness": self.carcass_thickness,
+            "carcass_thickness_actual": self.carcass_thickness_actual,
             "hardware_brand": self.hardware_brand,
             "prices": pricebook_to_dict(self.prices),
             "sheet": sheetsize_to_dict(self.sheet),
@@ -87,6 +93,8 @@ class ShopProfile:
             p.reveal = float(data["reveal"])
         if isinstance(data.get("carcass_thickness"), (int, float)):
             p.carcass_thickness = float(data["carcass_thickness"])
+        if isinstance(data.get("carcass_thickness_actual"), (int, float)):
+            p.carcass_thickness_actual = float(data["carcass_thickness_actual"])
         if "edge_banding" in data:
             p.edge_banding = bool(data["edge_banding"])
         if data.get("prices"):
@@ -129,7 +137,11 @@ class ShopProfile:
         mat = data.get("material")
         if not isinstance(mat, dict):
             mat = {}
-        mat.setdefault("carcass", self.carcass_thickness)
+        # Pin the carcass to the stock's *actual* machining thickness when the
+        # shop has measured it, so joinery cut "to the mating thickness" seats
+        # snug; otherwise fall back to the nominal carcass thickness.
+        actual = self.carcass_thickness_actual
+        mat.setdefault("carcass", actual if actual > 0 else self.carcass_thickness)
         data["material"] = mat
         return data
 

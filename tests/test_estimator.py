@@ -130,3 +130,28 @@ def test_board_foot_price_changes_lumber_cost():
     spec = base_spec(construction="face_frame")
     assert estimate(spec, prices=dear).lumber_cost > \
         estimate(spec, prices=base).lumber_cost
+
+
+# --- C2: per-edge edge banding by material ----------------------------------
+
+def test_banding_groups_sum_to_total_metres():
+    e = estimate(base_spec(doors=2, shelves=1, edge_banding=True))
+    assert e.banding_groups, "banded edges should produce per-material groups"
+    total = sum(g.metres for g in e.banding_groups)
+    assert total == pytest.approx(e.edge_banding_m)
+    assert e.edge_banding_cost == pytest.approx(
+        e.edge_banding_m * PriceBook().edge_banding_per_m)
+
+
+def test_banding_metres_match_cutlist_edges():
+    from woodworking_ai import generate_cutlist
+    spec = base_spec(doors=2, shelves=1, edge_banding=True)
+    cl = generate_cutlist(spec)
+    e = estimate(spec)
+    assert e.edge_banding_m == pytest.approx(cl.total_banding_m)
+
+
+def test_no_banding_groups_when_disabled():
+    e = estimate(base_spec(edge_banding=False))
+    assert e.banding_groups == []
+    assert e.edge_banding_m == 0.0

@@ -31,6 +31,20 @@ PLATE_SCREW_INSET = 37.0   # plate screw row in from the front edge of the side
 
 KNOWN_BRANDS = ("generic", "blum", "hettich", "grass")
 
+# Standard drawer-slide lengths a shop can actually order (metric, mm). A box is
+# sized to one of these — you cannot buy an arbitrary length. Imperial slides map
+# onto the same set: 18"≈450, 20"≈500, 22"≈550, 24"≈600 (also 250/300/350/400).
+STANDARD_SLIDE_LENGTHS = (250.0, 300.0, 350.0, 400.0, 450.0, 500.0, 550.0, 600.0)
+
+
+def longest_slide_for(max_length: float) -> float:
+    """Longest standard slide length that fits within *max_length* (mm).
+
+    Returns 0.0 when even the shortest standard slide is too long for the space.
+    """
+    fitting = [s for s in STANDARD_SLIDE_LENGTHS if s <= max_length]
+    return max(fitting) if fitting else 0.0
+
 
 def normalize_brand(brand: str | None) -> str:
     b = str(brand or "generic").strip().lower()
