@@ -90,6 +90,17 @@ class TopFixing(StrEnum):
     FIXED = "fixed"           # rigid — cracks a solid top across the grain
 
 
+class ApplianceType(StrEnum):
+    SINK = "sink"             # drop-in/undermount, hosted by a countertop cutout
+    COOKTOP = "cooktop"       # surface unit, also a countertop cutout
+    RANGE = "range"           # slide-in/freestanding stove — occupies a GAP
+    WALL_OVEN = "wall_oven"   # built into a tall cabinet opening
+    DISHWASHER = "dishwasher" # occupies a GAP under the counter, not a box
+    FRIDGE = "fridge"         # freestanding/built-in, occupies a GAP
+    MICROWAVE = "microwave"   # built-in / over-the-range
+    HOOD = "hood"             # range hood / extractor
+
+
 def _coerce_enum(enum_cls: type[Enum], value: Any, *, aliases: dict | None = None):
     """Best-effort coerce *value* to *enum_cls*.
 
@@ -202,6 +213,56 @@ class Drawer:
         self.dovetail_tails = _coerce_enum(
             DovetailTails, self.dovetail_tails, aliases={"side": "sides"})
         self.slide_type = _coerce_enum(SlideType, self.slide_type)
+
+
+@dataclass
+class Appliance:
+    """A typed kitchen appliance hosted by a cabinet/run.
+
+    A first-class form of the loose ``{"kind": "appliance", ...}`` accessory
+    dict. ``cutout_w``/``cutout_d`` size the opening it needs (a sink/cooktop
+    cutout in a countertop; a gap width for a range/dishwasher/fridge);
+    ``width``/``height``/``depth`` are the appliance's own envelope. Adds no
+    cut-list part — it's a hole/void the validator sanity-checks. ``panel_ready``
+    marks an appliance (e.g. a dishwasher) that takes a custom finish panel.
+    """
+    type: ApplianceType = ApplianceType.SINK
+    width: float = 0.0
+    height: float = 0.0
+    depth: float = 0.0
+    cutout_w: float = 0.0
+    cutout_d: float = 0.0
+    panel_ready: bool = False
+
+    def __post_init__(self) -> None:
+        self.type = _coerce_enum(ApplianceType, self.type)
+
+    def to_dict(self) -> dict[str, Any]:
+        d = asdict(self)
+        d["kind"] = "appliance"      # round-trips into the accessories list
+        d["type"] = self.type.value if isinstance(self.type, Enum) else self.type
+        return d
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Appliance":
+        known = {f for f in cls.__dataclass_fields__}
+        return cls(**{k: v for k, v in data.items() if k in known})
+
+
+def appliances_of(spec) -> list[Appliance]:
+    """Yield the typed :class:`Appliance` objects on *spec*'s accessories.
+
+    Bridges the loose list-of-dicts ``accessories`` form to typed appliances:
+    each ``{"kind": "appliance", ...}`` dict (or an already-:class:`Appliance`)
+    is normalized to an :class:`Appliance`. Other accessory kinds are skipped.
+    """
+    out: list[Appliance] = []
+    for a in getattr(spec, "accessories", None) or []:
+        if isinstance(a, Appliance):
+            out.append(a)
+        elif isinstance(a, dict) and str(a.get("kind", "")).lower() == "appliance":
+            out.append(Appliance.from_dict(a))
+    return out
 
 
 def _to_mm(d: dict, fields: tuple[str, ...]) -> None:
