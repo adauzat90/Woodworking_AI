@@ -9,13 +9,16 @@ include it. Pure arithmetic — no CAD dependency.
 
 from __future__ import annotations
 
-# Optional bridge to the species database (owned by another workstream, H5). If
-# it ships a richer per-species finishing note we prefer it; otherwise we fall
-# back to the local table below. Never a hard dependency.
+# Optional bridge to the species database (H5). The species DB is the authority
+# on which finishing *class* a wood falls in (blotch / oily / open-pore); we own
+# the wording and the fact that a wood can fall in more than one class at once
+# (walnut is oily *and* open-pore), which the DB's single note can't express. So
+# we take the DB's classification and add it to our own, then render our notes.
+# Never a hard dependency — absent, only the local lists below classify.
 try:  # pragma: no cover - exercised only when species.py exists
-    from .species import finishing_note as _sp_note
+    from .species import finishing_category as _sp_category
 except Exception:  # species module absent or has no such helper
-    _sp_note = None
+    _sp_category = None
 
 # (grit sequence, total coats, description). Coats count sealer/primer + topcoats.
 FINISHES = {
@@ -70,25 +73,38 @@ _OPEN_PORE_NOTE = ("open-pore — grain-fill for a glass-smooth finish (or "
                    "leave the texture if you want an open-grain look).")
 
 
+# Finishing classes (match species.FINISH_* values) → our note wording.
+_CLASS_NOTE = {
+    "blotch-prone": _BLOTCH_NOTE, "oily": _OILY_NOTE, "open-pore": _OPEN_PORE_NOTE,
+}
+
+
 def _species_note(species: str) -> str | None:
-    """Finishing note for one *species*, or None. Prefers the H5 database."""
+    """Finishing note(s) for one *species*, or None.
+
+    Classifies the wood from our local lists *and* the H5 species database (a
+    wood can be in more than one class — walnut is oily and open-pore), then
+    renders our wording in a stable order.
+    """
     sp = str(species or "").strip().lower()
     if not sp:
         return None
-    if _sp_note is not None:                       # pragma: no cover
+    classes: set[str] = set()
+    if any(sp == w or sp.endswith(" " + w) for w in _BLOTCH_PRONE):
+        classes.add("blotch-prone")
+    if any(sp == w or sp.endswith(" " + w) for w in _OILY):
+        classes.add("oily")
+    if any(sp == w or sp.endswith(" " + w) for w in _OPEN_PORE):
+        classes.add("open-pore")
+    if _sp_category is not None:                    # pragma: no cover
         try:
-            note = _sp_note(sp)
-            if note:
-                return note
+            cat = _sp_category(sp)
+            if cat in _CLASS_NOTE:
+                classes.add(cat)
         except Exception:
             pass
-    hits = []
-    if any(sp == w or sp.endswith(" " + w) for w in _BLOTCH_PRONE):
-        hits.append(_BLOTCH_NOTE)
-    if any(sp == w or sp.endswith(" " + w) for w in _OILY):
-        hits.append(_OILY_NOTE)
-    if any(sp == w or sp.endswith(" " + w) for w in _OPEN_PORE):
-        hits.append(_OPEN_PORE_NOTE)
+    hits = [_CLASS_NOTE[c] for c in ("blotch-prone", "oily", "open-pore")
+            if c in classes]
     if not hits:
         return None
     return f"{species.strip().title()}: " + " ".join(hits)
