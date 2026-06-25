@@ -443,6 +443,16 @@ def panel_layout(spec) -> list[PanelBox]:
     return panels
 
 
+def _digits(s: str, default: int = 0) -> int:
+    """Integer formed from every digit in *s* (``"Drawer 2 box"`` -> 2).
+
+    One definition of the index-from-label idiom that used to be hand-inlined
+    in several places. Returns *default* when *s* has no digits.
+    """
+    d = "".join(c for c in s if c.isdigit())
+    return int(d) if d else default
+
+
 def _unit_sort_key(name: str) -> tuple:
     """Canonical build order for sub-assemblies (Carcass first, trim last)."""
     n = name.lower()
@@ -451,8 +461,7 @@ def _unit_sort_key(name: str) -> tuple:
     if n == "face frame":
         return (1, 0, name)
     if n.startswith("drawer"):
-        digits = "".join(c for c in n if c.isdigit())
-        return (2, int(digits) if digits else 0, name)
+        return (2, _digits(n), name)
     if n.startswith("door"):
         return (3, 0, name)
     if n == "countertop":
@@ -490,12 +499,10 @@ def _explode_offset(p: PanelBox, dims: tuple[float, float, float],
             W * 0.4 * f if u.endswith(" R") else -W * 0.25 * f)
         return (hx, -D * 0.95 * f, 0.0)           # doors swing off the front
     if u.startswith("Drawer"):
-        digits = "".join(c for c in u if c.isdigit())
-        i = int(digits) if digits else 1
+        i = _digits(u, 1)
         return (0.0, -D * (0.45 + 0.4 * i) * f, 0.0)   # drawers pull forward
     if cat == "shelf":
-        digits = "".join(c for c in p.label if c.isdigit())
-        i = int(digits) if digits else 1
+        i = _digits(p.label, 1)
         return (0.0, -D * 0.2 * f, H * 0.18 * i * f)   # shelves lift + forward
     if cat == "toe":
         return (0.0, -D * 0.2 * f, -H * 0.3 * f)
