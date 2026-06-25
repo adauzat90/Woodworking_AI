@@ -182,10 +182,11 @@ class Assembly:
     spec: Any
     prices: Any = None
     sheet: Any = None
+    tooling: Any = None
 
     @cached_property
     def validation(self):
-        return validate(self.spec)
+        return validate(self.spec, tooling=self.tooling)
 
     @cached_property
     def critique(self):
@@ -213,18 +214,19 @@ class Assembly:
         return assembly_plan(self.spec)
 
 
-def assemble(spec, *, prices=None, sheet=None) -> Assembly:
+def assemble(spec, *, prices=None, sheet=None, tooling=None) -> Assembly:
     """Run (lazily) the design pipeline for *spec* once, returning live objects.
 
     The single entry point both the CLI and :func:`build_result` use so the two
     front ends can never drift on defaults or skip a stage. ``prices``/``sheet``
-    override the costing defaults when supplied.
+    override the costing defaults when supplied; ``tooling`` (a
+    :class:`~tooling.ShopTooling`) constrains validation to makeable joinery.
     """
-    return Assembly(spec, prices=prices, sheet=sheet)
+    return Assembly(spec, prices=prices, sheet=sheet, tooling=tooling)
 
 
 def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
-                 prices=None, sheet=None) -> dict[str, Any]:
+                 prices=None, sheet=None, tooling=None) -> dict[str, Any]:
     """Full design bundle for *spec* — a cabinet, table, or whole project.
 
     Always JSON-serialisable; aggregate stages (cut list, cost, drilling,
@@ -232,7 +234,7 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
     run bundle. ``prices`` (a :class:`PriceBook`) and ``sheet`` (a
     :class:`SheetSize`) override the costing defaults when supplied.
     """
-    asm = assemble(spec, prices=prices, sheet=sheet)
+    asm = assemble(spec, prices=prices, sheet=sheet, tooling=tooling)
     v = asm.validation
     result: dict[str, Any] = {
         "spec": spec.to_dict(),
@@ -241,6 +243,15 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
         "errors": [{"field": i.field, "message": i.message} for i in v.errors],
         "advisories": [{"field": i.field, "message": i.message} for i in v.infos],
     }
+
+    # Tool/jig checklist for the build — marked owned/missing when an inventory
+    # was given, otherwise just the list of what the joinery needs.
+    from .tooling import tools_needed
+    result["tools"] = [
+        {"operation": t.operation, "tool": t.tool, "where": t.where,
+         "owned": t.owned}
+        for t in tools_needed(spec, tooling)
+    ]
     if not v.ok:
         # A broken spec: report the errors, skip the expensive downstream work.
         return _clean(result)

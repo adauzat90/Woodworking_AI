@@ -52,12 +52,20 @@ def design_from_prompt(
     max_attempts: int = 3,
     model: str | None = None,
     run_critic: bool = True,
+    tooling=None,
 ) -> DesignResult:
     """Run the NL -> DSL design loop with validate-and-repair.
 
     When ``run_critic`` is set, a spec that passes validation is additionally
-    built and critiqued; geometry problems are fed back for repair too.
+    built and critiqued; geometry problems are fed back for repair too. When a
+    :class:`~tooling.ShopTooling` inventory is given, the agent is told to use
+    only joinery the shop can make, and the same constraint is enforced in
+    validation so an infeasible joint is repaired like any other problem.
     """
+    system = SYSTEM_PROMPT
+    if tooling is not None:
+        from ..tooling import designer_constraint
+        system = SYSTEM_PROMPT + "\n" + designer_constraint(tooling)
     messages: list[dict[str, str]] = [{"role": "user", "content": prompt}]
     raw_responses: list[str] = []
     last_spec: CabinetSpec | TableSpec | Project | Assembly | None = None
@@ -65,7 +73,7 @@ def design_from_prompt(
     last_critique: CritiqueResult | None = None
 
     for attempt in range(1, max_attempts + 1):
-        text = llm.complete(SYSTEM_PROMPT, messages, model=model)
+        text = llm.complete(system, messages, model=model)
         raw_responses.append(text)
 
         try:
@@ -83,7 +91,7 @@ def design_from_prompt(
             })
             continue
 
-        result = validate(spec)
+        result = validate(spec, tooling=tooling)
         last_spec, last_validation = spec, result
 
         if result.ok:

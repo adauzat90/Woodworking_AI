@@ -344,7 +344,18 @@ def joinery_feasibility(spec) -> list[Issue]:
     return issues
 
 
-def validate(spec) -> ValidationResult:
+def validate(spec, *, tooling=None) -> ValidationResult:
+    """Validate *spec*; when a :class:`~tooling.ShopTooling` inventory is given,
+    also flag any joinery the declared tools can't make (advisory)."""
+    result = _validate_core(spec)
+    if tooling is not None:
+        from .tooling import tooling_advisories
+        for severity, field_, msg in tooling_advisories(spec, tooling):
+            result.issues.append(Issue(severity, field_, msg))
+    return result
+
+
+def _validate_core(spec) -> ValidationResult:
     kind = spec_kind(spec)
     if kind == VOID:
         return _validate_void(spec)

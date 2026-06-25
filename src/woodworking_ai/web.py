@@ -196,6 +196,17 @@ def _profile_of(body) -> ShopProfile | None:
     return profile_from_dict(body.profile) if body.profile else None
 
 
+def _tooling_of(body):
+    """The shop tooling inventory from *body*'s profile, or ``None``.
+
+    ``None`` means "design against any joinery" (unchanged behaviour); a
+    declared inventory constrains validation and the AI designer to makeable
+    joints.
+    """
+    prof = _profile_of(body)
+    return prof.tooling if prof else None
+
+
 def _pricing_overrides(body):
     """Pull optional ``prices`` / ``sheet`` overrides from a request body.
 
@@ -234,7 +245,8 @@ def api_build(body: BuildRequest) -> JSONResponse:
     prices, sheet = _pricing_overrides(body)
     try:
         return JSONResponse(build_result(
-            spec, want_glb=body.glb, prices=prices, sheet=sheet))
+            spec, want_glb=body.glb, prices=prices, sheet=sheet,
+            tooling=_tooling_of(body)))
     except Exception:  # defensive: never 500 with a stack trace
         logger.exception("build failed")
         raise HTTPException(status_code=500, detail="build failed")
@@ -252,13 +264,16 @@ def api_design(body: DesignRequest) -> JSONResponse:
             detail="LLM unavailable: install 'anthropic' and set ANTHROPIC_API_KEY",
         )
     from .agents import design_from_prompt
+    tooling = _tooling_of(body)
     try:
-        res = design_from_prompt(prompt, max_attempts=body.attempts)
+        res = design_from_prompt(prompt, max_attempts=body.attempts,
+                                 tooling=tooling)
     except Exception:  # surface a generic agent error to the UI
         logger.exception("designer failed")
         raise HTTPException(status_code=502, detail="designer failed")
     prices, sheet = _pricing_overrides(body)
-    bundle = build_result(res.spec, want_glb=body.glb, prices=prices, sheet=sheet)
+    bundle = build_result(res.spec, want_glb=body.glb, prices=prices, sheet=sheet,
+                          tooling=tooling)
     bundle["attempts"] = res.attempts
     return JSONResponse(bundle)
 

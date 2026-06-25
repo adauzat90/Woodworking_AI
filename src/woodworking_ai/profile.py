@@ -25,6 +25,7 @@ from .estimator import (
     PriceBook, SheetSize, pricebook_to_dict, pricebook_from_dict,
     sheetsize_to_dict, sheetsize_from_dict,
 )
+from .tooling import ShopTooling, tooling_to_dict, tooling_from_dict
 
 # Cabinet fields the profile may default when a spec omits them. Each maps a
 # spec key to the profile attribute that supplies the fallback value.
@@ -64,6 +65,12 @@ class ShopProfile:
     prices: PriceBook = field(default_factory=PriceBook)
     sheet: SheetSize = field(default_factory=SheetSize)
 
+    # --- tooling inventory (optional) ----------------------------------------
+    # What tools the shop owns. ``None`` = unconstrained (design uses any
+    # joinery). Set it to have the validator flag joints you can't make and the
+    # AI designer pick only joints you can cut.
+    tooling: ShopTooling | None = None
+
     # ---- serialization ------------------------------------------------------
 
     # ``prices``/``sheet`` are nested dataclasses with their own (de)serializers;
@@ -72,6 +79,7 @@ class ShopProfile:
     _NESTED = {
         "prices": (pricebook_to_dict, pricebook_from_dict),
         "sheet": (sheetsize_to_dict, sheetsize_from_dict),
+        "tooling": (tooling_to_dict, tooling_from_dict),
     }
 
     def to_dict(self) -> dict:
