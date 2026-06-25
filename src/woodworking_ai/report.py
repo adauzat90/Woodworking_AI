@@ -443,6 +443,20 @@ def build_package_pdf(spec, units: str = "metric") -> bytes:
              for o in drill.ops]))
     story.append(PageBreak())
 
+    # N · Appliance schedule — only when the design has appliances ---------
+    from .appliances import appliance_schedule
+    appliances = appliance_schedule(spec)
+    if appliances:
+        heading("Appliance schedule")
+        story.append(Paragraph(
+            "Each appliance, where it lives, and the rough-in the trades need to "
+            "bring to the opening before the cabinets close it in.", small))
+        story.append(tbl(
+            ["Type", "Host", "Cutout", "Clearances", "Panels", "Rough-in"],
+            [[a["type"], a["host"], a["cutout"], a["clearances"],
+              a["panels"], a["rough_in"]] for a in appliances]))
+        story.append(PageBreak())
+
     # 5..N · Build each sub-assembly from the cut, processed parts --------
     for sub in plan.subassemblies:
         if sub.name in ("Preparation", "Final assembly"):
