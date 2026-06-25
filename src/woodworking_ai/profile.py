@@ -69,32 +69,33 @@ class ShopProfile:
     units: str = "mm"                 # mm | in
 
     # --- pricing & stock -----------------------------------------------------
-    prices: PriceBook = field(default_factory=PriceBook)
-    sheet: SheetSize = field(default_factory=SheetSize)
+    # Nested dataclasses carry their own (de)serializers in field metadata
+    # (``serde``), so the serde pairing lives next to the field — no parallel
+    # table to keep in sync. Every other field is a scalar driven straight off
+    # ``fields()``.
+    prices: PriceBook = field(
+        default_factory=PriceBook,
+        metadata={"serde": (pricebook_to_dict, pricebook_from_dict)})
+    sheet: SheetSize = field(
+        default_factory=SheetSize,
+        metadata={"serde": (sheetsize_to_dict, sheetsize_from_dict)})
 
     # --- tooling inventory (optional) ----------------------------------------
     # What tools the shop owns. ``None`` = unconstrained (design uses any
     # joinery). Set it to have the validator flag joints you can't make and the
     # AI designer pick only joints you can cut.
-    tooling: ShopTooling | None = None
+    tooling: ShopTooling | None = field(
+        default=None,
+        metadata={"serde": (tooling_to_dict, tooling_from_dict)})
 
     # ---- serialization ------------------------------------------------------
-
-    # ``prices``/``sheet`` are nested dataclasses with their own (de)serializers;
-    # every other field is a scalar driven straight off ``fields()`` so the list
-    # lives in exactly one place — the dataclass definition above.
-    _NESTED = {
-        "prices": (pricebook_to_dict, pricebook_from_dict),
-        "sheet": (sheetsize_to_dict, sheetsize_from_dict),
-        "tooling": (tooling_to_dict, tooling_from_dict),
-    }
 
     def to_dict(self) -> dict:
         out: dict = {}
         for f in fields(self):
             value = getattr(self, f.name)
-            to_d = self._NESTED.get(f.name)
-            out[f.name] = to_d[0](value) if to_d else value
+            serde = f.metadata.get("serde")
+            out[f.name] = serde[0](value) if serde else value
         return out
 
     @classmethod
@@ -105,10 +106,10 @@ class ShopProfile:
         for f in fields(p):
             if f.name not in data:
                 continue
-            nested = cls._NESTED.get(f.name)
-            if nested:
+            serde = f.metadata.get("serde")
+            if serde:
                 if data.get(f.name):
-                    setattr(p, f.name, nested[1](data[f.name]))
+                    setattr(p, f.name, serde[1](data[f.name]))
                 continue
             # Coerce by the field's own type — bool before float (bool is an int
             # subclass), then float (any number), then str — matching the prior

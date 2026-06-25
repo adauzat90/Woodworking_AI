@@ -166,6 +166,17 @@ def test_material_label_tables_use_canonical_vocabulary():
     assert set(PriceBook().sheet_price) <= MATERIAL_LABELS
 
 
+def test_appliance_facet_tables_key_off_one_vocabulary():
+    # Void widths (dsl), rough-in + clearance guidance (appliances) are separate
+    # *facets* keyed by the same ApplianceType vocabulary. Guard that none drifts
+    # to an unknown appliance type.
+    from woodworking_ai.dsl import ApplianceType, APPLIANCE_VOID_WIDTHS
+    from woodworking_ai.appliances import _ROUGH_IN, _CLEARANCES
+    known = {t.value for t in ApplianceType}
+    for table in (APPLIANCE_VOID_WIDTHS, _ROUGH_IN, _CLEARANCES):
+        assert set(table) <= known, f"unknown appliance type in {set(table) - known}"
+
+
 def test_llm_model_is_resolved_at_call_time(monkeypatch):
     # get_model() reads WOODAI_MODEL when called, not once at import.
     monkeypatch.delenv("WOODAI_MODEL", raising=False)
