@@ -9,18 +9,50 @@ from __future__ import annotations
 import json
 import os
 import re
-from typing import Any
+from typing import Any, Protocol, runtime_checkable
 
-# Sensible default; override with WOODAI_MODEL. Opus for the strongest design
-# reasoning; set e.g. claude-sonnet-4-6 for cheaper/faster runs.
-DEFAULT_MODEL = os.environ.get("WOODAI_MODEL", "claude-opus-4-8")
+# Static fallback model; override per-run with WOODAI_MODEL (read at call time by
+# get_model(), so a post-import env change takes effect). Opus for the strongest
+# design reasoning; set e.g. claude-sonnet-4-6 for cheaper/faster runs.
+DEFAULT_MODEL = "claude-opus-4-8"
+
+
+def get_model() -> str:
+    """The model id to use, resolved at call time (env may change post-import)."""
+    return os.environ.get("WOODAI_MODEL") or DEFAULT_MODEL
 
 
 class LLMError(RuntimeError):
     pass
 
 
-def get_client() -> Any:
+@runtime_checkable
+class LLMClient(Protocol):
+    """The slice of the Anthropic client this package depends on.
+
+    Anything exposing a ``messages.create(...)`` returning a response with
+    ``.content`` text blocks satisfies it — so a test fake or a second provider
+    can be injected via :func:`set_client` without importing the SDK.
+    """
+
+    @property
+    def messages(self) -> Any: ...
+
+
+# Optional injected client (a fake in tests, or a second provider). When unset,
+# get_client() builds the real Anthropic client lazily.
+_client: "LLMClient | None" = None
+
+
+def set_client(client: "LLMClient | None") -> None:
+    """Inject (or, with ``None``, reset) the LLM client used by this module."""
+    global _client
+    _client = client
+
+
+def get_client() -> "LLMClient":
+    if _client is not None:
+        return _client
     try:
         import anthropic  # type: ignore
     except ImportError as exc:
@@ -39,7 +71,7 @@ def complete(system: str, messages: list[dict[str, str]],
     """Send a chat completion and return the assistant's text."""
     client = get_client()
     resp = client.messages.create(
-        model=model or DEFAULT_MODEL,
+        model=model or get_model(),
         max_tokens=max_tokens,
         system=system,
         messages=messages,
@@ -56,7 +88,7 @@ def complete_with_image(system: str, user_text: str, image_bytes: bytes,
     client = get_client()
     b64 = base64.standard_b64encode(image_bytes).decode("ascii")
     resp = client.messages.create(
-        model=model or DEFAULT_MODEL,
+        model=model or get_model(),
         max_tokens=max_tokens,
         system=system,
         messages=[{

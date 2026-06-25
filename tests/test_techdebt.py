@@ -166,6 +166,47 @@ def test_material_label_tables_use_canonical_vocabulary():
     assert set(PriceBook().sheet_price) <= MATERIAL_LABELS
 
 
+def test_llm_model_is_resolved_at_call_time(monkeypatch):
+    # get_model() reads WOODAI_MODEL when called, not once at import.
+    monkeypatch.delenv("WOODAI_MODEL", raising=False)
+    assert llm.get_model() == llm.DEFAULT_MODEL
+    monkeypatch.setenv("WOODAI_MODEL", "claude-sonnet-4-6")
+    assert llm.get_model() == "claude-sonnet-4-6"
+
+
+def test_llm_client_is_injectable(monkeypatch):
+    # A fake client can be injected without the SDK or an API key, and the
+    # requested model flows through to it.
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    seen = {}
+
+    class _Block:
+        type = "text"
+        text = "hello"
+
+    class _Resp:
+        content = [_Block()]
+
+    class _Messages:
+        def create(self, **kw):
+            seen.update(kw)
+            return _Resp()
+
+    class _Fake:
+        messages = _Messages()
+
+    fake = _Fake()
+    assert isinstance(fake, llm.LLMClient)
+    llm.set_client(fake)
+    try:
+        out = llm.complete("sys", [{"role": "user", "content": "hi"}],
+                           model="claude-haiku-4-5-20251001")
+    finally:
+        llm.set_client(None)
+    assert out == "hello"
+    assert seen["model"] == "claude-haiku-4-5-20251001"
+
+
 def test_generated_part_materials_are_canonical():
     # Every material a real cut list produces is a canonical label (or a declared
     # physical form like "plywood"); none is an ad-hoc string.
