@@ -28,6 +28,7 @@ import math
 from dataclasses import dataclass, field
 
 from .cutlist import CutList, generate_cutlist, Part
+from .materials import MAT_DOOR_FRONT
 from .dispatch import spec_kind, VOID
 from .packing import pack_into_bin
 
@@ -353,7 +354,7 @@ def _explode(parts: list[Part]) -> list[tuple]:
     items = []
     for p in parts:
         code = f"{p.id} " if p.id else ""
-        seq = "front" if p.material == "door/front" else ""
+        seq = "front" if p.material == MAT_DOOR_FRONT else ""
         for i in range(p.qty):
             label = (f"{code}{p.name}" if p.qty == 1
                      else f"{code}{p.name} {i + 1}")

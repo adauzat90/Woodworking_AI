@@ -9,6 +9,11 @@ include it. Pure arithmetic — no CAD dependency.
 
 from __future__ import annotations
 
+from .materials import (
+    MAT_BACK, MAT_DRAWER_BOX, MAT_DOOR_FRONT, MAT_DOOR_PANEL, MAT_FRAME,
+    MAT_TOP, MAT_LEG, MAT_APRON, MAT_COUNTERTOP, MAT_MOLDING,
+)
+
 # Optional bridge to the species database (H5). The species DB is the authority
 # on which finishing *class* a wood falls in (blotch / oily / open-pore); we own
 # the wording and the fact that a wood can fall in more than one class at once
@@ -144,9 +149,9 @@ def species_finishing_notes(spec) -> list[str]:
     return notes
 
 # How many faces of a part see finish, by material.
-_HIDDEN = {"back panel", "drawer box"}
-_BOTH_FACES = {"door/front", "door panel", "frame", "top", "leg", "apron",
-               "countertop", "molding"}
+_HIDDEN = {MAT_BACK, MAT_DRAWER_BOX}
+_BOTH_FACES = {MAT_DOOR_FRONT, MAT_DOOR_PANEL, MAT_FRAME, MAT_TOP, MAT_LEG,
+               MAT_APRON, MAT_COUNTERTOP, MAT_MOLDING}
 
 
 def _faces(material: str) -> float:

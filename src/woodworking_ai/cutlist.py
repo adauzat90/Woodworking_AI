@@ -32,10 +32,15 @@ from .hardware import (
     select_hinge, select_slide, select_pull, hinge_count,
     longest_slide_for, CONFIRMAT, ASSEMBLY_SCREW,
 )
+from .materials import (
+    MAT_BACK, MAT_DOOR_FRONT, MAT_DOOR_PANEL, MAT_DRAWER_BOX, MAT_COUNTERTOP,
+    MAT_MOLDING, MAT_FRAME, MAT_SOLID_PANEL, MAT_TOP, MAT_LEG, MAT_APRON,
+)
 
 # Materials cut from solid/dimensional lumber rather than sheet goods. A shop
 # buys these by the board foot (and often by the running length), not the sheet.
-SOLID_LUMBER_MATERIALS = frozenset({"frame", "top", "leg", "apron", "solid panel"})
+SOLID_LUMBER_MATERIALS = frozenset(
+    {MAT_FRAME, MAT_TOP, MAT_LEG, MAT_APRON, MAT_SOLID_PANEL})
 # One board foot is 144 cubic inches; expressed in mm³ for our mm-native parts.
 BOARD_FOOT_MM3 = 144.0 * (25.4 ** 3)   # ≈ 2_359_737.2 mm³
 
@@ -155,15 +160,15 @@ def _derive_category(p: "Part") -> str:
     n = p.name.lower()
     if "box" in n and "drawer" in n:
         return "drawer_box"
-    if p.material in ("countertop", "molding"):
+    if p.material in (MAT_COUNTERTOP, MAT_MOLDING):
         return "accessory"
-    if p.material in ("door/front", "door panel"):
+    if p.material in (MAT_DOOR_FRONT, MAT_DOOR_PANEL):
         return "front"
-    if p.material == "frame":
+    if p.material == MAT_FRAME:
         return "frame"
-    if p.material in ("top", "leg", "apron"):
+    if p.material in (MAT_TOP, MAT_LEG, MAT_APRON):
         return "solid"
-    if p.material == "back panel":
+    if p.material == MAT_BACK:
         return "back"
     if "shelf" in n:
         return "shelf"
@@ -193,7 +198,7 @@ def resolve_part_stock(parts: list["Part"], spec) -> None:
             if "accessory" in table:
                 p.form, p.species = resolve(spec, "accessory")
             continue
-        area = "door_panel" if p.material == "door panel" else \
+        area = "door_panel" if p.material == MAT_DOOR_PANEL else \
             _CATEGORY_TO_AREA.get(cat, "carcass")
         p.form, p.species = resolve(spec, area)
 
@@ -404,7 +409,7 @@ def _expand_glue_ups(cl: "CutList", board_width: float = GLUE_UP_BOARD_WIDTH) ->
             glue_m = (n - 1) * p.length / 1000.0
             new_parts.append(Part(
                 f"{p.name} board", p.qty * n, length=p.length, width=bw,
-                thickness=p.thickness, material="solid panel", grain="length",
+                thickness=p.thickness, material=MAT_SOLID_PANEL, grain="length",
                 notes=f"glue-up: {n} boards/panel, ~{glue_m:.1f}m glue line"))
         else:
             new_parts.append(p)
@@ -437,15 +442,15 @@ def _add_drawer_box(cl: "CutList", spec: CabinetSpec, index: int,
             side_note = f"grooved for bottom; sized for {chosen:.0f}mm slide"
     cl.parts.append(Part(
         f"Drawer {index} box side", 2, length=box_d, width=box_h, thickness=t,
-        material="drawer box", grain="none", notes=side_note,
+        material=MAT_DRAWER_BOX, grain="none", notes=side_note,
     ))
     cl.parts.append(Part(
         f"Drawer {index} box front/back", 2, length=box_w - 2 * t, width=box_h,
-        thickness=t, material="drawer box", grain="none",
+        thickness=t, material=MAT_DRAWER_BOX, grain="none",
     ))
     cl.parts.append(Part(
         f"Drawer {index} box bottom", 1, length=box_w, width=box_d,
-        thickness=m.back, material="back panel", grain="none",
+        thickness=m.back, material=MAT_BACK, grain="none",
         notes="captured in groove",
     ))
     return chosen
@@ -465,26 +470,26 @@ def _add_door_parts(cl: "CutList", spec: CabinetSpec, doors, front_note: str) ->
     if style == "slab":
         cl.parts.append(Part(
             "Door", n, length=d0.height, width=d0.width, thickness=m.door,
-            material="door/front", notes=f"{front_note} slab ({n})",
+            material=MAT_DOOR_FRONT, notes=f"{front_note} slab ({n})",
             # A sheet-good slab door shows on all four edges → band all round.
             banded_edges="LLSS" if spec.edge_banding else ""))
         return
     # Five-piece frame-and-panel door.
     cl.parts.append(Part(
         "Door stile", 2 * n, length=d0.height, width=DOOR_STILE_WIDTH,
-        thickness=m.door, material="door/front", grain="length",
+        thickness=m.door, material=MAT_DOOR_FRONT, grain="length",
         notes=f"{style} door, vertical"))
     rail_len = d0.width - 2 * DOOR_STILE_WIDTH + 2 * DOOR_PANEL_GROOVE
     cl.parts.append(Part(
         "Door rail", 2 * n, length=max(rail_len, 50.0), width=DOOR_RAIL_WIDTH,
-        thickness=m.door, material="door/front",
+        thickness=m.door, material=MAT_DOOR_FRONT,
         notes="cope-and-stick into stiles"))
     panel_h = d0.height - 2 * DOOR_RAIL_WIDTH + 2 * DOOR_PANEL_GROOVE
     panel_w = d0.width - 2 * DOOR_STILE_WIDTH + 2 * DOOR_PANEL_GROOVE
     solid = style == "raised_panel"
     cl.parts.append(Part(
         "Door panel", n, length=max(panel_h, 50.0), width=max(panel_w, 50.0),
-        thickness=m.door_panel, material="door panel", grain="length",
+        thickness=m.door_panel, material=MAT_DOOR_PANEL, grain="length",
         notes="raised, solid" if solid else "flat panel, floats in groove"))
 
 
@@ -545,7 +550,7 @@ def _diagonal_cutlist(spec: CabinetSpec) -> CutList:
         cl.hardware.append(Hardware("Shelf pin", spec.shelves * 4, "5mm"))
     door_len = max(c * math.sqrt(2) - 2 * spec.reveal, 50.0)
     cl.parts.append(Part("Door", 1, length=box_h - 2 * spec.reveal, width=door_len,
-                         thickness=m.door, material="door/front",
+                         thickness=m.door, material=MAT_DOOR_FRONT,
                          notes="angled 45° door"))
     cl.hardware.append(Hardware("Concealed hinge", 2, "soft-close"))
     cl.hardware.append(Hardware("Door pull", 1))
@@ -568,18 +573,18 @@ def _table_cutlist(spec: TableSpec) -> CutList:
         glue_m = (n - 1) * spec.width / 1000.0
         cl.parts.append(Part(
             "Top board", n, length=spec.width, width=bw,
-            thickness=spec.top_thickness, material="top", grain="length",
+            thickness=spec.top_thickness, material=MAT_TOP, grain="length",
             notes=f"edge-glued top: {n} boards, ~{glue_m:.1f}m glue line"))
     else:
         cl.parts.append(Part("Top", 1, length=spec.width, width=spec.depth,
-                             thickness=spec.top_thickness, material="top",
+                             thickness=spec.top_thickness, material=MAT_TOP,
                              notes="solid/sheet top"))
     cl.parts.append(Part("Leg", 4, length=leg_h, width=leg, thickness=leg,
-                         material="leg", notes="square stock"))
+                         material=MAT_LEG, notes="square stock"))
     cl.parts.append(Part("Apron (long)", 2, length=apron_x, width=spec.apron_height,
-                         thickness=spec.apron_thickness, material="apron"))
+                         thickness=spec.apron_thickness, material=MAT_APRON))
     cl.parts.append(Part("Apron (short)", 2, length=apron_y, width=spec.apron_height,
-                         thickness=spec.apron_thickness, material="apron"))
+                         thickness=spec.apron_thickness, material=MAT_APRON))
     cl.hardware.append(Hardware("Corner bracket", 4, "leg-to-apron"))
     cl.hardware.append(Hardware("Tabletop fastener", 8, "expansion clip"))
     resolve_part_stock(cl.parts, spec)
@@ -692,7 +697,7 @@ def _cabinet_cutlist(spec) -> CutList:
         back_note = f"{spec.back.value} back"
     cl.parts.append(Part(
         "Back", 1, length=max(back_l, back_w), width=min(back_l, back_w),
-        thickness=m.back, material="back panel", grain="none", notes=back_note,
+        thickness=m.back, material=MAT_BACK, grain="none", notes=back_note,
     ))
 
     # ---- shelves --------------------------------------------------------
@@ -720,12 +725,12 @@ def _cabinet_cutlist(spec) -> CutList:
     if is_ff:
         cl.parts.append(Part(
             "Face-frame stile", 2, length=box_height, width=FRAME_WIDTH,
-            thickness=FRAME_THICKNESS, material="frame", grain="length",
+            thickness=FRAME_THICKNESS, material=MAT_FRAME, grain="length",
             notes="vertical, hardwood",
         ))
         cl.parts.append(Part(
             "Face-frame rail", 2, length=spec.width - 2 * FRAME_WIDTH,
-            width=FRAME_WIDTH, thickness=FRAME_THICKNESS, material="frame",
+            width=FRAME_WIDTH, thickness=FRAME_THICKNESS, material=MAT_FRAME,
             notes="top & bottom, hardwood",
         ))
 
@@ -740,7 +745,7 @@ def _cabinet_cutlist(spec) -> CutList:
     if filler is not None:
         cl.parts.append(Part(
             "Blind filler", 1, length=filler.height, width=filler.width,
-            thickness=filler.thickness, material="door/front",
+            thickness=filler.thickness, material=MAT_DOOR_FRONT,
             notes="covers blind return",
         ))
 
@@ -749,7 +754,7 @@ def _cabinet_cutlist(spec) -> CutList:
         cl.parts.append(Part(
             f"Drawer front #{dr.index}", 1,
             length=dr.width, width=dr.height, thickness=dr.thickness,
-            material="door/front", notes=note,
+            material=MAT_DOOR_FRONT, notes=note,
             # A sheet-good front shows on all four edges → band all round.
             banded_edges="LLSS" if spec.edge_banding else "",
         ))
@@ -786,12 +791,12 @@ def _cabinet_cutlist(spec) -> CutList:
             cl.parts.append(Part(
                 "Face-frame center stile", 1, length=mullion.height,
                 width=mullion.width, thickness=mullion.thickness,
-                material="frame", notes="between doors",
+                material=MAT_FRAME, notes="between doors",
             ))
         else:
             cl.parts.append(Part(
                 "Mullion", 1, length=mullion.height, width=mullion.width,
-                thickness=mullion.thickness, material="door/front",
+                thickness=mullion.thickness, material=MAT_DOOR_FRONT,
                 notes="center post",
             ))
 

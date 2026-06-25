@@ -20,6 +20,8 @@ validator (e.g. a sink cutout must fit the cabinet). Pure data — no CAD.
 
 from __future__ import annotations
 
+from .materials import MAT_COUNTERTOP, MAT_DOOR_FRONT, MAT_FRAME, MAT_MOLDING
+
 
 def _num(d: dict, key: str, default: float) -> float:
     v = d.get(key, default)
@@ -96,20 +98,20 @@ def add_accessory_parts(cl, spec) -> None:
                 note += f" — sink/cooktop cutout ({sizes})"
             cl.parts.append(Part(
                 "Countertop", 1, length=spec.width, width=depth + overhang,
-                thickness=thick, material="countertop", grain="length",
+                thickness=thick, material=MAT_COUNTERTOP, grain="length",
                 notes=note, openings=cutouts))
         elif kind == "filler":
             w = _num(a, "width", 75.0)
             side = str(a.get("side", ""))
             cl.parts.append(Part(
                 "Filler", 1, length=spec.box_height, width=w,
-                thickness=spec.material.carcass, material="frame", grain="length",
+                thickness=spec.material.carcass, material=MAT_FRAME, grain="length",
                 notes=f"scribe to wall{f' ({side})' if side else ''}"))
         elif kind == "end_panel":
             side = str(a.get("side", ""))
             cl.parts.append(Part(
                 "End panel", 1, length=spec.box_height, width=spec.depth,
-                thickness=spec.material.door, material="door/front", grain="length",
+                thickness=spec.material.door, material=MAT_DOOR_FRONT, grain="length",
                 notes=f"finished exposed side{f' ({side})' if side else ''}"))
         elif kind == "molding":
             mtype = str(a.get("type", "crown"))
@@ -117,7 +119,7 @@ def add_accessory_parts(cl, spec) -> None:
             cl.parts.append(Part(
                 f"{mtype.replace('_', ' ').title()} molding", 1,
                 length=spec.width, width=height, thickness=spec.material.carcass,
-                material="molding", grain="length",
+                material=MAT_MOLDING, grain="length",
                 notes=str(a.get("profile", "")) or mtype))
         # "appliance" adds no part — it's the cutout, checked by the validator.
 

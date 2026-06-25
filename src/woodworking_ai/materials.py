@@ -13,6 +13,32 @@ CAD, no heavy imports — so it is fast and trivially unit-testable.
 
 from __future__ import annotations
 
+# --- material *usage labels* ------------------------------------------------
+# A Part.material value (and the key the stock descriptions / finish face-count
+# sets / estimator price book share). Defined once here so producers (cutlist,
+# furniture_types, accessories) and every consumer reference one symbol — a
+# rename can no longer silently desync finishing, stock, or pricing.
+MAT_SHEET = "sheet"
+MAT_BACK = "back panel"
+MAT_DOOR_FRONT = "door/front"
+MAT_DOOR_PANEL = "door panel"
+MAT_DRAWER_BOX = "drawer box"
+MAT_COUNTERTOP = "countertop"
+MAT_MOLDING = "molding"
+MAT_FRAME = "frame"
+MAT_SOLID_PANEL = "solid panel"
+MAT_TOP = "top"
+MAT_LEG = "leg"
+MAT_APRON = "apron"
+MAT_SOLID = "solid"
+
+# Every canonical usage label, for drift-guard tests.
+MATERIAL_LABELS = frozenset({
+    MAT_SHEET, MAT_BACK, MAT_DOOR_FRONT, MAT_DOOR_PANEL, MAT_DRAWER_BOX,
+    MAT_COUNTERTOP, MAT_MOLDING, MAT_FRAME, MAT_SOLID_PANEL, MAT_TOP, MAT_LEG,
+    MAT_APRON, MAT_SOLID,
+})
+
 # Sheet goods are bought by the sheet; "solid" is lumber bought by the board
 # foot. Mirrors dsl.MATERIAL_FORMS (kept here too to avoid an import cycle).
 SHEET_FORMS = ("plywood", "mdf", "particleboard", "melamine", "hardboard")

@@ -20,6 +20,7 @@ from .dsl import (CabinetSpec, TableSpec, Construction)
 from .dispatch import spec_kind, VOID, GROUP, TABLE, CABINET
 from . import furniture
 from .cutlist import generate_cutlist
+from .materials import (MAT_SHEET, MAT_BACK, MAT_DOOR_FRONT, MAT_DOOR_PANEL, MAT_DRAWER_BOX, MAT_COUNTERTOP, MAT_MOLDING, MAT_FRAME, MAT_SOLID_PANEL, MAT_TOP, MAT_SOLID)
 from .geometry import component_tag
 
 
@@ -234,18 +235,18 @@ def _classify_parts(parts) -> dict[str, list[str]]:
         return any(s in n for s in subs)
 
     groups = {
-        "drawer_box": ids_where(lambda p: p.material == "drawer box"
+        "drawer_box": ids_where(lambda p: p.material == MAT_DRAWER_BOX
                                 or (name_has(p, "drawer") and name_has(p, "box"))),
-        "door": ids_where(lambda p: p.material in ("door/front", "door panel")
+        "door": ids_where(lambda p: p.material in (MAT_DOOR_FRONT, MAT_DOOR_PANEL)
                           and name_has(p, "door")),
-        "frame": ids_where(lambda p: p.material == "frame"),
-        "accessory": ids_where(lambda p: p.material in ("countertop", "molding")
+        "frame": ids_where(lambda p: p.material == MAT_FRAME),
+        "accessory": ids_where(lambda p: p.material in (MAT_COUNTERTOP, MAT_MOLDING)
                                or name_has(p, "filler", "end panel")),
         "shelves": ids_where(lambda p: name_has(p, "shelf")),
         "toe": ids_where(lambda p: name_has(p, "toe")),
-        "back": ids_where(lambda p: p.material == "back panel"
+        "back": ids_where(lambda p: p.material == MAT_BACK
                           and not name_has(p, "drawer")),
-        "sides": ids_where(lambda p: p.material == "sheet" and name_has(p, "side")
+        "sides": ids_where(lambda p: p.material == MAT_SHEET and name_has(p, "side")
                            and not name_has(p, "drawer")),
     }
     claimed = set(groups["drawer_box"] + groups["door"] + groups["frame"]
@@ -254,7 +255,7 @@ def _classify_parts(parts) -> dict[str, list[str]]:
     # Carcass: the structural box panels not claimed by another sub-assembly.
     groups["carcass"] = ids_where(
         lambda p: p.id not in claimed
-        and p.material in ("sheet", "solid panel")
+        and p.material in (MAT_SHEET, MAT_SOLID_PANEL)
         and not name_has(p, "drawer front"))
     return groups
 
@@ -313,7 +314,7 @@ def _cabinet_plan(spec: CabinetSpec, cl) -> list[SubAssembly]:
             len(carc.steps) + 1, "Attach the toe kick",
             "Fix the toe kick to the cabinet base.", toe, category="carcass"))
     # A solid-wood (edge-glued) carcass has wide cross-grain panels to watch.
-    carc_cross_grain = any(by_id[i].material in ("solid panel", "solid")
+    carc_cross_grain = any(by_id[i].material in (MAT_SOLID_PANEL, MAT_SOLID)
                            for i in carcass if i in by_id)
     _augment_glue_up(carc, by_id, sorted(set(carcass + back)),
                      category="carcass", cross_grain=carc_cross_grain)
@@ -442,7 +443,7 @@ def _table_plan(spec: TableSpec, cl) -> list[SubAssembly]:
               "sand level.", top, category="carcass"),
     ]
     # A solid edge-glued top is the canonical wide cross-grain panel.
-    top_cross_grain = any(by_id[i].material in ("top", "solid panel", "solid")
+    top_cross_grain = any(by_id[i].material in (MAT_TOP, MAT_SOLID_PANEL, MAT_SOLID)
                           for i in top if i in by_id)
     _augment_glue_up(top_sub, by_id, top, category="carcass",
                      cross_grain=top_cross_grain)

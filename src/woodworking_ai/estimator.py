@@ -19,6 +19,10 @@ from dataclasses import dataclass, field
 from .dsl import CabinetSpec, ComponentGroup
 from .dispatch import spec_kind, VOID, GROUP
 from .cutlist import CutList, generate_cutlist
+from .materials import (
+    MAT_SHEET, MAT_BACK, MAT_DOOR_FRONT, MAT_DOOR_PANEL, MAT_DRAWER_BOX,
+    MAT_FRAME, MAT_COUNTERTOP, MAT_MOLDING, MAT_TOP, MAT_LEG, MAT_APRON,
+)
 from .packing import pack
 
 
@@ -34,10 +38,10 @@ class PriceBook:
     """All prices are defaults you can override; currency-agnostic."""
     # Full-sheet price keyed by the cut list's `material` label.
     sheet_price: dict[str, float] = field(default_factory=lambda: {
-        "sheet": 70.0, "back panel": 30.0, "door/front": 95.0,
-        "door panel": 60.0, "drawer box": 55.0, "frame": 40.0,
-        "countertop": 180.0, "molding": 25.0,        # accessories
-        "top": 110.0, "leg": 35.0, "apron": 35.0,   # table stock
+        MAT_SHEET: 70.0, MAT_BACK: 30.0, MAT_DOOR_FRONT: 95.0,
+        MAT_DOOR_PANEL: 60.0, MAT_DRAWER_BOX: 55.0, MAT_FRAME: 40.0,
+        MAT_COUNTERTOP: 180.0, MAT_MOLDING: 25.0,    # accessories
+        MAT_TOP: 110.0, MAT_LEG: 35.0, MAT_APRON: 35.0,   # table stock
     })
     sheet_price_default: float = 70.0
     # Full-sheet price by physical *form* — used when a part declares its form
@@ -350,7 +354,7 @@ def estimate(spec, *, cutlist: CutList | None = None,
         groups.setdefault(key, [])
         # Door/drawer fronts cut from one sheet in sequence for a grain/colour
         # match; grain locks each part's orientation on the sheet.
-        seq = "front" if p.material == "door/front" else ""
+        seq = "front" if p.material == MAT_DOOR_FRONT else ""
         groups[key].extend([(p.length, p.width, p.grain, seq)] * p.qty)
 
     sheet_groups: list[SheetGroup] = []

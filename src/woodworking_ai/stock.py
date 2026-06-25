@@ -9,6 +9,12 @@ All lengths in mm.
 
 from __future__ import annotations
 
+from .materials import (
+    MAT_SHEET, MAT_BACK, MAT_DOOR_FRONT, MAT_DOOR_PANEL, MAT_DRAWER_BOX,
+    MAT_COUNTERTOP, MAT_MOLDING, MAT_FRAME, MAT_SOLID_PANEL, MAT_TOP, MAT_LEG,
+    MAT_APRON,
+)
+
 # Sheet-good thicknesses commonly stocked (metric). Imperial plywood maps to
 # these actual thicknesses (e.g. nominal 3/4" ≈ 18mm, 1/2" ≈ 12mm).
 SHEET_THICKNESSES_MM = (6.0, 9.0, 12.0, 15.0, 18.0, 21.0, 25.0)
@@ -42,18 +48,18 @@ THICKNESS_TOL = 1.0  # mm tolerance when matching a spec thickness to stock
 # box", ...). For a shopping list those read like part names, so map each to the
 # raw stock a shop actually buys plus the typical product. (name, typical_product)
 STOCK_DESCRIPTIONS: dict[str, tuple[str, str]] = {
-    "sheet": ("Carcass sheet", "plywood / MDF / melamine"),
-    "back panel": ("Back & drawer-bottom panel", "thin ply or hardboard"),
-    "door/front": ("Door & drawer-front panel", "veneer ply / MDF"),
-    "door panel": ("Door centre-panel stock", "thin ply or solid"),
-    "drawer box": ("Drawer-box sheet", "Baltic birch / solid"),
-    "countertop": ("Countertop slab", "laminate / solid surface / butcher block"),
-    "molding": ("Molding stock", "solid profile"),
-    "frame": ("Face-frame hardwood", "solid stock"),
-    "solid panel": ("Solid-wood boards", "for edge-glued panels"),
-    "top": ("Tabletop stock", "solid / sheet"),
-    "leg": ("Leg stock", "solid hardwood"),
-    "apron": ("Apron stock", "solid hardwood"),
+    MAT_SHEET: ("Carcass sheet", "plywood / MDF / melamine"),
+    MAT_BACK: ("Back & drawer-bottom panel", "thin ply or hardboard"),
+    MAT_DOOR_FRONT: ("Door & drawer-front panel", "veneer ply / MDF"),
+    MAT_DOOR_PANEL: ("Door centre-panel stock", "thin ply or solid"),
+    MAT_DRAWER_BOX: ("Drawer-box sheet", "Baltic birch / solid"),
+    MAT_COUNTERTOP: ("Countertop slab", "laminate / solid surface / butcher block"),
+    MAT_MOLDING: ("Molding stock", "solid profile"),
+    MAT_FRAME: ("Face-frame hardwood", "solid stock"),
+    MAT_SOLID_PANEL: ("Solid-wood boards", "for edge-glued panels"),
+    MAT_TOP: ("Tabletop stock", "solid / sheet"),
+    MAT_LEG: ("Leg stock", "solid hardwood"),
+    MAT_APRON: ("Apron stock", "solid hardwood"),
 }
 
 

@@ -147,3 +147,30 @@ def test_front_plan_is_pure_and_repeatable():
     a = front_plan(_spec(doors=2, drawers=[Drawer(150)]))
     b = front_plan(_spec(doors=2, drawers=[Drawer(150)]))
     assert [vars(i) for i in a.items] == [vars(i) for i in b.items]
+
+
+# --- one shared material-usage-label vocabulary --------------------------
+# The stock descriptions, finish face-count sets, and estimator price book all
+# key off Part.material. They now reference the canonical labels in materials.py,
+# so a rename can't silently desync them. These guards lock that in.
+
+def test_material_label_tables_use_canonical_vocabulary():
+    from woodworking_ai.materials import MATERIAL_LABELS
+    from woodworking_ai.stock import STOCK_DESCRIPTIONS
+    from woodworking_ai.finishing import _HIDDEN, _BOTH_FACES
+    from woodworking_ai.estimator import PriceBook
+
+    assert set(STOCK_DESCRIPTIONS) <= MATERIAL_LABELS
+    assert _HIDDEN <= MATERIAL_LABELS
+    assert _BOTH_FACES <= MATERIAL_LABELS
+    assert set(PriceBook().sheet_price) <= MATERIAL_LABELS
+
+
+def test_generated_part_materials_are_canonical():
+    # Every material a real cut list produces is a canonical label (or a declared
+    # physical form like "plywood"); none is an ad-hoc string.
+    from woodworking_ai.materials import MATERIAL_LABELS, MATERIAL_FORMS
+    spec = _spec(doors=2, drawers=[Drawer(150)], construction=Construction.FACE_FRAME)
+    allowed = MATERIAL_LABELS | set(MATERIAL_FORMS)
+    for p in generate_cutlist(spec).parts:
+        assert p.material in allowed, f"non-canonical material {p.material!r}"

@@ -17,6 +17,7 @@ import math
 from io import BytesIO
 
 from .cutlist import generate_cutlist
+from .materials import MAT_DOOR_FRONT
 from .estimator import estimate
 from .drilling import drilling_schedule
 from .joinery import joinery_schedule
@@ -104,7 +105,7 @@ def _nest_flowables(cl, avail_w, unit):
         meta[key] = (p.material, p.form, p.species)
         for i in range(p.qty):
             lbl = p.id if p.qty == 1 else f"{p.id}.{i + 1}"
-            seq = "front" if p.material == "door/front" else ""
+            seq = "front" if p.material == MAT_DOOR_FRONT else ""
             items.append((p.length, p.width, lbl, p.grain, seq))
 
     scale = avail_w / sheet.length

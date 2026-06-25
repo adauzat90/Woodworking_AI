@@ -26,6 +26,7 @@ from .dispatch import WALL_SHELF, BOX, BENCH
 from .dsl import WallShelfSpec, BoxSpec, BenchSpec, ShelfFixing
 from .geometry import PanelBox
 from .cutlist import CutList, Part, Hardware, assign_ids, resolve_part_stock
+from .materials import MAT_TOP, MAT_LEG, MAT_APRON, MAT_SOLID
 from .validator import Issue
 from .joinery import JoineryOp
 from .assembly_steps import SubAssembly, step
@@ -92,13 +93,13 @@ def _wall_shelf_cutlist(spec: WallShelfSpec) -> CutList:
     L, D, t = spec.length, spec.depth, spec.thickness
     cl.parts.append(Part(
         "Shelf board", 1, length=L, width=D, thickness=t,
-        material="solid", grain="length", notes="shelf board"))
+        material=MAT_SOLID, grain="length", notes="shelf board"))
 
     fixing = spec.fixing
     if fixing == ShelfFixing.FRENCH_CLEAT:
         ch = spec.cleat_height
         cl.parts.append(Part(
-            "Cleat", 2, length=L, width=ch, thickness=t, material="solid",
+            "Cleat", 2, length=L, width=ch, thickness=t, material=MAT_SOLID,
             grain="length", notes="45° bevel; one to wall, one to shelf"))
         cl.hardware.append(Hardware(
             hw.FRENCH_CLEAT.name, 1, hw.FRENCH_CLEAT.note, sku=hw.FRENCH_CLEAT.sku,
@@ -272,17 +273,17 @@ def _box_cutlist(spec: BoxSpec) -> CutList:
     cj = str(spec.corner_joint).replace("_", " ")
 
     cl.parts.append(Part(
-        "Front/back", 2, length=W, width=bh - t, thickness=t, material="solid",
+        "Front/back", 2, length=W, width=bh - t, thickness=t, material=MAT_SOLID,
         grain="length", notes=f"{cj} corners"))
     cl.parts.append(Part(
-        "Side", 2, length=D - 2 * t, width=bh - t, thickness=t, material="solid",
+        "Side", 2, length=D - 2 * t, width=bh - t, thickness=t, material=MAT_SOLID,
         grain="length", notes=f"{cj} corners"))
     cl.parts.append(Part(
         "Bottom", 1, length=W - 2 * t, width=D - 2 * t, thickness=t,
-        material="solid", grain="length", notes="captured in a groove"))
+        material=MAT_SOLID, grain="length", notes="captured in a groove"))
     if spec.lid:
         cl.parts.append(Part(
-            "Lid", 1, length=W, width=D, thickness=t, material="solid",
+            "Lid", 1, length=W, width=D, thickness=t, material=MAT_SOLID,
             grain="length", notes="hinged lid"))
         n = max(spec.hinges, 2)
         cl.hardware.append(Hardware(
@@ -486,20 +487,20 @@ def _bench_cutlist(spec: BenchSpec) -> CutList:
 
     cl.parts.append(Part(
         "Seat", 1, length=spec.width, width=spec.depth,
-        thickness=spec.top_thickness, material="top", notes="solid/sheet seat"))
+        thickness=spec.top_thickness, material=MAT_TOP, notes="solid/sheet seat"))
     cl.parts.append(Part(
         "Leg", 4, length=leg_h, width=spec.leg, thickness=spec.leg,
-        material="leg", notes="square stock"))
+        material=MAT_LEG, notes="square stock"))
     cl.parts.append(Part(
         "Apron (long)", 2, length=apron_x, width=spec.apron_height,
-        thickness=spec.apron_thickness, material="apron"))
+        thickness=spec.apron_thickness, material=MAT_APRON))
     cl.parts.append(Part(
         "Apron (short)", 2, length=apron_y, width=spec.apron_height,
-        thickness=spec.apron_thickness, material="apron"))
+        thickness=spec.apron_thickness, material=MAT_APRON))
     if spec.stretchers:
         cl.parts.append(Part(
             "Stretcher", 2, length=apron_x, width=spec.stretcher_height,
-            thickness=spec.stretcher_thickness, material="apron",
+            thickness=spec.stretcher_thickness, material=MAT_APRON,
             notes="lower rail, resists racking"))
     cl.hardware.append(Hardware("Corner bracket", 4, "leg-to-apron"))
     cl.hardware.append(Hardware("Seat fastener", 6, "expansion clip"))

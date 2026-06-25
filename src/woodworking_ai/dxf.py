@@ -14,6 +14,7 @@ from pathlib import Path
 
 from .dsl import CabinetSpec
 from .cutlist import CutList, generate_cutlist
+from .materials import MAT_DOOR_FRONT
 from .drilling import (
     placement_rotated, place_rect, drilling_schedule, holes_by_part_id,
     ops_for_instance, place_holes,
@@ -76,7 +77,7 @@ def _cutlist_items(cl: CutList) -> list[tuple]:
     items: list[tuple] = []
     for p in cl.parts:
         code = f"{p.id} " if p.id else ""
-        seq = "front" if p.material == "door/front" else ""
+        seq = "front" if p.material == MAT_DOOR_FRONT else ""
         for i in range(p.qty):
             label = (f"{code}{p.name}" if p.qty == 1
                      else f"{code}{p.name} {i + 1}")
