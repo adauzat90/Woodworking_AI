@@ -24,6 +24,10 @@ from .constants import (
     FRAME_WIDTH, FRAME_THICKNESS,
     SLIDE_SIDE_CLEARANCE, DRAWER_BOX_HEIGHT_DROP, DRAWER_BOX_DEPTH_GAP,
 )
+from .hardware import (
+    select_hinge, select_slide, select_pull, hinge_count,
+    CONFIRMAT, ASSEMBLY_SCREW,
+)
 
 # Materials cut from solid/dimensional lumber rather than sheet goods. A shop
 # buys these by the board foot (and often by the running length), not the sheet.
@@ -139,6 +143,9 @@ class Hardware:
     name: str
     qty: int
     notes: str = ""
+    sku: str = ""               # orderable part number (catalogue), if any
+    brand: str = ""             # hardware brand (blum/hettich/grass/generic)
+    category: str = "hardware"  # hardware | fastener | connector
 
 
 @dataclass
@@ -195,9 +202,10 @@ class CutList:
         return cand.id
 
     def hardware_csv(self) -> str:
-        lines = ["item,qty,notes"]
+        lines = ["item,qty,brand,sku,category,notes"]
         for h in self.hardware:
-            lines.append(f"{h.name},{h.qty},{h.notes}")
+            lines.append(
+                f"{h.name},{h.qty},{h.brand},{h.sku},{h.category},{h.notes}")
         return "\n".join(lines)
 
     def lumber_breakdown(self) -> list[dict]:
@@ -259,6 +267,35 @@ def _add_drawer_box(cl: "CutList", spec: CabinetSpec, index: int,
         thickness=m.back, material="back panel", grain="none",
         notes="captured in groove",
     ))
+
+
+def _add_assembly_hardware(cl: "CutList", spec: CabinetSpec) -> None:
+    """Append carcass assembly hardware (a buyable estimate) for *spec*.
+
+    Knock-down joinery (screw/pocket) uses Confirmats or cam-and-dowel
+    connectors; captured joinery (dado/rabbet/dowel/domino) is glued with a few
+    assembly screws. Counts are per-cabinet estimates a shop rounds up — the
+    point is that the BOM is orderable, not that it is exact to the screw.
+    """
+    j = str(spec.joinery).strip().lower()
+    # Four carcass corners; tall/dressers add fixed shelves/dividers → more.
+    base = 8 if spec.has_full_top else 6
+    if j in ("screw",):
+        cl.hardware.append(Hardware(
+            CONFIRMAT.name, base, CONFIRMAT.note, sku=CONFIRMAT.sku,
+            category="fastener"))
+    elif j in ("pocket",):
+        cl.hardware.append(Hardware(
+            "Pocket screw 1-1/4in", base, "pocket-hole assembly",
+            category="fastener"))
+    else:  # dado / rabbet / dowel / domino / butt: glue + a few screws
+        cl.hardware.append(Hardware(
+            ASSEMBLY_SCREW.name, max(base // 2, 4), "edge fixing + glue",
+            sku=ASSEMBLY_SCREW.sku, category="fastener"))
+    # Back panel fixing (screws/pins around the perimeter).
+    cl.hardware.append(Hardware(
+        "Back panel screw 4×16", 10, "fix back to rear edges",
+        category="fastener"))
 
 
 def _diagonal_cutlist(spec: CabinetSpec) -> CutList:
@@ -427,6 +464,7 @@ def generate_cutlist(spec) -> CutList:
     # the parts list and the 3D model can never disagree about the fronts.
     plan = front_plan(spec)
     front_note = "inset" if is_ff else "overlay"
+    brand = getattr(spec, "hardware_brand", "generic")
 
     filler = next((it for it in plan.items if it.kind == "filler"), None)
     if filler is not None:
@@ -448,8 +486,22 @@ def generate_cutlist(spec) -> CutList:
         # The drawer box itself, sized for slide and depth clearance.
         _add_drawer_box(cl, spec, dr.index, plan.opening_w, dr.height,
                         interior_depth)
-        cl.hardware.append(Hardware("Drawer slide (pair)", 1, "ball-bearing"))
-        cl.hardware.append(Hardware("Drawer pull", 1))
+        sdr = spec.drawers[dr.index - 1] if dr.index - 1 < len(spec.drawers) else None
+        slide = select_slide(
+            brand, str(getattr(sdr, "slide_type", "side_mount")),
+            float(getattr(sdr, "slide_length", 0.0) or 0.0))
+        cl.hardware.append(Hardware(
+            "Drawer slide (pair)", 1, slide.name, sku=slide.sku, brand=slide.brand))
+        if slide.locking_holes:
+            cl.hardware.append(Hardware(
+                "Drawer slide locking device (pair)", 1,
+                f"{slide.rear_notch and 'box rear notch required' or ''}".strip(),
+                brand=slide.brand, category="connector"))
+        pull = select_pull(brand)
+        cl.hardware.append(Hardware(
+            "Drawer pull", 1,
+            f"{pull.hole_spacing:.0f}mm CC" if pull.hole_spacing else "knob",
+            sku=pull.sku, brand=pull.brand))
 
     mullion = plan.mullion
     if mullion is not None:
@@ -474,8 +526,23 @@ def generate_cutlist(spec) -> CutList:
             thickness=d0.thickness, material="door/front",
             notes=f"{front_note} ({len(doors)})",
         ))
-        cl.hardware.append(Hardware("Concealed hinge", len(doors) * 2, "soft-close"))
-        cl.hardware.append(Hardware("Door pull", len(doors)))
+        overlay = "inset" if is_ff else getattr(spec, "hinge_overlay", "overlay")
+        hinge = select_hinge(brand, overlay)
+        n_hinges = len(doors) * hinge_count(d0.height)
+        cl.hardware.append(Hardware(
+            "Concealed hinge", n_hinges, f"{hinge.name} ({overlay})",
+            sku=hinge.sku, brand=hinge.brand))
+        cl.hardware.append(Hardware(
+            "Hinge mounting plate", n_hinges, "one per hinge",
+            sku=hinge.plate_sku, brand=hinge.brand))
+        pull = select_pull(brand)
+        cl.hardware.append(Hardware(
+            "Door pull", len(doors),
+            f"{pull.hole_spacing:.0f}mm CC" if pull.hole_spacing else "knob",
+            sku=pull.sku, brand=pull.brand))
+
+    # ---- carcass assembly hardware (estimate from joinery) --------------
+    _add_assembly_hardware(cl, spec)
 
     # ---- edge banding (rough running length on exposed front edges) -----
     if spec.edge_banding:

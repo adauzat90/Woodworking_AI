@@ -143,7 +143,8 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
         for p in cl.parts
     ]
     result["hardware"] = [
-        {"name": h.name, "qty": h.qty, "notes": h.notes} for h in cl.hardware
+        {"name": h.name, "qty": h.qty, "brand": h.brand, "sku": h.sku,
+         "category": h.category, "notes": h.notes} for h in cl.hardware
     ]
     result["cutlist_summary"] = cl.summary()
 

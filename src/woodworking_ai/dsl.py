@@ -185,6 +185,10 @@ class CabinetSpec:
     shelf_load_kg_per_m: float = 25.0  # distributed shelf load; ~books/dishes
     anti_tip: bool = False           # wall restraint / anti-tip hardware provided
 
+    # --- hardware (optional; drives the catalogue + drilling) ----------------
+    hardware_brand: str = "generic"  # generic | blum | hettich | grass
+    hinge_overlay: str = "overlay"   # overlay | half | inset
+
     @property
     def has_full_top(self) -> bool:
         """Enclosed-top units; base/corner cabinets use top rails instead."""

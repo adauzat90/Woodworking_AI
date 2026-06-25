@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 from .dsl import ComponentGroup
 from .geometry import panel_layout, component_tag
 from .cutlist import generate_cutlist
+from .hardware import hinge_count, select_slide, PLATE_SCREW_INSET
 
 # 32 mm System and boring constants (mm).
 SYSTEM_PITCH = 32.0
@@ -113,15 +114,6 @@ def grid_violations(sched: "DrillingSchedule") -> list[str]:
     return out
 
 
-def hinge_count(door_height: float) -> int:
-    """Number of concealed hinges for a door of this height."""
-    if door_height <= 900:
-        return 2
-    if door_height <= 1600:
-        return 3
-    if door_height <= 2000:
-        return 4
-    return 5
 
 
 def _pin_heights(panel_h: float, max_holes: int = 400) -> list[float]:
@@ -161,7 +153,12 @@ def drilling_schedule(spec) -> DrillingSchedule:
     cl = generate_cutlist(spec)
     pid = cl.part_id_for_label   # resolve a panel label to its cut-list part ID
 
+    brand = getattr(spec, "hardware_brand", "generic")
+    slide_types = {i + 1: str(getattr(d, "slide_type", "side_mount"))
+                   for i, d in enumerate(getattr(spec, "drawers", []))}
+
     sides = [p for p in panels if p.label.startswith("Side")]
+    side_by_hand = {("R" if s.label.endswith("R") else "L"): s for s in sides}
     drawer_fronts = sorted(
         [p for p in panels if p.label.startswith("Drawer front")],
         key=lambda p: p.label,
@@ -182,18 +179,36 @@ def drilling_schedule(spec) -> DrillingSchedule:
                     op.holes.append(Hole(row_name, u, v, PIN_DIA, PIN_DEPTH))
             sched.ops.append(op)
 
-    # --- drawer-slide mounting lines on each side ------------------------
+    # --- drawer-slide mounting on each side ------------------------------
+    # Side-mount slides screw to a mid-height line; undermount slides mount low
+    # with a front bracket and a rear locking device (and the box gets a rear
+    # notch), so the boring differs by slide type.
     for side in sides:
         _, depth, panel_h = side.size
         side_bottom = side.center[2] - panel_h / 2
         for df in drawer_fronts:
             slide_v = df.center[2] - side_bottom        # height up the side
-            op = DrillOp(part=side.label,
-                         operation=f"slide line — {df.label}",
-                         note="ball-bearing slide", part_id=pid(side.label))
-            for d in SLIDE_SCREW_DEPTHS:
-                u = depth / 2 if d == 0.5 else (d if d > 0 else depth + d)
-                op.holes.append(Hole("slide screw", u, slide_v, 4.0, 12.0))
+            idx = int(df.label.split()[-1]) if df.label.split()[-1].isdigit() else 0
+            slide = select_slide(brand, slide_types.get(idx, "side_mount"))
+            if slide.slide_type == "undermount":
+                op = DrillOp(
+                    part=side.label, operation=f"undermount slide — {df.label}",
+                    note=f"{slide.name}; box needs a rear notch",
+                    part_id=pid(side.label))
+                # Front bracket (near the front) + rear locking device.
+                low_v = max(slide_v - 30.0, 10.0)
+                op.holes.append(Hole("front bracket", 37.0, low_v, 4.0, 12.0))
+                op.holes.append(Hole("front bracket", 69.0, low_v, 4.0, 12.0))
+                for k in range(slide.locking_holes):
+                    op.holes.append(Hole("rear locking", depth - 37.0,
+                                         low_v + k * 32.0, 4.0, 12.0))
+            else:
+                op = DrillOp(
+                    part=side.label, operation=f"slide line — {df.label}",
+                    note=slide.name, part_id=pid(side.label))
+                for d in SLIDE_SCREW_DEPTHS:
+                    u = depth / 2 if d == 0.5 else (d if d > 0 else depth + d)
+                    op.holes.append(Hole("slide screw", u, slide_v, 4.0, 12.0))
             sched.ops.append(op)
 
     # --- hinge cup bores on each door ------------------------------------
@@ -214,5 +229,23 @@ def drilling_schedule(spec) -> DrillingSchedule:
             op.holes.append(Hole("hinge cup", u, round(v, 1),
                                  HINGE_CUP_DIA, HINGE_CUP_DEPTH))
         sched.ops.append(op)
+
+        # Mounting-plate screws on the matching cabinet side, at each hinge
+        # height: the plate sits on the side the door hinges to.
+        side = side_by_hand.get("R" if right_hung else "L") \
+            or (sides[0] if sides else None)
+        if side is not None:
+            _, sdepth, spanel_h = side.size
+            side_bottom = side.center[2] - spanel_h / 2
+            door_bottom = door.center[2] - dh / 2
+            pop = DrillOp(
+                part=side.label, operation=f"hinge plate screws — {door.label}",
+                note="2 screws per hinge (32mm system)", part_id=pid(side.label))
+            for v in heights:
+                vv = round(door_bottom + v - side_bottom, 1)
+                pop.holes.append(Hole("plate screw", PLATE_SCREW_INSET, vv, 4.0, 12.0))
+                pop.holes.append(Hole("plate screw",
+                                      PLATE_SCREW_INSET + SYSTEM_PITCH, vv, 4.0, 12.0))
+            sched.ops.append(pop)
 
     return sched

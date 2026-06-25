@@ -34,6 +34,7 @@ _CABINET_DEFAULT_FIELDS = {
     "joinery": "joinery",
     "reveal": "reveal",
     "edge_banding": "edge_banding",
+    "hardware_brand": "hardware_brand",
 }
 
 

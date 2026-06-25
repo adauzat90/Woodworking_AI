@@ -50,15 +50,23 @@ def test_hinge_count_scales_with_height(h, n):
 
 def test_doors_get_hinge_cups():
     sched = drilling_schedule(spec(doors=2))
-    hinge_ops = [op for op in sched.ops if "hinge" in op.operation]
-    assert len(hinge_ops) == 2
-    assert all(h.dia == HINGE_CUP_DIA for op in hinge_ops for h in op.holes)
+    cup_ops = [op for op in sched.ops if "hinge cup" in op.operation]
+    assert len(cup_ops) == 2
+    assert all(h.dia == HINGE_CUP_DIA for op in cup_ops for h in op.holes)
+
+
+def test_doors_get_hinge_mounting_plate_screws():
+    sched = drilling_schedule(spec(doors=2))
+    plate_ops = [op for op in sched.ops if "hinge plate" in op.operation]
+    assert len(plate_ops) == 2, "one plate-screw op per door, on its side"
+    # Plate screws land on the cabinet sides, two per hinge.
+    assert all(op.part.startswith("Side") for op in plate_ops)
 
 
 def test_tall_door_gets_more_hinges():
     tall = spec(cabinet_type=CabinetType.TALL, height=2100, doors=2,
                 toe_kick=ToeKick(100, 50))
-    op = next(o for o in drilling_schedule(tall).ops if "hinge" in o.operation)
+    op = next(o for o in drilling_schedule(tall).ops if "hinge cup" in o.operation)
     assert len(op.holes) >= 4
 
 

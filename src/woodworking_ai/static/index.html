@@ -630,7 +630,8 @@ function paint() {
   } else if (tab === "lumber") {
     h = lumberPane(d);
   } else if (tab === "hardware") {
-    h = table(["Item","Qty","Notes"], d.hardware.map(x=>[x.name,x.qty,x.notes]));
+    h = table(["Item","Qty","Brand","SKU","Notes"],
+      d.hardware.map(x=>[x.name,x.qty,x.brand||"",x.sku||"",x.notes]));
   } else if (tab === "cost") {
     const e = d.estimate, m = v => e.currency + v.toFixed(2);
     const lumberGroups = e.lumber_groups || [];
