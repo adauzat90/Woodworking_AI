@@ -167,6 +167,51 @@ BUTT_HINGE = Fastener("Butt hinge (lid)", "HINGE-BUTT", "lid pivot, mortised")
 LID_SUPPORT = Fastener("Lid-stay / chest support", "LID-STAY",
                        "holds the lid open, soft-close")
 
+# Picture / mirror frame hardware.
+SAWTOOTH_HANGER = Fastener("Sawtooth hanger", "HANG-SAWTOOTH",
+                           "centred on the back top rail; light art only")
+D_RING = Fastener("D-ring strap hanger", "HANG-DRING",
+                  "two, ~1/3 down the side rails")
+HANGING_WIRE = Fastener("Braided picture wire", "HANG-WIRE",
+                        "rated to 2× the frame weight, strung between the D-rings")
+FRAME_CORNER_SPLINE = Fastener("Corner spline / V-nail", "FRAME-SPLINE",
+                               "reinforces each mitered corner")
+GLAZIER_POINT = Fastener("Glazier point / turn button", "FRAME-POINT",
+                         "retains the glazing + backer in the rabbet")
+FRAME_GLAZING = Fastener("Frame glazing (glass/acrylic)", "FRAME-GLAZING",
+                         "cut to the rabbet size")
+FRAME_BACKER = Fastener("Frame backer board", "FRAME-BACKER",
+                        "foam-core / hardboard behind the art")
+
+# Knock-down bed hardware.
+BED_BOLT = Fastener("Bed bolt + cross-dowel nut", "BED-BOLT",
+                    "through the post into a cross-dowel in the rail; comes apart")
+BED_HOOK_PLATE = Fastener("Bed-rail hook plate (pair)", "BED-HOOK",
+                          "interlocking knock-down rail bracket, no tools")
+BED_BOLT_COVER = Fastener("Bed-bolt cover cap", "BED-BOLT-CAP",
+                          "hides the bolt counterbore on the post face")
+
+# Cutting-board hardware.
+BOARD_FOOT = Fastener("Rubber / silicone board feet", "BOARD-FOOT",
+                      "non-slip feet + airflow under the board")
+BOARD_OIL = Fastener("Food-safe board oil + butter", "BOARD-OIL",
+                     "mineral oil / beeswax board butter — re-oil regularly")
+
+# Legged-furniture (nightstand / desk) drawer + leg hardware.
+DRAWER_SLIDE = Fastener("Drawer slide (pair)", "SLIDE-BB",
+                        "ball-bearing full-extension, per drawer")
+DRAWER_PULL = Fastener("Drawer pull / knob", "PULL", "one per drawer front")
+LEG_BRACKET = Fastener("Leg-to-apron bracket", "BRKT-LEG",
+                       "corner bracket + hanger bolt at each leg")
+TABLETOP_FASTENER = Fastener("Tabletop fastener", "FAST-TOP",
+                             "figure-8 / Z-clip; lets a solid top move")
+DESK_GROMMET = Fastener("Cable grommet", "GROMMET",
+                        "plastic/metal ring for the top cable hole")
+
+# Workbench hardware.
+BENCH_VISE = Fastener("Bench vise", "VISE", "front/end vise with screw + guide bars")
+BENCH_DOG = Fastener("Bench dog", "DOG", "round dog for the dog-hole row")
+
 
 def select_hinge(brand: str, overlay: str = "overlay") -> HingeSpec:
     h = _HINGES[normalize_brand(brand)]

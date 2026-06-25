@@ -127,6 +127,10 @@ def test_export_parts_step_stl(tmp_path):
     for p in paths:
         assert p.exists() and p.stat().st_size > 0
         assert p.suffix == ".step"
+        # Each per-part file is a real STEP file, not a truncated/empty write.
+        # (A bare child solid used to fail OpenCascade's STEP writer; the parts
+        # are re-wrapped so every one writes a valid ISO-10303 file.)
+        assert "ISO-10303" in p.read_text(errors="ignore")
     # File names are unique and ordered.
     assert len({p.name for p in paths}) == n_parts
 

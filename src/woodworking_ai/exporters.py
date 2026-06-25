@@ -115,6 +115,28 @@ def _slugify(text: str) -> str:
     return "".join(out).strip("_") or "part"
 
 
+def _as_exportable(part: Any) -> Any:
+    """Re-wrap a single child solid into a standalone exportable compound.
+
+    A bare child taken off an assembled ``Compound`` (e.g. a build123d ``Box``)
+    can fail OpenCascade's STEP writer with "Failed to write STEP file", even
+    though the whole compound writes fine. Wrapping its underlying shape in a
+    fresh ``Compound`` (carrying the part's label) writes reliably and keeps the
+    label on the exported solid. Best-effort: if anything about the re-wrap
+    fails, fall back to the original part so we never lose a part over a wrap.
+    """
+    wrapped = getattr(part, "wrapped", None)
+    if wrapped is None:
+        return part
+    try:
+        import build123d as b3d  # type: ignore
+        comp = b3d.Compound(wrapped)
+        comp.label = getattr(part, "label", "") or ""
+        return comp
+    except Exception:  # pragma: no cover - defensive; keep the original part
+        return part
+
+
 def _export_parts(model: Any, out_dir: str | Path, fn, ext: str) -> list[Path]:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -123,7 +145,7 @@ def _export_parts(model: Any, out_dir: str | Path, fn, ext: str) -> list[Path]:
     for i, part in enumerate(children, start=1):
         label = getattr(part, "label", "") or f"part{i}"
         name = f"{i:02d}_{_slugify(label)}.{ext}"
-        paths.append(fn(part, out_dir / name))
+        paths.append(fn(_as_exportable(part), out_dir / name))
     return paths
 
 

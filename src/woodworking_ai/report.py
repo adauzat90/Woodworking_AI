@@ -533,6 +533,42 @@ def build_template_pdf(spec, part_id: str | None = None,
     label = f"{part.id} {part.name}"
     size_txt = (f"{format_length(part.length, units, mark=True)} x "
                 f"{format_length(part.width, units, mark=True)}")
+
+    # --- calibration cover page: verify the printer is at 100% before cutting --
+    # A wrong printer scale ("fit to page") silently shrinks the template; a
+    # measured reference square catches it. Drawn at true size: 100mm and 4in.
+    c.setFont("Helvetica-Bold", 14)
+    c.setFillColorRGB(0, 0, 0)
+    c.drawString(margin, page_h - margin - 14, f"1:1 Template - {label}")
+    c.setFont("Helvetica", 9)
+    c.setFillColorRGB(0.25, 0.25, 0.25)
+    intro = [
+        f"Finished size: {size_txt}.  Tiles: {rows} row(s) x {cols} col(s).",
+        "1. Print at 100% / Actual size - NOT 'fit to page'.",
+        "2. Measure the squares below; if they're off, fix the print scale.",
+        "3. Trim each tile to the corner ticks, tape the grid together.",
+        "4. Spray-glue to the stock and cut/mark to the line.",
+    ]
+    ty = page_h - margin - 34
+    for line in intro:
+        c.drawString(margin, ty, line)
+        ty -= 13
+
+    def _check_square(x, y, side_mm, caption):
+        c.setLineWidth(1.0)
+        c.setStrokeColorRGB(0, 0, 0)
+        s = side_mm * pt_per_mm
+        c.rect(x, y, s, s, stroke=1, fill=0)
+        c.setFont("Helvetica", 8)
+        c.setFillColorRGB(0.2, 0.2, 0.2)
+        c.drawString(x, y - 11, caption)
+
+    base_y = ty - 30 - 100 * pt_per_mm
+    _check_square(margin, base_y, 100.0, "100 mm - measure me")
+    _check_square(margin + 100 * pt_per_mm + 40, base_y, 25.4 * 4,
+                  "4 in - measure me")
+    c.showPage()
+
     for r in range(rows):
         for col in range(cols):
             # This tile's origin in part space (pt) from the part's bottom-left;

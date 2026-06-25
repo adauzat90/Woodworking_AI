@@ -5,6 +5,11 @@ engineering work, written against the current codebase. It is the sequel to
 [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) (the "shop product" workstream,
 ✅ complete) and picks up where the **shop-tooling inventory** left off.
 
+> **Most of the H-series below is now shipped.** The next round of hobbyist work
+> — beds/frames/nightstands/workbenches, an exploded assembly walkthrough, a
+> starter-project gallery, sourcing/buy-links, and mobile/print — is planned in
+> [`HOBBYIST_PLAN_V2.md`](HOBBYIST_PLAN_V2.md).
+
 ## Already shipped (do not re-build)
 
 - **Design against your tooling** — `tooling.ShopTooling` (capability flags +

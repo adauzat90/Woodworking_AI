@@ -399,11 +399,14 @@ def estimate(spec, *, cutlist: CutList | None = None,
         banding_m = _edge_banding_metres(spec)
     banding_cost = banding_m * prices.edge_banding_per_m
 
-    # Labour.
+    # Labour. ``drawers`` is a list on a cabinet but a plain count on the legged
+    # types (nightstand/desk); accept either so per-drawer labour is billed.
+    _drawers = getattr(spec, "drawers", [])
+    n_drawers = _drawers if isinstance(_drawers, int) else len(_drawers)
     hours = (prices.labour_base_h
              + prices.labour_per_part_h * sum(p.qty for p in cl.parts)
              + prices.labour_per_door_h * getattr(spec, "doors", 0)
-             + prices.labour_per_drawer_h * len(getattr(spec, "drawers", [])))
+             + prices.labour_per_drawer_h * n_drawers)
     labour_cost = hours * prices.shop_rate_per_hour
 
     # Finishing (sand + coat the shown faces), when a finish is specified.

@@ -161,8 +161,14 @@ def drilling_schedule(spec) -> DrillingSchedule:
     pid = cl.part_id_for_label   # resolve a panel label to its cut-list part ID
 
     brand = getattr(spec, "hardware_brand", "generic")
-    slide_types = {i + 1: str(getattr(d, "slide_type", "side_mount"))
-                   for i, d in enumerate(getattr(spec, "drawers", []))}
+    # ``drawers`` is a list of Drawer on a cabinet but a plain count on the
+    # legged types; either way map each to a side-mount slide for the schedule.
+    _drawers = getattr(spec, "drawers", [])
+    if isinstance(_drawers, int):
+        slide_types = {i + 1: "side_mount" for i in range(_drawers)}
+    else:
+        slide_types = {i + 1: str(getattr(d, "slide_type", "side_mount"))
+                       for i, d in enumerate(_drawers)}
 
     sides = [p for p in panels if p.label.startswith("Side")]
     side_by_hand = {("R" if s.label.endswith("R") else "L"): s for s in sides}

@@ -46,8 +46,9 @@ def _plain_summary(spec) -> list[str]:
     if doors:
         out.append(f"{doors} door(s).")
     drawers = getattr(spec, "drawers", None)
-    if drawers:
-        out.append(f"{len(drawers)} drawer(s).")
+    n_drawers = drawers if isinstance(drawers, int) else (len(drawers) if drawers else 0)
+    if n_drawers:
+        out.append(f"{n_drawers} drawer(s).")
     shelves = getattr(spec, "shelves", None)
     if shelves:
         out.append(f"{shelves} adjustable shelf/shelves.")

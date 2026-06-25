@@ -172,6 +172,9 @@ def test_negative_material_check_skips_without_build123d(monkeypatch):
     def no_cad():
         raise RuntimeError("build123d is required for geometry/export.")
 
+    # The critic resolves the public ``require_build123d`` at call time; patch it
+    # (and the back-compat alias) so the cross-check sees CAD as unavailable.
+    monkeypatch.setattr(builder, "require_build123d", no_cad)
     monkeypatch.setattr(builder, "_require_build123d", no_cad)
     spec = cab(shelves=1, doors=2)
     crit = critique(spec, joinery_geometry=True)

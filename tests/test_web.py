@@ -117,6 +117,22 @@ def test_pricing_defaults_endpoint():
     assert body["sheet"]["length"] > 0
 
 
+def test_templates_endpoint_returns_buildable_starters():
+    r = client.get("/api/templates")
+    assert r.status_code == 200
+    items = r.json()["templates"]
+    assert len(items) >= 8
+    ids = {t["id"] for t in items}
+    assert {"bookcase", "dining_table", "picture_frame", "queen_bed"} <= ids
+    for t in items:
+        assert t["label"] and t["category"] and t["blurb"]
+        assert t["spec"].get("kind") or t["spec"].get("cabinet_type")
+        # Every starter must actually build (glb off keeps it fast/CAD-free).
+        b = client.post("/api/build", json={"spec": t["spec"], "glb": False})
+        assert b.status_code == 200, t["id"]
+        assert not b.json().get("errors"), t["id"]
+
+
 def test_build_accepts_price_overrides():
     """A higher shop rate raises labour cost; the bundle echoes the new rate."""
     base = client.post("/api/build", json={"spec": VALID_SPEC, "glb": False}).json()

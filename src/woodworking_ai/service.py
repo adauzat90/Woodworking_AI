@@ -408,21 +408,24 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
     # grand total reconciles with the estimate above (same prices/sheet).
     from .purchasing import purchase_order
     po = purchase_order(spec, prices=prices, sheet=sheet, cutlist=cl)
+    def _po_line(ln):
+        return {"supplier": ln.supplier, "category": ln.category, "item": ln.item,
+                "spec": ln.spec, "qty": round(ln.qty, 3), "unit": ln.unit,
+                "brand": ln.brand, "sku": ln.sku,
+                "unit_price": round(ln.unit_price, 4),
+                "line_total": round(ln.line_total, 2),
+                "source": ln.source, "url": ln.url, "alt": ln.alt}
+
     result["purchase_order"] = {
         "currency": po.currency,
         "grand_total": round(po.grand_total, 2),
+        "consumables_total": round(po.consumables_total, 2),
         "suppliers": [
             {"supplier": s, "subtotal": round(po.supplier_total(s), 2)}
             for s in po.suppliers
         ],
-        "lines": [
-            {"supplier": ln.supplier, "category": ln.category, "item": ln.item,
-             "spec": ln.spec, "qty": round(ln.qty, 3), "unit": ln.unit,
-             "brand": ln.brand, "sku": ln.sku,
-             "unit_price": round(ln.unit_price, 4),
-             "line_total": round(ln.line_total, 2)}
-            for ln in po.lines
-        ],
+        "lines": [_po_line(ln) for ln in po.lines],
+        "consumables": [_po_line(ln) for ln in po.consumables],
     }
 
     drill = asm.drilling

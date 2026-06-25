@@ -15,8 +15,23 @@ Examples
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
+
+
+def _default_unit() -> str:
+    """The shop's default display unit (G6b: imperial-first for US shops).
+
+    An imperial-first shop sets ``WOODAI_UNITS=in`` (or ``imperial``) once and
+    every report opens in fractional inches without passing ``--imperial`` each
+    run. Anything else (or unset) keeps the millimetre-native default. The engine
+    stays mm-native regardless — this only chooses the display layer.
+    """
+    val = os.environ.get("WOODAI_UNITS", "").strip().lower()
+    if val in ("in", "inch", "inches", "imperial"):
+        return "imperial"
+    return "metric"
 
 from .dsl import spec_from_dict, ComponentGroup
 from . import service
@@ -52,7 +67,9 @@ def _emit(spec, args, tooling=None) -> int:
     """
     is_group = isinstance(spec, ComponentGroup)
     noun = "project" if is_group else "design"
-    unit = "imperial" if getattr(args, "imperial", False) else "metric"
+    # --imperial forces inches; otherwise fall back to the shop default
+    # (WOODAI_UNITS), which is "metric" unless an imperial-first shop set it.
+    unit = "imperial" if getattr(args, "imperial", False) else _default_unit()
 
     asm = service.assemble(spec, tooling=tooling)
 
@@ -264,7 +281,8 @@ def main(argv: list[str] | None = None) -> int:
     common.add_argument("--imperial", action="store_true",
                         help="show cut list and reports in fractional inches "
                              "(engine stays metric; the 32mm drilling schedule "
-                             "remains in mm)")
+                             "remains in mm). An imperial-first shop can set "
+                             "WOODAI_UNITS=in to make this the default")
     common.add_argument("--shop", choices=["full", "hobbyist", "hand"],
                         help="design against a preset tool inventory: 'hand' "
                              "(hand tools + drill), 'hobbyist' (table saw, "

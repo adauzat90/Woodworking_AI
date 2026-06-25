@@ -326,11 +326,15 @@ def required_operations(spec) -> list[Requirement]:
     if getattr(spec, "shelves", 0):
         reqs.append(Requirement("boring", "shelf_pins", "adjustable-shelf pin rows"))
 
-    for i, dr in enumerate(getattr(spec, "drawers", []) or [], start=1):
-        if getattr(dr, "false_front", False):
-            continue
-        reqs.append(Requirement("drawer", _norm(dr.corner_joint),
-                                f"Drawer {i} box corners"))
+    # ``drawers`` is a list of Drawer on a cabinet; the legged types carry a
+    # plain count with simple (no special-jig) boxes, so they add no requirement.
+    _drawers = getattr(spec, "drawers", []) or []
+    if not isinstance(_drawers, int):
+        for i, dr in enumerate(_drawers, start=1):
+            if getattr(dr, "false_front", False):
+                continue
+            reqs.append(Requirement("drawer", _norm(dr.corner_joint),
+                                    f"Drawer {i} box corners"))
     return reqs
 
 
