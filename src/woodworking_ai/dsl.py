@@ -98,6 +98,28 @@ class ShelfFixing(StrEnum):
     HIDDEN = "hidden"               # concealed rod/blind-shelf hardware
 
 
+class FrameJoint(StrEnum):
+    """How the four rails of a picture/mirror frame meet at the corners."""
+    MITER = "miter"                 # plain 45° glued miter — end grain, weak
+    SPLINED_MITER = "splined_miter"  # miter + a corner spline/key — strong
+    COPE_STICK = "cope_stick"       # cope-and-stick rail-and-stile profile
+    HALF_LAP = "half_lap"           # overlapping half-laps — strong, shows grain
+
+
+class FrameHanger(StrEnum):
+    """How a finished frame hangs on the wall."""
+    SAWTOOTH = "sawtooth"           # a single sawtooth hanger (light art)
+    D_RING_WIRE = "d_ring_wire"     # two D-rings + a wire (most pictures)
+    CLEAT = "cleat"                 # a French cleat (heavy frames / mirrors)
+
+
+class FrameContents(StrEnum):
+    """What the frame holds — drives glazing and hanging-load advice."""
+    ART = "art"                     # photo / print / canvas behind glazing
+    MIRROR = "mirror"               # a mirror (heavy; no separate glazing)
+    NONE = "none"                   # an empty / open frame
+
+
 class ApplianceType(StrEnum):
     SINK = "sink"             # drop-in/undermount, hosted by a countertop cutout
     COOKTOP = "cooktop"       # surface unit, also a countertop cutout
@@ -912,6 +934,104 @@ class BenchSpec:
         return cls.from_dict(json.loads(text))
 
 
+@dataclass
+class FrameSpec:
+    """A picture / mirror frame: four mitered rails with a rabbet for glazing.
+
+    The four rails of ``molding_width`` × ``molding_thickness`` stock surround a
+    visible **opening** (the sight size). A rabbet cut into the inner-back edge
+    holds the glazing, the art/mirror, and a backer. Coordinates match the shared
+    frame: X = width (centred), Y = depth (front face at 0, +Y toward the wall),
+    Z = height (frame foot at 0). A frame is thin in Y — it hangs flat.
+
+    Sizing convention: the rail face width (``molding_width``) is added all the
+    way around the opening, so ``outer_width = opening_w + 2*molding_width``. The
+    glazing/backer span the opening plus the rabbet overlap on each side.
+    """
+
+    kind: str = "frame"
+    units: str = "mm"
+    name: str = "Picture frame"
+    opening_w: float = 400.0       # visible opening width (sight size, X)
+    opening_h: float = 500.0       # visible opening height (sight size, Z)
+    molding_width: float = 40.0    # rail face width (sight edge to outer edge)
+    molding_thickness: float = 20.0  # rail thickness, front-to-back (Y)
+    rabbet_width: float = 8.0      # ledge the glazing/art rests on (overlaps it)
+    rabbet_depth: float = 10.0     # depth of the rabbet into the rail (< thickness)
+    corner_joint: FrameJoint = FrameJoint.SPLINED_MITER
+    contents: FrameContents = FrameContents.ART
+    glazing: str = "glass"         # glass | acrylic | none
+    hanger: FrameHanger = FrameHanger.D_RING_WIRE
+
+    # --- finishing / material (optional) --------------------------------------
+    finish: str = "none"
+    finish_sheen: str = "satin"
+    material_form: str = "solid"   # frame molding is solid stock
+    species: str = ""              # wood species, e.g. oak | walnut | maple
+
+    def __post_init__(self) -> None:
+        self.corner_joint = _coerce_enum(FrameJoint, self.corner_joint)
+        self.contents = _coerce_enum(FrameContents, self.contents)
+        self.hanger = _coerce_enum(FrameHanger, self.hanger)
+
+    @property
+    def outer_w(self) -> float:
+        """Overall outer width (X): opening plus a rail face on each side."""
+        return self.opening_w + 2 * self.molding_width
+
+    @property
+    def outer_h(self) -> float:
+        """Overall outer height (Z): opening plus a rail face top and bottom."""
+        return self.opening_h + 2 * self.molding_width
+
+    @property
+    def glazing_w(self) -> float:
+        """Glazing/backer width: the opening plus the rabbet overlap each side."""
+        return self.opening_w + 2 * self.rabbet_width
+
+    @property
+    def glazing_h(self) -> float:
+        return self.opening_h + 2 * self.rabbet_width
+
+    # Placement aliases so a frame drops into a Project like any other leaf.
+    @property
+    def width(self) -> float:
+        return self.outer_w
+
+    @property
+    def depth(self) -> float:
+        return self.molding_thickness
+
+    @property
+    def height(self) -> float:
+        return self.outer_h
+
+    def to_dict(self) -> dict[str, Any]:
+        d = asdict(self)
+        for k in ("corner_joint", "contents", "hanger"):
+            if isinstance(getattr(self, k), Enum):
+                d[k] = getattr(self, k).value
+        d["schema_version"] = SCHEMA_VERSION
+        return d
+
+    def to_json(self, indent: int = 2) -> str:
+        return json.dumps(self.to_dict(), indent=indent)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "FrameSpec":
+        data = dict(data)
+        if normalize_unit(data.get("units")) == IMPERIAL:
+            _to_mm(data, ("opening_w", "opening_h", "molding_width",
+                          "molding_thickness", "rabbet_width", "rabbet_depth"))
+            data["units"] = "mm"
+        known = {f for f in cls.__dataclass_fields__}
+        return cls(**{k: v for k, v in data.items() if k in known})
+
+    @classmethod
+    def from_json(cls, text: str) -> "FrameSpec":
+        return cls.from_dict(json.loads(text))
+
+
 # ---------------------------------------------------------------------------
 # Assemblies. A component group places child specs in one frame:
 #   * Project  — the top-level run / built-in (e.g. a whole kitchen).
@@ -1141,7 +1261,7 @@ def place_run(specs, *, start: tuple[float, float] = (0.0, 0.0),
 # surfaces as a repairable error in the designer loop.
 KNOWN_KINDS = frozenset({
     "cabinet", "table", "wall_shelf", "box", "chest", "bench", "stool",
-    "project", "assembly", "appliance_void",
+    "frame", "project", "assembly", "appliance_void",
 })
 
 # Stamped onto every serialized spec (see ``to_dict``) so a future breaking
@@ -1205,6 +1325,8 @@ def _spec_from_dict(data: dict[str, Any], defs: "_Defs | None", stack: frozenset
         return BoxSpec.from_dict(data)
     if kind == "bench" or kind == "stool":
         return BenchSpec.from_dict(data)
+    if kind == "frame":
+        return FrameSpec.from_dict(data)
     if kind == "table":
         return TableSpec.from_dict(data)
     if kind == "cabinet":
@@ -1247,6 +1369,7 @@ STEP 1 — choose the "kind" first, then fill in that type's fields below:
   "wall_shelf"  one board fixed to the wall
   "box"         a six-board box / chest
   "bench"       a seat on legs (a low table; "stool" too)
+  "frame"       a picture / mirror frame (four mitered rails + a rabbet)
   "project"     more than one piece — a run / built-in (place components)
 
 STEP 2 — copy the matching MINIMAL example, then adjust. Every field not shown
@@ -1266,6 +1389,9 @@ to override a default.
  "thickness": 18, "corner_joint": "dovetail", "lid": true}}
 -- minimal bench ---------------------------------------------------------------
 {{"kind": "bench", "name": "Bench", "width": 1200, "depth": 350, "height": 450}}
+-- minimal frame ---------------------------------------------------------------
+{{"kind": "frame", "name": "Frame", "opening_w": 400, "opening_h": 500,
+ "molding_width": 40, "corner_joint": "splined_miter"}}
 -- minimal project (a row of two cabinets via a declarative run) ----------------
 {{"kind": "project", "name": "Run", "runs": [
   {{"start": [0, 0], "angle": 0, "gap": 0, "items": [
@@ -1414,6 +1540,33 @@ A low table superset — use for a dining bench (~430mm) or a stool (~650mm).
 }}
 Keep mortise_tenon or domino leg joints and the stretchers for a seat that takes
 a sitting load; a tall stool without stretchers racks.
+
+== FRAME (picture / mirror) ==
+Four rails of molding around a visible opening, mitered at the corners, with a
+rabbet cut into the inner-back edge to hold the glazing, art/mirror, and backer.
+{{
+  "kind": "frame",
+  "name": "Mirror Frame",
+  "units": "mm",
+  "opening_w": <visible opening width (sight size)>,
+  "opening_h": <visible opening height (sight size)>,
+  "molding_width": <rail face width, e.g. 40>,
+  "molding_thickness": <rail thickness front-to-back, e.g. 20>,
+  "rabbet_width": <ledge the glazing rests on, e.g. 8>,
+  "rabbet_depth": <rabbet depth into the rail (< molding_thickness), e.g. 10>,
+  "corner_joint": {_opts(FrameJoint)},
+  "contents": {_opts(FrameContents)},
+  "glazing": "glass" | "acrylic" | "none",
+  "hanger": {_opts(FrameHanger)},
+  "material_form": "solid",                  // frame molding is solid stock
+  "species": "oak" | "walnut" | "maple" | ...,  // optional wood species
+  "finish": "none" | "oil" | "clear" | "paint" | "stain_clear"
+}}
+The outer size is the opening plus a rail face all around
+(outer = opening + 2·molding_width). A plain glued "miter" is end-grain-weak —
+prefer "splined_miter" or "half_lap", especially on larger frames; the rabbet
+must be shallower than the molding is thick. A mirror is heavy: hang it with
+D-rings + wire or a cleat into a stud, not a single sawtooth.
 
 == PROJECT / ASSEMBLY (multi-part) ==
 For anything with more than one piece — a kitchen run, a built-in, a wall of

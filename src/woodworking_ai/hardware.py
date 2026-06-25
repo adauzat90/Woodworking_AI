@@ -167,6 +167,22 @@ BUTT_HINGE = Fastener("Butt hinge (lid)", "HINGE-BUTT", "lid pivot, mortised")
 LID_SUPPORT = Fastener("Lid-stay / chest support", "LID-STAY",
                        "holds the lid open, soft-close")
 
+# Picture / mirror frame hardware.
+SAWTOOTH_HANGER = Fastener("Sawtooth hanger", "HANG-SAWTOOTH",
+                           "centred on the back top rail; light art only")
+D_RING = Fastener("D-ring strap hanger", "HANG-DRING",
+                  "two, ~1/3 down the side rails")
+HANGING_WIRE = Fastener("Braided picture wire", "HANG-WIRE",
+                        "rated to 2× the frame weight, strung between the D-rings")
+FRAME_CORNER_SPLINE = Fastener("Corner spline / V-nail", "FRAME-SPLINE",
+                               "reinforces each mitered corner")
+GLAZIER_POINT = Fastener("Glazier point / turn button", "FRAME-POINT",
+                         "retains the glazing + backer in the rabbet")
+FRAME_GLAZING = Fastener("Frame glazing (glass/acrylic)", "FRAME-GLAZING",
+                         "cut to the rabbet size")
+FRAME_BACKER = Fastener("Frame backer board", "FRAME-BACKER",
+                        "foam-core / hardboard behind the art")
+
 
 def select_hinge(brand: str, overlay: str = "overlay") -> HingeSpec:
     h = _HINGES[normalize_brand(brand)]

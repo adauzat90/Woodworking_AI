@@ -13,6 +13,8 @@ Types:
   corner joint reusing the drawer-box :class:`~dsl.CornerJoint` vocabulary.
 * **bench / stool** — a seat on four legs joined by aprons and lower stretchers
   (a low table superset; the shared LeggedSpec base is a follow-up).
+* **frame** — a picture / mirror frame: four mitered rails with a rabbet for the
+  glazing, art/mirror, and backer.
 
 No CAD dependency.
 """
@@ -22,8 +24,11 @@ from __future__ import annotations
 import math
 
 from . import furniture
-from .dispatch import WALL_SHELF, BOX, BENCH
-from .dsl import WallShelfSpec, BoxSpec, BenchSpec, ShelfFixing
+from .dispatch import WALL_SHELF, BOX, BENCH, FRAME
+from .dsl import (
+    WallShelfSpec, BoxSpec, BenchSpec, FrameSpec, ShelfFixing,
+    FrameJoint, FrameHanger, FrameContents,
+)
 from .geometry import PanelBox
 from .cutlist import CutList, Part, Hardware, assign_ids, resolve_part_stock
 from .materials import MAT_TOP, MAT_LEG, MAT_APRON, MAT_SOLID
@@ -619,4 +624,275 @@ furniture.register(
     validate=_bench_validate,
     joinery_ops=_bench_joinery,
     assembly=_bench_assembly,
+)
+
+
+# ===========================================================================
+# Picture / mirror frame
+# ===========================================================================
+
+# Corner joints that actually hold a frame together (a plain glued miter is
+# end-grain on end-grain and opens over time).
+_STRONG_FRAME_JOINTS = {"splined_miter", "half_lap", "cope_stick"}
+
+
+def _frame_panels(spec: FrameSpec) -> list[PanelBox]:
+    """Four rails around the opening, placed in the shared frame.
+
+    X = width (centred on 0), Y = depth (front face at 0, +Y toward the wall),
+    Z = height (frame foot at 0). Top/bottom rails run the full outer width;
+    the side rails fill between them — so the four boxes tile the frame face
+    with no overlap (the positive-volume check stays clean).
+    """
+    ow, oh = spec.outer_w, spec.outer_h
+    mw, mt = spec.molding_width, spec.molding_thickness
+    cy = mt / 2
+
+    def rail(label, size, center):
+        return PanelBox(label, size, center, "frame", subassembly="Frame")
+
+    return [
+        rail("Rail top", (ow, mt, mw), (0.0, cy, oh - mw / 2)),
+        rail("Rail bottom", (ow, mt, mw), (0.0, cy, mw / 2)),
+        rail("Rail left", (mw, mt, oh - 2 * mw),
+             (-(ow / 2 - mw / 2), cy, oh / 2)),
+        rail("Rail right", (mw, mt, oh - 2 * mw),
+             (ow / 2 - mw / 2, cy, oh / 2)),
+    ]
+
+
+def _frame_has_glazing(spec: FrameSpec) -> bool:
+    """True when something rides in the rabbet (glass/acrylic, art, or mirror)."""
+    return spec.contents != FrameContents.NONE or \
+        str(spec.glazing).strip().lower() != "none"
+
+
+def _frame_cutlist(spec: FrameSpec) -> CutList:
+    cl = CutList(spec_name=spec.name)
+    ow, oh = spec.outer_w, spec.outer_h
+    mw, mt = spec.molding_width, spec.molding_thickness
+    cj = str(spec.corner_joint).replace("_", " ")
+
+    # All four rails share the molding cross-section; they differ only in length.
+    cl.parts.append(Part(
+        "Rail (top/bottom)", 2, length=ow, width=mw, thickness=mt,
+        material=MAT_SOLID, grain="length",
+        notes=f"{cj} corners; rabbet on the inner back edge"))
+    cl.parts.append(Part(
+        "Rail (side)", 2, length=oh, width=mw, thickness=mt,
+        material=MAT_SOLID, grain="length",
+        notes=f"{cj} corners; rabbet on the inner back edge"))
+
+    # Corner reinforcement for a splined miter.
+    if spec.corner_joint == FrameJoint.SPLINED_MITER:
+        cl.hardware.append(Hardware(
+            hw.FRAME_CORNER_SPLINE.name, 4, hw.FRAME_CORNER_SPLINE.note,
+            sku=hw.FRAME_CORNER_SPLINE.sku, category="joinery"))
+
+    # Glazing / mirror + backer (sized to the rabbet) and the retainers.
+    if _frame_has_glazing(spec):
+        size = f"{spec.glazing_w:.0f}×{spec.glazing_h:.0f}mm"
+        if spec.contents == FrameContents.MIRROR:
+            cl.hardware.append(Hardware(
+                "Mirror", 1, f"silvered glass, {size}", sku=hw.FRAME_GLAZING.sku,
+                category="material"))
+        elif str(spec.glazing).strip().lower() != "none":
+            cl.hardware.append(Hardware(
+                f"Glazing ({spec.glazing})", 1, f"cut to the rabbet, {size}",
+                sku=hw.FRAME_GLAZING.sku, category="material"))
+        cl.hardware.append(Hardware(
+            hw.FRAME_BACKER.name, 1, f"{size}", sku=hw.FRAME_BACKER.sku,
+            category="material"))
+        # Retainers about every 150mm of the inner perimeter.
+        perim = 2 * (spec.opening_w + spec.opening_h)
+        cl.hardware.append(Hardware(
+            hw.GLAZIER_POINT.name, max(4, int(perim // 150)),
+            hw.GLAZIER_POINT.note, sku=hw.GLAZIER_POINT.sku, category="fastener"))
+
+    # Hanging hardware.
+    if spec.hanger == FrameHanger.SAWTOOTH:
+        cl.hardware.append(Hardware(
+            hw.SAWTOOTH_HANGER.name, 1, hw.SAWTOOTH_HANGER.note,
+            sku=hw.SAWTOOTH_HANGER.sku, category="hardware"))
+    elif spec.hanger == FrameHanger.CLEAT:
+        cl.hardware.append(Hardware(
+            hw.FRENCH_CLEAT.name, 1, hw.FRENCH_CLEAT.note,
+            sku=hw.FRENCH_CLEAT.sku, category="connector"))
+        cl.hardware.append(Hardware(
+            hw.WALL_ANCHOR.name, 2, hw.WALL_ANCHOR.note, sku=hw.WALL_ANCHOR.sku,
+            category="fastener"))
+    else:  # d_ring_wire
+        cl.hardware.append(Hardware(
+            hw.D_RING.name, 2, hw.D_RING.note, sku=hw.D_RING.sku,
+            category="hardware"))
+        cl.hardware.append(Hardware(
+            hw.HANGING_WIRE.name, 1, hw.HANGING_WIRE.note,
+            sku=hw.HANGING_WIRE.sku, category="hardware"))
+
+    resolve_part_stock(cl.parts, spec)
+    assign_ids(cl.parts)
+    return cl
+
+
+def _frame_validate(spec: FrameSpec) -> list[Issue]:
+    issues: list[Issue] = []
+
+    def err(f, m):
+        issues.append(Issue("error", f, m))
+
+    def warn(f, m):
+        issues.append(Issue("warning", f, m))
+
+    for name in ("opening_w", "opening_h", "molding_width", "molding_thickness",
+                 "rabbet_width", "rabbet_depth"):
+        if not _finite_positive(getattr(spec, name)):
+            err(name, f"must be a positive, finite number, got {getattr(spec, name)!r}")
+    if any(i.severity == "error" for i in issues):
+        return issues
+
+    if spec.rabbet_depth >= spec.molding_thickness:
+        err("rabbet_depth",
+            "rabbet is as deep as the molding is thick — it would cut the rail "
+            "in two; make the molding thicker or the rabbet shallower")
+    if spec.rabbet_width >= spec.molding_width:
+        err("rabbet_width",
+            "rabbet is as wide as the rail face — nothing is left to show; "
+            "widen the molding or narrow the rabbet")
+    if any(i.severity == "error" for i in issues):
+        return issues
+
+    if spec.rabbet_depth < 6:
+        warn("rabbet_depth",
+             "a rabbet under ~6mm struggles to hold glazing + art + backer; "
+             "deepen it or use thinner glazing")
+
+    cj = str(spec.corner_joint).strip().lower()
+    big = max(spec.outer_w, spec.outer_h) > 600
+    if cj == "miter":
+        if big:
+            warn("corner_joint",
+                 "a plain glued miter on a large frame opens at the corners as "
+                 "the wood moves; add a spline/V-nail (splined_miter) or use a "
+                 "half-lap")
+        else:
+            warn("corner_joint",
+                 "a plain glued miter is end-grain-weak; reinforce it with a "
+                 "spline or V-nails (splined_miter)")
+    elif cj not in _STRONG_FRAME_JOINTS:
+        warn("corner_joint",
+             f"corner joint '{cj}' is weak for a frame; prefer a splined miter, "
+             "half-lap, or cope-and-stick")
+
+    if spec.contents == FrameContents.MIRROR and \
+            spec.hanger == FrameHanger.SAWTOOTH:
+        warn("hanger",
+             "a mirror is heavy for a single sawtooth hanger; use D-rings + wire "
+             "or a French cleat anchored into a stud")
+    if spec.contents == FrameContents.ART and \
+            str(spec.glazing).strip().lower() == "none":
+        warn("glazing",
+             "art with no glazing is left exposed; add glass or acrylic unless a "
+             "bare canvas is intended")
+    return issues
+
+
+def _frame_joinery(spec: FrameSpec, cl) -> list[JoineryOp]:
+    pid = cl.part_id_for_label
+    cj = str(spec.corner_joint).strip().lower()
+    ops: list[JoineryOp] = []
+    if cj == "splined_miter":
+        ops.append(JoineryOp(
+            part="Frame corners", operation="splined miter",
+            tool="miter sled + spline jig", width=round(spec.molding_width / 6, 1),
+            depth=round(spec.molding_width * 0.5, 1), reference="all four corners",
+            part_id=pid("Rail (top/bottom)"),
+            note="45° miters, then a kerf across each corner for a contrasting spline"))
+    elif cj == "half_lap":
+        ops.append(JoineryOp(
+            part="Frame corners", operation="half-lap corners",
+            tool="dado / router", width=round(spec.molding_width, 1),
+            depth=round(spec.molding_thickness / 2, 1),
+            reference="all four corners", part_id=pid("Rail (top/bottom)"),
+            note="overlapping half-laps; glue and clamp flat"))
+    elif cj == "cope_stick":
+        ops.append(JoineryOp(
+            part="Frame corners", operation="cope-and-stick",
+            tool="router table (rail-and-stile set)", width=0.0,
+            depth=round(spec.rabbet_depth, 1), reference="all four corners",
+            part_id=pid("Rail (top/bottom)"),
+            note="stick the profile, cope the mating ends"))
+    else:  # plain miter
+        ops.append(JoineryOp(
+            part="Frame corners", operation="45° miters",
+            tool="miter saw / sled", width=0.0, depth=round(spec.molding_thickness, 1),
+            reference="all four corners", part_id=pid("Rail (top/bottom)"),
+            note="glue + band clamp (reinforce with V-nails)"))
+    # The rabbet that holds the glazing/art/backer.
+    ops.append(JoineryOp(
+        part="Frame rails", operation="rabbet for glazing",
+        tool="router / dado", width=round(spec.rabbet_width, 1),
+        depth=round(spec.rabbet_depth, 1), reference="inner back edge, all rails",
+        part_id=pid("Rail (side)"),
+        note="holds glazing + art/mirror + backer"))
+    return ops
+
+
+def _frame_assembly(spec: FrameSpec, cl) -> list[SubAssembly]:
+    parts = cl.parts
+    rail_ids = [p.id for p in parts if p.id]
+    glaze_hw = [h.name for h in cl.hardware
+                if h.category in ("material", "fastener", "joinery")]
+    hang_hw = [h.name for h in cl.hardware
+               if h.category in ("hardware", "connector")]
+
+    frame = SubAssembly("Frame", "Four mitered rails with a glazing rabbet",
+                        part_ids=rail_ids, category="carcass")
+    frame.steps = [
+        step(1, "Mill the molding & cut the rabbet",
+              "Dimension the molding stock and rout the rabbet along the inner "
+              "back edge before cutting the rails to length.", rail_ids,
+              category="prep"),
+        step(2, "Cut the corner joints",
+              "Cut the corners per the joinery sheet — accurate 45° miters (or "
+              "half-laps/cope-and-stick).", rail_ids, category="joinery"),
+        step(3, "Glue up & check square",
+              "Dry-fit, then glue and band-clamp the frame; check the diagonals "
+              "are equal before the glue sets and reinforce the corners "
+              "(spline / V-nails).", rail_ids, glaze_hw, "carcass"),
+    ]
+    glaze = SubAssembly("Glazing & backer", "Fit the glass, art, and backer",
+                        category="fronts")
+    if _frame_has_glazing(spec):
+        glaze.steps = [
+            step(1, "Glaze & back the frame",
+                  "Clean and drop in the glazing, then the art/mirror and backer; "
+                  "retain them with glazier points or turn buttons.", [], glaze_hw,
+                  "hardware"),
+        ]
+    else:
+        glaze.steps = [
+            step(1, "Leave the opening open",
+                  "No glazing — ease the rabbet and move on to finishing.",
+                  category="prep"),
+        ]
+    final = SubAssembly("Finish & hang", "Finish the frame and add the hanger",
+                        category="final")
+    final.steps = [
+        step(1, "Sand & finish",
+              "Final-sand, ease the edges, and apply the finish before glazing if "
+              "a film finish might cloud the glass.", rail_ids, category="finish"),
+        step(2, "Fit the hanger",
+              "Attach the hanging hardware to the back, centred and level.",
+              [], hang_hw, "hardware"),
+    ]
+    return [frame, glaze, final]
+
+
+furniture.register(
+    FRAME,
+    panels=_frame_panels,
+    cut_parts=_frame_cutlist,
+    validate=_frame_validate,
+    joinery_ops=_frame_joinery,
+    assembly=_frame_assembly,
 )
