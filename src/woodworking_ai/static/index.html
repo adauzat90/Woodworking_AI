@@ -341,6 +341,30 @@
                    overflow:hidden; }
   .ph-mini { font-size:11px; color:var(--muted); padding:6px; }
 
+  /* ---- welcome / guide modal ---- */
+  .modal-backdrop { position:fixed; inset:0; z-index:60; display:flex;
+    align-items:center; justify-content:center; padding:20px;
+    background:rgba(10,8,6,.62); backdrop-filter:blur(3px); animation:fadeIn .2s ease; }
+  .modal { background:var(--panel); border:1px solid var(--line);
+    border-radius:var(--r-lg); box-shadow:var(--sh-3); max-width:460px; width:100%;
+    padding:24px 24px 22px; position:relative; animation:modalIn .22s ease; }
+  @keyframes modalIn { from { opacity:0; transform:translateY(10px) scale(.98); }
+    to { opacity:1; transform:none; } }
+  .modal h2 { margin:0 0 6px; font-size:20px; font-weight:650; letter-spacing:-.01em; }
+  .modal .modal-sub { color:var(--muted); font-size:13px; margin:0 0 16px; }
+  .modal-x { position:absolute; top:10px; right:12px; width:auto; margin:0;
+    padding:2px 8px; background:transparent; color:var(--muted); font-size:20px;
+    line-height:1; box-shadow:none; border:0; }
+  .modal-x:hover { background:transparent; color:var(--text); transform:none; }
+  .steps { list-style:none; margin:0 0 18px; padding:0; display:flex;
+    flex-direction:column; gap:13px; }
+  .steps li { display:flex; gap:12px; align-items:flex-start; font-size:13px;
+    line-height:1.45; }
+  .steps .stepn { flex:0 0 auto; width:24px; height:24px; border-radius:50%;
+    background:var(--accent-soft); color:var(--wood); font-weight:700; font-size:12px;
+    display:flex; align-items:center; justify-content:center; margin-top:1px; }
+  .steps b { color:var(--text); }
+
   /* ---- sheet-nesting diagram ---- */
   .nest-grp { margin:10px 0 16px; }
   .nest-head { font-size:12.5px; margin-bottom:6px; }
@@ -429,12 +453,37 @@
   </div>
   <span class="tag">Describe a piece — get a 3D model, cut list &amp; shopping list you can build from.</span>
   <span class="spacer"></span>
+  <button id="guideBtn" class="hdr-btn" type="button" title="How it works"
+    aria-label="Show the quick start guide">
+    <span aria-hidden="true">?</span> Guide
+  </button>
   <button id="themeBtn" class="hdr-btn" type="button" title="Switch light / dark theme"
     aria-label="Switch light or dark theme">
     <span id="themeIcon" aria-hidden="true">◐</span> Theme
   </button>
 </header>
 <div id="toasts" aria-live="polite"></div>
+<div id="welcome" class="modal-backdrop" style="display:none" role="dialog"
+     aria-modal="true" aria-labelledby="welcomeTitle">
+  <div class="modal">
+    <button id="welcomeClose" class="modal-x" type="button" aria-label="Close">×</button>
+    <h2 id="welcomeTitle">Welcome — let's build something</h2>
+    <p class="modal-sub">Three ways in. Pick whichever feels easiest; you can
+       change everything afterward.</p>
+    <ol class="steps">
+      <li><span class="stepn">1</span><div>
+        <b>Start a design.</b> Tap a <b>starter project</b>, <b>describe it</b>
+        in plain English, or <b>dial in the parameters</b>.</div></li>
+      <li><span class="stepn">2</span><div>
+        <b>Build it.</b> Get an interactive 3D model, a labelled cut list, a
+        shopping list, shop drawings and a real cost estimate.</div></li>
+      <li><span class="stepn">3</span><div>
+        <b>Trust it.</b> Every build is checked for fit, shelf sag, wood movement
+        and the joints your tools can actually cut — watch-outs are spelled out.</div></li>
+    </ol>
+    <button id="welcomeStart" type="button">Start designing</button>
+  </div>
+</div>
 <div class="wrap">
   <div class="controls">
     <details id="galleryWrap" open>
@@ -794,6 +843,24 @@ if ($("themeBtn")) $("themeBtn").onclick = () => {
   if (next) localStorage.setItem(THEME_LS, next); else localStorage.removeItem(THEME_LS);
   applyTheme(next);
 };
+
+// --- first-run guide: show once, reopenable from the header, Esc to close ----
+const WELCOME_LS = "woodai_welcome_seen";
+function showWelcome() { const w = $("welcome"); if (!w) return;
+  w.style.display = "flex"; const b = $("welcomeStart"); if (b) b.focus(); }
+function hideWelcome() { const w = $("welcome"); if (w) w.style.display = "none";
+  try { localStorage.setItem(WELCOME_LS, "1"); } catch (e) {} }
+if ($("welcomeStart")) $("welcomeStart").onclick = hideWelcome;
+if ($("welcomeClose")) $("welcomeClose").onclick = hideWelcome;
+if ($("guideBtn")) $("guideBtn").onclick = showWelcome;
+if ($("welcome")) $("welcome").addEventListener("click", e => {
+  if (e.target === $("welcome")) hideWelcome();   // click backdrop to dismiss
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && $("welcome") && $("welcome").style.display !== "none")
+    hideWelcome();
+});
+try { if (!localStorage.getItem(WELCOME_LS)) showWelcome(); } catch (e) {}
 
 // --- display units (engine is millimetre-native; this is display only) ------
 const MM_PER_IN = 25.4;
