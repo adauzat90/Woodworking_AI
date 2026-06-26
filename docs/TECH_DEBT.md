@@ -1,6 +1,12 @@
-# Tech Debt Audit — Woodworking AI (June 2026)
+# Tech Debt — Woodworking AI (living doc)
 
-> **Date:** 2026-06-26 · **Branch:** `claude/tech-debt-audit-rfbici` (off `master`)
+> **This is the single living tech-debt doc.** It supersedes three earlier audits,
+> now in [`archive/`](archive/): `TECH_DEBT_AUDIT.md`,
+> `TECH_DEBT_AUDIT_INTEGRATION.md`, and the `TECH_DEBT_CLEANUP_PLAN.md` that
+> executed them. Keep *this* file current — mark findings fixed inline and
+> re-baseline here rather than spawning a new dated audit doc.
+
+> **Last audit:** 2026-06-26 · **Branch:** `claude/tech-debt-audit-rfbici` (off `master`)
 > **Scope:** `src/woodworking_ai/**` (~17.9k LOC, 50 modules) + `static/index.html`
 > (2.4k lines) + `tests/**` (73 files, ~9.3k LOC) + packaging/CI/docs.
 > **Method:** five parallel deep-reads (duplication, architecture, anti-patterns,
@@ -10,7 +16,8 @@
 
 ## How this audit relates to the prior ones
 
-There are three earlier docs (`TECH_DEBT_AUDIT.md`, `TECH_DEBT_AUDIT_INTEGRATION.md`,
+The three earlier docs are archived under [`archive/`](archive/)
+(`TECH_DEBT_AUDIT.md`, `TECH_DEBT_AUDIT_INTEGRATION.md`,
 `TECH_DEBT_CLEANUP_PLAN.md`). **The bulk of what they claim was fixed is genuinely
 fixed** — credit where due:
 

@@ -300,7 +300,7 @@ pytest
 MVP: frameless **base cabinets** end to end, including the **Critic** verify
 loop with both computational and render-based (visual) review. Next: wall/tall
 cabinets, face-frame construction, sheet nesting + cost, and a web UI with live
-GLB preview. Full roadmap in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md); the
-hobbyist-focused plan (more furniture types, cut-from-your-lumber, skill/time
-estimates, finishing depth, a species database) is in
-[`docs/HOBBYIST_ROADMAP.md`](docs/HOBBYIST_ROADMAP.md).
+GLB preview. The system design is in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md);
+what has shipped and what's next (more furniture types, cut-from-your-lumber,
+skill/time estimates, finishing depth, a species database) is tracked in the
+living [`docs/ROADMAP.md`](docs/ROADMAP.md).
