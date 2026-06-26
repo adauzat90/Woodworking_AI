@@ -279,6 +279,9 @@ CONSUMABLES_NOTE = ("Estimates — typical retail; adjust to your shop. "
 _GLUE_BOTTLE_PRICE = 8.0       # ~250ml PVA
 _SANDPAPER_SHEET_PRICE = 0.9   # per sheet
 _CLAMP_PRICE = 16.0            # one parallel/bar clamp (a kept tool, not per-build)
+_CLAMP_SPACING_MM = 200.0      # ~one clamp per this span of a glued panel
+_CLAMP_MIN = 2                 # never suggest fewer than a pair
+_CLAMP_MAX = 12                # cap the suggestion for a very wide panel
 _BRUSH_PRICE = 4.0
 _CONDITIONER_PRICE = 12.0      # pre-stain wood conditioner
 
@@ -328,7 +331,8 @@ def _consumable_lines(spec, est: Estimate, cl: CutList) -> list[POLine]:
     # Clamps — enough to span the largest glued panel at ~1 per 200mm (a kept
     # tool: priced for shoppers who don't own them, flagged as such).
     span = _largest_part_mm(cl)
-    n_clamps = min(max(int(span // 200) + 1, 2), 12) if span > 0 else 0
+    n_clamps = (min(max(int(span // _CLAMP_SPACING_MM) + 1, _CLAMP_MIN), _CLAMP_MAX)
+                if span > 0 else 0)
     if n_clamps:
         lines.append(POLine(
             supplier=SUPPLIER_CONSUMABLES, category="clamp",
