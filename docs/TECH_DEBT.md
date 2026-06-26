@@ -85,9 +85,27 @@ is collapsing the three parallel type registries (HIGH-2).
 - ✅ **3.7 (partial)** the repeated `str(spec.joinery).strip().lower()` decode is
   centralized in `dsl.joinery_key()` across the 9 joinery sites. The
   `corner_joint`/`slide_type` string sites use different transforms and are left.
+- ✅ **3.8** the cross-module private imports are promoted to public:
+  `planning.glue_up_count`, `estimator.pack_sheet_groups`.
+- ✅ **3.6** `builder` and `dxf` decode a housed joint's edge through one
+  `joinery.classify_joinery_edge()` / `JoineryEdge` enum instead of duplicated
+  `"rear" in ref` substring ladders. Golden DXF byte-identical.
+- ✅ **4.4** the last inline tuning thresholds are named constants (critic's
+  router-bit tolerance / slide-lip / front-coverage; purchasing's clamp spacing).
+- ✅ **5.2** `sources.py` now has a direct test suite (→100%); `proposal.py`
+  /`pdf_common.py` were already covered via the reportlab suite that runs in CI.
+- ✅ **6 (packaging)** the `all` extra is now self-referential, so it can't drift
+  out of sync (it had omitted `ruff` and `pytest-cov`).
 
 **Deliberately deferred** (cost/risk now exceeds value — same reasons the
 original maintainers deferred them):
+
+- **§3.5 dsl→geometry layering inversion** — `dsl.place_run` / the declarative-run
+  loader genuinely need a group's plan extent, which the panel-based
+  `local_plan_bounds` computes (including overhangs the footprint omits). A
+  "geometry-free" version would duplicate footprint math or change run-stepping
+  (risking the `project_*` golden specs). The one narrow, documented lazy import
+  is the pragmatic workaround.
 
 - **Split `furniture_types.py`** (HIGH-3) — purely organizational; the 2088-line
   module works, and a per-module split is large churn (re-deriving each module's
@@ -99,6 +117,19 @@ original maintainers deferred them):
   risks subtly changing what each spec accepts. Low dedup payoff, real risk.
 
 If these are picked up later, do each as its own PR behind the golden-output net.
+
+**Still open (lower value or needs a product decision):**
+- **§4.3** silent value clamping — surfacing a warning when a clamp changes a
+  user's value (e.g. "you asked for 5 drawers; only 3 fit") is a *behaviour*
+  change to the validation contract, not a refactor; do it deliberately.
+- **§4.5** import-time registration side-effect (LOW) — touches the registry
+  init order; risky for little gain.
+- **§5.3/§5.5** extend the shared test factory to the remaining bespoke `_cab`
+  builders; reduce private-symbol coupling in tests. Diminishing returns.
+- **§6 (needs an owner decision):** `/api/design` auth/rate-limit (deployment
+  call); `mypy`/coverage gate in CI (the code isn't type-clean, so mypy can't be
+  a blocking gate without a typing pass); split the 2.4k-line SPA into ES modules;
+  pin + SRI the `model-viewer` CDN (frontend-owner version choice).
 
 ---
 
