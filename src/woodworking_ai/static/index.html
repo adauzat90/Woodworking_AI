@@ -1385,6 +1385,23 @@ function paint() {
           lumberGroups.map(g => [g.stock || g.material, fmtLen(g.thickness), g.parts,
                                  g.board_feet.toFixed(2) + " bd ft", m(g.cost)]));
     }
+    // Show the rates behind the quote so it reads as a real estimate, not magic.
+    const pr = (pricing && pricing.prices) || (pricingDefaults && pricingDefaults.prices) || {};
+    const sh = (pricing && pricing.sheet) || (pricingDefaults && pricingDefaults.sheet) || {};
+    const cur = e.currency, asum = [];
+    if (pr.shop_rate_per_hour) asum.push(`labour ${cur}${(+pr.shop_rate_per_hour).toFixed(0)}/h`);
+    if (pr.sheet_price_default) asum.push(`sheet goods ~${cur}${(+pr.sheet_price_default).toFixed(0)}/sheet`);
+    if (lumberGroups.length && pr.board_foot_price_default)
+      asum.push(`solid lumber ~${cur}${(+pr.board_foot_price_default).toFixed(0)}/bd ft`);
+    if (sh.length && sh.width) {
+      const dims = unit() === "imperial"
+        ? `${(sh.length/304.8).toFixed(0)}×${(sh.width/304.8).toFixed(0)} ft`
+        : `${Math.round(sh.length)}×${Math.round(sh.width)} mm`;
+      asum.push(`sheet size ${dims}`);
+    }
+    if (asum.length)
+      h += `<p class="muted" style="margin-top:14px;font-size:11.5px">` +
+        `Assumes ${asum.join(" · ")}. Tune these in <b>Pricing &amp; rates</b> in the sidebar.</p>`;
   } else if (tab === "drilling") {
     h = drillingPane(d);
   } else if (tab === "steps") {
