@@ -133,3 +133,17 @@ def test_plan_bundles_skill_and_time():
 def test_plan_is_json_friendly():
     import json
     json.dumps(plan(dovetail_drawer_spec(), HAND_TOOL_SHOP))
+
+
+def test_legged_joinery_time_scales_with_joint_count():
+    # A stretchered workbench cuts more leg/stretcher joints than a 4-apron
+    # table, so its joinery phase must cost more (was a single flat frame joint).
+    from woodworking_ai.dsl import spec_from_dict
+    table = build_time(spec_from_dict({"kind": "table", "joinery": "mortise_tenon"}))
+    bench = build_time(spec_from_dict(
+        {"kind": "workbench", "joinery": "mortise_tenon", "stretchers": True}))
+    assert bench["hours_by_phase"]["joinery"] > table["hours_by_phase"]["joinery"]
+    # A drawered nightstand also pays for its drawer-box corners.
+    ns0 = build_time(spec_from_dict({"kind": "nightstand", "drawers": 0}))
+    ns2 = build_time(spec_from_dict({"kind": "nightstand", "drawers": 2}))
+    assert ns2["hours_by_phase"]["joinery"] > ns0["hours_by_phase"]["joinery"]

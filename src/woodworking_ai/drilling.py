@@ -18,7 +18,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from .dsl import ComponentGroup
-from .dispatch import spec_kind, VOID, GROUP, WORKBENCH
+from .dispatch import spec_kind, VOID, GROUP, WORKBENCH, NIGHTSTAND, DESK
 from .geometry import panel_layout, component_tag, trailing_index, PanelRole
 from .cutlist import generate_cutlist
 from .hardware import hinge_count, select_slide, PLATE_SCREW_INSET
@@ -185,9 +185,36 @@ def drilling_schedule(spec) -> DrillingSchedule:
     sched.ops.extend(_slide_ops(sides, drawer_fronts, brand, slide_types, pid))
     sched.ops.extend(_hinge_ops(doors, sides, side_by_hand, pid))
     sched.ops.extend(_pocket_ops(spec, panels, pid))
+    if kind in (NIGHTSTAND, DESK):
+        sched.ops.extend(_legged_slide_ops(spec, panels, pid))
     if kind == WORKBENCH:
         sched.ops.extend(_dog_hole_ops(spec))
     return sched
+
+
+def _legged_slide_ops(spec, panels, pid) -> list[DrillOp]:
+    """Drawer-slide screw holes for an apron-hung (nightstand/desk) drawer.
+
+    Each drawer rides a ball-bearing slide pair screwed to the side aprons (and,
+    for a lower drawer, a runner level with it). The holes are mirrored on both
+    sides, so one op per drawer captures the boring without claiming zero."""
+    n = int(getattr(spec, "drawers", 0) or 0)
+    if n <= 0:
+        return []
+    side_aprons = [p for p in panels if p.label == "Apron side"]
+    if not side_aprons:
+        return []
+    _, depth_y, ah = side_aprons[0].size       # (thickness, depth, height)
+    us = [37.0, round(depth_y / 2, 1), round(depth_y - 37.0, 1)]
+    v = round(ah / 2, 1)
+    ops: list[DrillOp] = []
+    for di in range(1, n + 1):
+        holes = [Hole("slide screw", u, v, 4.0, 12.0) for u in us]
+        ops.append(DrillOp(
+            part="Apron side", operation=f"drawer {di} slide screws",
+            note="ball-bearing slide; mirror on both side aprons / runners",
+            part_id=pid("Apron side"), holes=holes))
+    return ops
 
 
 def _pocket_ops(spec, panels, pid) -> list[DrillOp]:

@@ -34,6 +34,7 @@ def _default_unit() -> str:
     return "metric"
 
 from .dsl import spec_from_dict, ComponentGroup
+from .dsl_lint import lint_spec_dict
 from . import service
 
 
@@ -329,7 +330,8 @@ def main(argv: list[str] | None = None) -> int:
         import json as _json
         try:
             text = Path(args.spec_file).read_text(encoding="utf-8")
-            spec = spec_from_dict(_json.loads(text))
+            raw = _json.loads(text)
+            spec = spec_from_dict(raw)
         except FileNotFoundError:
             print(f"error: spec file not found: {args.spec_file}", file=sys.stderr)
             return 2
@@ -339,6 +341,10 @@ def main(argv: list[str] | None = None) -> int:
             print(f"error: could not parse spec '{args.spec_file}': {exc}",
                   file=sys.stderr)
             return 2
+        # Surface keys the language silently drops (a typo'd or unsupported field
+        # masks its default — the author thinks they set a value they didn't).
+        for issue in lint_spec_dict(raw):
+            print(f"warning: {issue}", file=sys.stderr)
         return _emit(spec, args, tooling=tooling)
 
     return 2

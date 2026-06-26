@@ -22,8 +22,7 @@ from dataclasses import dataclass
 from difflib import get_close_matches
 
 from .dsl import (
-    CabinetSpec, TableSpec, WallShelfSpec, BoxSpec, BenchSpec, ApplianceVoid,
-    Material, ToeKick, Drawer, KNOWN_KINDS,
+    ApplianceVoid, Material, ToeKick, Drawer, KNOWN_KINDS, LEAF_SPEC_TYPES,
 )
 
 # Re-exported so callers (and Item 2's router) share one definition.
@@ -37,14 +36,15 @@ def _fields(dc) -> frozenset[str]:
 # Keys accepted on any spec node beyond its dataclass fields.
 _COMMON_EXTRA = frozenset({"kind", "schema_version"})
 
-_SPEC_FIELDS: dict[str, frozenset[str]] = {
-    "cabinet": _fields(CabinetSpec) | {"type"},   # legacy "type" is mapped on load
-    "table": _fields(TableSpec),
-    "wall_shelf": _fields(WallShelfSpec),
-    "box": _fields(BoxSpec),
-    "bench": _fields(BenchSpec),
-    "void": _fields(ApplianceVoid),
-}
+# kind-or-alias -> allowed field set, derived from the loader's own leaf registry
+# so it can never drift from what dsl.from_dict actually accepts (a new furniture
+# type is covered automatically). Cabinet also accepts the legacy "type" key.
+_SPEC_FIELDS: dict[str, frozenset[str]] = {}
+for _kind, _cls, _aliases in LEAF_SPEC_TYPES:
+    _allowed = _fields(_cls) | ({"type"} if _kind == "cabinet" else frozenset())
+    for _k in (_kind, *_aliases):
+        _SPEC_FIELDS[_k] = _allowed
+_SPEC_FIELDS["void"] = _fields(ApplianceVoid)
 
 _MATERIAL_FIELDS = _fields(Material)
 _TOEKICK_FIELDS = _fields(ToeKick)
@@ -79,19 +79,20 @@ class LintIssue:
 
 
 def _route(node: dict) -> str:
-    """The lint category of *node*, mirroring ``dsl._spec_from_dict``."""
+    """The lint category of *node*, mirroring ``dsl._spec_from_dict``.
+
+    Kind-first: a named kind (or alias) routes straight to its field set. A
+    kind-less legacy spec (every stored cabinet/table predates the field) falls
+    back to the cabinet/table shape heuristic."""
     kind = str(node.get("kind", "")).strip().lower()
     if kind == "appliance_void":
         return "void"
     if kind in ("assembly", "project") or "components" in node or "runs" in node:
         return "group"
-    if kind == "wall_shelf":
-        return "wall_shelf"
-    if kind in ("box", "chest"):
-        return "box"
-    if kind in ("bench", "stool"):
-        return "bench"
-    if kind == "table" or "leg" in node or "top_thickness" in node:
+    if kind in _SPEC_FIELDS:
+        return kind
+    # kind-less legacy spec — route by shape (legged table vs cabinet).
+    if "leg" in node or "top_thickness" in node:
         return "table"
     return "cabinet"
 
@@ -134,9 +135,11 @@ def _lint_nested(node: dict, kind: str, path: str, issues: list[LintIssue]) -> N
     tk = node.get("toe_kick")
     if isinstance(tk, dict):
         _check_keys(tk, _TOEKICK_FIELDS, _join(path, "toe_kick"), issues)
-    for i, dr in enumerate(node.get("drawers", []) or []):
-        if isinstance(dr, dict):
-            _check_keys(dr, _DRAWER_FIELDS, _join(path, f"drawers[{i}]"), issues)
+    drawers = node.get("drawers")
+    if isinstance(drawers, list):     # a cabinet's drawers are dicts; legged = int
+        for i, dr in enumerate(drawers):
+            if isinstance(dr, dict):
+                _check_keys(dr, _DRAWER_FIELDS, _join(path, f"drawers[{i}]"), issues)
     stock = node.get("stock")
     if isinstance(stock, dict):
         for area, v in stock.items():

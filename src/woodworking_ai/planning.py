@@ -164,6 +164,37 @@ def _op_phase(role: str, joint: str) -> str:
     return "joinery"
 
 
+# Legged pieces report one frame requirement, but a real piece cuts that joint
+# at every leg-to-apron meeting. Counting them makes a 12-joint workbench cost
+# more joinery time than a 8-joint table or a small nightstand.
+_LEGGED = (TABLE, BENCH, NIGHTSTAND, DESK, WORKBENCH)
+
+
+def _leg_joint_count(spec) -> int:
+    """Approximate leg-to-apron (+ stretcher) joints on a legged piece.
+
+    Four aprons/rails around the top give 8 joints (two per member); lower
+    stretchers add a member each side. A reasonable, explainable proxy — the
+    geometry isn't enumerated joint by joint."""
+    members = 4
+    if bool(getattr(spec, "stretchers", False)):
+        members += 2
+    return members * 2
+
+
+def _op_multiplicity(spec, kind: str, role: str) -> int:
+    """How many times a required operation actually recurs on *spec*.
+
+    A legged frame joint recurs at every leg-to-apron meeting; a drawer-corner
+    joint recurs at four corners per drawer. Everything else counts once (the
+    cabinet path already enumerates its own per-joint requirements)."""
+    if role == "frame" and kind in _LEGGED:
+        return _leg_joint_count(spec)
+    if role == "drawer" and kind in (NIGHTSTAND, DESK):
+        return max(1, 4 * int(getattr(spec, "drawers", 0) or 0))
+    return 1
+
+
 # ===========================================================================
 # Skill rating.
 # ===========================================================================
@@ -388,7 +419,8 @@ def build_time(spec, tooling: ShopTooling | None = None) -> dict:
     for r in _safe_reqs(spec):
         method = _method_for(r.joint, tooling)
         table = _OP_TIME.get(_norm(r.joint), _OP_TIME_DEFAULT)
-        hrs = table.get(method, _OP_TIME_DEFAULT[method])
+        hrs = (table.get(method, _OP_TIME_DEFAULT[method])
+               * _op_multiplicity(spec, kind, r.role))
         phases[_op_phase(r.role, r.joint)] += hrs
         key = (_norm(r.joint), method)
         op_hours[key] = op_hours.get(key, 0.0) + hrs
