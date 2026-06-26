@@ -218,3 +218,36 @@ def test_default_unit_env(monkeypatch, val, expected):
 def test_default_unit_unset(monkeypatch):
     monkeypatch.delenv("WOODAI_UNITS", raising=False)
     assert _default_unit() == "metric"
+
+
+def test_quiet_suppresses_spec_echo(capsys):
+    import json
+    from woodworking_ai.cli import main
+    spec = {"kind": "cabinet", "cabinet_type": "base", "doors": 2}
+    import tempfile, os
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+        json.dump(spec, f)
+        path = f.name
+    try:
+        main(["build", path])
+        assert capsys.readouterr().out.lstrip().startswith("{")   # default echoes
+        main(["build", path, "--quiet"])
+        assert not capsys.readouterr().out.lstrip().startswith("{")
+    finally:
+        os.unlink(path)
+
+
+def test_joinery_prints_for_a_project(capsys):
+    import json, tempfile, os
+    from woodworking_ai.cli import main
+    proj = {"kind": "project", "name": "Run", "runs": [
+        {"start": [0, 0], "angle": 0, "items": [
+            {"spec": {"kind": "cabinet", "cabinet_type": "base"}}]}]}
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+        json.dump(proj, f)
+        path = f.name
+    try:
+        main(["build", path, "--quiet", "--joinery"])
+        assert "Joinery setup" in capsys.readouterr().out
+    finally:
+        os.unlink(path)

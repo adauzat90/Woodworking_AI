@@ -74,8 +74,9 @@ def _emit(spec, args, tooling=None) -> int:
 
     asm = service.assemble(spec, tooling=tooling)
 
-    print(spec.to_json())
-    print()
+    if not getattr(args, "quiet", False):
+        print(spec.to_json())
+        print()
     result = asm.validation
     if result.warnings:
         print("Warnings:")
@@ -138,7 +139,9 @@ def _emit(spec, args, tooling=None) -> int:
     if args.drill:
         print("\n" + asm.drilling.report_text())
 
-    if not is_group and args.joinery:
+    if args.joinery:
+        # The joinery setup sheet aggregates across a project's components too,
+        # so it is no longer silently skipped for a run.
         print("\n" + asm.joinery.report_text())
 
     if not is_group and args.assembly:
@@ -284,6 +287,8 @@ def main(argv: list[str] | None = None) -> int:
                              "B-Rep (machine honest; needs build123d)")
     common.add_argument("--assembly", action="store_true",
                         help="print the step-by-step assembly sequence")
+    common.add_argument("--quiet", "-q", action="store_true",
+                        help="suppress the spec JSON echo at the top of the output")
     common.add_argument("--imperial", action="store_true",
                         help="show cut list and reports in fractional inches "
                              "(engine stays metric; the 32mm drilling schedule "
