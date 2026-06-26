@@ -1544,7 +1544,7 @@ def _drawer_corner_joinery(spec, part_id: str) -> JoineryOp:
 # ===========================================================================
 
 def _nightstand_drawer_count(spec: NightstandSpec) -> int:
-    return max(0, min(int(spec.drawers), 2))
+    return max(0, min(int(spec.drawers), 3))
 
 
 def _nightstand_panels(spec: NightstandSpec) -> list[PanelBox]:

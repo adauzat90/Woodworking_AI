@@ -60,6 +60,39 @@ class Joinery(StrEnum):
     BOX = "box"                 # finger joint, strong glue surface
 
 
+# Common spellings an author (or agent) may write for a joinery value, mapped to
+# the canonical enum value. Keys are matched after lowercasing and normalizing
+# hyphens/spaces to underscores (see :func:`_coerce_enum`), so a natural spelling
+# like "mortise_and_tenon" / "M&T" resolves instead of silently degrading to a
+# string (which would fall back to the wrong joint downstream).
+JOINERY_ALIASES = {
+    "mortise_and_tenon": "mortise_tenon",
+    "m&t": "mortise_tenon",
+    "mt": "mortise_tenon",
+    "tenon": "mortise_tenon",
+    "pocket_hole": "pocket",
+    "pocket_screw": "pocket",
+    "pocket_screws": "pocket",
+    "finger": "box",
+    "finger_joint": "box",
+    "box_joint": "box",
+}
+
+
+def _dealias_joinery(value: Any) -> Any:
+    """Map a joinery alias string to its canonical value; pass through non-strings.
+
+    Used on the strict cabinet load path (which raises on an unknown joinery) so
+    a known joint written a different way resolves rather than erroring, while a
+    genuinely unknown value still raises.
+    """
+    if not isinstance(value, str):
+        return value
+    s = value.strip().lower()
+    return JOINERY_ALIASES.get(
+        s, JOINERY_ALIASES.get(s.replace("-", "_").replace(" ", "_"), value))
+
+
 class CornerJoint(StrEnum):
     """Drawer-box corner joint."""
     DOVETAIL = "dovetail"
@@ -177,8 +210,12 @@ def _coerce_enum(enum_cls: type[Enum], value: Any, *, aliases: dict | None = Non
     if isinstance(value, enum_cls):
         return value
     s = str(value).strip().lower()
-    if aliases and s in aliases:
-        s = aliases[s]
+    if aliases:
+        # Match an alias against the raw lowercase value or an underscore-
+        # normalized form, so "mortise-and-tenon" / "mortise tenon" both hit the
+        # "mortise_and_tenon" key. No enum value contains a hyphen, so this is
+        # safe for the enum lookup too.
+        s = aliases.get(s, aliases.get(s.replace("-", "_").replace(" ", "_"), s))
     try:
         return enum_cls(s)
     except ValueError:
@@ -712,6 +749,10 @@ class CabinetSpec:
                 data["cabinet_type"] = CabinetType.TALL
             else:
                 data["cabinet_type"] = CabinetType.BASE
+        # A known joinery written a different way ("mortise_and_tenon", "M&T")
+        # resolves to its canonical value before the strict load below.
+        if "joinery" in data:
+            data["joinery"] = _dealias_joinery(data["joinery"])
         for key, enum_cls in (
             ("cabinet_type", CabinetType),
             ("construction", Construction),
@@ -769,7 +810,7 @@ class TableSpec:
             Grain, self.grain, aliases={"quarter": "quartersawn",
                                         "quarter_sawn": "quartersawn",
                                         "flat": "flatsawn", "flat_sawn": "flatsawn"})
-        self.joinery = _coerce_enum(Joinery, self.joinery)
+        self.joinery = _coerce_enum(Joinery, self.joinery, aliases=JOINERY_ALIASES)
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
@@ -989,7 +1030,7 @@ class BenchSpec:
             Grain, self.grain, aliases={"quarter": "quartersawn",
                                         "quarter_sawn": "quartersawn",
                                         "flat": "flatsawn", "flat_sawn": "flatsawn"})
-        self.joinery = _coerce_enum(Joinery, self.joinery)
+        self.joinery = _coerce_enum(Joinery, self.joinery, aliases=JOINERY_ALIASES)
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
@@ -1306,11 +1347,11 @@ class CuttingBoardSpec:
 
 @dataclass
 class NightstandSpec:
-    """A small legged cabinet: a top on four legs/aprons with a drawer + shelf.
+    """A small legged cabinet: a top on four legs/aprons with drawers + shelf.
 
-    A table superset carrying one or two apron-hung drawers and an optional lower
-    shelf. Coordinates match the shared frame: X = width, Y = depth (front at
-    -Y), Z = height (top surface at ``height``).
+    A table superset carrying one to three apron-hung drawers and an optional
+    lower shelf. Coordinates match the shared frame: X = width, Y = depth
+    (front at -Y), Z = height (top surface at ``height``).
     """
 
     kind: str = "nightstand"
@@ -1324,7 +1365,7 @@ class NightstandSpec:
     leg_inset: float = 25.0        # leg outer face in from the top edge
     apron_height: float = 90.0
     apron_thickness: float = 20.0
-    drawers: int = 1               # stacked apron-hung drawers (0-2)
+    drawers: int = 1               # stacked apron-hung drawers (0-3)
     drawer_front_height: float = 130.0
     # Optional per-drawer front heights, top→bottom (graduate shallower-to-deeper);
     # when empty every drawer uses ``drawer_front_height``.
@@ -1345,7 +1386,7 @@ class NightstandSpec:
     species: str = ""
 
     def __post_init__(self) -> None:
-        self.joinery = _coerce_enum(Joinery, self.joinery)
+        self.joinery = _coerce_enum(Joinery, self.joinery, aliases=JOINERY_ALIASES)
         self.top_fixing = _coerce_enum(TopFixing, self.top_fixing)
         self.drawer_corner_joint = _coerce_enum(CornerJoint, self.drawer_corner_joint)
         self.grain = _coerce_enum(
@@ -1431,7 +1472,7 @@ class DeskSpec:
     species: str = ""
 
     def __post_init__(self) -> None:
-        self.joinery = _coerce_enum(Joinery, self.joinery)
+        self.joinery = _coerce_enum(Joinery, self.joinery, aliases=JOINERY_ALIASES)
         self.top_fixing = _coerce_enum(TopFixing, self.top_fixing)
         self.drawer_corner_joint = _coerce_enum(CornerJoint, self.drawer_corner_joint)
         self.grain = _coerce_enum(
@@ -1510,7 +1551,7 @@ class WorkbenchSpec:
     species: str = "beech"         # a hard, tough bench wood
 
     def __post_init__(self) -> None:
-        self.joinery = _coerce_enum(Joinery, self.joinery)
+        self.joinery = _coerce_enum(Joinery, self.joinery, aliases=JOINERY_ALIASES)
         self.top_fixing = _coerce_enum(TopFixing, self.top_fixing)
         # ``dog_holes`` / ``top_laminations`` are plain counts; a hand-written
         # spec may pass a dict/string/float by mistake. Coerce to a safe int
@@ -2211,7 +2252,7 @@ an optional lower shelf.
   "top_thickness": 20,
   "leg": <square leg, e.g. 40>, "leg_inset": <from the top edge, e.g. 25>,
   "apron_height": 90, "apron_thickness": 20,
-  "drawers": <0-2 stacked drawers>,
+  "drawers": <0-3 stacked drawers>,
   "drawer_front_height": 130,                  // uniform front height
   "drawer_front_heights": [120, 180],          // OPTIONAL per-drawer override,
                                                // top->bottom (graduate the stack)

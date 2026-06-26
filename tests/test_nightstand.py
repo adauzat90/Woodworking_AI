@@ -131,3 +131,33 @@ def test_pocket_joinery_shows_holes_in_drilling_schedule():
     # A mortise-and-tenon nightstand has no pocket holes.
     mt = drilling_schedule(_ns(drawers=1, joinery="mortise_tenon"))
     assert not any("pocket" in o.operation.lower() for o in mt.ops)
+
+
+def test_three_graduated_drawers():
+    # A nightstand supports up to three drawers; all three must appear with
+    # their individual graduated heights (the count cap used to drop the third).
+    spec = _ns(drawers=3, drawer_front_heights=[120, 155, 195])
+    fronts = [p for p in generate_cutlist(spec).parts
+              if p.name.startswith("Drawer front")]
+    assert sorted(round(p.width) for p in fronts) == [120, 155, 195]
+    assert sum(l.label.startswith("Drawer front") for l in panel_layout(spec)) == 3
+    assert validate(spec).ok
+
+
+def test_mortise_and_tenon_aliases_resolve_not_pocket():
+    # A natural M&T spelling must resolve to the enum, not silently degrade to a
+    # string (which made the leg joint fall back to pocket-hole).
+    from woodworking_ai.dsl import Joinery
+    for alias in ("mortise_and_tenon", "mortise-and-tenon", "M&T"):
+        spec = _ns(joinery=alias)
+        assert spec.joinery == Joinery.MORTISE_TENON, alias
+        leg = next(o for o in joinery_schedule(spec).ops if "leg" in o.part.lower())
+        assert "pocket" not in leg.tool.lower(), alias
+    # The strict cabinet load path resolves the alias too, but still rejects a
+    # genuinely unknown joint.
+    assert spec_from_dict({"kind": "cabinet", "cabinet_type": "base",
+                           "joinery": "M&T"}).joinery == Joinery.MORTISE_TENON
+    import pytest as _pytest
+    with _pytest.raises(ValueError):
+        spec_from_dict({"kind": "cabinet", "cabinet_type": "base",
+                        "joinery": "frobnicate"})
