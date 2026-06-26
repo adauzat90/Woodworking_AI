@@ -150,6 +150,24 @@ woodai build spec.json --tools-list       # just print the tool/jig checklist
 Unmakeable joints are flagged with a feasible substitute; a tool gap never
 blocks the math.
 
+## Recent options worth knowing
+
+- **Tapered legs**: `table`/`bench`/`nightstand`/`desk` take `"leg_taper": true`
+  (+ optional `"leg_tip"`, 0 = auto). The cut list notes the taper; the envelope
+  is unchanged.
+- **Drawer runners**: a `nightstand`/`desk` drawer defaults to metal slides; set
+  `"slide_type": "wood"` for traditional wooden runners (no metal hardware, no
+  slide drilling) — the right call for a hand-tool build — or `"none"`.
+- **Bed deck**: a queen/king bed warns about slat sag; set
+  `"center_support": true` to add a centre rail + leg and clear it.
+- **Run worktop**: a `project` takes a top-level
+  `"countertop": {"material","thickness","overhang"}` for ONE continuous slab
+  spanning the base run — a per-cabinet countertop can't span multiple cabinets.
+- **Cleaner output**: `woodai build spec.json --quiet` drops the spec JSON echo;
+  `--joinery` now also prints for a project/run.
+- Unrecognized fields now print `warning: ignored unknown field '…'` — if you
+  set something and nothing changes, check for that line.
+
 ## Gotchas
 
 - **Units don't mix.** Everything in one spec uses `units` ("mm" default or
