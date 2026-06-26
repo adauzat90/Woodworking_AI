@@ -63,10 +63,20 @@ is collapsing the three parallel type registries (HIGH-2).
   premise stale); the real gap was `cli.py` at 9% → ~78% via `tests/test_cli.py`,
   and the CLI now reports a clean error on bad/missing spec JSON (the **H3** fix).
 
-**Still open** (next up): the structural Tier-3 items — collapse the triplicated
-taxonomy (HIGH-2), bring drilling/estimator under the registry (HIGH-2 §3.2),
-split the `furniture_types.py` god-module (HIGH-3), `LeggedSpec` base (MED-2), and
-the god-function decompositions (#7).
+**Tier 3 — structural (in progress):**
+- ✅ **3.1 / HIGH-2** the furniture taxonomy is single-sourced in
+  `dsl.LEAF_SPEC_TYPES`; `KNOWN_KINDS`, the loader, and `dispatch.spec_kind` all
+  derive from it (drift-guarded). Adding a type is one registry row.
+- ✅ **#7** god functions decomposed: `service.build_result` split into
+  `_estimate_section` / `_reconcile_offcuts` (which localizes the estimator
+  private access) / `_purchase_order_section`; `_validate_cabinet`'s largest
+  block extracted to `_check_cabinet_drawers_and_hinges` (321 → ~225 lines).
+
+**Still open** (next up): bring drilling/estimator under the registry
+(HIGH-2 §3.2, a `PanelRole` enum on `PanelBox`), split the `furniture_types.py`
+god-module into one module per type (HIGH-3), and a shared `LeggedSpec` base
+(MED-2). These touch geometry/drilling output or class structure, so each wants
+its own focused PR with the golden-output net.
 
 ---
 
@@ -75,7 +85,7 @@ the god-function decompositions (#7).
 | # | Issue | Severity | Status | Where |
 |---|---|---|---|---|
 | 1 | **Validator silently skips two safety checks** when a schedule raises (reports unsafe as safe) | HIGH | ✅ fixed | `validator.py:278-281, 317-320` |
-| 2 | **Furniture taxonomy is triplicated** — `KNOWN_KINDS` + `spec_kind` + `_spec_from_dict` hand-synced | HIGH | open | `dsl.py:1708,1763-1789`; `dispatch.py:51-74` |
+| 2 | **Furniture taxonomy is triplicated** — `KNOWN_KINDS` + `spec_kind` + `_spec_from_dict` hand-synced | HIGH | ✅ fixed | `dsl.LEAF_SPEC_TYPES` |
 | 3 | **Regressed magic number** — legged-furniture drawer boxes use `clear = 13.0`, the exact conflict the cleanup "killed" (`12.7`) | HIGH | ✅ fixed | `furniture_types.py:1426` |
 | 4 | **Door-panel formula computed twice and disagrees by 20 mm** — 3D model vs cut list | HIGH | ✅ fixed | `geometry.py:595-596` vs `cutlist.py:482,487-488` |
 | 5 | **CAD geometry & exporters have zero CI coverage** — 23 build123d tests skipped every run | HIGH | ✅ fixed | CI + `tests/test_*` |
