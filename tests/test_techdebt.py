@@ -218,6 +218,30 @@ def test_llm_client_is_injectable(monkeypatch):
     assert seen["model"] == "claude-haiku-4-5-20251001"
 
 
+def test_legged_drawer_box_uses_shared_partmath_dims():
+    # The legged-furniture drawer builder (nightstand/desk/workbench) must size
+    # its box through partmath.drawer_box_dims — not a local clearance. This
+    # guards against re-introducing the retired 13.0 side clearance / 25mm drop
+    # (the canonical values are SLIDE_SIDE_CLEARANCE=12.7, DRAWER_BOX_HEIGHT_DROP=40).
+    from woodworking_ai.cutlist import CutList
+    from woodworking_ai.furniture_types import _drawer_cut_parts
+    from woodworking_ai.partmath import drawer_box_dims
+    from woodworking_ai.constants import MIN_DRAWER_BOX_WIDTH_3D
+
+    opening_w, box_depth, front_h = 400.0, 300.0, 150.0
+    cl = CutList(spec_name="t")
+    _drawer_cut_parts(cl, 1, opening_w, box_depth, front_h)
+
+    box_w, box_h, _ = drawer_box_dims(
+        opening_w, front_h, box_depth, width_floor=MIN_DRAWER_BOX_WIDTH_3D)
+    parts = {p.name: p for p in cl.parts}
+    bt = 12.0
+    assert parts["Drawer end"].length == pytest.approx(max(box_w - 2 * bt, 40.0))
+    assert parts["Drawer side"].width == pytest.approx(box_h)
+    # And the old 13.0-clearance width must NOT be what we produce.
+    assert box_w != pytest.approx(max(opening_w - 2 * 13.0, 80.0))
+
+
 def test_generated_part_materials_are_canonical():
     # Every material a real cut list produces is a canonical label (or a declared
     # physical form like "plywood"); none is an ad-hoc string.

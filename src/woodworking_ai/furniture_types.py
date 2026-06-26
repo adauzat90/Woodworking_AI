@@ -42,6 +42,8 @@ from .dsl import (
     ShelfFixing, FrameJoint, FrameHanger, FrameContents, BedConnector, GrainStyle,
 )
 from .geometry import PanelBox
+from .partmath import drawer_box_dims
+from .constants import MIN_DRAWER_BOX_WIDTH_3D
 from .cutlist import CutList, Part, Hardware, assign_ids, resolve_part_stock
 from .materials import (
     MAT_TOP, MAT_LEG, MAT_APRON, MAT_SOLID, MAT_SOLID_PANEL,
@@ -1421,11 +1423,16 @@ def _drawer_cut_parts(cl: CutList, n: int, opening_w: float, box_depth: float,
     """
     if n <= 0:
         return
-    bt = 12.0                       # box wall thickness
-    bottom_t = 6.0
-    clear = 13.0                    # side-mount slide clearance each side
-    box_h = max(front_h - 25.0, 60.0)
-    box_w = max(opening_w - 2 * clear, 80.0)
+    bt = 12.0                       # box wall thickness (solid-wood drawer box)
+    bottom_t = 6.0                  # captured ply bottom
+    # Box width/height come from the one shared helper so these apron-hung
+    # drawers can't drift from cabinet drawers (this path used to hardcode a
+    # 13.0 side clearance and a 25mm height drop — the very conflict the
+    # constants unification retired in favour of SLIDE_SIDE_CLEARANCE=12.7 and
+    # DRAWER_BOX_HEIGHT_DROP=40.0). Depth is supplied by the caller (the apron
+    # opening already bounds it), so the helper's depth result is unused.
+    box_w, box_h, _ = drawer_box_dims(
+        opening_w, front_h, box_depth, width_floor=MIN_DRAWER_BOX_WIDTH_3D)
     cl.parts.append(Part(
         "Drawer front", n, length=opening_w, width=front_h, thickness=18.0,
         material=MAT_DOOR_FRONT, grain="length", notes="drawer face"))
