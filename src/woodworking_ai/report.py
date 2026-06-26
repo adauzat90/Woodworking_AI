@@ -210,6 +210,22 @@ def build_purchase_order_pdf(spec, units: str = "metric") -> bytes:
     story.append(Spacer(1, 6))
     story.append(Paragraph(
         f"<b>Grand total: {c}{po.grand_total:.2f}</b>", body))
+
+    # Shop consumables — kept off the reconciled grand total and clearly marked
+    # as estimates so they aren't read as part of the firm material quote.
+    if po.consumables:
+        from .purchasing import CONSUMABLES_NOTE
+        story.append(Spacer(1, 10))
+        story.append(Paragraph("Shop consumables", mini))
+        story.append(Paragraph(CONSUMABLES_NOTE, small))
+        rows = [[ln.item, ln.spec or ln.sku, f"{ln.qty:g}", ln.unit,
+                 f"{c}{ln.unit_price:.2f}", f"{c}{ln.line_total:.2f}"]
+                for ln in po.consumables]
+        rows.append(["", "", "", "", "Subtotal",
+                     f"{c}{po.consumables_total:.2f}"])
+        story.append(tbl(
+            ["Item", "Spec / SKU", "Qty", "Unit", "Unit price", "Line total"],
+            rows))
     doc.build(story)
     return buf.getvalue()
 
