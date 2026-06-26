@@ -386,6 +386,78 @@ def test_build_rejects_cyclic_subassembly():
     assert r.status_code == 400          # bad spec, surfaced not 500'd
 
 
+def test_build_combine_sheet_stock_reduces_sheets():
+    """The shop profile's combine_sheet_stock flows through to fewer sheets."""
+    base = client.post("/api/build", json={"spec": VALID_SPEC, "glb": False}).json()
+    comb = client.post("/api/build", json={
+        "spec": VALID_SPEC, "glb": False,
+        "profile": {"combine_sheet_stock": True}}).json()
+    assert comb["estimate"]["total_sheets"] <= base["estimate"]["total_sheets"]
+    # The diagram agrees with the (combined) quote.
+    assert sum(g["sheet_count"] for g in comb["nesting"]) == comb["estimate"]["total_sheets"]
+
+
+def test_build_with_owned_boards_returns_cutplan():
+    """Declaring offcuts adds a 'cut from my stock' plan to the bundle."""
+    boards = [{"length": 1200, "width": 1200, "thickness": 18, "qty": 1,
+               "id": "shop offcut"}]
+    d = client.post("/api/build", json={
+        "spec": VALID_SPEC, "glb": False, "boards": boards}).json()
+    cp = d.get("cutplan")
+    assert cp is not None
+    assert cp["placed_count"] >= 1 and cp["boards_used"] >= 1
+    assert "shortfall" in cp
+    # No boards -> no cutplan section (unchanged bundle).
+    d2 = client.post("/api/build", json={"spec": VALID_SPEC, "glb": False}).json()
+    assert "cutplan" not in d2
+
+
+def test_offcuts_lower_the_quote_and_report_savings():
+    """Cutting parts from owned stock prices only what's left to buy."""
+    base = client.post("/api/build", json={"spec": VALID_SPEC, "glb": False}).json()
+    boards = [{"length": 1500, "width": 1200, "thickness": 18, "qty": 1}]
+    d = client.post("/api/build", json={
+        "spec": VALID_SPEC, "glb": False, "boards": boards}).json()
+    e = d["estimate"]
+    assert e["material"] < base["estimate"]["material"]
+    assert e["total"] < base["estimate"]["total"]
+    assert e["stock_savings"] > 0
+    assert e["material_gross"] == base["estimate"]["material"]
+    assert e["from_stock_parts"] >= 1
+    # The "what to buy" nesting matches the net sheet count (diagram == quote).
+    assert sum(g["sheet_count"] for g in d["nesting"]) == e["total_sheets"]
+
+
+def test_shopping_list_matches_quote_with_offcuts_and_combine():
+    """The purchase order's grand total equals the cost total in every mode,
+    so the buy-list never contradicts the quote (Dale's catch)."""
+    def grand(body):
+        d = client.post("/api/build", json=body).json()
+        po = d["purchase_order"]
+        return round(d["estimate"]["total"], 2), round(po["grand_total"], 2)
+    boards = [{"length": 1500, "width": 1200, "thickness": 18, "qty": 1}]
+    for body in (
+        {"spec": VALID_SPEC, "glb": False},
+        {"spec": VALID_SPEC, "glb": False, "profile": {"combine_sheet_stock": True}},
+        {"spec": VALID_SPEC, "glb": False, "boards": boards},
+        {"spec": VALID_SPEC, "glb": False, "boards": boards,
+         "profile": {"combine_sheet_stock": True}},
+    ):
+        cost, po = grand(body)
+        assert cost == po, f"{body}: cost {cost} != PO {po}"
+
+
+def test_build_bundle_includes_nesting_matching_estimate():
+    d = client.post("/api/build", json={"spec": VALID_SPEC, "glb": False}).json()
+    assert "nesting" in d and d["nesting"]
+    total = sum(g["sheet_count"] for g in d["nesting"])
+    assert total == d["estimate"]["total_sheets"]
+    # Every group carries to-scale sheet dims and labelled placements.
+    g = d["nesting"][0]
+    assert g["sheet_length"] > 0 and g["sheet_width"] > 0
+    assert all(r["label"] for s in g["sheets"] for r in s)
+
+
 def test_build_bundle_lists_model_sections():
     d = client.post("/api/build", json={"spec": VALID_SPEC}).json()
     assert "model_sections" in d

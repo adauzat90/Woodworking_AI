@@ -98,6 +98,7 @@ class SheetGroup:
     oversize: int = 0         # parts too big for one sheet
     form: str = ""            # physical form, when declared (plywood/mdf/...)
     species: str = ""         # wood species, when declared
+    unit_price: float = 0.0   # per-sheet price actually charged (0 = derive it)
 
 
 @dataclass
@@ -256,13 +257,58 @@ def _edge_banding_metres(spec: CabinetSpec) -> float:
     return (2 * spec.box_height + spec.interior_width) / 1000.0
 
 
+def _pack_sheet_groups(parts, prices: PriceBook, sheet: SheetSize,
+                       combine_sheet_stock: bool) -> tuple[list[SheetGroup], float]:
+    """Pack sheet-good *parts* onto sheets; return (groups, material_cost).
+
+    Default keys each buyable product (usage label / declared form+species) to
+    its own sheets. ``combine_sheet_stock`` groups by thickness alone, so one
+    grade of sheet covers the whole build — priced at the dearest contributing
+    grade so the quote never under-counts. Solid lumber is excluded.
+    """
+    groups: dict[tuple[str, str, str, float], list] = {}
+    contributors: dict[tuple[str, str, str, float], set] = {}
+    for p in parts:
+        if p.is_solid_lumber:
+            continue
+        key = (("", "", "", p.thickness) if combine_sheet_stock else p.stock_key)
+        groups.setdefault(key, [])
+        contributors.setdefault(key, set()).add((p.stock_label, p.form, p.species))
+        # Door/drawer fronts cut from one sheet in sequence for a grain/colour
+        # match; grain locks each part's orientation on the sheet.
+        seq = "front" if p.material == MAT_DOOR_FRONT else ""
+        groups[key].extend([(p.length, p.width, p.grain, seq)] * p.qty)
+
+    sheet_groups: list[SheetGroup] = []
+    material_cost = 0.0
+    for (label, form, species, thickness), rects in sorted(groups.items()):
+        sheets, util, oversize = pack_sheets(rects, sheet)
+        if combine_sheet_stock:
+            price = max(sheet_price(prices, lbl, frm, sp)
+                        for (lbl, frm, sp) in contributors[(label, form, species, thickness)])
+            disp = "sheet goods"
+        else:
+            price = sheet_price(prices, label, form, species)
+            disp = label
+        material_cost += sheets * price
+        sheet_groups.append(SheetGroup(
+            material=disp, thickness=thickness, part_count=len(rects),
+            sheets=sheets, utilization=util, oversize=oversize,
+            form=form, species=species, unit_price=price))
+    return sheet_groups, material_cost
+
+
 def _estimate_project(project: ComponentGroup, prices: PriceBook,
-                      sheet: SheetSize) -> Estimate:
+                      sheet: SheetSize,
+                      combine_sheet_stock: bool = False) -> Estimate:
     """Sum component estimates into one quote.
 
-    Sheets are counted per component (each cabinet is cut from its own sheets,
-    which is how a shop actually buys material), then like sheet groups are
-    merged for the report. Hardware, banding and labour add straight up.
+    By default sheets are counted per component (each cabinet is cut from its own
+    sheets, which is how a shop buying distinct products actually orders), then
+    like sheet groups are merged for the report. With ``combine_sheet_stock`` the
+    whole run is one buy: every cabinet's sheet parts of the same thickness nest
+    together across the project, so a kitchen run packs far fewer, fuller sheets.
+    Hardware, banding, labour and solid lumber always add straight up.
     """
     groups: dict[tuple[str, float], SheetGroup] = {}
     lumber: dict[tuple[str, float], LumberGroup] = {}
@@ -271,7 +317,8 @@ def _estimate_project(project: ComponentGroup, prices: PriceBook,
     labour_hours = labour_cost = lumber_cost = 0.0
     finish_cost = finish_m2 = 0.0
     for comp in project.components:
-        e = estimate(comp.spec, prices=prices, sheet=sheet)
+        e = estimate(comp.spec, prices=prices, sheet=sheet,
+                     combine_sheet_stock=combine_sheet_stock)
         material_cost += e.material_cost
         hardware_cost += e.hardware_cost
         banding_cost += e.edge_banding_cost
@@ -306,9 +353,19 @@ def _estimate_project(project: ComponentGroup, prices: PriceBook,
                 lumber[key] = LumberGroup(g.material, g.thickness, g.part_count,
                                           g.board_feet, g.cost,
                                           form=g.form, species=g.species)
+
+    # When combining, re-pack every component's sheet parts as one run-wide buy
+    # (and re-price it) instead of the per-component sum — so the quote matches
+    # the run-wide nesting diagram and captures the cross-cabinet savings.
+    if combine_sheet_stock:
+        sheet_groups, material_cost = _pack_sheet_groups(
+            generate_cutlist(project).parts, prices, sheet, True)
+    else:
+        sheet_groups = sorted(groups.values(),
+                              key=lambda g: (g.material, g.thickness))
+
     est = Estimate(
-        spec_name=project.name, groups=sorted(
-            groups.values(), key=lambda g: (g.material, g.thickness)),
+        spec_name=project.name, groups=sheet_groups,
         material_cost=material_cost, hardware_cost=hardware_cost,
         edge_banding_cost=banding_cost, edge_banding_m=banding_m,
         labour_hours=labour_hours, labour_cost=labour_cost,
@@ -324,8 +381,14 @@ def _estimate_project(project: ComponentGroup, prices: PriceBook,
 
 def estimate(spec, *, cutlist: CutList | None = None,
              prices: PriceBook | None = None,
-             sheet: SheetSize | None = None) -> Estimate:
-    """Produce a cost estimate for a cabinet, table, or group."""
+             sheet: SheetSize | None = None,
+             combine_sheet_stock: bool = False) -> Estimate:
+    """Produce a cost estimate for a cabinet, table, or group.
+
+    ``combine_sheet_stock`` nests all sheet parts of the same thickness onto
+    shared sheets (one grade of stock for the whole build) instead of keeping
+    each usage product on its own sheets — fewer, fuller sheets.
+    """
     prices = prices or PriceBook()
     sheet = sheet or SheetSize()
     kind = spec_kind(spec)
@@ -338,36 +401,15 @@ def estimate(spec, *, cutlist: CutList | None = None,
         est._rate = prices.shop_rate_per_hour
         return est
     if kind == GROUP:
-        return _estimate_project(spec, prices, sheet)
+        return _estimate_project(spec, prices, sheet,
+                                 combine_sheet_stock=combine_sheet_stock)
     cl = cutlist or generate_cutlist(spec)
 
-    # Group panels for nesting. When a part declares a physical form/species,
-    # parts that share (form, species, thickness) merge into one buyable stock —
-    # so an oak-plywood carcass and oak-plywood doors nest as one. Otherwise the
-    # legacy key is the usage label, keeping distinct products on their own
-    # sheets. Solid lumber is priced by the board foot below, so it is excluded.
-    groups: dict[tuple[str, str, str, float], list] = {}
-    for p in cl.parts:
-        if p.is_solid_lumber:
-            continue
-        key = p.stock_key
-        groups.setdefault(key, [])
-        # Door/drawer fronts cut from one sheet in sequence for a grain/colour
-        # match; grain locks each part's orientation on the sheet.
-        seq = "front" if p.material == MAT_DOOR_FRONT else ""
-        groups[key].extend([(p.length, p.width, p.grain, seq)] * p.qty)
-
-    sheet_groups: list[SheetGroup] = []
-    material_cost = 0.0
-    for (label, form, species, thickness), rects in sorted(groups.items()):
-        sheets, util, oversize = pack_sheets(rects, sheet)
-        price = sheet_price(prices, label, form, species)
-        material_cost += sheets * price
-        sheet_groups.append(SheetGroup(
-            material=label, thickness=thickness, part_count=len(rects),
-            sheets=sheets, utilization=util, oversize=oversize,
-            form=form, species=species,
-        ))
+    # Pack the sheet goods (see :func:`_pack_sheet_groups`): each buyable product
+    # on its own sheets by default, or all same-thickness parts nested together
+    # when ``combine_sheet_stock`` is set.
+    sheet_groups, material_cost = _pack_sheet_groups(
+        cl.parts, prices, sheet, combine_sheet_stock)
 
     # Solid lumber, priced by the board foot (with a milling-waste allowance).
     lumber_groups: list[LumberGroup] = []

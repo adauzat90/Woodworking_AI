@@ -117,6 +117,19 @@ class PurchaseOrder:
                 round(ln.line_total, 2))))
         rows.append(",".join(("", "", "GRAND TOTAL", "", "", "", "",
                               str(round(self.grand_total, 2)))))
+        if self.consumables:
+            rows.append("")
+            rows.append(",".join(esc(v) for v in (
+                SUPPLIER_CONSUMABLES, "note", CONSUMABLES_NOTE, "",
+                "", "", "", "")))
+            for ln in self.consumables:
+                rows.append(",".join(esc(v) for v in (
+                    ln.supplier, ln.category, ln.item, ln.spec or ln.sku,
+                    round(ln.qty, 3), ln.unit, round(ln.unit_price, 4),
+                    round(ln.line_total, 2))))
+            rows.append(",".join(esc(v) for v in (
+                "", "", "consumables subtotal (not in grand total)", "",
+                "", "", "", round(self.consumables_total, 2))))
         return "\n".join(rows)
 
     def report_text(self) -> str:
@@ -135,7 +148,8 @@ class PurchaseOrder:
         out.append(f"  GRAND TOTAL: {c}{self.grand_total:.2f}")
         if self.consumables:
             out.append("")
-            out.append("  Shop consumables (not in the total above):")
+            out.append("  Shop consumables:")
+            out.append(f"    ({CONSUMABLES_NOTE})")
             for ln in self.consumables:
                 alt = f"  [or: {ln.alt}]" if ln.alt else ""
                 out.append(
@@ -151,7 +165,9 @@ def _sheet_lines(est: Estimate, prices: PriceBook) -> list[POLine]:
     for g in est.groups:
         if g.sheets <= 0:
             continue
-        price = sheet_price(prices, g.material, g.form, g.species)
+        # Use the exact per-sheet price the estimate charged (set when stock is
+        # combined / re-priced for offcuts); fall back to deriving it.
+        price = g.unit_price or sheet_price(prices, g.material, g.form, g.species)
         name = stock_name(g.form, g.species, fallback=stock_label(g.material))
         product = product_hint(g.form, stock_product(g.material))
         spec = f"{product} {g.thickness:.0f}mm".strip()
@@ -256,6 +272,10 @@ def _labour_line(est: Estimate, prices: PriceBook) -> list[POLine]:
 # to the quote) and surfaced as their own section with indicative prices. Prices
 # are typical retail and overridable by editing this table.
 SUPPLIER_CONSUMABLES = "Shop consumables"
+# Shown wherever the consumables block appears, so no one mistakes the sundry
+# prices for the firm material quote.
+CONSUMABLES_NOTE = ("Estimates — typical retail; adjust to your shop. "
+                    "Not in the grand total, and clamps/brushes you may already own.")
 _GLUE_BOTTLE_PRICE = 8.0       # ~250ml PVA
 _SANDPAPER_SHEET_PRICE = 0.9   # per sheet
 _CLAMP_PRICE = 16.0            # one parallel/bar clamp (a kept tool, not per-build)
@@ -345,7 +365,8 @@ def _apply_sources(lines: list[POLine]) -> None:
 
 def purchase_order(spec, *, prices: PriceBook | None = None,
                    sheet: SheetSize | None = None,
-                   cutlist: CutList | None = None) -> PurchaseOrder:
+                   cutlist: CutList | None = None,
+                   est: Estimate | None = None) -> PurchaseOrder:
     """Build a supplier-grouped purchase order for *spec*.
 
     Works on a cabinet, a table, or a whole :class:`ComponentGroup`/project — a
@@ -354,10 +375,14 @@ def purchase_order(spec, *, prices: PriceBook | None = None,
     order's :pyattr:`PurchaseOrder.grand_total` equals ``estimate(spec,
     prices=prices).total`` to the penny: every line is billed off the same
     numbers the quote uses.
+
+    Pass ``est`` to bill off an already-computed estimate (e.g. one that nests
+    combined stock, or that has been reduced for owned offcuts) so the buy-list
+    matches the quote the user is looking at instead of re-pricing everything new.
     """
     prices = prices or PriceBook()
     sheet = sheet or SheetSize()
-    est = estimate(spec, cutlist=cutlist, prices=prices, sheet=sheet)
+    est = est or estimate(spec, cutlist=cutlist, prices=prices, sheet=sheet)
 
     if is_group(spec):
         # A group's PO needs only merged hardware here; sheet/lumber/banding

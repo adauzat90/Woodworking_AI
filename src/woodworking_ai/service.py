@@ -189,6 +189,7 @@ class Assembly:
     prices: Any = None
     sheet: Any = None
     tooling: Any = None
+    combine_sheet_stock: bool = False
 
     @cached_property
     def validation(self):
@@ -205,7 +206,8 @@ class Assembly:
     @cached_property
     def estimate(self):
         return estimate(self.spec, cutlist=self.cutlist,
-                        prices=self.prices, sheet=self.sheet)
+                        prices=self.prices, sheet=self.sheet,
+                        combine_sheet_stock=self.combine_sheet_stock)
 
     @cached_property
     def drilling(self):
@@ -225,7 +227,8 @@ class Assembly:
         return _plan(self.spec, self.tooling)
 
 
-def assemble(spec, *, prices=None, sheet=None, tooling=None) -> Assembly:
+def assemble(spec, *, prices=None, sheet=None, tooling=None,
+             combine_sheet_stock=False) -> Assembly:
     """Run (lazily) the design pipeline for *spec* once, returning live objects.
 
     The single entry point both the CLI and :func:`build_result` use so the two
@@ -233,7 +236,8 @@ def assemble(spec, *, prices=None, sheet=None, tooling=None) -> Assembly:
     override the costing defaults when supplied; ``tooling`` (a
     :class:`~tooling.ShopTooling`) constrains validation to makeable joinery.
     """
-    return Assembly(spec, prices=prices, sheet=sheet, tooling=tooling)
+    return Assembly(spec, prices=prices, sheet=sheet, tooling=tooling,
+                    combine_sheet_stock=combine_sheet_stock)
 
 
 def cutplan_result(spec, boards, *, cutlist=None, kerf: float = 3.0) -> dict[str, Any]:
@@ -289,7 +293,7 @@ def cutplan_result(spec, boards, *, cutlist=None, kerf: float = 3.0) -> dict[str
 
 def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
                  prices=None, sheet=None, tooling=None,
-                 boards=None) -> dict[str, Any]:
+                 boards=None, combine_sheet_stock: bool = False) -> dict[str, Any]:
     """Full design bundle for *spec* — a cabinet, table, or whole project.
 
     Always JSON-serialisable; aggregate stages (cut list, cost, drilling,
@@ -302,7 +306,8 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
     the owned stock. Omitted entirely when no boards are given, so the bundle is
     fully backward compatible.
     """
-    asm = assemble(spec, prices=prices, sheet=sheet, tooling=tooling)
+    asm = assemble(spec, prices=prices, sheet=sheet, tooling=tooling,
+                   combine_sheet_stock=combine_sheet_stock)
     v = asm.validation
     result: dict[str, Any] = {
         "spec": spec.to_dict(),
@@ -348,6 +353,12 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
     ]
     result["cutlist_summary"] = cl.summary()
 
+    # Sheet-nesting placements for the visual cut diagram — the same pack the
+    # cost estimate counts sheets from, so the diagram and the quote agree.
+    from .nesting import nest_layout
+    result["nesting"] = nest_layout(spec, sheet=sheet, cutlist=cl,
+                                    combine_sheet_stock=combine_sheet_stock)
+
     # Optional "cut from my stock" plan — only when the caller supplied owned
     # boards, so the bundle is unchanged for every existing caller.
     if boards:
@@ -371,6 +382,7 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
     }
 
     est = asm.estimate
+    po_est = est   # the estimate the buy-list bills off (reduced below for offcuts)
     result["estimate"] = {
         "currency": est.currency,
         "total": round(est.total, 2),
@@ -404,10 +416,58 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
         ],
     }
 
-    # Purchase order — the orderable buy-list grouped by supplier/brand. Its
-    # grand total reconciles with the estimate above (same prices/sheet).
+    # Reconcile the quote with owned offcuts: price only the sheet parts left to
+    # buy after cutting the rest from stock on hand, and report the saving. The
+    # "Lumber" nesting diagram then shows what you'll BUY (the reduced parts), so
+    # the diagram, the From-stock view and the quote all agree.
+    if boards and result.get("cutplan"):
+        from dataclasses import replace as _replace
+        from .estimator import PriceBook, SheetSize, _pack_sheet_groups
+        from .nesting import nest_parts
+        placed: dict[str, int] = {}
+        for b in result["cutplan"]["boards"]:
+            for pl in b["placements"]:
+                pid = pl.get("part_id") or ""
+                placed[pid] = placed.get(pid, 0) + 1
+        if placed:
+            reduced = []
+            for p in cl.parts:
+                cut = placed.get(p.id, 0)
+                q = p.qty - cut
+                if q > 0:
+                    reduced.append(_replace(p, qty=q) if cut else p)
+            pb = prices or PriceBook()
+            ss = sheet or SheetSize()
+            net_groups, net_material = _pack_sheet_groups(
+                reduced, pb, ss, combine_sheet_stock)
+            gross_material = est.material_cost
+            e = result["estimate"]
+            e["material_gross"] = round(gross_material, 2)
+            e["material"] = round(net_material, 2)
+            e["stock_savings"] = round(gross_material - net_material, 2)
+            e["total"] = round(est.total - (gross_material - net_material), 2)
+            e["total_sheets"] = sum(g.sheets for g in net_groups)
+            e["from_stock_parts"] = sum(placed.values())
+            e["groups"] = [
+                {"material": g.material,
+                 **_stock_fields(g.form, g.species, g.material, solid=False),
+                 "thickness": g.thickness, "form": g.form, "species": g.species,
+                 "parts": g.part_count, "sheets": g.sheets,
+                 "utilization": round(g.utilization, 3), "oversize": g.oversize}
+                for g in net_groups
+            ]
+            result["nesting"] = nest_parts(
+                reduced, sheet=ss, combine_sheet_stock=combine_sheet_stock)
+            # Bill the buy-list off the reduced estimate so the shopping list
+            # matches the quote (and stops listing stock you already own).
+            po_est = _replace(est, material_cost=net_material, groups=net_groups)
+            po_est._rate = getattr(est, "_rate", pb.shop_rate_per_hour)
+
+    # Purchase order — the orderable buy-list grouped by supplier/brand. Bills off
+    # the same estimate shown above (combine-aware, and reduced for offcuts) so the
+    # buy-list total equals the quote.
     from .purchasing import purchase_order
-    po = purchase_order(spec, prices=prices, sheet=sheet, cutlist=cl)
+    po = purchase_order(spec, prices=prices, sheet=sheet, cutlist=cl, est=po_est)
     def _po_line(ln):
         return {"supplier": ln.supplier, "category": ln.category, "item": ln.item,
                 "spec": ln.spec, "qty": round(ln.qty, 3), "unit": ln.unit,

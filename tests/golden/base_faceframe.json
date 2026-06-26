@@ -1038,6 +1038,7 @@
         "sheets": 1,
         "species": "",
         "thickness": 6.0,
+        "unit_price": 30.0,
         "utilization": 0.1978
       },
       {
@@ -1048,6 +1049,7 @@
         "sheets": 1,
         "species": "",
         "thickness": 18.0,
+        "unit_price": 95.0,
         "utilization": 0.0927
       },
       {
@@ -1058,6 +1060,7 @@
         "sheets": 1,
         "species": "",
         "thickness": 12.0,
+        "unit_price": 55.0,
         "utilization": 0.0655
       },
       {
@@ -1068,6 +1071,7 @@
         "sheets": 1,
         "species": "",
         "thickness": 18.0,
+        "unit_price": 70.0,
         "utilization": 0.4892
       }
     ],

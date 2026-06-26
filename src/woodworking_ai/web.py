@@ -106,6 +106,10 @@ class _SpecBody(BaseModel):
 
 class BuildRequest(_SpecBody):
     glb: bool = True
+    # Owned offcuts / sheets to cut from first ("cut from my stock"). Each item:
+    # {length, width, thickness, qty, form?, species?, id?}. Loose dicts — parsed
+    # by StockBoard.from_dict, which tolerates partial/string input.
+    boards: list[dict[str, Any]] | None = None
 
 
 class DesignRequest(BaseModel):
@@ -113,6 +117,7 @@ class DesignRequest(BaseModel):
     profile: dict[str, Any] | None = None
     prices: dict[str, Any] | None = None
     sheet: dict[str, Any] | None = None
+    boards: list[dict[str, Any]] | None = None
     glb: bool = True
     # Cap the paid LLM repair loop: a client cannot drive an unbounded number of
     # round-trips (Phase 1.4). Out-of-range values are clamped, not rejected, so
@@ -222,6 +227,12 @@ def _tooling_of(body):
     return prof.tooling if prof else None
 
 
+def _combine_stock(body) -> bool:
+    """Whether to nest all same-thickness sheet parts together (shop policy)."""
+    prof = _profile_of(body)
+    return bool(prof.combine_sheet_stock) if prof else False
+
+
 def _pricing_overrides(body):
     """Pull optional ``prices`` / ``sheet`` overrides from a request body.
 
@@ -264,7 +275,8 @@ def api_build(body: BuildRequest) -> JSONResponse:
     try:
         return JSONResponse(build_result(
             spec, want_glb=body.glb, prices=prices, sheet=sheet,
-            tooling=_tooling_of(body)))
+            tooling=_tooling_of(body), combine_sheet_stock=_combine_stock(body),
+            boards=body.boards or None))
     except Exception:  # defensive: never 500 with a stack trace
         logger.exception("build failed")
         raise HTTPException(status_code=500, detail="build failed")
@@ -291,7 +303,8 @@ def api_design(body: DesignRequest) -> JSONResponse:
         raise HTTPException(status_code=502, detail="designer failed")
     prices, sheet = _pricing_overrides(body)
     bundle = build_result(res.spec, want_glb=body.glb, prices=prices, sheet=sheet,
-                          tooling=tooling)
+                          tooling=tooling, combine_sheet_stock=_combine_stock(body),
+                          boards=body.boards or None)
     bundle["attempts"] = res.attempts
     return JSONResponse(bundle)
 

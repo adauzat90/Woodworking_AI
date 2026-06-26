@@ -8,190 +8,506 @@
 <script type="module"
   src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
 <style>
-  :root { --bg:#1c1a17; --panel:#262320; --line:#3a352f; --wood:#caa472;
-          --accent:#9c6b43; --text:#ece6dd; --muted:#a59c8e; }
+  /* ============================================================
+     Woodworking AI — design system
+     Warm, crafted, precise. Single file, system fonts, no CDN.
+     ============================================================ */
+  :root {
+    color-scheme: dark;
+    --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+                 Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+
+    /* Surfaces — real luminance steps so depth reads */
+    --bg:        #16130f;
+    --panel:     #211c17;
+    --surface:   #2a241d;
+    --surface-2: #342d24;
+    --card:      #2a241d;
+    --line:      #3d352b;
+    --line-soft: #2d271f;
+    --stage-1:   #241d16;
+    --stage-2:   #100c08;
+
+    /* Brand — warm wood; accent is saturated enough to read "click me" */
+    --wood:      #e0aa6b;
+    --wood-deep: #b9763c;
+    --accent:    #c47a3d;
+    --accent-hi: #d98c4a;
+    --accent-ink:#1a1208;
+    --accent-soft: rgba(196,122,61,.14);
+
+    /* Text */
+    --text:  #f2ebe0;
+    --muted: #b3a896;
+    --faint: #80776a;
+
+    /* Semantic */
+    --ok:#7fcf91;  --ok-bg:#1d3a26;
+    --bad:#e8978a; --bad-bg:#3d2120;
+    --warn:#e8cd76; --warn-bg:#3a3320;
+
+    /* Radius */
+    --r-sm:7px; --r-md:11px; --r-lg:15px; --r-pill:999px;
+
+    /* Elevation */
+    --sh-1:0 1px 2px rgba(0,0,0,.30);
+    --sh-2:0 6px 18px rgba(0,0,0,.38);
+    --sh-3:0 16px 40px rgba(0,0,0,.50);
+    --sh-inset:inset 0 1px 0 rgba(255,255,255,.04);
+
+    /* Spacing */
+    --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px;
+  }
+
+  /* Light palette — warm paper, not clinical white. Applied when the OS asks
+     for light (unless the user forced dark) or when the user picks light. */
+  @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+      color-scheme: light;
+      --bg:#f3ecdf; --panel:#fbf7ef; --surface:#fffdf8; --surface-2:#f1e7d4;
+      --card:#fffdf8; --line:#e2d6c2; --line-soft:#ece2d0;
+      --stage-1:#efe4d1; --stage-2:#d9c9ad;
+      --wood:#a9651f; --wood-deep:#8a4e16; --accent:#b56a2c; --accent-hi:#a25d23;
+      --accent-ink:#fff; --accent-soft:rgba(181,106,44,.12);
+      --text:#2a2118; --muted:#6b5f4f; --faint:#9a8d79;
+      --ok:#2f8a4d; --ok-bg:#dcefe0; --bad:#bb4a3c; --bad-bg:#f6dcd7;
+      --warn:#9a7a16; --warn-bg:#f4ead0;
+      --sh-1:0 1px 2px rgba(60,40,20,.08); --sh-2:0 6px 18px rgba(60,40,20,.12);
+      --sh-3:0 16px 40px rgba(60,40,20,.18); --sh-inset:inset 0 1px 0 rgba(255,255,255,.6);
+  } }
+  :root[data-theme="light"] {
+      color-scheme: light;
+      --bg:#f3ecdf; --panel:#fbf7ef; --surface:#fffdf8; --surface-2:#f1e7d4;
+      --card:#fffdf8; --line:#e2d6c2; --line-soft:#ece2d0;
+      --stage-1:#efe4d1; --stage-2:#d9c9ad;
+      --wood:#a9651f; --wood-deep:#8a4e16; --accent:#b56a2c; --accent-hi:#a25d23;
+      --accent-ink:#fff; --accent-soft:rgba(181,106,44,.12);
+      --text:#2a2118; --muted:#6b5f4f; --faint:#9a8d79;
+      --ok:#2f8a4d; --ok-bg:#dcefe0; --bad:#bb4a3c; --bad-bg:#f6dcd7;
+      --warn:#9a7a16; --warn-bg:#f4ead0;
+      --sh-1:0 1px 2px rgba(60,40,20,.08); --sh-2:0 6px 18px rgba(60,40,20,.12);
+      --sh-3:0 16px 40px rgba(60,40,20,.18); --sh-inset:inset 0 1px 0 rgba(255,255,255,.6);
+  }
+
   * { box-sizing: border-box; }
-  body { margin:0; font:14px/1.5 system-ui, sans-serif; background:var(--bg);
-         color:var(--text); }
-  header { padding:14px 20px; border-bottom:1px solid var(--line);
-           display:flex; align-items:baseline; gap:12px; }
-  header h1 { font-size:18px; margin:0; }
-  header span { color:var(--muted); font-size:13px; }
-  .wrap { display:grid; grid-template-columns:340px 1fr; gap:0; height:calc(100vh - 53px); }
-  .controls { padding:18px; overflow-y:auto; border-right:1px solid var(--line); }
-  .preview { display:flex; flex-direction:column; min-width:0; }
-  .stage { flex:1; background:#141210; display:flex; align-items:center;
-           justify-content:center; min-height:240px; position:relative; }
-  model-viewer, .stage img { width:100%; height:100%; }
-  .stage .ph { color:var(--muted); }
-  .buildbar { position:absolute; left:50%; bottom:12px; transform:translateX(-50%);
-    display:flex; align-items:center; gap:12px; background:rgba(28,26,23,.86);
-    border:1px solid var(--line); border-radius:10px; padding:8px 14px;
-    backdrop-filter:blur(4px); max-width:92%; }
+  html, body { height:100%; }
+  body { margin:0; font:14px/1.55 var(--font-sans); background:var(--bg);
+         color:var(--text); -webkit-font-smoothing:antialiased; }
+
+  /* ---- header / app bar ---- */
+  header { padding:12px 20px; background:var(--panel);
+           border-bottom:1px solid var(--line); box-shadow:var(--sh-1);
+           display:flex; align-items:center; gap:12px; position:relative; z-index:5; }
+  .brand { display:flex; align-items:center; gap:10px; }
+  .brand .mark { width:30px; height:30px; border-radius:9px; flex:0 0 auto;
+    background:linear-gradient(150deg, var(--accent), var(--wood-deep));
+    display:flex; align-items:center; justify-content:center; box-shadow:var(--sh-1); }
+  .brand .mark svg { width:18px; height:18px; color:#fff; }
+  header h1 { font-size:16px; font-weight:650; margin:0; letter-spacing:-.01em; }
+  header .tag { color:var(--muted); font-size:12.5px; }
+  header .spacer { flex:1; }
+  header .hdr-btn { width:auto; margin:0; padding:7px 12px; font-size:12.5px;
+    background:var(--surface); color:var(--text); border:1px solid var(--line);
+    display:inline-flex; align-items:center; gap:6px; }
+  header .hdr-btn:hover { background:var(--surface-2); border-color:var(--wood); }
+
+  /* ---- layout ---- */
+  .wrap { display:grid; grid-template-columns:360px 1fr; gap:0;
+          height:calc(100vh - 55px); }
+  .controls { padding:18px; overflow-y:auto; background:var(--panel);
+              border-right:1px solid var(--line); }
+  .preview { display:flex; flex-direction:column; min-width:0; background:var(--bg); }
+  .stage { flex:1; display:flex; align-items:center; justify-content:center;
+           min-height:240px; position:relative; overflow:hidden;
+           background:radial-gradient(125% 125% at 50% 22%, var(--stage-1) 0%, var(--stage-2) 100%); }
+  model-viewer { width:100%; height:100%; --poster-color:transparent; }
+  .stage img { max-width:100%; max-height:100%; object-fit:contain; }
+  .stage .ph { color:var(--muted); padding:24px; text-align:center; }
+
+  /* ---- value-prop empty state ---- */
+  .empty { max-width:430px; text-align:center; padding:24px; }
+  .empty svg.art { width:120px; height:120px; color:var(--wood);
+    opacity:.85; margin-bottom:6px; }
+  .empty h2 { font-size:20px; margin:6px 0 8px; font-weight:650;
+    letter-spacing:-.01em; color:var(--text); }
+  .empty p { color:var(--muted); font-size:13.5px; margin:0 auto 16px; max-width:360px; }
+  .empty .outcomes { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+  .empty .oc { font-size:11.5px; color:var(--wood); background:var(--accent-soft);
+    border:1px solid var(--line); border-radius:var(--r-pill); padding:4px 11px;
+    display:inline-flex; align-items:center; gap:5px; }
+
+  /* ---- build bar / overlays ---- */
+  .buildbar { position:absolute; left:50%; bottom:14px; transform:translateX(-50%);
+    display:flex; align-items:center; gap:14px; background:rgba(20,16,12,.82);
+    border:1px solid var(--line); border-radius:var(--r-lg); padding:9px 16px;
+    backdrop-filter:blur(8px); box-shadow:var(--sh-2); max-width:92%; }
   .buildbar label { margin:0; color:var(--text); font-size:12px; display:flex;
-    align-items:center; gap:6px; white-space:nowrap; }
+    align-items:center; gap:6px; white-space:nowrap; text-transform:none; letter-spacing:0; }
   .buildbar input[type=range] { width:160px; accent-color:var(--accent); }
-  .buildbar .sec { color:var(--wood); font-weight:600; font-size:12px;
-    min-width:120px; }
+  .buildbar .sec { color:var(--wood); font-weight:600; font-size:12px; min-width:120px;
+    font-variant-numeric:tabular-nums; }
   .buildbar input[type=checkbox] { width:auto; accent-color:var(--accent); }
-  /* Assembly-walkthrough caption synced to the build stepper (G2a). */
-  .buildcap { position:absolute; left:50%; bottom:64px; transform:translateX(-50%);
-    background:rgba(28,26,23,.92); border:1px solid var(--line); border-radius:9px;
-    padding:7px 12px; max-width:80%; color:var(--text); font-size:12px;
-    backdrop-filter:blur(4px); pointer-events:none; }
-  .buildcap ul { color:var(--muted); }
+  .buildbar button { width:auto; }
+  .buildcap { position:absolute; left:50%; bottom:70px; transform:translateX(-50%);
+    background:rgba(20,16,12,.90); border:1px solid var(--line); border-radius:var(--r-md);
+    padding:8px 14px; max-width:80%; color:var(--text); font-size:12px;
+    backdrop-filter:blur(8px); box-shadow:var(--sh-2); pointer-events:auto;
+    animation:fadeIn .25s ease; }
+  .buildcap ul { color:var(--muted); margin:3px 0 0; }
   .step-show { cursor:pointer; }
-  .step-show:hover { text-decoration:underline; }
-  /* Click-to-edit dimension overlay on the 3D view (G2b). */
-  .dimoverlay { position:absolute; top:10px; right:10px; display:flex;
-    align-items:center; gap:6px; background:rgba(28,26,23,.82);
-    border:1px solid var(--line); border-radius:8px; padding:5px 8px;
-    backdrop-filter:blur(4px); font-size:12px; flex-wrap:wrap; max-width:60%; }
-  .dim-chip { cursor:pointer; padding:1px 6px; border-radius:5px;
-    border:1px solid transparent; color:var(--text); }
-  .dim-chip:hover { border-color:var(--wood); background:var(--bg); }
-  .dim-chip b { color:var(--wood); }
+  .step-show:hover { text-decoration:underline; color:var(--wood); }
+
+  .dimoverlay { position:absolute; top:12px; right:12px; display:flex;
+    align-items:center; gap:6px; background:rgba(20,16,12,.80);
+    border:1px solid var(--line); border-radius:var(--r-md); padding:6px 10px;
+    backdrop-filter:blur(8px); box-shadow:var(--sh-1); font-size:12px;
+    flex-wrap:wrap; max-width:62%; }
+  .dim-chip { cursor:pointer; padding:2px 7px; border-radius:6px;
+    border:1px solid transparent; color:var(--text); transition:.12s; }
+  .dim-chip:hover { border-color:var(--wood); background:var(--accent-soft); }
+  .dim-chip b { color:var(--wood); font-variant-numeric:tabular-nums; }
   .dim-unit { font-size:10px; }
-  .results { height:42%; border-top:1px solid var(--line); display:flex;
-             flex-direction:column; }
-  fieldset { border:1px solid var(--line); border-radius:8px; margin:0 0 14px;
-             padding:12px; }
-  legend { padding:0 6px; color:var(--muted); font-size:12px; text-transform:uppercase;
-           letter-spacing:.05em; }
-  label { display:block; margin:8px 0 3px; font-size:12px; color:var(--muted); }
+
+  /* ---- results panel ---- */
+  .results { height:44%; min-height:300px; border-top:1px solid var(--line);
+             display:flex; flex-direction:column; background:var(--panel); }
+
+  /* ---- forms ---- */
+  fieldset { border:1px solid var(--line-soft); border-radius:var(--r-md);
+             margin:0 0 14px; padding:14px; background:var(--surface);
+             box-shadow:var(--sh-inset); }
+  legend { padding:0 7px; color:var(--muted); font-size:10.5px; font-weight:600;
+           text-transform:uppercase; letter-spacing:.06em; }
+  label { display:block; margin:9px 0 4px; font-size:11.5px; color:var(--muted);
+          font-weight:500; }
   input, select, textarea { width:100%; background:var(--bg); color:var(--text);
-    border:1px solid var(--line); border-radius:6px; padding:7px 9px; font:inherit; }
+    border:1px solid var(--line); border-radius:var(--r-sm); padding:8px 10px;
+    font:inherit; transition:border-color .12s, box-shadow .12s; box-shadow:var(--sh-inset); }
+  input:hover, select:hover, textarea:hover { border-color:var(--faint); }
+  input:focus, select:focus, textarea:focus { outline:none; border-color:var(--accent);
+    box-shadow:0 0 0 3px var(--accent-soft); }
+  select { appearance:none; -webkit-appearance:none; padding-right:30px;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23b3a896' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat:no-repeat; background-position:right 10px center; }
   textarea { resize:vertical; min-height:60px; }
-  .row { display:flex; gap:8px; } .row > div { flex:1; }
+  .row { display:flex; gap:8px; } .row > div { flex:1; min-width:0; }
   .check { display:flex; align-items:center; gap:8px; margin-top:10px; }
-  .check input { width:auto; }
-  button { width:100%; margin-top:10px; padding:10px; border:0; border-radius:7px;
-    background:var(--accent); color:#fff; font-weight:600; cursor:pointer; }
-  button.secondary { background:#3a352f; }
-  button:disabled { opacity:.5; cursor:not-allowed; }
-  .or { text-align:center; color:var(--muted); margin:14px 0; font-size:12px; }
-  .status { padding:10px 16px; border-bottom:1px solid var(--line); font-size:13px;
-            display:flex; gap:16px; flex-wrap:wrap; align-items:center; }
-  .pill { padding:2px 9px; border-radius:99px; font-size:12px; }
-  .ok { background:#244a2c; color:#b6e7c0; } .bad { background:#4a2424; color:#e7b6b6; }
-  .warn { background:#4a4124; color:#e7dab6; }
+  .check input { width:auto; accent-color:var(--accent); }
+  .check label { margin:0; }
+
+  /* ---- buttons ---- */
+  button { width:100%; margin-top:10px; padding:10px 14px; border:1px solid transparent;
+    border-radius:var(--r-sm); background:var(--accent); color:var(--accent-ink);
+    font:inherit; font-weight:600; cursor:pointer; box-shadow:var(--sh-1);
+    transition:background .12s, transform .08s, box-shadow .12s, border-color .12s;
+    display:inline-flex; align-items:center; justify-content:center; gap:7px; }
+  button:hover { background:var(--accent-hi); transform:translateY(-1px); box-shadow:var(--sh-2); }
+  button:active { transform:translateY(0); box-shadow:var(--sh-1); }
+  button.secondary { background:var(--surface); color:var(--text); border-color:var(--line); }
+  button.secondary:hover { background:var(--surface-2); border-color:var(--wood); }
+  button:disabled { opacity:.5; cursor:not-allowed; transform:none; box-shadow:none; }
+  #buildBtn { padding:12px; font-size:14px; }
+  .or { text-align:center; color:var(--faint); margin:14px 0; font-size:11px;
+        text-transform:uppercase; letter-spacing:.06em; }
+
+  /* ---- focus ring everywhere ---- */
+  :where(a,button,input,select,textarea,summary,.gcard,.dim-chip,.tabs button,.downloads button):focus-visible {
+    outline:none; box-shadow:0 0 0 3px var(--accent-soft); }
+
+  /* ---- status / money line ---- */
+  .status { padding:11px 18px; border-bottom:1px solid var(--line); font-size:13px;
+            display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .status .total { margin-left:auto; display:flex; align-items:baseline; gap:8px; }
+  .status .total .amt { font:700 21px/1 var(--font-mono); color:var(--wood);
+    font-variant-numeric:tabular-nums; }
+  .status .total .sub { color:var(--muted); font-size:12px; }
+  .pill { padding:3px 11px; border-radius:var(--r-pill); font-size:11.5px; font-weight:600;
+          display:inline-flex; align-items:center; gap:6px; }
+  .pill::before { content:"●"; font-size:8px; line-height:1; }
+  .pill.nodot::before { content:none; }
+  .ok { background:var(--ok-bg); color:var(--ok); }
+  .bad { background:var(--bad-bg); color:var(--bad); }
+  .warn { background:var(--warn-bg); color:var(--warn); }
+
+  /* ---- design notes / checks panel ---- */
+  .checks { padding:12px 18px; border-bottom:1px solid var(--line);
+            background:var(--bg); animation:fadeIn .2s ease; }
+  .checks .ck-grp { margin:0 0 10px; }
+  .checks .ck-grp:last-child { margin-bottom:0; }
+  .checks h5 { margin:0 0 6px; font-size:10.5px; text-transform:uppercase;
+    letter-spacing:.05em; color:var(--muted); font-weight:600; }
+  .checks ul { list-style:none; margin:0; padding:0; display:flex;
+    flex-direction:column; gap:5px; }
+  .checks li { font-size:12.5px; display:flex; gap:8px; align-items:flex-start;
+    line-height:1.4; }
+  .checks li .ic { flex:0 0 auto; font-size:12px; margin-top:1px; }
+  .checks li.pass .ic { color:var(--ok); }
+  .checks li.warnrow .ic { color:var(--warn); }
+  .checks li.errrow .ic { color:var(--bad); }
+  .checks li .fld { color:var(--muted); font-family:var(--font-mono); font-size:11px; }
+  .status .pill.clickable { cursor:pointer; }
+  .status .pill.clickable:hover { filter:brightness(1.12); }
+
+  /* ---- downloads ---- */
   .downloads { display:flex; gap:6px; align-items:center; flex-wrap:wrap;
-               padding:8px 16px; border-bottom:1px solid var(--line); }
-  .downloads button { width:auto; margin:0; padding:4px 10px; font-size:12px;
-    background:#3a352f; font-weight:500; }
-  .downloads button.share { background:var(--accent); margin-left:auto; }
-  .tabs { display:flex; gap:2px; padding:8px 12px 0; align-items:center; }
-  .tabs button { width:auto; margin:0; padding:6px 12px; background:transparent;
-    color:var(--muted); border-bottom:2px solid transparent; border-radius:0; font-weight:500; }
+               padding:10px 18px; border-bottom:1px solid var(--line); }
+  .downloads .dl-label { color:var(--muted); font-size:11.5px; }
+  .downloads button { width:auto; margin:0; padding:5px 11px; font-size:12px;
+    background:var(--surface); color:var(--text); border:1px solid var(--line);
+    font-weight:500; box-shadow:none; }
+  .downloads button:hover { background:var(--surface-2); border-color:var(--wood); transform:none; }
+  .downloads button.share { background:var(--accent); color:var(--accent-ink);
+    border-color:transparent; margin-left:auto; font-weight:600; }
+  .downloads button.share:hover { background:var(--accent-hi); }
+
+  /* ---- tabs ---- */
+  .tabs { display:flex; gap:2px; padding:8px 14px 0; align-items:center;
+          border-bottom:1px solid var(--line); }
+  .tabs button { width:auto; margin:0; padding:7px 13px; background:transparent;
+    color:var(--muted); border:0; border-bottom:2px solid transparent; border-radius:0;
+    font-weight:550; box-shadow:none; transition:color .12s, border-color .15s; }
+  .tabs button:hover { color:var(--text); transform:none; background:transparent; }
   .tabs button.active { color:var(--text); border-color:var(--accent); }
-  .units-toggle { display:flex; align-items:center; gap:6px; margin-left:auto;
-    font-size:11px; }
-  .units-toggle select { width:auto; margin:0; padding:3px 6px; font-size:11px; }
-  .tabpane { flex:1; overflow:auto; padding:6px 16px 16px; }
+  .units-toggle { display:flex; align-items:center; gap:6px; margin-left:auto; font-size:11px; }
+  .units-toggle select { width:auto; margin:0; padding:4px 26px 4px 8px; font-size:11px; }
+  .tabpane { flex:1; overflow:auto; padding:10px 18px 18px; }
+
+  /* ---- tables ---- */
   table { width:100%; border-collapse:collapse; font-size:12.5px; }
-  th, td { text-align:left; padding:5px 8px; border-bottom:1px solid var(--line); }
-  th { color:var(--muted); font-weight:600; position:sticky; top:0; background:var(--panel); }
-  .cost-grid { display:grid; grid-template-columns:auto auto; gap:4px 24px; max-width:340px; }
-  .cost-grid .total { font-weight:700; border-top:1px solid var(--line); padding-top:6px; }
+  th, td { text-align:left; padding:7px 10px; border-bottom:1px solid var(--line-soft); }
+  th { color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase;
+       letter-spacing:.03em; position:sticky; top:0; background:var(--panel);
+       box-shadow:0 1px 0 var(--line); }
+  tbody tr { transition:background .1s; }
+  tbody tr:nth-child(even) { background:rgba(255,255,255,.018); }
+  tbody tr:hover { background:var(--accent-soft); }
+  th.num { text-align:right; }
+  td.num { text-align:right; font-variant-numeric:tabular-nums; font-family:var(--font-mono); }
+  td.id { font-family:var(--font-mono); color:var(--wood); font-weight:600; }
+
+  .cost-grid { display:grid; grid-template-columns:auto auto; gap:5px 24px; max-width:360px; }
+  .cost-grid > div:nth-child(even) { text-align:right; font-variant-numeric:tabular-nums;
+    font-family:var(--font-mono); }
+  .cost-grid .total { font-weight:700; border-top:1px solid var(--line); padding-top:7px;
+    color:var(--wood); }
   .muted { color:var(--muted); }
-  /* Headline summary for the Lumber and Drilling tabs. */
+
+  /* ---- headline summary (Lumber / Drilling tabs) ---- */
   .headline { display:flex; align-items:center; gap:14px; margin:6px 0 14px; }
-  .headline .big { font-size:34px; font-weight:700; color:var(--wood); line-height:1; }
+  .headline .big { font:700 34px/1 var(--font-mono); color:var(--wood);
+    font-variant-numeric:tabular-nums; }
   .headline .sub { font-size:12.5px; }
   .chips { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 12px; }
-  .chip { background:#3a352f; border-radius:7px; padding:5px 11px; font-size:12px; }
-  .chip b { color:var(--wood); font-weight:700; }
-  details { margin:6px 0; border:1px solid var(--line); border-radius:7px;
-            padding:4px 10px; background:var(--bg); }
-  details[open] { padding-bottom:8px; }
-  summary { cursor:pointer; padding:3px 0; font-size:12.5px; list-style:none; }
+  .chip { background:var(--surface); border:1px solid var(--line); border-radius:var(--r-sm);
+    padding:6px 12px; font-size:12px; }
+  .chip b { color:var(--wood); font-weight:700; font-variant-numeric:tabular-nums; }
+
+  details { margin:6px 0; border:1px solid var(--line-soft); border-radius:var(--r-sm);
+            padding:5px 12px; background:var(--bg); }
+  details[open] { padding-bottom:9px; }
+  summary { cursor:pointer; padding:4px 0; font-size:12.5px; list-style:none; }
   summary::-webkit-details-marker { display:none; }
   summary::before { content:"▸ "; color:var(--muted); }
   details[open] summary::before { content:"▾ "; }
   summary .count { color:var(--muted); }
-  h4 { margin:16px 0 6px; font-size:12px; color:var(--muted);
+  h4 { margin:18px 0 7px; font-size:11px; color:var(--muted);
        text-transform:uppercase; letter-spacing:.05em; }
-  /* Pricing editor (sidebar). */
-  .price-sec { font-size:11px; color:var(--wood); text-transform:uppercase;
-               letter-spacing:.04em; margin:12px 0 3px; }
+
+  /* ---- pricing editor ---- */
+  .price-sec { font-size:10.5px; color:var(--wood); text-transform:uppercase;
+               letter-spacing:.05em; margin:13px 0 4px; font-weight:600; }
   .price-row { display:flex; align-items:center; justify-content:space-between;
                gap:8px; margin:3px 0; }
   .price-row span { font-size:11.5px; color:var(--muted); }
   input.price-input { width:96px; flex:0 0 auto; padding:5px 7px; }
-  /* Starter-project gallery (G3). */
-  .gallery-summary { font-weight:600; cursor:pointer; padding:4px 0;
-                     color:var(--wood); }
-  .gallery { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin:4px 0 8px; }
-  .gcard { text-align:left; padding:7px 9px; border:1px solid var(--line);
-           border-radius:7px; background:var(--card); cursor:pointer;
-           display:flex; flex-direction:column; gap:2px; transition:.12s; }
-  .gcard:hover { border-color:var(--wood); background:var(--bg);
-                 transform:translateY(-1px); }
-  .gcard .gtitle { font-weight:600; font-size:12.5px; }
-  .gcard .gcat { font-size:10px; text-transform:uppercase; letter-spacing:.04em;
-                 color:var(--wood); }
-  .gcard .gblurb { font-size:10.5px; color:var(--muted); line-height:1.25; }
+
+  /* ---- offcut / owned-stock editor ---- */
+  .offcut-head, .offcut-row { display:grid; grid-template-columns:1fr 1fr 1fr .7fr 26px;
+    gap:5px; align-items:center; margin:4px 0; }
+  .offcut-head { font-size:10px; text-transform:uppercase; letter-spacing:.03em;
+    margin-top:8px; }
+  .offcut-row input { padding:5px 6px; font-size:12px; }
+  .offcut-row .rm { width:26px; height:28px; margin:0; padding:0; background:var(--surface);
+    border:1px solid var(--line); color:var(--muted); font-size:15px; line-height:1;
+    box-shadow:none; }
+  .offcut-row .rm:hover { background:var(--bad-bg); color:var(--bad);
+    border-color:var(--bad); transform:none; }
+
+  /* ---- starter gallery ---- */
+  .gallery-summary { font-weight:600; cursor:pointer; padding:4px 0; color:var(--wood);
+                     font-size:13px; }
+  .gallery { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:8px 0; }
+  .gcard { text-align:left; padding:10px 11px; border:1px solid var(--line);
+           border-radius:var(--r-md); background:var(--card); cursor:pointer;
+           display:flex; flex-direction:column; align-items:flex-start; gap:4px;
+           box-shadow:var(--sh-1);
+           transition:transform .12s, box-shadow .12s, border-color .12s; }
+  .gcard:hover { border-color:var(--wood); box-shadow:var(--sh-2);
+                 transform:translateY(-2px); }
+  .gcard .gcat { font-size:9.5px; text-transform:uppercase; letter-spacing:.05em;
+                 color:var(--wood); background:var(--accent-soft); align-self:flex-start;
+                 border-radius:var(--r-pill); padding:2px 8px; font-weight:600; }
+  .gcard .gtitle { font-weight:600; font-size:13px; color:var(--text); }
+  .gcard .gblurb { font-size:11px; color:var(--muted); line-height:1.35;
+                   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+                   overflow:hidden; }
   .ph-mini { font-size:11px; color:var(--muted); padding:6px; }
 
-  /* --- Responsive: stack the sidebar above the preview on a phone/tablet
-     (G5). The bench is where plans get used — one-handed, full-width. --- */
-  @media (max-width: 820px) {
-    .wrap { grid-template-columns:1fr; height:auto; min-height:calc(100vh - 53px); }
-    .controls { border-right:none; border-bottom:1px solid var(--line);
-                max-height:none; }
-    .preview { min-height:70vh; }
+  /* ---- welcome / guide modal ---- */
+  .modal-backdrop { position:fixed; inset:0; z-index:60; display:flex;
+    align-items:center; justify-content:center; padding:20px;
+    background:rgba(10,8,6,.62); backdrop-filter:blur(3px); animation:fadeIn .2s ease; }
+  .modal { background:var(--panel); border:1px solid var(--line);
+    border-radius:var(--r-lg); box-shadow:var(--sh-3); max-width:460px; width:100%;
+    padding:24px 24px 22px; position:relative; animation:modalIn .22s ease; }
+  @keyframes modalIn { from { opacity:0; transform:translateY(10px) scale(.98); }
+    to { opacity:1; transform:none; } }
+  .modal h2 { margin:0 0 6px; font-size:20px; font-weight:650; letter-spacing:-.01em; }
+  .modal .modal-sub { color:var(--muted); font-size:13px; margin:0 0 16px; }
+  .modal-x { position:absolute; top:10px; right:12px; width:auto; margin:0;
+    padding:2px 8px; background:transparent; color:var(--muted); font-size:20px;
+    line-height:1; box-shadow:none; border:0; }
+  .modal-x:hover { background:transparent; color:var(--text); transform:none; }
+  .steps { list-style:none; margin:0 0 18px; padding:0; display:flex;
+    flex-direction:column; gap:13px; }
+  .steps li { display:flex; gap:12px; align-items:flex-start; font-size:13px;
+    line-height:1.45; }
+  .steps .stepn { flex:0 0 auto; width:24px; height:24px; border-radius:50%;
+    background:var(--accent-soft); color:var(--wood); font-weight:700; font-size:12px;
+    display:flex; align-items:center; justify-content:center; margin-top:1px; }
+  .steps b { color:var(--text); }
+
+  /* ---- sheet-nesting diagram ---- */
+  .nest-grp { margin:10px 0 16px; }
+  .nest-head { font-size:12.5px; margin-bottom:6px; }
+  .nest-head b { color:var(--wood); }
+  .nest-sheets { display:flex; flex-wrap:wrap; gap:14px; }
+  .nest-cell { display:flex; flex-direction:column; }
+  .nest-svg { display:block; border-radius:4px; background:var(--bg); }
+  .nest-board { fill:var(--surface); stroke:var(--line); stroke-width:1; }
+  .nest-part { fill:var(--accent-soft); stroke:var(--wood); stroke-width:1; }
+  .nest-part:hover { fill:var(--wood); fill-opacity:.45; }
+  .nest-label { fill:var(--text); font:600 9px var(--font-mono); pointer-events:none; }
+
+  /* ---- toasts ---- */
+  #toasts { position:fixed; right:18px; bottom:18px; z-index:50; display:flex;
+            flex-direction:column; gap:8px; pointer-events:none; }
+  .toast { background:var(--surface-2); color:var(--text); border:1px solid var(--line);
+    border-left:3px solid var(--accent); border-radius:var(--r-sm); padding:10px 14px;
+    font-size:12.5px; box-shadow:var(--sh-2); animation:toastIn .2s ease;
+    display:flex; align-items:center; gap:8px; max-width:320px; }
+  .toast.bad { border-left-color:var(--bad); }
+  .toast.ok { border-left-color:var(--ok); }
+
+  /* ---- skeleton / loading ---- */
+  @keyframes shimmer { 100% { background-position:-200% 0; } }
+  @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+  @keyframes toastIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .skeleton { background:linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 37%,
+    var(--surface) 63%); background-size:200% 100%; animation:shimmer 1.2s infinite;
+    border-radius:var(--r-sm); }
+  .stage .building { display:flex; flex-direction:column; align-items:center; gap:14px;
+    color:var(--muted); }
+  .stage .building .spinner { width:34px; height:34px; border-radius:50%;
+    border:3px solid var(--line); border-top-color:var(--accent); animation:spin .8s linear infinite; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition:none !important; animation:none !important; }
+  }
+
+  /* --- Responsive: stack the sidebar above the preview on phone/tablet --- */
+  @media (max-width: 860px) {
+    .wrap { grid-template-columns:1fr; height:auto; min-height:calc(100vh - 55px); }
+    .controls { border-right:none; border-bottom:1px solid var(--line); max-height:none; }
+    .preview { min-height:72vh; }
     .stage { min-height:46vh; }
     .results { height:auto; }
     .tabs { flex-wrap:wrap; }
     .gallery { grid-template-columns:1fr; }
-    header span { display:none; }       /* keep the title bar compact */
+    header .tag { display:none; }
   }
   @media (max-width: 480px) {
     .row { flex-wrap:wrap; }
-    .buildcap { display:none; }         /* too small to overlay; tab still has it */
+    .buildcap { display:none; }
   }
 
-  /* --- Print: a clean black-on-white shop printout of the active report
-     (cut list / drilling / shopping list / build steps). Tape it to the
-     wall. Hides the app chrome and the 3D canvas (G5). --- */
+  /* --- Print: clean black-on-white shop printout of the active report --- */
   @media print {
     @page { margin: 14mm; }
     header, .controls, .stage, .buildbar, .buildcap, .downloads, .tabs,
-    .gallery, #galleryWrap { display:none !important; }
+    .gallery, #galleryWrap, #toasts { display:none !important; }
     html, body { background:#fff !important; color:#000 !important; }
     .wrap { display:block; height:auto; }
-    .preview, .results { display:block; height:auto; border:none; }
+    .preview, .results { display:block; height:auto; border:none; background:#fff !important; }
     .status { color:#000 !important; border:none; padding:0 0 8px; font-size:13px; }
-    .status .muted, .muted { color:#333 !important; }
+    .status .muted, .muted, .status .total .amt, .status .total .sub { color:#000 !important; }
     #pane { overflow:visible !important; height:auto !important; }
     table { border-collapse:collapse; width:100%; }
-    th, td { border:1px solid #999 !important; color:#000 !important;
-             padding:3px 6px !important; }
+    th, td { border:1px solid #999 !important; color:#000 !important; padding:3px 6px !important; }
     th { background:#eee !important; }
     a { color:#000 !important; text-decoration:underline; }
     details { display:block !important; }
-    /* Encourage the report not to split a row across a page. */
     tr, li, details { break-inside:avoid; }
   }
 </style>
 </head>
 <body>
 <header>
-  <h1>🪵 Woodworking AI</h1>
-  <span>AI cabinet &amp; furniture designer — parametric language → buildable output</span>
+  <div class="brand">
+    <span class="mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 21h18"/><path d="M5 21V8l7-5 7 5v13"/><path d="M9 21v-6h6v6"/>
+      </svg>
+    </span>
+    <h1>Woodworking AI</h1>
+  </div>
+  <span class="tag">Describe a piece — get a 3D model, cut list &amp; shopping list you can build from.</span>
+  <span class="spacer"></span>
+  <button id="guideBtn" class="hdr-btn" type="button" title="How it works"
+    aria-label="Show the quick start guide">
+    <span aria-hidden="true">?</span> Guide
+  </button>
+  <button id="themeBtn" class="hdr-btn" type="button" title="Switch light / dark theme"
+    aria-label="Switch light or dark theme">
+    <span id="themeIcon" aria-hidden="true">◐</span> Theme
+  </button>
 </header>
+<div id="toasts" aria-live="polite"></div>
+<div id="welcome" class="modal-backdrop" style="display:none" role="dialog"
+     aria-modal="true" aria-labelledby="welcomeTitle">
+  <div class="modal">
+    <button id="welcomeClose" class="modal-x" type="button" aria-label="Close">×</button>
+    <h2 id="welcomeTitle">Welcome — let's build something</h2>
+    <p class="modal-sub">Three ways in. Pick whichever feels easiest; you can
+       change everything afterward.</p>
+    <ol class="steps">
+      <li><span class="stepn">1</span><div>
+        <b>Start a design.</b> Tap a <b>starter project</b>, <b>describe it</b>
+        in plain English, or <b>dial in the parameters</b>.</div></li>
+      <li><span class="stepn">2</span><div>
+        <b>Build it.</b> Get an interactive 3D model, a labelled cut list, a
+        shopping list, shop drawings and a real cost estimate.</div></li>
+      <li><span class="stepn">3</span><div>
+        <b>Trust it.</b> Every build is checked for fit, shelf sag, wood movement
+        and the joints your tools can actually cut — watch-outs are spelled out.</div></li>
+    </ol>
+    <button id="welcomeStart" type="button">Start designing</button>
+  </div>
+</div>
 <div class="wrap">
   <div class="controls">
     <details id="galleryWrap" open>
-      <summary class="gallery-summary">🧰 Start from a project</summary>
+      <summary class="gallery-summary">Start from a project</summary>
       <p class="muted" style="font-size:11px;margin:6px 0">
         Pick a starter design to build now, then tweak the parameters.</p>
       <div id="gallery" class="gallery"><div class="ph-mini">Loading…</div></div>
     </details>
     <fieldset>
       <legend>Describe it</legend>
-      <textarea id="prompt" placeholder="e.g. 900mm sink base, two shaker doors, soft-close, one shelf"></textarea>
-      <button id="designBtn" class="secondary">✨ Design with AI</button>
+      <textarea id="prompt" placeholder="e.g. 36 inch sink base, two shaker doors, soft-close, one shelf — or &quot;a 4-foot oak bookcase, 5 shelves&quot;"></textarea>
+      <button id="designBtn" class="secondary">Design with AI</button>
       <div id="llmNote" class="muted" style="font-size:11px;margin-top:6px"></div>
     </fieldset>
     <div class="or">— or build from parameters —</div>
@@ -211,6 +527,8 @@
             <option value="base">Base</option>
             <option value="wall">Wall</option>
             <option value="tall">Tall / pantry</option>
+            <option value="bookcase">Bookcase</option>
+            <option value="dresser">Dresser</option>
             <option value="corner_blind">Corner — blind</option>
             <option value="corner_diagonal">Corner — diagonal</option>
           </select></div>
@@ -221,9 +539,9 @@
           </select></div>
       </div>
       <div class="row">
-        <div><label>Width</label><input id="width" type="number" value="600" /></div>
-        <div><label>Height</label><input id="height" type="number" value="720" /></div>
-        <div><label>Depth</label><input id="depth" type="number" value="560" /></div>
+        <div><label>Width (<span class="ulen">mm</span>)</label><input id="width" type="number" value="600" /></div>
+        <div><label>Height (<span class="ulen">mm</span>)</label><input id="height" type="number" value="720" /></div>
+        <div><label>Depth (<span class="ulen">mm</span>)</label><input id="depth" type="number" value="560" /></div>
       </div>
     </fieldset>
     <fieldset>
@@ -235,8 +553,8 @@
         <div><label>Shelves</label><input id="shelves" type="number" value="1" min="0" /></div>
       </div>
       <div class="row">
-        <div><label>Reveal (mm)</label><input id="reveal" type="number" value="3" /></div>
-        <div><label>Toe kick (mm, 0=none)</label><input id="toe" type="number" value="100" /></div>
+        <div><label>Reveal (<span class="ulen">mm</span>)</label><input id="reveal" type="number" value="3" /></div>
+        <div><label>Toe kick (<span class="ulen">mm</span>, 0=none)</label><input id="toe" type="number" value="100" /></div>
       </div>
       <div class="row">
         <div><label>Door style</label>
@@ -258,8 +576,8 @@
           </select></div>
       </div>
       <div class="check"><input id="mullion" type="checkbox" /><label style="margin:0">Center mullion</label></div>
-      <div id="blindWrap" style="display:none"><label>Blind width (mm)</label><input id="blind_width" type="number" value="350" /></div>
-      <div id="diagWrap" style="display:none"><label>Corner cut (mm)</label><input id="corner_cut" type="number" value="450" /></div>
+      <div id="blindWrap" style="display:none"><label>Blind width (<span class="ulen">mm</span>)</label><input id="blind_width" type="number" value="350" /></div>
+      <div id="diagWrap" style="display:none"><label>Corner cut (<span class="ulen">mm</span>)</label><input id="corner_cut" type="number" value="450" /></div>
     </fieldset>
     </div><!-- /cabinetFields -->
     <div id="tableFields" style="display:none">
@@ -267,18 +585,18 @@
       <legend>Table</legend>
       <label>Name</label><input id="t_name" value="My Table" />
       <div class="row">
-        <div><label>Length</label><input id="t_width" type="number" value="1400" /></div>
-        <div><label>Depth</label><input id="t_depth" type="number" value="800" /></div>
-        <div><label>Height</label><input id="t_height" type="number" value="740" /></div>
+        <div><label>Length (<span class="ulen">mm</span>)</label><input id="t_width" type="number" value="1400" /></div>
+        <div><label>Depth (<span class="ulen">mm</span>)</label><input id="t_depth" type="number" value="800" /></div>
+        <div><label>Height (<span class="ulen">mm</span>)</label><input id="t_height" type="number" value="740" /></div>
       </div>
       <div class="row">
-        <div><label>Top thickness</label><input id="t_top" type="number" value="25" /></div>
-        <div><label>Leg (sq)</label><input id="t_leg" type="number" value="60" /></div>
-        <div><label>Leg inset</label><input id="t_inset" type="number" value="40" /></div>
+        <div><label>Top thk (<span class="ulen">mm</span>)</label><input id="t_top" type="number" value="25" /></div>
+        <div><label>Leg sq (<span class="ulen">mm</span>)</label><input id="t_leg" type="number" value="60" /></div>
+        <div><label>Leg inset (<span class="ulen">mm</span>)</label><input id="t_inset" type="number" value="40" /></div>
       </div>
       <div class="row">
-        <div><label>Apron height</label><input id="t_apronh" type="number" value="90" /></div>
-        <div><label>Apron thickness</label><input id="t_apront" type="number" value="20" /></div>
+        <div><label>Apron ht (<span class="ulen">mm</span>)</label><input id="t_apronh" type="number" value="90" /></div>
+        <div><label>Apron thk (<span class="ulen">mm</span>)</label><input id="t_apront" type="number" value="20" /></div>
       </div>
     </fieldset>
     </div><!-- /tableFields -->
@@ -321,7 +639,7 @@
       <div id="wallPlan" class="muted" style="font-size:11.5px;margin-top:6px"></div>
     </fieldset>
     </div><!-- /projectFields -->
-    <button id="buildBtn">🔨 Build design</button>
+    <button id="buildBtn">Build design</button>
     <div class="check"><input id="auto" type="checkbox" /><label style="margin:0">Live update as I change values</label></div>
     <fieldset style="margin-top:14px">
       <legend>Shop standards</legend>
@@ -373,6 +691,12 @@
             </select></div>
           <div></div>
         </div>
+        <div class="check"><input id="std_combine" type="checkbox" checked />
+          <label style="margin:0" title="Nest all same-thickness parts onto shared sheets, instead of a separate sheet per product">One grade of sheet stock — nest same-thickness parts together</label></div>
+        <p class="muted" style="font-size:11px;margin:6px 0 0">
+          On: buy one grade of ply for the whole build, so carcass, backs and
+          fronts of the same thickness share sheets (fewer sheets, fuller). Off:
+          keep a finer door grade on its own sheets.</p>
       </details>
     </fieldset>
     <fieldset style="margin-top:14px">
@@ -411,6 +735,23 @@
       </details>
     </fieldset>
     <fieldset style="margin-top:14px">
+      <legend>Offcuts &amp; owned stock</legend>
+      <details id="offcutDetails">
+        <summary>Cut from sheets I already have</summary>
+        <p class="muted" style="font-size:11px;margin:6px 0">
+          List leftover sheets/panels on hand. The build fits parts onto these
+          first (matched by thickness) and the <b>From stock</b> tab shows what
+          lands on your offcuts vs. what's still left to buy. Saved in this browser.</p>
+        <div class="offcut-head muted">
+          <span>L (<span class="ulen">mm</span>)</span><span>W (<span class="ulen">mm</span>)</span>
+          <span>Thk (<span class="ulen">mm</span>)</span><span>Qty</span><span></span>
+        </div>
+        <div id="offcutRows"></div>
+        <button id="addOffcut" class="secondary" type="button"
+          style="margin-top:8px">+ Add offcut</button>
+      </details>
+    </fieldset>
+    <fieldset style="margin-top:14px">
       <legend>Library</legend>
       <button id="saveBtn" class="secondary">💾 Save current design</button>
       <label>Saved designs</label>
@@ -431,19 +772,44 @@
   </div>
 
   <div class="preview">
-    <div class="stage" id="stage"><div class="ph">Build a cabinet to see it here</div></div>
+    <div class="stage" id="stage">
+      <div class="empty">
+        <svg class="art" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="1.5"/>
+          <line x1="3" y1="9" x2="21" y2="9"/><line x1="12" y1="9" x2="12" y2="21"/>
+          <line x1="3" y1="15" x2="12" y2="15"/>
+          <circle cx="7.5" cy="12" r=".6" fill="currentColor"/>
+          <circle cx="16.5" cy="13" r=".6" fill="currentColor"/>
+        </svg>
+        <h2>Design something buildable</h2>
+        <p>Pick a starter project, describe it in plain English, or dial in the
+           parameters — and get an interactive 3D model plus everything you need
+           to build it.</p>
+        <div class="outcomes">
+          <span class="oc">3D model</span>
+          <span class="oc">Cut list</span>
+          <span class="oc">Shopping list</span>
+          <span class="oc">Shop drawings</span>
+          <span class="oc">Cost</span>
+        </div>
+      </div>
+    </div>
     <div class="results">
       <div class="status" id="status"><span class="muted">No design yet.</span></div>
+      <div class="checks" id="checks" style="display:none"></div>
       <div class="downloads" id="downloads" style="display:none">
-        <span class="muted" style="font-size:12px">Download:</span>
-        <button data-f="step">STEP</button><button data-f="stl">STL</button>
-        <button data-f="glb">GLB</button><button data-f="dae" title="Collada — imports into SketchUp">DAE</button><button data-f="dxf">DXF</button>
+        <span class="dl-label">Download:</span>
+        <button data-f="package" title="Everything in one printable PDF: drawings, cut list, hardware, steps">Build package PDF</button>
         <button data-f="drawings">Drawings</button>
-        <button data-f="cutlist">Cut list</button><button data-f="drilling">Drilling</button>
-        <button data-f="purchase_order">🧾 Purchase order</button>
-        <button data-f="package">📄 Build package PDF</button>
-        <button data-f="template" title="Full-size 1:1 printable template of the largest part (tape, glue, cut to the line)">📐 1:1 template</button>
-        <button id="printBtn" type="button" title="Print the current report (cut list, drilling, steps…)">🖨 Print</button>
+        <button data-f="cutlist">Cut list</button>
+        <button data-f="purchase_order" title="A shopping list of sheets, lumber and hardware to buy">Shopping list</button>
+        <button data-f="drilling">Drilling</button>
+        <button data-f="template" title="Full-size 1:1 printable template of the largest part (tape, glue, cut to the line)">1:1 template</button>
+        <button id="printBtn" type="button" title="Print the current report (cut list, drilling, steps…)">Print</button>
+        <span class="dl-label" title="CAD / 3D interchange formats for SketchUp, Fusion, etc.">CAD:</span>
+        <button data-f="step">STEP</button><button data-f="stl">STL</button>
+        <button data-f="glb">GLB</button><button data-f="dae" title="Collada — imports into SketchUp">DAE</button><button data-f="dxf" title="2D cut layout">DXF</button>
         <button id="shareBtn" class="share">🔗 Share</button>
       </div>
       <div class="tabs" id="tabs">
@@ -451,6 +817,7 @@
         <button data-t="drawings">Drawings</button>
         <button data-t="steps">Build steps</button>
         <button data-t="lumber">Lumber</button>
+        <button data-t="stock">From stock</button>
         <button data-t="drilling">Drilling</button>
         <button data-t="joinery">Joinery</button>
         <button data-t="tools">Tools</button>
@@ -481,6 +848,55 @@ function esc(s) {
 }
 let last = null, tab = "cutlist";
 let _walkTimer = null;   // assembly-walkthrough auto-advance timer (G2a)
+
+// --- toasts: brief, non-blocking confirmation for downloads/saves/errors -----
+function toast(msg, kind) {
+  const wrap = $("toasts"); if (!wrap) return;
+  const el = document.createElement("div");
+  el.className = "toast" + (kind ? " " + kind : "");
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(() => { el.style.opacity = "0"; el.style.transition = "opacity .3s";
+    setTimeout(() => el.remove(), 300); }, 2600);
+}
+
+// --- light / dark theme toggle (system default, overridable, remembered) -----
+const THEME_LS = "woodai_theme";
+function applyTheme(t) {
+  const root = document.documentElement;
+  if (t === "light" || t === "dark") root.setAttribute("data-theme", t);
+  else root.removeAttribute("data-theme");
+  const icon = $("themeIcon");
+  if (icon) icon.textContent = t === "light" ? "☀" : t === "dark" ? "☾" : "◐";
+}
+(function initTheme() {
+  applyTheme(localStorage.getItem(THEME_LS) || "");
+})();
+if ($("themeBtn")) $("themeBtn").onclick = () => {
+  // Cycle system → dark → light → system.
+  const cur = localStorage.getItem(THEME_LS) || "";
+  const next = cur === "" ? "dark" : cur === "dark" ? "light" : "";
+  if (next) localStorage.setItem(THEME_LS, next); else localStorage.removeItem(THEME_LS);
+  applyTheme(next);
+};
+
+// --- first-run guide: show once, reopenable from the header, Esc to close ----
+const WELCOME_LS = "woodai_welcome_seen";
+function showWelcome() { const w = $("welcome"); if (!w) return;
+  w.style.display = "flex"; const b = $("welcomeStart"); if (b) b.focus(); }
+function hideWelcome() { const w = $("welcome"); if (w) w.style.display = "none";
+  try { localStorage.setItem(WELCOME_LS, "1"); } catch (e) {} }
+if ($("welcomeStart")) $("welcomeStart").onclick = hideWelcome;
+if ($("welcomeClose")) $("welcomeClose").onclick = hideWelcome;
+if ($("guideBtn")) $("guideBtn").onclick = showWelcome;
+if ($("welcome")) $("welcome").addEventListener("click", e => {
+  if (e.target === $("welcome")) hideWelcome();   // click backdrop to dismiss
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && $("welcome") && $("welcome").style.display !== "none")
+    hideWelcome();
+});
+try { if (!localStorage.getItem(WELCOME_LS)) showWelcome(); } catch (e) {}
 
 // --- display units (engine is millimetre-native; this is display only) ------
 const MM_PER_IN = 25.4;
@@ -544,6 +960,7 @@ function applyUnitChange() {
     }
     formUnit = newU;
     setUnitLabels();
+    renderOffcuts();   // offcut rows show the current display unit too
   }
   paint();
 }
@@ -660,7 +1077,8 @@ function specFromForm() {
 
 function setBusy(b) {
   $("buildBtn").disabled = b; $("designBtn").disabled = b;
-  if (b) $("stage").innerHTML = '<div class="ph">Building…</div>';
+  if (b) $("stage").innerHTML =
+    '<div class="building"><div class="spinner"></div><div>Building your design…</div></div>';
 }
 async function post(url, body) {
   const r = await fetch(url, {method:"POST", headers:{"Content-Type":"application/json"},
@@ -670,7 +1088,7 @@ async function post(url, body) {
 }
 $("buildBtn").onclick = async () => {
   setBusy(true);
-  try { render(await post("/api/build", {spec: specFromForm(), ...currentPricing(), profile: currentProfile()})); }
+  try { render(await post("/api/build", {spec: specFromForm(), ...currentPricing(), profile: currentProfile(), boards: currentBoards()})); }
   catch (e) { showError(e.message); } finally { setBusy(false); health(); }
 };
 $("designBtn").onclick = async () => {
@@ -678,7 +1096,7 @@ $("designBtn").onclick = async () => {
   if (!prompt) return;
   setBusy(true);
   try {
-    const d = await post("/api/design", {prompt, ...currentPricing(), profile: currentProfile()});
+    const d = await post("/api/design", {prompt, ...currentPricing(), profile: currentProfile(), boards: currentBoards()});
     syncForm(d.spec); render(d);
   } catch (e) { showError(e.message); } finally { setBusy(false); health(); }
 };
@@ -726,31 +1144,130 @@ function render(d) {
   if (d.errors && d.errors.length) {
     showError(d.errors.map(e => e.field+": "+e.message).join("; ")); return;
   }
-  // 3D / image stage
-  if (d.glb) {
-    const sections = d.model_sections || [];
-    const bar = sections.length > 1 ? buildBarHtml(sections) : "";
-    $("stage").innerHTML =
-      `<model-viewer id="mv" camera-controls auto-rotate shadow-intensity="1"
-        exposure="1.1" src="${d.glb}"></model-viewer>${bar}`;
-    if (sections.length > 1) wireBuildBar(sections);
-  } else if (d.render_png) {
-    $("stage").innerHTML = `<img src="${d.render_png}" style="object-fit:contain" />`;
-  } else $("stage").innerHTML = '<div class="ph">No preview available</div>';
+  // 3D / image stage — robust against a missing/slow model-viewer (the script
+  // loads from a CDN, which can be blocked or slow). We never leave a blank
+  // canvas: fall back to the static render, and upgrade to the interactive model
+  // if/when the component is ready.
+  showStage(d);
   addDimOverlay(d);
 
-  // status
+  // status — the confident "money line": badges left, total right.
   const e = d.estimate, cr = d.critique;
+  const hasNotes = (d.warnings && d.warnings.length) || (d.errors && d.errors.length)
+    || (cr && cr.report && Object.keys(cr.report).length);
+  const clk = hasNotes ? " clickable" : "";
   const bits = [];
-  bits.push(`<span class="pill ${d.valid?'ok':'bad'}">${d.valid?'valid':'invalid'}</span>`);
-  if (cr) bits.push(`<span class="pill ${cr.ok?'ok':'warn'}">geometry ${cr.ok?'verified':'check'}</span>`);
-  if (e) bits.push(`<strong>${esc(e.currency)}${e.total.toFixed(2)}</strong> · ${e.total_sheets} sheets · ${e.labour_hours}h`);
+  bits.push(`<span class="pill ${d.valid?'ok':'bad'}${clk}">${d.valid?'valid':'invalid'}</span>`);
+  if (cr) bits.push(`<span class="pill ${cr.ok?'ok':'warn'}${clk}">geometry ${cr.ok?'verified':'check'}</span>`);
   if (d.warnings && d.warnings.length)
-    bits.push(`<span class="pill warn">${d.warnings.length} warning(s)</span>`);
-  if (d.attempts) bits.push(`<span class="muted">AI: ${d.attempts} attempt(s)</span>`);
+    bits.push(`<span class="pill warn${clk}">${d.warnings.length} note${d.warnings.length>1?'s':''}</span>`);
+  if (d.attempts) bits.push(`<span class="muted">AI · ${d.attempts} attempt${d.attempts>1?'s':''}</span>`);
+  if (e) bits.push(`<span class="total"><span class="amt">${esc(e.currency)}${e.total.toFixed(2)}</span>`
+    + `<span class="sub">est. · ${e.total_sheets} sheet${e.total_sheets===1?'':'s'} · ${e.labour_hours}h</span></span>`);
   $("status").innerHTML = bits.join("");
+  // Plain-English "what we checked" + the actual advisory notes (sag, wood
+  // movement, tool substitutions) — the hobbyist judgment, made readable.
+  buildChecks(d);
+  if (hasNotes) {
+    const toggleChecks = () => { const c = $("checks");
+      c.style.display = c.style.display === "none" ? "block" : "none"; };
+    $("status").querySelectorAll(".pill.clickable").forEach(p => {
+      p.setAttribute("role", "button");
+      p.setAttribute("tabindex", "0");
+      p.setAttribute("aria-label", "Toggle design notes");
+      p.onclick = toggleChecks;
+      p.onkeydown = ev => { if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault(); toggleChecks(); } };
+    });
+  }
   $("downloads").style.display = "flex";
   paint();
+}
+
+// Render the collapsible "Design notes" panel: plain-language checks the Critic
+// ran, plus every validator note (deflection/sag, seasonal wood movement,
+// unmakeable-joint substitutions, clearances) spelled out.
+function buildChecks(d) {
+  const box = $("checks"); if (!box) return;
+  const u = unitLabel();
+  const fl = mm => fmtLen(mm) + " " + u;
+  const cr = d.critique, r = (cr && cr.report) || {};
+  const pass = [];
+  if (typeof r.interference_count === "number")
+    pass.push(r.interference_count === 0
+      ? "No parts overlap or collide"
+      : `${r.interference_count} part interference(s) — see errors`);
+  if (typeof r.front_coverage_pct === "number" && r.front_coverage_pct > 0)
+    pass.push(`Doors/drawers cover ${r.front_coverage_pct.toFixed(0)}% of the face`);
+  if (r.opening_width && r.opening_height)
+    pass.push(`Clear opening ${fl(r.opening_width)} × ${fl(r.opening_height)}`);
+  if (typeof r.component_count === "number" && r.component_count > 1)
+    pass.push(`${r.component_count} cabinets placed without collisions`);
+  if (typeof r.panel_count === "number")
+    pass.push(`${r.panel_count} panels laid out and verified`);
+
+  const sec = (title, items) => items.length
+    ? `<div class="ck-grp"><h5>${esc(title)}</h5><ul>${items.join("")}</ul></div>` : "";
+  const row = (cls, ic, text, field) =>
+    `<li class="${cls}"><span class="ic">${ic}</span><span>${esc(text)}` +
+    (field ? ` <span class="fld">${esc(field)}</span>` : "") + `</span></li>`;
+
+  let html = "";
+  if (d.errors && d.errors.length)
+    html += sec("Problems to fix", d.errors.map(x => row("errrow", "✗", x.message, x.field)));
+  if (d.warnings && d.warnings.length)
+    html += sec("Worth a look", d.warnings.map(x => row("warnrow", "⚠", x.message, x.field)));
+  if (cr && cr.ok && pass.length)
+    html += sec("Geometry verified", pass.map(t => row("pass", "✓", t)));
+
+  if (!html) { box.style.display = "none"; box.innerHTML = ""; return; }
+  box.innerHTML = html;
+  // Watch-outs (sag, wood movement, unmakeable joints, problems to fix) open
+  // automatically so the advice is seen; an all-clear stays collapsed behind the
+  // green pill to keep the result tidy.
+  const hasIssues = (d.errors && d.errors.length) || (d.warnings && d.warnings.length);
+  box.style.display = hasIssues ? "block" : "none";
+}
+
+// Build the preview stage. Prefers the interactive GLB via <model-viewer>, but
+// guarantees a visible result: if the component isn't loaded (CDN blocked/slow)
+// or the GLB fails to parse, it shows the server render PNG instead.
+function stageFallback(d) {
+  return d.render_png
+    ? `<img src="${d.render_png}" alt="rendered preview of the design" />`
+    : '<div class="ph">Preview needs build123d (3D) or matplotlib (render) installed on the server.</div>';
+}
+function mountModelViewer(d, sections) {
+  const stage = $("stage");
+  const bar = sections.length > 1 ? buildBarHtml(sections) : "";
+  stage.innerHTML =
+    `<model-viewer id="mv" camera-controls auto-rotate shadow-intensity="1"
+      exposure="1.1" src="${d.glb}"></model-viewer>${bar}`;
+  const mv = $("mv");
+  if (mv) mv.addEventListener("error", () => {
+    if (last !== d) return;                 // a newer build already replaced it
+    stage.innerHTML = stageFallback(d);     // never leave a blank canvas
+    addDimOverlay(d);
+  }, { once: true });
+  if (sections.length > 1) wireBuildBar(sections);
+}
+function showStage(d) {
+  const stage = $("stage");
+  const sections = d.model_sections || [];
+  const mvReady = window.customElements && customElements.get("model-viewer");
+  if (d.glb && mvReady) { mountModelViewer(d, sections); return; }
+  // No GLB, or the model-viewer script hasn't arrived yet — show the render now.
+  stage.innerHTML = stageFallback(d);
+  if (d.glb && window.customElements && customElements.whenDefined) {
+    Promise.race([
+      customElements.whenDefined("model-viewer"),
+      new Promise(r => setTimeout(r, 3000)),
+    ]).then(() => {
+      if (last === d && customElements.get("model-viewer")) {
+        mountModelViewer(d, sections); addDimOverlay(d);
+      }
+    });
+  }
 }
 
 // --- 3D build view: explode + step through the sub-assemblies ----------------
@@ -844,7 +1361,7 @@ async function editDimension(key) {
   try {
     if (FORM_KINDS.has(spec.kind || "cabinet") && $(key)) syncForm(spec);
     render(await post("/api/build",
-      {spec, ...currentPricing(), profile: currentProfile()}));
+      {spec, ...currentPricing(), profile: currentProfile(), boards: currentBoards()}));
   } catch (e) { showError(e.message); }
   finally { setBusy(false); }
 }
@@ -907,13 +1424,17 @@ async function download(fmt) {
   const r = await fetch("/api/export/" + fmt, {method:"POST",
     headers:{"Content-Type":"application/json"},
     body: JSON.stringify({spec: last.spec, units: unit()})});
-  if (!r.ok) { alert((await r.json().catch(()=>({detail:r.statusText}))).detail); return; }
+  if (!r.ok) {
+    const detail = (await r.json().catch(() => ({detail: r.statusText}))).detail;
+    toast(detail || "Export failed", "bad"); return;
+  }
   const blob = await r.blob();
   const cd = r.headers.get("Content-Disposition") || "";
   const m = cd.match(/filename="(.+?)"/);
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob); a.download = m ? m[1] : ("cabinet." + fmt);
   a.click(); URL.revokeObjectURL(a.href);
+  toast("Downloaded " + (m ? m[1] : fmt), "ok");
 }
 $("downloads").querySelectorAll("button[data-f]").forEach(b =>
   b.onclick = () => download(b.dataset.f));
@@ -936,7 +1457,7 @@ function loadFromHash() {
   try {
     const spec = JSON.parse(decodeURIComponent(escape(atob(m[1]))));
     syncForm(spec);
-    post("/api/build", {spec, ...currentPricing(), profile: currentProfile()}).then(render).catch(e => showError(e.message));
+    post("/api/build", {spec, ...currentPricing(), profile: currentProfile(), boards: currentBoards()}).then(render).catch(e => showError(e.message));
   } catch (e) {}
 }
 
@@ -968,14 +1489,21 @@ function paint() {
        + `~${fmtArea(area)} sheet goods</p>`;
   } else if (tab === "lumber") {
     h = lumberPane(d);
+  } else if (tab === "stock") {
+    h = stockPane(d);
   } else if (tab === "hardware") {
     h = table(["Item","Qty","Brand","SKU","Notes"],
       d.hardware.map(x=>[x.name,x.qty,x.brand||"",x.sku||"",x.notes]));
   } else if (tab === "cost") {
     const e = d.estimate, m = v => e.currency + v.toFixed(2);
     const lumberGroups = e.lumber_groups || [];
+    const saving = +e.stock_savings || 0;
     h = `<div class="cost-grid">
-      <div>Sheet goods (${e.total_sheets} sheet${e.total_sheets === 1 ? "" : "s"})</div><div>${m(e.material)}</div>`
+      <div>Sheet goods (${e.total_sheets} sheet${e.total_sheets === 1 ? "" : "s"})${
+        saving > 0 ? " to buy" : ""}</div><div>${m(e.material)}</div>`
+      + (saving > 0
+          ? `<div class="muted">Cut from your offcuts (${e.from_stock_parts || 0} part${e.from_stock_parts === 1 ? "" : "s"})</div>`
+            + `<div class="muted">−${m(saving)}</div>` : "")
       + (lumberGroups.length
           ? `<div>Solid lumber (${(e.board_feet || 0).toFixed(1)} bd ft)</div><div>${m(e.lumber || 0)}</div>` : "")
       + `<div>Hardware</div><div>${m(e.hardware)}</div>
@@ -983,6 +1511,11 @@ function paint() {
       <div>Labour (${e.labour_hours}h)</div><div>${m(e.labour)}</div>`
       + (e.finish ? `<div>Finishing (${(e.finish_m2||0).toFixed(1)} m²)</div><div>${m(e.finish)}</div>` : "")
       + `<div class="total">Total</div><div class="total">${m(e.total)}</div></div>`;
+    if (saving > 0)
+      h += `<p class="muted" style="margin-top:8px;font-size:12px">Would be
+        <b>${m((e.material_gross || 0) + (e.total - e.material))}</b> buying everything new —
+        cutting ${e.from_stock_parts || 0} part(s) from your own stock saves
+        <b style="color:var(--wood)">${m(saving)}</b>. See the <b>From stock</b> tab.</p>`;
     if (e.groups.length) {
       h += "<h4>Sheets</h4>" +
         table(["Stock", `Thk (${u})`, "Parts", "Sheets", "Used"],
@@ -995,6 +1528,23 @@ function paint() {
           lumberGroups.map(g => [g.stock || g.material, fmtLen(g.thickness), g.parts,
                                  g.board_feet.toFixed(2) + " bd ft", m(g.cost)]));
     }
+    // Show the rates behind the quote so it reads as a real estimate, not magic.
+    const pr = (pricing && pricing.prices) || (pricingDefaults && pricingDefaults.prices) || {};
+    const sh = (pricing && pricing.sheet) || (pricingDefaults && pricingDefaults.sheet) || {};
+    const cur = e.currency, asum = [];
+    if (pr.shop_rate_per_hour) asum.push(`labour ${cur}${(+pr.shop_rate_per_hour).toFixed(0)}/h`);
+    if (pr.sheet_price_default) asum.push(`sheet goods ~${cur}${(+pr.sheet_price_default).toFixed(0)}/sheet`);
+    if (lumberGroups.length && pr.board_foot_price_default)
+      asum.push(`solid lumber ~${cur}${(+pr.board_foot_price_default).toFixed(0)}/bd ft`);
+    if (sh.length && sh.width) {
+      const dims = unit() === "imperial"
+        ? `${(sh.length/304.8).toFixed(0)}×${(sh.width/304.8).toFixed(0)} ft`
+        : `${Math.round(sh.length)}×${Math.round(sh.width)} mm`;
+      asum.push(`sheet size ${dims}`);
+    }
+    if (asum.length)
+      h += `<p class="muted" style="margin-top:14px;font-size:11.5px">` +
+        `Assumes ${asum.join(" · ")}. Tune these in <b>Pricing &amp; rates</b> in the sidebar.</p>`;
   } else if (tab === "drilling") {
     h = drillingPane(d);
   } else if (tab === "steps") {
@@ -1144,6 +1694,11 @@ function lumberPane(d) {
       }));
     h += `<p class="muted" style="margin-top:8px">Sheet counts include nesting
       waste from a guillotine pack; “Used” is the packed area per sheet. ` +
+      (sheetGroups.length > 1
+        ? `Each stock above is bought as whole sheets, so different
+           thicknesses (e.g. a thin back) and grain-matched door/drawer fronts
+           are counted separately — that's why a small piece can still need a
+           full extra sheet. ` : "") +
       (oversize ? `⚠ ${oversize} part(s) exceed a single sheet — split or order oversized stock. ` : "") +
       `Order ${sheetsToBuy} sheet${sheetsToBuy === 1 ? "" : "s"} total.</p>`;
   }
@@ -1172,6 +1727,120 @@ function lumberPane(d) {
       `<b>${boardFeet.toFixed(1)} bd ft</b>` +
       (lumberCost ? ` · <b>${esc(e.currency)}${lumberCost.toFixed(2)}</b>` : "") +
       ` total.</p>`;
+  }
+  h += nestDiagram(d);
+  return h;
+}
+
+// Visual sheet-nesting diagram (G-trust): draw each bought sheet to scale with
+// every part packed on it and its ID, so the sheet count is something you can
+// see and check — the same pack the cost estimate counts from.
+function nestDiagram(d) {
+  const groups = (d.nesting || []).filter(g => g.sheet_count > 0);
+  if (!groups.length) return "";
+  const W = 320;                                  // diagram width (px) per sheet
+  let h = `<h4>Sheet nesting (how parts pack)</h4>`;
+  for (const g of groups) {
+    const scale = W / g.sheet_length;
+    const sh = g.sheet_width * scale;
+    const util = Math.round(g.utilization * 100);
+    h += `<div class="nest-grp"><div class="nest-head">` +
+      `<b>${esc(g.stock)}</b> ${fmtLen(g.thickness, true)} · ` +
+      `${g.sheet_count} sheet${g.sheet_count === 1 ? "" : "s"} · ${util}% used</div>`;
+    h += `<div class="nest-sheets">`;
+    g.sheets.forEach((parts, si) => {
+      let svg = `<svg class="nest-svg" width="${W}" height="${sh}" ` +
+        `viewBox="0 0 ${W} ${sh}" role="img" aria-label="Sheet ${si + 1} layout">`;
+      svg += `<rect x="0.5" y="0.5" width="${W - 1}" height="${sh - 1}" class="nest-board"/>`;
+      for (const p of parts) {
+        const x = p.x * scale, y = p.y * scale, w = p.w * scale, hh = p.h * scale;
+        const id = esc(String(p.label).split(" ")[0]);
+        svg += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" ` +
+          `width="${Math.max(0, w - 1).toFixed(1)}" height="${Math.max(0, hh - 1).toFixed(1)}" ` +
+          `class="nest-part"><title>${esc(p.label)} — ${fmtLen(p.w)}×${fmtLen(p.h)} ${unitLabel()}</title></rect>`;
+        if (w > 22 && hh > 12)
+          svg += `<text x="${(x + w / 2).toFixed(1)}" y="${(y + hh / 2 + 3).toFixed(1)}" ` +
+            `class="nest-label" text-anchor="middle">${id}</text>`;
+      }
+      svg += `</svg>`;
+      h += `<div class="nest-cell"><div class="muted" style="font-size:10px;margin-bottom:2px">` +
+        `Sheet ${si + 1}</div>${svg}</div>`;
+    });
+    h += `</div></div>`;
+  }
+  h += `<p class="muted" style="font-size:11px;margin-top:6px">To scale on ` +
+    `${fmtLen(groups[0].sheet_length)}×${fmtLen(groups[0].sheet_width)} ${unitLabel()} sheets. ` +
+    `Hover a part for its size; IDs match the cut list.</p>`;
+  return h;
+}
+
+// --- "From stock" tab: fit parts onto offcuts you already own ----------------
+// Shows what lands on each owned board (to scale, with yield) and what's still
+// left to buy. Driven by the bundle's `cutplan`, present only when offcuts were
+// declared in the sidebar.
+function stockPane(d) {
+  const n = currentBoards().length;
+  if (!d.cutplan) {
+    return `<p class="muted">Add the leftover sheets you already own in
+      <b>Offcuts &amp; owned stock</b> (sidebar), then build — this shows which
+      parts you can cut from them and what's left to buy.${
+        n ? " Rebuild to refresh." : ""}</p>`;
+  }
+  const cp = d.cutplan, u = unitLabel();
+  const e = d.estimate || {};
+  const pct = v => Math.round((v || 0) * 100) + "%";
+  const cur = e.currency || "$";
+  const saving = +e.stock_savings || 0;
+  const W = 300;
+  const placedNote = cp.complete
+    ? `<span class="pill ok nodot">Every part fits your stock</span>`
+    : `<span class="pill warn nodot">${cp.shortfall.length} part(s) still to buy</span>`;
+  const saveStat = saving > 0
+    ? `<div><div class="big">${cur}${saving.toFixed(0)}</div>
+        <div class="sub">saved on material
+          <div class="muted">vs. buying it all new</div></div></div>` : "";
+  let h = `<div class="headline" style="gap:24px">
+      <div><div class="big">${cp.placed_count}</div>
+        <div class="sub">parts on your stock
+          <div class="muted">across ${cp.boards_used} board${cp.boards_used === 1 ? "" : "s"} · ${pct(cp.yield)} yield</div></div></div>
+      ${saveStat}
+    </div><div style="margin:-6px 0 12px">${placedNote}</div>`;
+
+  for (const b of cp.boards) {
+    const scale = W / b.length, sh = b.width * scale;
+    const name = b.id || `${fmtLen(b.length)}×${fmtLen(b.width)} ${u}`;
+    h += `<div class="nest-grp"><div class="nest-head">` +
+      `<b>${esc(name)}</b> ${fmtLen(b.thickness, true)}` +
+      (b.instance > 1 ? ` · #${b.instance}` : "") +
+      ` · ${b.part_count} part${b.part_count === 1 ? "" : "s"} · ${pct(b.yield)} used</div>`;
+    let svg = `<svg class="nest-svg" width="${W}" height="${sh}" viewBox="0 0 ${W} ${sh}" ` +
+      `role="img" aria-label="${esc(name)} layout">`;
+    svg += `<rect x="0.5" y="0.5" width="${W - 1}" height="${sh - 1}" class="nest-board"/>`;
+    for (const p of b.placements) {
+      const x = p.x * scale, y = p.y * scale, w = p.length * scale, hh = p.width * scale;
+      const id = esc(String(p.part_id || p.label).split(" ")[0]);
+      svg += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" ` +
+        `width="${Math.max(0, w - 1).toFixed(1)}" height="${Math.max(0, hh - 1).toFixed(1)}" ` +
+        `class="nest-part"><title>${esc(p.label)} — ${fmtLen(p.length)}×${fmtLen(p.width)} ${u}</title></rect>`;
+      if (w > 22 && hh > 12)
+        svg += `<text x="${(x + w / 2).toFixed(1)}" y="${(y + hh / 2 + 3).toFixed(1)}" ` +
+          `class="nest-label" text-anchor="middle">${id}</text>`;
+    }
+    svg += `</svg>`;
+    h += `<div class="nest-sheets"><div class="nest-cell">${svg}</div></div></div>`;
+  }
+
+  if (cp.shortfall.length) {
+    h += `<h4>Still to buy (didn't fit your stock)</h4>`;
+    h += table(["ID", "Part", `L (${u})`, `W (${u})`, `Thk (${u})`, "Why"],
+      cp.shortfall.map(s => [s.part_id || "", s.label, fmtLen(s.length),
+        fmtLen(s.width), fmtLen(s.thickness), s.reason]));
+    h += `<p class="muted" style="font-size:11px;margin-top:6px">These fall back to
+      new sheets in the cost estimate's nesting. "Too big" means no owned board is
+      large enough; "no matching board" means none match the thickness.</p>`;
+  } else {
+    h += `<p class="muted" style="font-size:11.5px">Nice — the whole project comes
+      out of stock you already have.</p>`;
   }
   return h;
 }
@@ -1220,10 +1889,27 @@ function drillingPane(d) {
   return h;
 }
 function table(cols, rows) {
-  return "<table><thead><tr>" + cols.map(c=>`<th>${esc(c)}</th>`).join("") +
-    "</tr></thead><tbody>" +
-    rows.map(r=>"<tr>"+r.map(c=>`<td>${esc(c)}</td>`).join("")+"</tr>").join("") +
-    "</tbody></table>";
+  // Right-align + tabular-nums on numeric columns, and treat a leading "ID"
+  // column as the mono part-ID accent — so cut lists scan like a precision tool.
+  const isNum = v => {
+    if (typeof v === "number") return true;
+    const s = String(v).trim();
+    return s !== "" && /^[$£€]?-?[\d]/.test(s);
+  };
+  const idCol = cols.length > 0 && /^id$/i.test(String(cols[0]).trim());
+  const numCol = cols.map((_, i) => {
+    let num = 0, tot = 0;
+    for (const r of rows) { const v = r[i]; if (v === "" || v == null) continue;
+      tot++; if (isNum(v)) num++; }
+    return tot > 0 && num / tot >= 0.6;
+  });
+  const th = cols.map((c, i) =>
+    `<th${numCol[i] && !(idCol && i === 0) ? ' class="num"' : ''}>${esc(c)}</th>`).join("");
+  const body = rows.map(r => "<tr>" + r.map((c, i) => {
+    const cls = idCol && i === 0 ? "id" : (numCol[i] ? "num" : "");
+    return `<td${cls ? ` class="${cls}"` : ""}>${esc(c)}</td>`;
+  }).join("") + "</tr>").join("");
+  return `<table><thead><tr>${th}</tr></thead><tbody>${body}</tbody></table>`;
 }
 $("tabs").querySelectorAll("button").forEach(b => b.onclick = () => {
   tab = b.dataset.t;
@@ -1322,6 +2008,62 @@ function savePricing() {
 }
 // What every build request sends; {} (so unchanged) until defaults have loaded.
 function currentPricing() { return pricing ? readPricing() : {}; }
+
+// --- offcuts / owned stock ("cut from my stock") -----------------------------
+// Stored internally in mm; the row inputs show/accept the current display unit.
+const OFFCUTS_LS = "woodai_offcuts";
+let offcuts = [];   // [{length, width, thickness, qty}] in mm
+function loadOffcuts() {
+  try { offcuts = JSON.parse(localStorage.getItem(OFFCUTS_LS) || "[]") || []; }
+  catch (e) { offcuts = []; }
+  if (!Array.isArray(offcuts)) offcuts = [];
+  renderOffcuts();
+}
+function saveOffcuts() {
+  try { localStorage.setItem(OFFCUTS_LS, JSON.stringify(offcuts)); } catch (e) {}
+}
+function renderOffcuts() {
+  const box = $("offcutRows"); if (!box) return;
+  if (!offcuts.length) {
+    box.innerHTML = '<p class="ph-mini">No offcuts yet — add a leftover sheet.</p>';
+    return;
+  }
+  const d = mm => mm ? roundDisp(dispFromMM(mm)) : "";
+  box.innerHTML = offcuts.map((o, i) =>
+    `<div class="offcut-row">
+      <input type="number" data-i="${i}" data-k="length" value="${d(o.length)}" min="0" />
+      <input type="number" data-i="${i}" data-k="width" value="${d(o.width)}" min="0" />
+      <input type="number" data-i="${i}" data-k="thickness" value="${d(o.thickness)}" min="0" />
+      <input type="number" data-i="${i}" data-k="qty" value="${o.qty || 1}" min="1" step="1" />
+      <button class="rm" type="button" data-rm="${i}" title="Remove" aria-label="Remove offcut">×</button>
+    </div>`).join("");
+  box.querySelectorAll("input").forEach(inp => inp.oninput = () => {
+    const i = +inp.dataset.i, k = inp.dataset.k, v = parseFloat(inp.value);
+    if (!offcuts[i]) return;
+    offcuts[i][k] = k === "qty"
+      ? Math.max(1, Math.round(v) || 1)
+      : (isFinite(v) && v > 0 ? mmFromDisp(v) : 0);
+    saveOffcuts(); maybeAuto();
+  });
+  box.querySelectorAll("button[data-rm]").forEach(b => b.onclick = () => {
+    offcuts.splice(+b.dataset.rm, 1); saveOffcuts(); renderOffcuts(); maybeAuto();
+  });
+}
+// Valid boards to send: complete dimensions only (matched by thickness server-side).
+function currentBoards() {
+  return offcuts
+    .filter(o => o.length > 0 && o.width > 0 && o.thickness > 0 && (o.qty || 1) > 0)
+    .map(o => ({length: o.length, width: o.width, thickness: o.thickness,
+                qty: o.qty || 1}));
+}
+if ($("addOffcut")) $("addOffcut").onclick = () => {
+  // Seed with a common offcut size in the current unit (a quarter-sheet-ish).
+  offcuts.push({length: mmFromDisp(unit() === "imperial" ? 48 : 1220),
+                width: mmFromDisp(unit() === "imperial" ? 24 : 600),
+                thickness: mmFromDisp(unit() === "imperial" ? 0.75 : 18), qty: 1});
+  saveOffcuts(); renderOffcuts();
+};
+
 async function loadPricing() {
   try { pricingDefaults = await (await fetch("/api/pricing")).json(); }
   catch (e) { pricingDefaults = null; return; }
@@ -1355,17 +2097,25 @@ function loadStandards() {
     const syncUnits = () => {
       $("units").value = su.value === "in" ? "imperial" : "metric";
     };
-    syncUnits();                                  // initial display unit
+    // One unit governs both the form inputs and the reports. Reconcile the form
+    // to the shop's saved display unit on load (not just on change), so we never
+    // end up with the form in inches while the cut list is in mm.
+    syncUnits(); applyUnitChange();
     su.addEventListener("change", () => { syncUnits(); applyUnitChange(); });
   }
+  if (saved && $("std_combine") && "combine_sheet_stock" in saved)
+    $("std_combine").checked = !!saved.combine_sheet_stock;
   for (const f of STD_FIELDS) {
     const el = $("std_" + f);
     if (el) el.addEventListener("input", () => { saveStandards(); maybeAuto(); });
   }
+  if ($("std_combine"))
+    $("std_combine").addEventListener("change", () => { saveStandards(); maybeAuto(); });
 }
 function saveStandards() {
   const o = {};
   for (const f of STD_FIELDS) if ($("std_" + f)) o[f] = $("std_" + f).value;
+  if ($("std_combine")) o.combine_sheet_stock = $("std_combine").checked;
   try { localStorage.setItem(STANDARDS_LS, JSON.stringify(o)); } catch (e) {}
 }
 // The profile sent with each request: construction defaults + the shop's rates.
@@ -1379,6 +2129,7 @@ function currentProfile() {
     reveal: parseFloat($("std_reveal").value) || 3,
     carcass_thickness: parseFloat($("std_carcass").value) || 18,
     units: ($("std_units") && $("std_units").value) || "mm",
+    combine_sheet_stock: !!($("std_combine") && $("std_combine").checked),
     prices: p.prices, sheet: p.sheet,
     tooling: currentTooling(),   // null = unconstrained (any joinery)
   };
@@ -1549,7 +2300,7 @@ $("revLoadBtn").onclick = async () => {
   const r = revs[+$("revList").value];
   if (!r) return;
   syncForm(r.spec);
-  try { render(await post("/api/build", {spec: r.spec, ...currentPricing(), profile: currentProfile()})); }
+  try { render(await post("/api/build", {spec: r.spec, ...currentPricing(), profile: currentProfile(), boards: currentBoards()})); }
   catch (e) { showError(e.message); }
 };
 $("revDiffBtn").onclick = async () => {
@@ -1569,7 +2320,7 @@ $("loadBtn").onclick = async () => {
   const d = savedCache.find(x => x._id === $("savedList").value);
   if (!d) return;
   syncForm(d.spec);
-  try { render(await post("/api/build", {spec: d.spec, ...currentPricing(), profile: currentProfile()})); }
+  try { render(await post("/api/build", {spec: d.spec, ...currentPricing(), profile: currentProfile(), boards: currentBoards()})); }
   catch (e) { showError(e.message); }
 };
 $("delBtn").onclick = async () => {
@@ -1655,7 +2406,7 @@ async function loadGallery() {
         // every kind still builds + renders from its spec.
         if (t.spec && FORM_KINDS.has(t.spec.kind || "cabinet")) syncForm(t.spec);
         render(await post("/api/build",
-          {spec: t.spec, ...currentPricing(), profile: currentProfile()}));
+          {spec: t.spec, ...currentPricing(), profile: currentProfile(), boards: currentBoards()}));
       } catch (e) { showError(e.message); }
       finally { setBusy(false); health(); }
     };
@@ -1673,6 +2424,7 @@ health();
 loadPricing();
 loadStandards();
 loadTooling();
+loadOffcuts();
 refreshSaved();
 refreshRevisions();
 loadFromHash();

@@ -73,6 +73,12 @@ class ShopProfile:
     # (``serde``), so the serde pairing lives next to the field — no parallel
     # table to keep in sync. Every other field is a scalar driven straight off
     # ``fields()``.
+    # When set, nest every sheet part of the same thickness onto shared sheets
+    # (the shop buys one grade of sheet for the whole build) instead of keeping
+    # each usage product on its own sheets — fewer, fuller sheets and a lower
+    # sheet count. Off keeps the per-product default (e.g. a finer door grade).
+    combine_sheet_stock: bool = False
+
     prices: PriceBook = field(
         default_factory=PriceBook,
         metadata={"serde": (pricebook_to_dict, pricebook_from_dict)})

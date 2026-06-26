@@ -136,8 +136,25 @@ def test_csv_has_header_and_grand_total_row():
     csv = po.to_csv()
     lines = csv.splitlines()
     assert lines[0].startswith("supplier,category,item")
-    assert "GRAND TOTAL" in lines[-1]
-    assert str(round(po.grand_total, 2)) in lines[-1]
+    grand = [ln for ln in lines if "GRAND TOTAL" in ln]
+    assert grand and str(round(po.grand_total, 2)) in grand[0]
+
+
+def test_csv_lists_consumables_with_estimates_note():
+    """The shopping list shows the consumables, flagged as estimates and kept
+    out of the grand total (Dale's wish)."""
+    po = purchase_order(base_spec())
+    csv = po.to_csv()
+    assert po.consumables  # base build needs glue/abrasives at least
+    assert "Estimates" in csv
+    assert "not in grand total" in csv.lower()
+    # The grand-total row value excludes the consumables subtotal.
+    assert po.consumables_total > 0
+
+
+def test_report_text_flags_consumables_as_estimates():
+    text = purchase_order(base_spec()).report_text()
+    assert "Shop consumables" in text and "Estimates" in text
 
 
 def test_report_text_renders():
