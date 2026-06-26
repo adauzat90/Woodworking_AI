@@ -26,10 +26,14 @@ count; it is safe to call on a cabinet, a table, or a whole project/assembly.
 
 from __future__ import annotations
 
+import logging
+
 from .dispatch import spec_kind, VOID, GROUP, TABLE, CABINET
 from .tooling import (
     JOINT_WAYS, ShopTooling, Requirement, required_operations, _norm,
 )
+
+log = logging.getLogger(__name__)
 
 # ===========================================================================
 # Method model — which *kind* of tool makes a joint, and how slow each is.
@@ -177,6 +181,7 @@ def _part_count(spec) -> int:
         cl = generate_cutlist(spec)
         return sum(p.qty for p in cl.parts)
     except Exception:
+        log.warning("plan: cut list failed; counting 0 parts", exc_info=True)
         return 0
 
 
@@ -288,6 +293,8 @@ def _safe_reqs(spec) -> list[Requirement]:
     try:
         return required_operations(spec)
     except Exception:
+        log.warning("plan: required_operations failed; no joinery requirements",
+                    exc_info=True)
         return []
 
 

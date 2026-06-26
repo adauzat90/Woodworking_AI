@@ -166,6 +166,22 @@ def test_material_label_tables_use_canonical_vocabulary():
     assert set(PriceBook().sheet_price) <= MATERIAL_LABELS
 
 
+def test_tooling_failure_is_logged_not_silent(monkeypatch, caplog):
+    # A failure building the tool requirements must degrade *observably* (a log
+    # warning), not vanish into an empty checklist with no trace.
+    import logging
+    import woodworking_ai.tooling as tooling
+
+    def boom(spec):
+        raise RuntimeError("kaboom")
+
+    monkeypatch.setattr(tooling, "required_operations", boom)
+    with caplog.at_level(logging.WARNING, logger="woodworking_ai.tooling"):
+        out = tooling.tools_needed(_spec(), tooling.HOBBYIST_SHOP)
+    assert out == []                                   # still degrades
+    assert any("required_operations failed" in r.message for r in caplog.records)
+
+
 def test_board_foot_price_defers_to_species_db():
     # The estimator no longer keeps a second copy of every wood's $/bd-ft: the
     # base price comes from the species database, and species_board_foot_price

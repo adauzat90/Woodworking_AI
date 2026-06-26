@@ -9,12 +9,15 @@ interactive GLB. Heavy/optional steps (render, GLB) degrade gracefully.
 from __future__ import annotations
 
 import base64
+import logging
 import math
 import tempfile
 from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
 from typing import Any
+
+log = logging.getLogger(__name__)
 
 from .dsl import CabinetSpec
 from .validator import validate
@@ -69,6 +72,10 @@ def _render_png(spec: CabinetSpec) -> str | None:
             p = render_cabinet(spec, Path(d) / "c.png")
             return _b64_file(p, "image/png")
     except Exception:
+        # Best-effort: a missing matplotlib (or a render failure) just omits the
+        # PNG. Debug, not warning — a CAD/render-free deployment hits this every
+        # call and it is expected, not an error.
+        log.debug("render PNG unavailable", exc_info=True)
         return None
 
 
@@ -81,6 +88,9 @@ def _glb(spec: CabinetSpec) -> str | None:
             p = export_glb(model, Path(d) / "c.glb")
             return _b64_file(p, "model/gltf-binary")
     except Exception:
+        # Best-effort: without build123d there is no GLB. Expected on a render-
+        # only deployment, so debug rather than warn.
+        log.debug("GLB unavailable", exc_info=True)
         return None
 
 
@@ -566,12 +576,16 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
         from .geometry import panels_by_subassembly
         result["model_sections"] = list(panels_by_subassembly(spec).keys())
     except Exception:
+        # Pure-math (no heavy deps), so a failure here is a real bug, not a
+        # missing capability — surface it.
+        log.warning("model_sections failed; omitting", exc_info=True)
         result["model_sections"] = []
 
     try:
         from .drawings import render_svg
         result["drawings_svg"] = render_svg(spec, "metric")
     except Exception:
+        log.warning("drawings SVG failed; omitting", exc_info=True)
         result["drawings_svg"] = None
 
     result["render_png"] = _render_png(spec) if want_png else None
