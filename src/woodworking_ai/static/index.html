@@ -417,8 +417,9 @@
   </div>
   <span class="tag">Describe a piece — get a 3D model, cut list &amp; shopping list you can build from.</span>
   <span class="spacer"></span>
-  <button id="themeBtn" class="hdr-btn" type="button" title="Switch light / dark theme">
-    <span id="themeIcon">◐</span> Theme
+  <button id="themeBtn" class="hdr-btn" type="button" title="Switch light / dark theme"
+    aria-label="Switch light or dark theme">
+    <span id="themeIcon" aria-hidden="true">◐</span> Theme
   </button>
 </header>
 <div id="toasts" aria-live="polite"></div>
@@ -703,14 +704,16 @@
       <div class="checks" id="checks" style="display:none"></div>
       <div class="downloads" id="downloads" style="display:none">
         <span class="dl-label">Download:</span>
-        <button data-f="step">STEP</button><button data-f="stl">STL</button>
-        <button data-f="glb">GLB</button><button data-f="dae" title="Collada — imports into SketchUp">DAE</button><button data-f="dxf">DXF</button>
+        <button data-f="package" title="Everything in one printable PDF: drawings, cut list, hardware, steps">Build package PDF</button>
         <button data-f="drawings">Drawings</button>
-        <button data-f="cutlist">Cut list</button><button data-f="drilling">Drilling</button>
-        <button data-f="purchase_order">🧾 Purchase order</button>
-        <button data-f="package">📄 Build package PDF</button>
-        <button data-f="template" title="Full-size 1:1 printable template of the largest part (tape, glue, cut to the line)">📐 1:1 template</button>
-        <button id="printBtn" type="button" title="Print the current report (cut list, drilling, steps…)">🖨 Print</button>
+        <button data-f="cutlist">Cut list</button>
+        <button data-f="purchase_order" title="A shopping list of sheets, lumber and hardware to buy">Shopping list</button>
+        <button data-f="drilling">Drilling</button>
+        <button data-f="template" title="Full-size 1:1 printable template of the largest part (tape, glue, cut to the line)">1:1 template</button>
+        <button id="printBtn" type="button" title="Print the current report (cut list, drilling, steps…)">Print</button>
+        <span class="dl-label" title="CAD / 3D interchange formats for SketchUp, Fusion, etc.">CAD:</span>
+        <button data-f="step">STEP</button><button data-f="stl">STL</button>
+        <button data-f="glb">GLB</button><button data-f="dae" title="Collada — imports into SketchUp">DAE</button><button data-f="dxf" title="2D cut layout">DXF</button>
         <button id="shareBtn" class="share">🔗 Share</button>
       </div>
       <div class="tabs" id="tabs">
@@ -1049,10 +1052,18 @@ function render(d) {
   // Plain-English "what we checked" + the actual advisory notes (sag, wood
   // movement, tool substitutions) — the hobbyist judgment, made readable.
   buildChecks(d);
-  if (hasNotes)
-    $("status").querySelectorAll(".pill.clickable").forEach(p =>
-      p.onclick = () => { const c = $("checks");
-        c.style.display = c.style.display === "none" ? "block" : "none"; });
+  if (hasNotes) {
+    const toggleChecks = () => { const c = $("checks");
+      c.style.display = c.style.display === "none" ? "block" : "none"; };
+    $("status").querySelectorAll(".pill.clickable").forEach(p => {
+      p.setAttribute("role", "button");
+      p.setAttribute("tabindex", "0");
+      p.setAttribute("aria-label", "Toggle design notes");
+      p.onclick = toggleChecks;
+      p.onkeydown = ev => { if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault(); toggleChecks(); } };
+    });
+  }
   $("downloads").style.display = "flex";
   paint();
 }
@@ -1095,7 +1106,11 @@ function buildChecks(d) {
 
   if (!html) { box.style.display = "none"; box.innerHTML = ""; return; }
   box.innerHTML = html;
-  box.style.display = "none";   // collapsed until a status pill is clicked
+  // Watch-outs (sag, wood movement, unmakeable joints, problems to fix) open
+  // automatically so the advice is seen; an all-clear stays collapsed behind the
+  // green pill to keep the result tidy.
+  const hasIssues = (d.errors && d.errors.length) || (d.warnings && d.warnings.length);
+  box.style.display = hasIssues ? "block" : "none";
 }
 
 // Build the preview stage. Prefers the interactive GLB via <model-viewer>, but
@@ -1632,7 +1647,7 @@ function table(cols, rows) {
   const isNum = v => {
     if (typeof v === "number") return true;
     const s = String(v).trim();
-    return s !== "" && /^[$£€]?[\d]/.test(s);
+    return s !== "" && /^[$£€]?-?[\d]/.test(s);
   };
   const idCol = cols.length > 0 && /^id$/i.test(String(cols[0]).trim());
   const numCol = cols.map((_, i) => {
