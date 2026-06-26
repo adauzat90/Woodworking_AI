@@ -64,6 +64,35 @@ def test_nest_smaller_sheet_needs_more_sheets():
     assert small >= big
 
 
+def test_combine_sheet_stock_merges_same_thickness():
+    """Combining nests same-thickness parts together: fewer or equal sheets."""
+    spec = _spec(BASE)
+    sep = nest_layout(spec)
+    comb = nest_layout(spec, combine_sheet_stock=True)
+    # One group per distinct thickness when combined.
+    thk = [g["thickness"] for g in comb]
+    assert len(thk) == len(set(thk))
+    assert sum(g["sheet_count"] for g in comb) <= sum(g["sheet_count"] for g in sep)
+    # Every sheet part is still placed.
+    from woodworking_ai.cutlist import generate_cutlist
+    cl = generate_cutlist(spec)
+    sheet_parts = sum(p.qty for p in cl.parts if not p.is_solid_lumber)
+    placed = sum(len(s) for g in comb for s in g["sheets"])
+    assert placed == sheet_parts
+
+
+def test_combine_sheet_stock_lowers_or_equals_cost_and_sheets():
+    from woodworking_ai.estimator import estimate
+    spec = _spec(BASE)
+    base = estimate(spec)
+    comb = estimate(spec, combine_sheet_stock=True)
+    assert comb.total_sheets <= base.total_sheets
+    assert comb.material_cost <= base.material_cost
+    # Nesting and the quote still agree under combining.
+    assert sum(g["sheet_count"] for g in
+               nest_layout(spec, combine_sheet_stock=True)) == comb.total_sheets
+
+
 def test_nest_project_aggregates_components():
     proj = _spec({"kind": "project", "name": "K", "components": [
         {"label": "A", "x": 0, "y": 0,

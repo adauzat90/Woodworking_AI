@@ -386,6 +386,17 @@ def test_build_rejects_cyclic_subassembly():
     assert r.status_code == 400          # bad spec, surfaced not 500'd
 
 
+def test_build_combine_sheet_stock_reduces_sheets():
+    """The shop profile's combine_sheet_stock flows through to fewer sheets."""
+    base = client.post("/api/build", json={"spec": VALID_SPEC, "glb": False}).json()
+    comb = client.post("/api/build", json={
+        "spec": VALID_SPEC, "glb": False,
+        "profile": {"combine_sheet_stock": True}}).json()
+    assert comb["estimate"]["total_sheets"] <= base["estimate"]["total_sheets"]
+    # The diagram agrees with the (combined) quote.
+    assert sum(g["sheet_count"] for g in comb["nesting"]) == comb["estimate"]["total_sheets"]
+
+
 def test_build_bundle_includes_nesting_matching_estimate():
     d = client.post("/api/build", json={"spec": VALID_SPEC, "glb": False}).json()
     assert "nesting" in d and d["nesting"]

@@ -257,7 +257,8 @@ def _edge_banding_metres(spec: CabinetSpec) -> float:
 
 
 def _estimate_project(project: ComponentGroup, prices: PriceBook,
-                      sheet: SheetSize) -> Estimate:
+                      sheet: SheetSize,
+                      combine_sheet_stock: bool = False) -> Estimate:
     """Sum component estimates into one quote.
 
     Sheets are counted per component (each cabinet is cut from its own sheets,
@@ -271,7 +272,8 @@ def _estimate_project(project: ComponentGroup, prices: PriceBook,
     labour_hours = labour_cost = lumber_cost = 0.0
     finish_cost = finish_m2 = 0.0
     for comp in project.components:
-        e = estimate(comp.spec, prices=prices, sheet=sheet)
+        e = estimate(comp.spec, prices=prices, sheet=sheet,
+                     combine_sheet_stock=combine_sheet_stock)
         material_cost += e.material_cost
         hardware_cost += e.hardware_cost
         banding_cost += e.edge_banding_cost
@@ -324,8 +326,14 @@ def _estimate_project(project: ComponentGroup, prices: PriceBook,
 
 def estimate(spec, *, cutlist: CutList | None = None,
              prices: PriceBook | None = None,
-             sheet: SheetSize | None = None) -> Estimate:
-    """Produce a cost estimate for a cabinet, table, or group."""
+             sheet: SheetSize | None = None,
+             combine_sheet_stock: bool = False) -> Estimate:
+    """Produce a cost estimate for a cabinet, table, or group.
+
+    ``combine_sheet_stock`` nests all sheet parts of the same thickness onto
+    shared sheets (one grade of stock for the whole build) instead of keeping
+    each usage product on its own sheets — fewer, fuller sheets.
+    """
     prices = prices or PriceBook()
     sheet = sheet or SheetSize()
     kind = spec_kind(spec)
@@ -338,20 +346,28 @@ def estimate(spec, *, cutlist: CutList | None = None,
         est._rate = prices.shop_rate_per_hour
         return est
     if kind == GROUP:
-        return _estimate_project(spec, prices, sheet)
+        return _estimate_project(spec, prices, sheet,
+                                 combine_sheet_stock=combine_sheet_stock)
     cl = cutlist or generate_cutlist(spec)
 
     # Group panels for nesting. When a part declares a physical form/species,
     # parts that share (form, species, thickness) merge into one buyable stock —
     # so an oak-plywood carcass and oak-plywood doors nest as one. Otherwise the
     # legacy key is the usage label, keeping distinct products on their own
-    # sheets. Solid lumber is priced by the board foot below, so it is excluded.
+    # sheets. With ``combine_sheet_stock`` the shop buys one grade of sheet, so
+    # every sheet part of the same *thickness* nests together (priced at the
+    # dearest contributing grade so the quote never under-counts) — fewer, fuller
+    # sheets, which is how a one-material hobbyist build actually buys. Solid
+    # lumber is priced by the board foot below, so it is excluded.
     groups: dict[tuple[str, str, str, float], list] = {}
+    contributors: dict[tuple[str, str, str, float], set] = {}
     for p in cl.parts:
         if p.is_solid_lumber:
             continue
-        key = p.stock_key
+        key = (("", "", "", p.thickness) if combine_sheet_stock else p.stock_key)
         groups.setdefault(key, [])
+        contributors.setdefault(key, set()).add(
+            (p.stock_label, p.form, p.species))
         # Door/drawer fronts cut from one sheet in sequence for a grain/colour
         # match; grain locks each part's orientation on the sheet.
         seq = "front" if p.material == MAT_DOOR_FRONT else ""
@@ -361,10 +377,16 @@ def estimate(spec, *, cutlist: CutList | None = None,
     material_cost = 0.0
     for (label, form, species, thickness), rects in sorted(groups.items()):
         sheets, util, oversize = pack_sheets(rects, sheet)
-        price = sheet_price(prices, label, form, species)
+        if combine_sheet_stock:
+            price = max(sheet_price(prices, lbl, frm, sp)
+                        for (lbl, frm, sp) in contributors[(label, form, species, thickness)])
+            disp = "sheet goods"
+        else:
+            price = sheet_price(prices, label, form, species)
+            disp = label
         material_cost += sheets * price
         sheet_groups.append(SheetGroup(
-            material=label, thickness=thickness, part_count=len(rects),
+            material=disp, thickness=thickness, part_count=len(rects),
             sheets=sheets, utilization=util, oversize=oversize,
             form=form, species=species,
         ))

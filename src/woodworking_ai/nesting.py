@@ -22,7 +22,8 @@ from .packing import pack
 
 
 def nest_layout(spec, *, sheet: SheetSize | None = None,
-                cutlist: CutList | None = None) -> list[dict[str, Any]]:
+                cutlist: CutList | None = None,
+                combine_sheet_stock: bool = False) -> list[dict[str, Any]]:
     """Per-stock nesting placements for *spec*.
 
     Returns a list of stock groups, each::
@@ -51,8 +52,11 @@ def nest_layout(spec, *, sheet: SheetSize | None = None,
     for p in cl.parts:
         if p.is_solid_lumber:
             continue
-        g = groups.setdefault(p.stock_key, {
-            "stock": p.stock_label, "thickness": p.thickness, "items": []})
+        # Match the estimator: combine nests all same-thickness sheet parts.
+        key = (("", "", "", p.thickness) if combine_sheet_stock else p.stock_key)
+        g = groups.setdefault(key, {
+            "stock": ("sheet goods" if combine_sheet_stock else p.stock_label),
+            "thickness": p.thickness, "items": []})
         seq = "front" if p.material == MAT_DOOR_FRONT else ""
         code = f"{p.id} " if p.id else ""
         for i in range(p.qty):

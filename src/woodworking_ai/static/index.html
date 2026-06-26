@@ -679,6 +679,12 @@
             </select></div>
           <div></div>
         </div>
+        <div class="check"><input id="std_combine" type="checkbox" checked />
+          <label style="margin:0" title="Nest all same-thickness parts onto shared sheets, instead of a separate sheet per product">One grade of sheet stock — nest same-thickness parts together</label></div>
+        <p class="muted" style="font-size:11px;margin:6px 0 0">
+          On: buy one grade of ply for the whole build, so carcass, backs and
+          fronts of the same thickness share sheets (fewer sheets, fuller). Off:
+          keep a finer door grade on its own sheets.</p>
       </details>
     </fieldset>
     <fieldset style="margin-top:14px">
@@ -1927,14 +1933,19 @@ function loadStandards() {
     syncUnits(); applyUnitChange();
     su.addEventListener("change", () => { syncUnits(); applyUnitChange(); });
   }
+  if (saved && $("std_combine") && "combine_sheet_stock" in saved)
+    $("std_combine").checked = !!saved.combine_sheet_stock;
   for (const f of STD_FIELDS) {
     const el = $("std_" + f);
     if (el) el.addEventListener("input", () => { saveStandards(); maybeAuto(); });
   }
+  if ($("std_combine"))
+    $("std_combine").addEventListener("change", () => { saveStandards(); maybeAuto(); });
 }
 function saveStandards() {
   const o = {};
   for (const f of STD_FIELDS) if ($("std_" + f)) o[f] = $("std_" + f).value;
+  if ($("std_combine")) o.combine_sheet_stock = $("std_combine").checked;
   try { localStorage.setItem(STANDARDS_LS, JSON.stringify(o)); } catch (e) {}
 }
 // The profile sent with each request: construction defaults + the shop's rates.
@@ -1948,6 +1959,7 @@ function currentProfile() {
     reveal: parseFloat($("std_reveal").value) || 3,
     carcass_thickness: parseFloat($("std_carcass").value) || 18,
     units: ($("std_units") && $("std_units").value) || "mm",
+    combine_sheet_stock: !!($("std_combine") && $("std_combine").checked),
     prices: p.prices, sheet: p.sheet,
     tooling: currentTooling(),   // null = unconstrained (any joinery)
   };

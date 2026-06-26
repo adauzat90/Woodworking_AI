@@ -189,6 +189,7 @@ class Assembly:
     prices: Any = None
     sheet: Any = None
     tooling: Any = None
+    combine_sheet_stock: bool = False
 
     @cached_property
     def validation(self):
@@ -205,7 +206,8 @@ class Assembly:
     @cached_property
     def estimate(self):
         return estimate(self.spec, cutlist=self.cutlist,
-                        prices=self.prices, sheet=self.sheet)
+                        prices=self.prices, sheet=self.sheet,
+                        combine_sheet_stock=self.combine_sheet_stock)
 
     @cached_property
     def drilling(self):
@@ -225,7 +227,8 @@ class Assembly:
         return _plan(self.spec, self.tooling)
 
 
-def assemble(spec, *, prices=None, sheet=None, tooling=None) -> Assembly:
+def assemble(spec, *, prices=None, sheet=None, tooling=None,
+             combine_sheet_stock=False) -> Assembly:
     """Run (lazily) the design pipeline for *spec* once, returning live objects.
 
     The single entry point both the CLI and :func:`build_result` use so the two
@@ -233,7 +236,8 @@ def assemble(spec, *, prices=None, sheet=None, tooling=None) -> Assembly:
     override the costing defaults when supplied; ``tooling`` (a
     :class:`~tooling.ShopTooling`) constrains validation to makeable joinery.
     """
-    return Assembly(spec, prices=prices, sheet=sheet, tooling=tooling)
+    return Assembly(spec, prices=prices, sheet=sheet, tooling=tooling,
+                    combine_sheet_stock=combine_sheet_stock)
 
 
 def cutplan_result(spec, boards, *, cutlist=None, kerf: float = 3.0) -> dict[str, Any]:
@@ -289,7 +293,7 @@ def cutplan_result(spec, boards, *, cutlist=None, kerf: float = 3.0) -> dict[str
 
 def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
                  prices=None, sheet=None, tooling=None,
-                 boards=None) -> dict[str, Any]:
+                 boards=None, combine_sheet_stock: bool = False) -> dict[str, Any]:
     """Full design bundle for *spec* — a cabinet, table, or whole project.
 
     Always JSON-serialisable; aggregate stages (cut list, cost, drilling,
@@ -302,7 +306,8 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
     the owned stock. Omitted entirely when no boards are given, so the bundle is
     fully backward compatible.
     """
-    asm = assemble(spec, prices=prices, sheet=sheet, tooling=tooling)
+    asm = assemble(spec, prices=prices, sheet=sheet, tooling=tooling,
+                   combine_sheet_stock=combine_sheet_stock)
     v = asm.validation
     result: dict[str, Any] = {
         "spec": spec.to_dict(),
@@ -351,7 +356,8 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
     # Sheet-nesting placements for the visual cut diagram — the same pack the
     # cost estimate counts sheets from, so the diagram and the quote agree.
     from .nesting import nest_layout
-    result["nesting"] = nest_layout(spec, sheet=sheet, cutlist=cl)
+    result["nesting"] = nest_layout(spec, sheet=sheet, cutlist=cl,
+                                    combine_sheet_stock=combine_sheet_stock)
 
     # Optional "cut from my stock" plan — only when the caller supplied owned
     # boards, so the bundle is unchanged for every existing caller.
