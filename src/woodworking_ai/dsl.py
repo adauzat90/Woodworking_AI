@@ -1223,6 +1223,8 @@ class BedSpec:
     rail_thickness: float = 30.0   # side-rail thickness (X)
     panel: bool = True             # frame-and-panel head/foot infill (else open)
     slats: int = 0                 # cross-slat count (0 = auto from the length)
+    center_support: bool = False   # a centre rail + leg halving the slat span
+                                   # (a queen/king needs one or the slats sag)
 
     connector: BedConnector = BedConnector.BED_BOLT
 
@@ -2254,6 +2256,7 @@ rails with bed bolts or hook plates, carrying a deck of cross slats.
   "rail_height": 150, "rail_thickness": 30,
   "panel": true | false,             // frame-and-panel head/foot infill
   "slats": <cross-slat count, 0 = auto (~every 100mm)>,
+  "center_support": true | false,  // a centre rail+leg; a queen/king needs it
   "connector": {_opts(BedConnector)},  // knock-down rail joinery
   "material_form": "solid",
   "species": "walnut" | "oak" | "maple" | ...,

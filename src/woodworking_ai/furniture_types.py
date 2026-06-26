@@ -1041,6 +1041,17 @@ def _bed_cutlist(spec: BedSpec) -> CutList:
         "Slat ledger", 2, length=g["rail_len_y"], width=g["ledger"],
         thickness=g["ledger"], material=MAT_SOLID, grain="length",
         notes="screwed inside each side rail to carry the slats"))
+    if spec.center_support:
+        # A longitudinal rail down the bed centre that the slats land on at
+        # mid-span, carried to the floor by a centre leg — halves the slat span.
+        cl.parts.append(Part(
+            "Centre support rail", 1, length=g["rail_len_y"], width=70.0,
+            thickness=45.0, material=MAT_SOLID, grain="length",
+            notes="head-to-foot centre rail under the slat mid-span"))
+        cl.parts.append(Part(
+            "Centre support leg", 1, length=max(spec.deck_height - g["slat_t"], 50.0),
+            width=70.0, thickness=45.0, material=MAT_SOLID,
+            notes="centre leg to the floor at mid-bed"))
 
     # Knock-down rail connectors (one corner = one joint, four joints).
     if spec.connector == BedConnector.BED_BOLT:
@@ -1098,15 +1109,17 @@ def _bed_validate(spec: BedSpec) -> list[Issue]:
     # Slat-deck deflection: a slat is a beam spanning the clear inner width under
     # a share of the sleeping load. Reuse the same shelf engineering check.
     g = _bed_dims(spec)
+    # A centre support rail down the middle halves each slat's clear span.
+    slat_span = g["iw"] / 2.0 if spec.center_support else g["iw"]
     load_per_slat_kg = 180.0 / max(spec.slat_count, 1)        # ~2 sleepers + mattress
     load_kg_per_m = load_per_slat_kg / max(g["iw"] / 1000.0, 0.1)
     res = engineering.evaluate_shelf(
-        span=g["iw"], depth=g["slat_w"], thickness=g["slat_t"],
+        span=slat_span, depth=g["slat_w"], thickness=g["slat_t"],
         load_kg_per_m=load_kg_per_m, species=(spec.species or "pine"))
-    if res.status == "fail" or spec.inner_width > 1500:
+    if res.status == "fail" or (spec.inner_width > 1500 and not spec.center_support):
         warn("slats",
-             "a wide deck sags under load — add a centre support rail on a foot "
-             "(or thicker/closer slats) for a queen/king")
+             "a wide deck sags under load — set center_support true (a centre "
+             "rail + leg) or use thicker/closer slats for a queen/king")
     return issues
 
 

@@ -107,6 +107,17 @@ def test_validate_warns_wide_deck_needs_center_support():
     assert any(i.field == "slats" for i in res.warnings)
 
 
+def test_center_support_clears_slat_sag_and_adds_parts():
+    # Setting center_support resolves the otherwise-unfixable wide-deck warning
+    # and adds the centre rail + leg to the cut list.
+    from woodworking_ai.cutlist import generate_cutlist
+    res = validate(_bed(size="king", center_support=True))
+    assert not any(i.field == "slats" for i in res.warnings)
+    names = {p.name for p in generate_cutlist(_bed(size="king",
+                                                   center_support=True)).parts}
+    assert "Centre support rail" in names and "Centre support leg" in names
+
+
 def test_validate_warns_footboard_taller_than_head():
     res = validate(_bed(head_height=500, foot_height=900))
     assert any(i.field == "foot_height" for i in res.warnings)
