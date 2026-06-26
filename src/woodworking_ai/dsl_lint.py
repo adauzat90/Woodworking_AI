@@ -62,7 +62,8 @@ _ACCESSORY_FIELDS: dict[str, frozenset[str]] = {
     "molding": frozenset({"kind", "type", "profile", "height"}),
 }
 
-_GROUP_FIELDS = frozenset({"name", "units", "components", "definitions", "runs"})
+_GROUP_FIELDS = frozenset({"name", "units", "components", "definitions", "runs",
+                           "countertop"})
 _COMPONENT_PLACEMENT = frozenset({"spec", "x", "y", "rotation", "label", "ref"})
 _RUN_FIELDS = frozenset({"start", "angle", "gap", "items", "labels"})
 

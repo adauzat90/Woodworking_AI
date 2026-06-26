@@ -1745,12 +1745,18 @@ class ComponentGroup:
     components: list[Component] = field(default_factory=list)
     # Named reusable sub-assemblies a component can place by ``ref``.
     definitions: dict[str, Any] = field(default_factory=dict)
+    # Optional ONE continuous countertop spanning the run's base cabinets
+    # (and under-counter appliance gaps), as a {material, thickness, overhang,
+    # depth?} dict — the kitchen-run counter a per-cabinet top can't express.
+    countertop: dict | None = None
     kind: str = "group"
 
     def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {"kind": self.kind, "name": self.name, "units": "mm"}
         if self.definitions:
             d["definitions"] = {n: s.to_dict() for n, s in self.definitions.items()}
+        if self.countertop:
+            d["countertop"] = dict(self.countertop)
         comps: list[dict[str, Any]] = []
         for c in self.components:
             item: dict[str, Any] = {
@@ -1784,10 +1790,12 @@ class ComponentGroup:
         # resolved components (runs are an input convenience, not stored).
         for run in (data.get("runs") or []):
             comps.extend(_run_components(run, defs, _stack))
+        ct = data.get("countertop")
         return cls(
             name=str(data.get("name", cls().name)),
             units="mm", components=comps,
             definitions=defs.local(_stack),
+            countertop=dict(ct) if isinstance(ct, dict) else None,
         )
 
     @classmethod
@@ -2364,6 +2372,7 @@ an (x, y) origin in millimetres (front-left corner for a cabinet) and an optiona
   "kind": "project",
   "name": "Kitchen",
   "units": "mm",
+  "countertop": {{"material": "butcher_block", "thickness": 38, "overhang": 25}},  // optional: ONE continuous worktop spanning the run's base cabinets
   "definitions": {{                 // optional: named, reusable SUB-ASSEMBLIES
     "drawer_bank": {{
       "kind": "assembly",

@@ -697,7 +697,50 @@ def _project_cutlist(project: ComponentGroup) -> CutList:
                 p, name=f"{tag} · {p.name}", id=f"{tag}-{p.id}" if p.id else ""))
         for h in sub.hardware:
             cl.hardware.append(replace(h, name=f"{tag} · {h.name}"))
+    _add_run_countertop(cl, project)
     return cl
+
+
+def _under_counter(comp) -> bool:
+    """True for a component a continuous worktop sits over: a base cabinet or an
+    under-counter appliance gap (a dishwasher), not a wall/tall box or a
+    full-height appliance (range/fridge)."""
+    sk = spec_kind(comp.spec)
+    if sk == CABINET:
+        ct = getattr(comp.spec, "cabinet_type", None)
+        return str(getattr(ct, "value", ct)).lower() == "base"
+    if sk == VOID:
+        return str(getattr(comp.spec, "type", "")).lower() == "dishwasher"
+    return False
+
+
+def _add_run_countertop(cl: "CutList", project: ComponentGroup) -> None:
+    """Append one continuous worktop spanning the run's base cabinets.
+
+    The kitchen-run counter a per-cabinet ``accessories`` top can't express:
+    sized from the X-extent of the under-counter components. Assumes a single
+    straight run (component rotation is not unwound), which covers the galley /
+    single-wall case; an L-run should add a countertop per leg."""
+    spec_ct = getattr(project, "countertop", None)
+    if not isinstance(spec_ct, dict):
+        return
+    spans = [(comp.x, comp.x + float(getattr(comp.spec, "width", 0.0) or 0.0),
+              float(getattr(comp.spec, "depth", 0.0) or 0.0))
+             for comp in project.components if _under_counter(comp)]
+    if not spans:
+        return
+    left = min(s[0] for s in spans)
+    right = max(s[1] for s in spans)
+    run_depth = max(s[2] for s in spans)
+    overhang = float(spec_ct.get("overhang", 25.0) or 25.0)
+    thick = float(spec_ct.get("thickness", 38.0) or 38.0)
+    mat = str(spec_ct.get("material", "laminate"))
+    depth = float(spec_ct.get("depth", 0.0) or 0.0) or (run_depth + overhang)
+    cl.parts.append(Part(
+        "Run countertop", 1, length=round(right - left, 1), width=round(depth, 1),
+        thickness=thick, material=MAT_COUNTERTOP, id="CT1", category="accessory",
+        notes=f"{mat} continuous worktop spanning the base run; "
+              f"{overhang:.0f}mm front overhang"))
 
 
 def project_hardware(project: ComponentGroup) -> list["Hardware"]:

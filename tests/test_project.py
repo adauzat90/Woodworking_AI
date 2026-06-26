@@ -294,3 +294,27 @@ def test_full_pipeline_composes_corner_run_table_imperial():
     assert estimate(proj).total > 0
     assert critique(proj).ok
     assert drilling_schedule(proj).total_holes > 0
+
+
+def test_run_spanning_countertop():
+    from woodworking_ai.dsl import spec_from_dict
+    from woodworking_ai.cutlist import generate_cutlist
+    from woodworking_ai.validator import validate
+    proj = spec_from_dict({
+        "kind": "project", "name": "Galley",
+        "countertop": {"material": "butcher_block", "thickness": 38, "overhang": 25},
+        "runs": [{"start": [0, 0], "angle": 0, "items": [
+            {"spec": {"kind": "cabinet", "cabinet_type": "base", "width": 800}},
+            {"spec": {"kind": "cabinet", "cabinet_type": "base", "width": 1000}},
+            {"spec": {"kind": "appliance_void", "type": "dishwasher", "width": 600}},
+        ]}]})
+    cts = [p for p in generate_cutlist(proj).parts if p.name == "Run countertop"]
+    assert len(cts) == 1
+    assert cts[0].length == 2400.0          # spans the whole base run incl. DW gap
+    assert validate(proj).ok
+    assert spec_from_dict(proj.to_dict()).countertop["material"] == "butcher_block"
+    # No countertop key -> no run counter.
+    plain = spec_from_dict({"kind": "project", "runs": [{"start": [0, 0],
+        "angle": 0, "items": [{"spec": {"kind": "cabinet", "cabinet_type": "base"}}]}]})
+    assert not any(p.name == "Run countertop"
+                   for p in generate_cutlist(plain).parts)
