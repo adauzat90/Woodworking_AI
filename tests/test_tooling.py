@@ -238,11 +238,36 @@ def test_required_operations_handles_every_leaf_kind_without_crashing():
         reqs = required_operations(spec_from_dict({"kind": kind}))
         assert reqs and reqs[0].role == "frame"
         assert not any(r.role == "carcass" for r in reqs), kind
-    # A picture frame's tool-gated joint is its mitered corner.
+    # A picture frame's tool-gated joint is its mitered corner (frame_corner role).
     frame = required_operations(spec_from_dict(
         {"kind": "frame", "opening_w": 400, "opening_h": 500,
          "corner_joint": "half_lap"}))
-    assert any(r.role == "frame" and r.joint == "half_lap" for r in frame)
+    assert any(r.role == "frame_corner" and r.joint == "half_lap" for r in frame)
+
+
+def test_frame_corner_joint_checked_against_tooling():
+    """A picture/mirror frame's mitered corner is a tool-gated joint. The
+    FrameJoint vocabulary (splined_miter/half_lap/miter) must be known to the
+    capability tables, and an infeasible corner must be swapped for another
+    *miter* corner — never a leg-to-apron mortise & tenon."""
+    from woodworking_ai.dsl import spec_from_dict
+    from woodworking_ai.tooling import can_make
+    frame = spec_from_dict({"kind": "frame", "name": "Mirror", "opening_w": 500,
+                            "opening_h": 700, "corner_joint": "splined_miter"})
+    reqs = required_operations(frame)
+    assert reqs and reqs[0].role == "frame_corner"
+    assert reqs[0].joint == "splined_miter"
+    # A full shop can cut the spline slot; a drill-only shop cannot.
+    assert can_make("splined_miter", ShopTooling.from_names(["table_saw"]))
+    only_drill = ShopTooling.from_names(["drill"])
+    assert not can_make("splined_miter", only_drill)
+    adv = tooling_advisories(frame, only_drill)
+    msgs = [m for _, _, m in adv if "frame corners" in m]
+    assert msgs, "drill-only shop should be warned it can't cut a splined miter"
+    # The substitute is another miter corner, not a mortise & tenon.
+    assert "switch to" in msgs[0] and "mortise" not in msgs[0].lower()
+    # A hand-tool shop CAN cut a splined miter — no advisory.
+    assert not tooling_advisories(frame, HAND_TOOL_SHOP)
 
 
 def test_new_types_tools_needed_nonempty():

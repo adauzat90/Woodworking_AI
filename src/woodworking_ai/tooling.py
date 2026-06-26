@@ -181,6 +181,9 @@ JOINT_LABEL = {
     "cope_stick": "cope-and-stick (5-piece) doors",
     "hinge_cup": "35mm concealed-hinge cups", "shelf_pins": "shelf-pin holes",
     "bevel_rip": "a bevel-ripped French cleat", "butt_hinge": "butt-hinge screws",
+    "splined_miter": "splined-miter frame corners",
+    "half_lap": "half-lap frame corners",
+    "miter": "glued-miter frame corners",
 }
 
 # Each joint/operation → the ways it can be made. A way is a tuple of
@@ -205,6 +208,12 @@ JOINT_WAYS: dict[str, list[tuple]] = {
     "shelf_pins":     [("shelf_pin_jig",), ("drill_press",), ("drill",)],
     "bevel_rip":      [("table_saw",), ("hand_tools",)],   # 45° cleat bevel
     "butt_hinge":     [("drill",), ("hand_tools",)],       # screwed (opt. mortised)
+    # --- picture/mirror frame corners (FrameJoint vocabulary) ----------------
+    # A spline slot or half-lap is cut on the saw/router or by hand; a plain
+    # glued miter needs no tool (but is end-grain weak — the fallback).
+    "splined_miter":  [("table_saw",), ("router",), ("hand_tools",)],
+    "half_lap":       [("table_saw",), ("router",), ("hand_tools",)],
+    "miter":          [()],                                # glue only — weak
 }
 
 # When a joint can't be made, what to switch to — by the role it plays.
@@ -215,6 +224,10 @@ ROLE_PREFERENCE = {
     "drawer":  ["dovetail", "box", "locking_rabbet", "rabbet", "dowel",
                 "pocket", "butt"],
     "frame":   ["mortise_tenon", "domino", "dowel", "pocket", "screw"],
+    # A picture/mirror frame corner is mitered, not a leg-to-apron frame joint —
+    # so a shop that can't cut the chosen corner is steered to another *miter*
+    # corner (or a doweled miter), never to a mortise & tenon.
+    "frame_corner": ["splined_miter", "half_lap", "cope_stick", "dowel", "miter"],
 }
 
 
@@ -313,9 +326,11 @@ def required_operations(spec) -> list[Requirement]:
     if kind == BED:
         return [Requirement("frame", "mortise_tenon", "headboard/footboard frames"),
                 Requirement("fab", "screw", "knock-down rail connectors")]
-    # A picture / mirror frame: mitered corners (FrameJoint vocabulary) + a rabbet.
+    # A picture / mirror frame: mitered corners (FrameJoint vocabulary). Uses the
+    # dedicated ``frame_corner`` role so an infeasible corner is swapped for
+    # another miter corner, not a leg-to-apron mortise & tenon.
     if kind == FRAME:
-        return [Requirement("frame",
+        return [Requirement("frame_corner",
                             _norm(getattr(spec, "corner_joint", "splined_miter")),
                             "frame corners")]
     # A glued-up cutting board is a panel glue-up — no tool-gated joinery.
