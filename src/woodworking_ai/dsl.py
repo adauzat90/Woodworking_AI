@@ -571,6 +571,23 @@ def _list_to_mm(d: dict, field_name: str) -> None:
                          and not isinstance(x, bool) else x for x in v]
 
 
+def leg_taper_note(spec) -> str:
+    """Cut-list note suffix describing a leg taper, or '' when the legs are square.
+
+    A tapered leg keeps its full ``leg`` section at the top (so the apron joinery
+    and the overall envelope are unchanged) and tapers its inner faces down to
+    ``leg_tip`` below the apron. ``leg_tip`` of 0 (or out of range) gives a gentle
+    default taper to ~55% of the leg.
+    """
+    if not bool(getattr(spec, "leg_taper", False)):
+        return ""
+    leg = float(getattr(spec, "leg", 0) or 0)
+    tip = float(getattr(spec, "leg_tip", 0) or 0)
+    if tip <= 0 or tip >= leg:
+        tip = round(leg * 0.55, 1)
+    return f"; taper inner faces below the apron {leg:.0f}→{tip:.0f}mm"
+
+
 def _drawer_front_heights(override, uniform: float, n: int) -> list[float]:
     """Resolve *n* drawer-front heights from an optional per-drawer *override*.
 
@@ -791,6 +808,8 @@ class TableSpec:
     apron_height: float = 90.0
     apron_thickness: float = 20.0
     leg_inset: float = 40.0      # leg outer face set in from the top edge
+    leg_taper: bool = False      # taper the inner faces below the apron
+    leg_tip: float = 0.0         # tapered foot section (0 = auto ~55% of leg)
 
     # --- material/movement (optional; defaults describe a well-built top) ------
     solid_top: bool = True       # solid wood (moves) vs. a stable sheet good
@@ -828,7 +847,7 @@ class TableSpec:
         data = dict(data)
         if normalize_unit(data.get("units")) == IMPERIAL:
             _to_mm(data, ("width", "depth", "height", "top_thickness", "leg",
-                          "apron_height", "apron_thickness", "leg_inset"))
+                          "apron_height", "apron_thickness", "leg_inset", "leg_tip"))
             data["units"] = "mm"
         known = {f for f in cls.__dataclass_fields__}
         return cls(**{k: v for k, v in data.items() if k in known})
@@ -1009,6 +1028,8 @@ class BenchSpec:
     apron_height: float = 70.0
     apron_thickness: float = 20.0
     leg_inset: float = 35.0      # leg outer face set in from the seat edge
+    leg_taper: bool = False      # taper the inner faces below the apron
+    leg_tip: float = 0.0         # tapered foot section (0 = auto ~55% of leg)
     stretchers: bool = True      # lower rails between the legs (rack resistance)
     stretcher_height: float = 30.0     # stretcher cross-section (Z)
     stretcher_thickness: float = 20.0  # stretcher cross-section (Y/X)
@@ -1048,7 +1069,7 @@ class BenchSpec:
         data = dict(data)
         if normalize_unit(data.get("units")) == IMPERIAL:
             _to_mm(data, ("width", "depth", "height", "top_thickness", "leg",
-                          "apron_height", "apron_thickness", "leg_inset",
+                          "apron_height", "apron_thickness", "leg_inset", "leg_tip",
                           "stretcher_height", "stretcher_thickness",
                           "stretcher_setback"))
             data["units"] = "mm"
@@ -1363,6 +1384,8 @@ class NightstandSpec:
     top_thickness: float = 20.0
     leg: float = 40.0              # square leg cross-section
     leg_inset: float = 25.0        # leg outer face in from the top edge
+    leg_taper: bool = False        # taper the inner faces below the apron
+    leg_tip: float = 0.0           # tapered foot section (0 = auto ~55% of leg)
     apron_height: float = 90.0
     apron_thickness: float = 20.0
     drawers: int = 1               # stacked apron-hung drawers (0-3)
@@ -1418,7 +1441,7 @@ class NightstandSpec:
         data = dict(data)
         if normalize_unit(data.get("units")) == IMPERIAL:
             _to_mm(data, ("width", "depth", "height", "top_thickness", "leg",
-                          "leg_inset", "apron_height", "apron_thickness",
+                          "leg_inset", "leg_tip", "apron_height", "apron_thickness",
                           "drawer_front_height", "shelf_thickness",
                           "shelf_setback"))
             _list_to_mm(data, "drawer_front_heights")
@@ -1449,6 +1472,8 @@ class DeskSpec:
     top_thickness: float = 25.0
     leg: float = 60.0
     leg_inset: float = 40.0
+    leg_taper: bool = False        # taper the inner faces below the apron
+    leg_tip: float = 0.0           # tapered foot section (0 = auto ~55% of leg)
     apron_height: float = 90.0
     apron_thickness: float = 20.0
     drawers: int = 1               # apron-hung drawers across the front (0-3)
@@ -1500,7 +1525,7 @@ class DeskSpec:
         data = dict(data)
         if normalize_unit(data.get("units")) == IMPERIAL:
             _to_mm(data, ("width", "depth", "height", "top_thickness", "leg",
-                          "leg_inset", "apron_height", "apron_thickness",
+                          "leg_inset", "leg_tip", "apron_height", "apron_thickness",
                           "drawer_front_height", "modesty_height", "grommet_dia"))
             _list_to_mm(data, "drawer_front_heights")
             data["units"] = "mm"

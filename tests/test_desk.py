@@ -80,3 +80,15 @@ def test_grommet_bore_in_drilling_schedule():
     assert any("grommet" in o.operation.lower() for o in g.ops)
     assert not any("grommet" in o.operation.lower()
                    for o in drilling_schedule(_desk(grommet=False)).ops)
+
+
+def test_leg_taper_recognized_and_noted():
+    from woodworking_ai.dsl import leg_taper_note
+    plain = generate_cutlist(_desk()).parts
+    assert all("taper" not in p.notes for p in plain if p.name == "Leg")
+    tapered = generate_cutlist(_desk(leg_taper=True, leg_tip=25)).parts
+    leg = next(p for p in tapered if p.name == "Leg")
+    assert "taper" in leg.notes and "25mm" in leg.notes
+    # Round-trips and is a recognized field (no lint warning).
+    from woodworking_ai.dsl_lint import lint_spec_dict
+    assert lint_spec_dict({"kind": "desk", "leg_taper": True, "leg_tip": 25}) == []

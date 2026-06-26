@@ -16,7 +16,7 @@ import math
 from dataclasses import dataclass, field, replace
 
 from .dsl import (CabinetSpec, TableSpec, ComponentGroup, BackStyle,
-                  Construction, CabinetType, joinery_key)
+                  Construction, CabinetType, joinery_key, leg_taper_note)
 from .dispatch import spec_kind, VOID, GROUP, TABLE, CABINET
 from . import furniture
 from .geometry import front_plan, component_tag
@@ -669,7 +669,8 @@ def _table_cutlist(spec: TableSpec) -> CutList:
                              thickness=spec.top_thickness, material=MAT_TOP,
                              notes="solid/sheet top"))
     cl.parts.append(Part("Leg", 4, length=leg_h, width=leg, thickness=leg,
-                         material=MAT_LEG, notes="square stock"))
+                         material=MAT_LEG,
+                         notes="square stock" + leg_taper_note(spec)))
     cl.parts.append(Part("Apron (long)", 2, length=apron_x, width=spec.apron_height,
                          thickness=spec.apron_thickness, material=MAT_APRON))
     cl.parts.append(Part("Apron (short)", 2, length=apron_y, width=spec.apron_height,

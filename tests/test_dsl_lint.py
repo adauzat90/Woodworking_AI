@@ -92,5 +92,7 @@ def test_lint_covers_legged_and_leaf_kinds():
          "vise": True}) == []
     assert lint_spec_dict({"kind": "frame", "opening_w": 400,
                            "corner_joint": "splined_miter"}) == []
+    # leg_taper IS a desk field now; a genuine typo is still flagged.
+    assert lint_spec_dict({"kind": "desk", "leg_taper": True}) == []
     assert _keys(lint_spec_dict(
-        {"kind": "desk", "drawers": 1, "leg_taper": True})) == {"leg_taper"}
+        {"kind": "desk", "drawers": 1, "leg_tapr": True})) == {"leg_tapr"}

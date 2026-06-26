@@ -40,7 +40,7 @@ from .dsl import (
     WallShelfSpec, BoxSpec, BenchSpec, FrameSpec, BedSpec, CuttingBoardSpec,
     NightstandSpec, DeskSpec, WorkbenchSpec,
     ShelfFixing, FrameJoint, FrameHanger, FrameContents, BedConnector, GrainStyle,
-    joinery_key,
+    joinery_key, leg_taper_note,
 )
 from .geometry import PanelBox
 from .partmath import drawer_box_dims
@@ -514,7 +514,7 @@ def _bench_cutlist(spec: BenchSpec) -> CutList:
         thickness=spec.top_thickness, material=MAT_TOP, notes="solid/sheet seat"))
     cl.parts.append(Part(
         "Leg", 4, length=leg_h, width=spec.leg, thickness=spec.leg,
-        material=MAT_LEG, notes="square stock"))
+        material=MAT_LEG, notes="square stock" + leg_taper_note(spec)))
     cl.parts.append(Part(
         "Apron (long)", 2, length=apron_x, width=spec.apron_height,
         thickness=spec.apron_thickness, material=MAT_APRON))
@@ -1603,7 +1603,7 @@ def _nightstand_cutlist(spec: NightstandSpec) -> CutList:
         material=MAT_TOP, notes="solid or sheet top"))
     cl.parts.append(Part(
         "Leg", 4, length=leg_h, width=spec.leg, thickness=spec.leg,
-        material=MAT_LEG, notes="square stock"))
+        material=MAT_LEG, notes="square stock" + leg_taper_note(spec)))
     cl.parts.append(Part(
         "Apron side", 2, length=apron_y, width=spec.apron_height,
         thickness=spec.apron_thickness, material=MAT_APRON))
@@ -1803,7 +1803,7 @@ def _desk_cutlist(spec: DeskSpec) -> CutList:
         ("; bore a cable grommet" if spec.grommet else "")))
     cl.parts.append(Part(
         "Leg", 4, length=leg_h, width=spec.leg, thickness=spec.leg,
-        material=MAT_LEG, notes="square stock"))
+        material=MAT_LEG, notes="square stock" + leg_taper_note(spec)))
     cl.parts.append(Part(
         "Apron side", 2, length=apron_y, width=spec.apron_height,
         thickness=spec.apron_thickness, material=MAT_APRON))

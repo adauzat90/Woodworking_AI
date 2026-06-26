@@ -1043,7 +1043,7 @@
         "utilization": 0.4892
       }
     ],
-    "hardware_cost": 39.1,
+    "hardware_cost": 39.5,
     "labour_cost": 136.5,
     "labour_hours": 2.1,
     "lumber_cost": 0.0,
@@ -1606,14 +1606,14 @@
         "brand": "generic",
         "category": "hardware",
         "item": "Assembly screw 4\u00d735",
-        "line_total": 0.0,
+        "line_total": 0.4,
         "qty": 4,
         "sku": "SCR-4x35",
         "source": "Woodworking store (Rockler / Lee Valley / Woodcraft)",
         "spec": "SCR-4x35",
         "supplier": "Generic (hardware)",
         "unit": "ea",
-        "unit_price": 0.0,
+        "unit_price": 0.1,
         "url": "https://duckduckgo.com/?q=Assembly+screw+4%C3%9735+SCR-4x35"
       },
       {
