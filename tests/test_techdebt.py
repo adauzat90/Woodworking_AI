@@ -166,6 +166,27 @@ def test_material_label_tables_use_canonical_vocabulary():
     assert set(PriceBook().sheet_price) <= MATERIAL_LABELS
 
 
+def test_board_foot_price_defers_to_species_db():
+    # The estimator no longer keeps a second copy of every wood's $/bd-ft: the
+    # base price comes from the species database, and species_board_foot_price
+    # holds only deliberate overrides. Guard that the two can't silently drift
+    # for the derived species, and that the one documented override (oak) stands.
+    from woodworking_ai import species
+    from woodworking_ai.estimator import PriceBook, _board_foot_price
+
+    pb = PriceBook()
+    overrides = set(pb.species_board_foot_price)
+    assert overrides == {"oak"}, "only oak should be an explicit override"
+    # Every priced wood that is NOT overridden bills at exactly the species-DB price.
+    for name in species.names():
+        price = species.price_per_bdft(name)
+        if price is None or name in overrides:
+            continue
+        assert _board_foot_price(pb, "frame", name) == price, name
+    # The override stands.
+    assert _board_foot_price(pb, "frame", "oak") == 9.0
+
+
 def test_appliance_facet_tables_key_off_one_vocabulary():
     # Void widths (dsl), rough-in + clearance guidance (appliances) are separate
     # *facets* keyed by the same ApplianceType vocabulary. Guard that none drifts

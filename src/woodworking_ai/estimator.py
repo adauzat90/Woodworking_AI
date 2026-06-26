@@ -56,13 +56,15 @@ class PriceBook:
         "top": 9.0, "leg": 7.0, "apron": 6.0, "frame": 6.5,
     })
     board_foot_price_default: float = 7.0
-    # Per-species board-foot price for solid lumber (overrides the label price
-    # when a species is declared). Common cabinet/furniture woods.
-    species_board_foot_price: dict[str, float] = field(default_factory=lambda: {
-        "pine": 4.0, "poplar": 4.5, "birch": 6.0, "beech": 7.0, "ash": 8.0,
-        "maple": 8.0, "red_oak": 8.5, "oak": 9.0, "hickory": 9.0,
-        "white_oak": 11.0, "cherry": 12.0, "mahogany": 14.0, "walnut": 18.0,
-    })
+    # Per-species board-foot OVERRIDE for solid lumber. The base $/bd-ft now comes
+    # from the wood-species database (``species.price_per_bdft``) — the single
+    # source — so this table only carries deliberate shop overrides, not a second
+    # copy of every wood's price that could silently drift. ``oak`` is kept because
+    # the species DB resolves bare "oak" to *red* oak ($8.5) while the shop prices
+    # generic oak at $9.0; making that the one explicit exception stops the two
+    # from disagreeing by accident.
+    species_board_foot_price: dict[str, float] = field(
+        default_factory=lambda: {"oak": 9.0})
     # Species cost multiplier applied to sheet goods (veneer premium) and to any
     # solid stock priced off a label rather than the per-species table above.
     species_multiplier: dict[str, float] = field(default_factory=lambda: {
