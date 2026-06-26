@@ -31,7 +31,7 @@ def test_pin_holes_are_on_32mm_pitch():
     sched = drilling_schedule(spec(shelves=2))
     op = next(o for o in sched.ops if "shelf-pin" in o.operation)
     fronts = sorted(h.v for h in op.holes if h.face == "front row")
-    gaps = {round(b - a, 1) for a, b in zip(fronts, fronts[1:])}
+    gaps = {round(b - a, 1) for a, b in zip(fronts, fronts[1:], strict=False)}
     assert gaps == {SYSTEM_PITCH}
     assert all(h.dia == PIN_DIA for h in op.holes)
 

@@ -47,4 +47,9 @@ target-version = "py311"  # StrEnum (dsl.py) requires 3.11+
 src = ["src", "tests"]
 
 [tool.ruff.lint]
-select = ["F"]
+# Pyflakes ("F") for the real bugs (unused imports, undefined names), plus
+# flake8-bugbear ("B") for a bug-class the F rules miss: mutable defaults,
+# loop-variable closures, `except`/`raise` chaining, zip-length mismatches.
+# Pure style rules (E/W line length, import sorting, pyupgrade) are still left
+# out on purpose — they bikeshed without catching defects.
+select = ["F", "B"]

@@ -271,7 +271,7 @@ def skill(spec) -> dict:
 
     if str(getattr(spec, "finish", "none")).lower() != "none":
         score += 1
-        drivers.append(f"a {getattr(spec, 'finish')} finish to apply")
+        drivers.append(f"a {spec.finish} finish to apply")
 
     if score >= 4:
         level = "advanced"

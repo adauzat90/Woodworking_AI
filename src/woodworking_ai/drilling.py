@@ -108,7 +108,7 @@ def grid_violations(sched: "DrillingSchedule") -> list[str]:
                 out.append(f"{op.part}: pin dia {h.dia:.1f}mm is not {PIN_DIA:.0f}mm")
         for row, vs in rows.items():
             vs = sorted(vs)
-            for a, b in zip(vs, vs[1:]):
+            for a, b in zip(vs, vs[1:], strict=False):
                 if abs((b - a) - SYSTEM_PITCH) > GRID_TOL:
                     out.append(
                         f"{op.part}/{row}: {b - a:.1f}mm gap is off the "

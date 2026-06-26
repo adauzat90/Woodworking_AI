@@ -358,7 +358,7 @@ def _cabinet_plan(spec: CabinetSpec, cl) -> list[SubAssembly]:
     if style != "slab" and door_parts:
         leaves = [("", "the door")] if spec.doors == 1 else [
             ("L", "the left door"), ("R", "the right door")]
-        for hand, label in leaves[:max(spec.doors, 0)]:
+        for hand, _label in leaves[:max(spec.doors, 0)]:
             suf = f" {hand}" if hand else ""
             leaf_ids = _ids(parts, "door stile", "door rail", "door panel")
             sub = SubAssembly(f"Door{suf or ' (single)'}",
