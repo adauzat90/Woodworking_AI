@@ -61,11 +61,24 @@ def nest_layout(spec, *, sheet: SheetSize | None = None,
         return out
 
     cl = cutlist or generate_cutlist(spec)
+    return nest_parts(cl.parts, sheet=sheet,
+                      combine_sheet_stock=combine_sheet_stock)
+
+
+def nest_parts(parts, *, sheet: SheetSize | None = None,
+               combine_sheet_stock: bool = False) -> list[dict[str, Any]]:
+    """Nest an explicit list of cut-list :class:`Part` onto sheets.
+
+    The leaf of :func:`nest_layout`; also used to nest a *reduced* part list
+    (e.g. only the parts left to buy after cutting some from owned offcuts), so
+    the diagram of "what to buy" matches the net quote.
+    """
+    sheet = sheet or SheetSize()
 
     # Group sheet-good parts by the same key the estimator buys stock by, and
     # build one labelled item per part instance (id + name, like the DXF nest).
     groups: dict[tuple, dict[str, Any]] = {}
-    for p in cl.parts:
+    for p in parts:
         if p.is_solid_lumber:
             continue
         # Match the estimator: combine nests all same-thickness sheet parts.

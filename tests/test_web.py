@@ -412,6 +412,22 @@ def test_build_with_owned_boards_returns_cutplan():
     assert "cutplan" not in d2
 
 
+def test_offcuts_lower_the_quote_and_report_savings():
+    """Cutting parts from owned stock prices only what's left to buy."""
+    base = client.post("/api/build", json={"spec": VALID_SPEC, "glb": False}).json()
+    boards = [{"length": 1500, "width": 1200, "thickness": 18, "qty": 1}]
+    d = client.post("/api/build", json={
+        "spec": VALID_SPEC, "glb": False, "boards": boards}).json()
+    e = d["estimate"]
+    assert e["material"] < base["estimate"]["material"]
+    assert e["total"] < base["estimate"]["total"]
+    assert e["stock_savings"] > 0
+    assert e["material_gross"] == base["estimate"]["material"]
+    assert e["from_stock_parts"] >= 1
+    # The "what to buy" nesting matches the net sheet count (diagram == quote).
+    assert sum(g["sheet_count"] for g in d["nesting"]) == e["total_sheets"]
+
+
 def test_build_bundle_includes_nesting_matching_estimate():
     d = client.post("/api/build", json={"spec": VALID_SPEC, "glb": False}).json()
     assert "nesting" in d and d["nesting"]

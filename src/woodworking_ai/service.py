@@ -415,6 +415,49 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
         ],
     }
 
+    # Reconcile the quote with owned offcuts: price only the sheet parts left to
+    # buy after cutting the rest from stock on hand, and report the saving. The
+    # "Lumber" nesting diagram then shows what you'll BUY (the reduced parts), so
+    # the diagram, the From-stock view and the quote all agree.
+    if boards and result.get("cutplan"):
+        from dataclasses import replace as _replace
+        from .estimator import PriceBook, SheetSize, _pack_sheet_groups
+        from .nesting import nest_parts
+        placed: dict[str, int] = {}
+        for b in result["cutplan"]["boards"]:
+            for pl in b["placements"]:
+                pid = pl.get("part_id") or ""
+                placed[pid] = placed.get(pid, 0) + 1
+        if placed:
+            reduced = []
+            for p in cl.parts:
+                cut = placed.get(p.id, 0)
+                q = p.qty - cut
+                if q > 0:
+                    reduced.append(_replace(p, qty=q) if cut else p)
+            pb = prices or PriceBook()
+            ss = sheet or SheetSize()
+            net_groups, net_material = _pack_sheet_groups(
+                reduced, pb, ss, combine_sheet_stock)
+            gross_material = est.material_cost
+            e = result["estimate"]
+            e["material_gross"] = round(gross_material, 2)
+            e["material"] = round(net_material, 2)
+            e["stock_savings"] = round(gross_material - net_material, 2)
+            e["total"] = round(est.total - (gross_material - net_material), 2)
+            e["total_sheets"] = sum(g.sheets for g in net_groups)
+            e["from_stock_parts"] = sum(placed.values())
+            e["groups"] = [
+                {"material": g.material,
+                 **_stock_fields(g.form, g.species, g.material, solid=False),
+                 "thickness": g.thickness, "form": g.form, "species": g.species,
+                 "parts": g.part_count, "sheets": g.sheets,
+                 "utilization": round(g.utilization, 3), "oversize": g.oversize}
+                for g in net_groups
+            ]
+            result["nesting"] = nest_parts(
+                reduced, sheet=ss, combine_sheet_stock=combine_sheet_stock)
+
     # Purchase order — the orderable buy-list grouped by supplier/brand. Its
     # grand total reconciles with the estimate above (same prices/sheet).
     from .purchasing import purchase_order

@@ -1497,8 +1497,13 @@ function paint() {
   } else if (tab === "cost") {
     const e = d.estimate, m = v => e.currency + v.toFixed(2);
     const lumberGroups = e.lumber_groups || [];
+    const saving = +e.stock_savings || 0;
     h = `<div class="cost-grid">
-      <div>Sheet goods (${e.total_sheets} sheet${e.total_sheets === 1 ? "" : "s"})</div><div>${m(e.material)}</div>`
+      <div>Sheet goods (${e.total_sheets} sheet${e.total_sheets === 1 ? "" : "s"})${
+        saving > 0 ? " to buy" : ""}</div><div>${m(e.material)}</div>`
+      + (saving > 0
+          ? `<div class="muted">Cut from your offcuts (${e.from_stock_parts || 0} part${e.from_stock_parts === 1 ? "" : "s"})</div>`
+            + `<div class="muted">−${m(saving)}</div>` : "")
       + (lumberGroups.length
           ? `<div>Solid lumber (${(e.board_feet || 0).toFixed(1)} bd ft)</div><div>${m(e.lumber || 0)}</div>` : "")
       + `<div>Hardware</div><div>${m(e.hardware)}</div>
@@ -1506,6 +1511,11 @@ function paint() {
       <div>Labour (${e.labour_hours}h)</div><div>${m(e.labour)}</div>`
       + (e.finish ? `<div>Finishing (${(e.finish_m2||0).toFixed(1)} m²)</div><div>${m(e.finish)}</div>` : "")
       + `<div class="total">Total</div><div class="total">${m(e.total)}</div></div>`;
+    if (saving > 0)
+      h += `<p class="muted" style="margin-top:8px;font-size:12px">Would be
+        <b>${m((e.material_gross || 0) + (e.total - e.material))}</b> buying everything new —
+        cutting ${e.from_stock_parts || 0} part(s) from your own stock saves
+        <b style="color:var(--wood)">${m(saving)}</b>. See the <b>From stock</b> tab.</p>`;
     if (e.groups.length) {
       h += "<h4>Sheets</h4>" +
         table(["Stock", `Thk (${u})`, "Parts", "Sheets", "Used"],
@@ -1777,15 +1787,23 @@ function stockPane(d) {
         n ? " Rebuild to refresh." : ""}</p>`;
   }
   const cp = d.cutplan, u = unitLabel();
+  const e = d.estimate || {};
   const pct = v => Math.round((v || 0) * 100) + "%";
+  const cur = e.currency || "$";
+  const saving = +e.stock_savings || 0;
   const W = 300;
   const placedNote = cp.complete
     ? `<span class="pill ok nodot">Every part fits your stock</span>`
     : `<span class="pill warn nodot">${cp.shortfall.length} part(s) still to buy</span>`;
+  const saveStat = saving > 0
+    ? `<div><div class="big">${cur}${saving.toFixed(0)}</div>
+        <div class="sub">saved on material
+          <div class="muted">vs. buying it all new</div></div></div>` : "";
   let h = `<div class="headline" style="gap:24px">
       <div><div class="big">${cp.placed_count}</div>
         <div class="sub">parts on your stock
           <div class="muted">across ${cp.boards_used} board${cp.boards_used === 1 ? "" : "s"} · ${pct(cp.yield)} yield</div></div></div>
+      ${saveStat}
     </div><div style="margin:-6px 0 12px">${placedNote}</div>`;
 
   for (const b of cp.boards) {
