@@ -566,7 +566,7 @@
       <div id="wallPlan" class="muted" style="font-size:11.5px;margin-top:6px"></div>
     </fieldset>
     </div><!-- /projectFields -->
-    <button id="buildBtn">🔨 Build design</button>
+    <button id="buildBtn">Build design</button>
     <div class="check"><input id="auto" type="checkbox" /><label style="margin:0">Live update as I change values</label></div>
     <fieldset style="margin-top:14px">
       <legend>Shop standards</legend>
@@ -1566,6 +1566,11 @@ function lumberPane(d) {
       }));
     h += `<p class="muted" style="margin-top:8px">Sheet counts include nesting
       waste from a guillotine pack; “Used” is the packed area per sheet. ` +
+      (sheetGroups.length > 1
+        ? `Each stock above is bought as whole sheets, so different
+           thicknesses (e.g. a thin back) and grain-matched door/drawer fronts
+           are counted separately — that's why a small piece can still need a
+           full extra sheet. ` : "") +
       (oversize ? `⚠ ${oversize} part(s) exceed a single sheet — split or order oversized stock. ` : "") +
       `Order ${sheetsToBuy} sheet${sheetsToBuy === 1 ? "" : "s"} total.</p>`;
   }
