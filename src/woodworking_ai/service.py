@@ -291,6 +291,125 @@ def cutplan_result(spec, boards, *, cutlist=None, kerf: float = 3.0) -> dict[str
     }
 
 
+def _estimate_section(est) -> dict[str, Any]:
+    """The cost-estimate block of the web bundle."""
+    return {
+        "currency": est.currency,
+        "total": round(est.total, 2),
+        "material": round(est.material_cost, 2),
+        "lumber": round(est.lumber_cost, 2),
+        "board_feet": round(est.total_board_feet, 2),
+        "hardware": round(est.hardware_cost, 2),
+        "edge_banding": round(est.edge_banding_cost, 2),
+        "labour": round(est.labour_cost, 2),
+        "labour_hours": round(est.labour_hours, 1),
+        "finish": round(est.finish_cost, 2),
+        "finish_m2": round(est.finish_m2, 2),
+        "total_sheets": est.total_sheets,
+        "groups": [
+            {"material": g.material,
+             **_stock_fields(g.form, g.species, g.material, solid=False),
+             "thickness": g.thickness,
+             "form": g.form, "species": g.species,
+             "parts": g.part_count, "sheets": g.sheets,
+             "utilization": round(g.utilization, 3), "oversize": g.oversize}
+            for g in est.groups
+        ],
+        "lumber_groups": [
+            {"material": g.material,
+             **_stock_fields(g.form, g.species, g.material, solid=True),
+             "thickness": g.thickness,
+             "form": g.form, "species": g.species,
+             "parts": g.part_count, "board_feet": round(g.board_feet, 2),
+             "cost": round(g.cost, 2)}
+            for g in est.lumber_groups
+        ],
+    }
+
+
+def _reconcile_offcuts(result, est, cl, *, boards, prices, sheet,
+                       combine_sheet_stock):
+    """Reduce the quote by what can be cut from owned offcuts.
+
+    When ``boards`` were supplied and a cutplan placed parts on them, re-price
+    only the sheet parts left to *buy*, update ``result["estimate"]`` and
+    ``result["nesting"]`` in place so the diagram and quote agree, and return a
+    reduced estimate for the buy-list. Otherwise returns ``est`` unchanged. The
+    estimator's packing internals are touched only here, in one place.
+    """
+    po_est = est   # the estimate the buy-list bills off (reduced below for offcuts)
+    if not (boards and result.get("cutplan")):
+        return po_est
+    from dataclasses import replace as _replace
+    from .estimator import PriceBook, SheetSize, _pack_sheet_groups
+    from .nesting import nest_parts
+    placed: dict[str, int] = {}
+    for b in result["cutplan"]["boards"]:
+        for pl in b["placements"]:
+            pid = pl.get("part_id") or ""
+            placed[pid] = placed.get(pid, 0) + 1
+    if placed:
+        reduced = []
+        for p in cl.parts:
+            cut = placed.get(p.id, 0)
+            q = p.qty - cut
+            if q > 0:
+                reduced.append(_replace(p, qty=q) if cut else p)
+        pb = prices or PriceBook()
+        ss = sheet or SheetSize()
+        net_groups, net_material = _pack_sheet_groups(
+            reduced, pb, ss, combine_sheet_stock)
+        gross_material = est.material_cost
+        e = result["estimate"]
+        e["material_gross"] = round(gross_material, 2)
+        e["material"] = round(net_material, 2)
+        e["stock_savings"] = round(gross_material - net_material, 2)
+        e["total"] = round(est.total - (gross_material - net_material), 2)
+        e["total_sheets"] = sum(g.sheets for g in net_groups)
+        e["from_stock_parts"] = sum(placed.values())
+        e["groups"] = [
+            {"material": g.material,
+             **_stock_fields(g.form, g.species, g.material, solid=False),
+             "thickness": g.thickness, "form": g.form, "species": g.species,
+             "parts": g.part_count, "sheets": g.sheets,
+             "utilization": round(g.utilization, 3), "oversize": g.oversize}
+            for g in net_groups
+        ]
+        result["nesting"] = nest_parts(
+            reduced, sheet=ss, combine_sheet_stock=combine_sheet_stock)
+        # Bill the buy-list off the reduced estimate so the shopping list
+        # matches the quote (and stops listing stock you already own).
+        po_est = _replace(est, material_cost=net_material, groups=net_groups)
+        po_est._rate = getattr(est, "_rate", pb.shop_rate_per_hour)
+    return po_est
+
+
+def _purchase_order_section(spec, *, prices, sheet, cutlist, est) -> dict[str, Any]:
+    """The orderable buy-list grouped by supplier/brand, billed off *est*."""
+    from .purchasing import purchase_order
+    po = purchase_order(spec, prices=prices, sheet=sheet, cutlist=cutlist, est=est)
+
+    def _po_line(ln):
+        return {"supplier": ln.supplier, "category": ln.category, "item": ln.item,
+                "spec": ln.spec, "qty": round(ln.qty, 3), "unit": ln.unit,
+                "brand": ln.brand, "sku": ln.sku,
+                "unit_price": round(ln.unit_price, 4),
+                "line_total": round(ln.line_total, 2),
+                "source": ln.source, "url": ln.url, "alt": ln.alt}
+
+    return {
+        "currency": po.currency,
+        "grand_total": round(po.grand_total, 2),
+        "consumables_total": round(po.consumables_total, 2),
+        "suppliers": [
+            {"supplier": s, "subtotal": round(po.supplier_total(s), 2)}
+            for s in po.suppliers
+        ],
+        "lines": [_po_line(ln) for ln in po.lines],
+        "consumables": [_po_line(ln) for ln in po.consumables],
+    }
+
+
 def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
                  prices=None, sheet=None, tooling=None,
                  boards=None, combine_sheet_stock: bool = False) -> dict[str, Any]:
@@ -382,111 +501,16 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
     }
 
     est = asm.estimate
-    po_est = est   # the estimate the buy-list bills off (reduced below for offcuts)
-    result["estimate"] = {
-        "currency": est.currency,
-        "total": round(est.total, 2),
-        "material": round(est.material_cost, 2),
-        "lumber": round(est.lumber_cost, 2),
-        "board_feet": round(est.total_board_feet, 2),
-        "hardware": round(est.hardware_cost, 2),
-        "edge_banding": round(est.edge_banding_cost, 2),
-        "labour": round(est.labour_cost, 2),
-        "labour_hours": round(est.labour_hours, 1),
-        "finish": round(est.finish_cost, 2),
-        "finish_m2": round(est.finish_m2, 2),
-        "total_sheets": est.total_sheets,
-        "groups": [
-            {"material": g.material,
-             **_stock_fields(g.form, g.species, g.material, solid=False),
-             "thickness": g.thickness,
-             "form": g.form, "species": g.species,
-             "parts": g.part_count, "sheets": g.sheets,
-             "utilization": round(g.utilization, 3), "oversize": g.oversize}
-            for g in est.groups
-        ],
-        "lumber_groups": [
-            {"material": g.material,
-             **_stock_fields(g.form, g.species, g.material, solid=True),
-             "thickness": g.thickness,
-             "form": g.form, "species": g.species,
-             "parts": g.part_count, "board_feet": round(g.board_feet, 2),
-             "cost": round(g.cost, 2)}
-            for g in est.lumber_groups
-        ],
-    }
+    result["estimate"] = _estimate_section(est)
 
-    # Reconcile the quote with owned offcuts: price only the sheet parts left to
-    # buy after cutting the rest from stock on hand, and report the saving. The
-    # "Lumber" nesting diagram then shows what you'll BUY (the reduced parts), so
-    # the diagram, the From-stock view and the quote all agree.
-    if boards and result.get("cutplan"):
-        from dataclasses import replace as _replace
-        from .estimator import PriceBook, SheetSize, _pack_sheet_groups
-        from .nesting import nest_parts
-        placed: dict[str, int] = {}
-        for b in result["cutplan"]["boards"]:
-            for pl in b["placements"]:
-                pid = pl.get("part_id") or ""
-                placed[pid] = placed.get(pid, 0) + 1
-        if placed:
-            reduced = []
-            for p in cl.parts:
-                cut = placed.get(p.id, 0)
-                q = p.qty - cut
-                if q > 0:
-                    reduced.append(_replace(p, qty=q) if cut else p)
-            pb = prices or PriceBook()
-            ss = sheet or SheetSize()
-            net_groups, net_material = _pack_sheet_groups(
-                reduced, pb, ss, combine_sheet_stock)
-            gross_material = est.material_cost
-            e = result["estimate"]
-            e["material_gross"] = round(gross_material, 2)
-            e["material"] = round(net_material, 2)
-            e["stock_savings"] = round(gross_material - net_material, 2)
-            e["total"] = round(est.total - (gross_material - net_material), 2)
-            e["total_sheets"] = sum(g.sheets for g in net_groups)
-            e["from_stock_parts"] = sum(placed.values())
-            e["groups"] = [
-                {"material": g.material,
-                 **_stock_fields(g.form, g.species, g.material, solid=False),
-                 "thickness": g.thickness, "form": g.form, "species": g.species,
-                 "parts": g.part_count, "sheets": g.sheets,
-                 "utilization": round(g.utilization, 3), "oversize": g.oversize}
-                for g in net_groups
-            ]
-            result["nesting"] = nest_parts(
-                reduced, sheet=ss, combine_sheet_stock=combine_sheet_stock)
-            # Bill the buy-list off the reduced estimate so the shopping list
-            # matches the quote (and stops listing stock you already own).
-            po_est = _replace(est, material_cost=net_material, groups=net_groups)
-            po_est._rate = getattr(est, "_rate", pb.shop_rate_per_hour)
+    # Reconcile the quote with owned offcuts: price only the parts left to buy,
+    # update the estimate/nesting in place, and bill the buy-list off the reduced
+    # estimate so the diagram, the From-stock view, and the quote all agree.
+    po_est = _reconcile_offcuts(result, est, cl, boards=boards, prices=prices,
+                                sheet=sheet, combine_sheet_stock=combine_sheet_stock)
 
-    # Purchase order — the orderable buy-list grouped by supplier/brand. Bills off
-    # the same estimate shown above (combine-aware, and reduced for offcuts) so the
-    # buy-list total equals the quote.
-    from .purchasing import purchase_order
-    po = purchase_order(spec, prices=prices, sheet=sheet, cutlist=cl, est=po_est)
-    def _po_line(ln):
-        return {"supplier": ln.supplier, "category": ln.category, "item": ln.item,
-                "spec": ln.spec, "qty": round(ln.qty, 3), "unit": ln.unit,
-                "brand": ln.brand, "sku": ln.sku,
-                "unit_price": round(ln.unit_price, 4),
-                "line_total": round(ln.line_total, 2),
-                "source": ln.source, "url": ln.url, "alt": ln.alt}
-
-    result["purchase_order"] = {
-        "currency": po.currency,
-        "grand_total": round(po.grand_total, 2),
-        "consumables_total": round(po.consumables_total, 2),
-        "suppliers": [
-            {"supplier": s, "subtotal": round(po.supplier_total(s), 2)}
-            for s in po.suppliers
-        ],
-        "lines": [_po_line(ln) for ln in po.lines],
-        "consumables": [_po_line(ln) for ln in po.consumables],
-    }
+    result["purchase_order"] = _purchase_order_section(
+        spec, prices=prices, sheet=sheet, cutlist=cl, est=po_est)
 
     drill = asm.drilling
     result["drilling"] = {
