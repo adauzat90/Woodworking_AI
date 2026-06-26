@@ -90,3 +90,44 @@ def test_built_envelope_matches_spec():
     d = measure(build_model(s))
     assert d["width"] == pytest.approx(s.width, abs=1.0)
     assert d["height"] == pytest.approx(s.height, abs=1.0)
+
+
+def test_graduated_drawer_fronts():
+    # Per-drawer heights produce a numbered part set per height; the panels are
+    # stacked with the right individual heights.
+    spec = _ns(drawers=2, drawer_front_heights=[120, 200])
+    assert spec.front_heights(2) == [120.0, 200.0]
+    fronts = [p for p in panel_layout(spec) if p.label.startswith("Drawer front")]
+    heights = sorted(round(p.size[2]) for p in fronts)
+    assert heights == [120, 200]
+    # A uniform stack stays one aggregated cut-list row.
+    uni = generate_cutlist(_ns(drawers=2)).parts
+    assert sum(p.name == "Drawer front" for p in uni) == 1
+
+
+def test_drawer_corner_joint_field_drives_joinery_and_tooling():
+    from woodworking_ai.tooling import (required_operations, tooling_advisories,
+                                        ShopTooling)
+    spec = _ns(drawers=1, drawer_corner_joint="dovetail", joinery="pocket")
+    ops = joinery_schedule(spec).ops
+    assert any("dovetail" in o.operation for o in ops)
+    # required_operations now lists the drawer corner so a shop check can fire.
+    joints = {r.joint for r in required_operations(spec)}
+    assert "dovetail" in joints
+    no_dt = ShopTooling.from_names(["table_saw", "router", "drill", "pocket_jig"])
+    adv = [m for _, _, m in tooling_advisories(spec, no_dt) if "box corners" in m]
+    assert adv and "switch to" in adv[0]
+    # The default rabbet corner is makeable in that shop — no drawer advisory.
+    ok = _ns(drawers=1, joinery="pocket")          # default corner = rabbet
+    assert not [m for _, _, m in tooling_advisories(ok, no_dt)
+                if "box corners" in m]
+
+
+def test_pocket_joinery_shows_holes_in_drilling_schedule():
+    from woodworking_ai.drilling import drilling_schedule
+    pocket = drilling_schedule(_ns(drawers=1, joinery="pocket"))
+    assert any("pocket" in o.operation.lower() for o in pocket.ops)
+    assert pocket.total_holes > 0
+    # A mortise-and-tenon nightstand has no pocket holes.
+    mt = drilling_schedule(_ns(drawers=1, joinery="mortise_tenon"))
+    assert not any("pocket" in o.operation.lower() for o in mt.ops)

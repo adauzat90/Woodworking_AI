@@ -163,9 +163,12 @@ blocks the math.
   whole-piece form: `"material": {"shelf": 25}` thickens only the shelves (e.g.
   to kill a sag warning) and leaves carcass/back/door at their defaults. Keys:
   `carcass`, `back`, `door`, `shelf`, `drawer_box`, `door_panel`.
-- **Drawers do NOT auto-graduate.** `"drawers": 3` is not valid — `drawers` is a
-  *list*, and you must give each its own `front_height`
-  (e.g. `[{"front_height":150},{"front_height":200},{"front_height":260}]`).
+- **Drawers do NOT auto-graduate on a cabinet.** `"drawers": 3` is not valid for
+  a cabinet — `drawers` is a *list*, and you give each its own `front_height`
+  (e.g. `[{"front_height":150},{"front_height":200},{"front_height":260}]`). On a
+  `nightstand`/`desk`, `drawers` is an integer count and every drawer shares
+  `drawer_front_height`; to graduate them set `drawer_front_heights` (a list,
+  top→bottom). Those types also take a `drawer_corner_joint` (default `rabbet`).
 - **Soft-close is implicit** — there is no `soft_close` field. Setting
   `"hardware_brand": "blum"` (or `hettich`/`grass`) selects soft-close BLUMOTION
   slides and CLIP-top hinges. Writing `"soft_close": true` is silently dropped.

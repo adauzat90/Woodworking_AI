@@ -388,7 +388,7 @@ def test_legged_drawer_box_uses_shared_partmath_dims():
 
     opening_w, box_depth, front_h = 400.0, 300.0, 150.0
     cl = CutList(spec_name="t")
-    _drawer_cut_parts(cl, 1, opening_w, box_depth, front_h)
+    _drawer_cut_parts(cl, [front_h], opening_w, box_depth)
 
     box_w, box_h, _ = drawer_box_dims(
         opening_w, front_h, box_depth, width_floor=MIN_DRAWER_BOX_WIDTH_3D)

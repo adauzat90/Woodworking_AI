@@ -158,11 +158,16 @@ def _emit(spec, args, tooling=None) -> int:
 
     if tooling is not None or getattr(args, "tools_list", False):
         from .tooling import tools_needed
+        needs = tools_needed(spec, tooling)
         print("\nTools needed:")
-        for t in tools_needed(spec, tooling):
+        if tooling is None:
+            print("  (no shop inventory set — pass --shop or --tools to mark "
+                  "have / missing)")
+        for t in needs:
             mark = "" if t.owned is None else ("  ✓ have" if t.owned
                                                else "  ✗ MISSING")
-            print(f"  {t.operation:<26} {t.tool}{mark}")
+            tool = t.tool or "any suitable method"
+            print(f"  {t.operation:<26} {tool}{mark}")
 
     if args.out:
         _write_outputs(spec, asm, args, unit, is_group=is_group)

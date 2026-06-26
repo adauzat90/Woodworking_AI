@@ -28,7 +28,8 @@ from __future__ import annotations
 
 import logging
 
-from .dispatch import spec_kind, VOID, GROUP, TABLE, CABINET
+from .dispatch import (spec_kind, VOID, GROUP, TABLE, CABINET,
+                       BENCH, NIGHTSTAND, DESK, WORKBENCH)
 from .tooling import (
     JOINT_WAYS, ShopTooling, Requirement, required_operations, _norm,
 )
@@ -199,6 +200,10 @@ def glue_up_count(spec) -> int:
         return sum(glue_up_count(c.spec) for c in spec.components)
     if kind == TABLE:
         return 1   # the leg/apron/top assembly
+    if kind == WORKBENCH:
+        # The base assembly plus a thick top laminated from many strips on edge —
+        # a multi-stage glue-up that is the bench's biggest single time sink.
+        return 1 + max(1, int(getattr(spec, "lamination_count", 1)))
     # A cabinet (and, by fall-through, the other leaf furniture types).
     n = 1          # the carcass case / base
     if str(getattr(spec, "panel_construction", "sheet")).lower() == "glue_up":
@@ -333,9 +338,14 @@ def _is_solid_stock(spec) -> bool:
     a glue_up panel cabinet needs jointing/planing per part.
     """
     kind = spec_kind(spec)
-    if kind == TABLE:
-        return bool(getattr(spec, "solid_top", True)) or \
-            str(getattr(spec, "material_form", "")).lower() == "solid"
+    # Any piece explicitly milled from solid lumber needs real stock prep. This
+    # catches the solid-by-default leaf types (workbench/bench/frame/box/board/
+    # bed) whose material_form is "solid".
+    if str(getattr(spec, "material_form", "")).lower() == "solid":
+        return True
+    if kind in (TABLE, BENCH, NIGHTSTAND, DESK, WORKBENCH):
+        # Legged pieces with a solid top (the default) are milled from lumber.
+        return bool(getattr(spec, "solid_top", True))
     if kind == CABINET:
         if str(getattr(spec, "panel_construction", "sheet")).lower() == "glue_up":
             return True

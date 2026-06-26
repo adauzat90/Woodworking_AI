@@ -299,13 +299,19 @@ def required_operations(spec) -> list[Requirement]:
                 out.append(Requirement(r.role, r.joint, f"{tag}: {r.where}"))
         return out
     # A legged piece (table, bench, nightstand, desk, workbench): one frame joint
-    # for legs↔aprons. Their drawer boxes are plain (no special jig), so — like a
-    # table — they add no drawer requirement. ``joinery`` carries the leg joint.
+    # for legs↔aprons. ``joinery`` carries the leg joint.
     if kind in (TABLE, BENCH, NIGHTSTAND, DESK, WORKBENCH):
         where = ("leg-to-apron/stretcher joints"
                  if getattr(spec, "stretchers", False) else "leg-to-apron joints")
-        return [Requirement("frame",
+        reqs = [Requirement("frame",
                             _norm(getattr(spec, "joinery", "mortise_tenon")), where)]
+        # Nightstand/desk carry apron-hung drawers with a configurable box corner
+        # joint, so a shop-constrained build must check it can cut that corner.
+        if kind in (NIGHTSTAND, DESK) and int(getattr(spec, "drawers", 0) or 0) > 0:
+            reqs.append(Requirement(
+                "drawer", _norm(getattr(spec, "drawer_corner_joint", "rabbet")),
+                "drawer box corners"))
+        return reqs
     # A box / chest: corner joints (drawer-corner vocabulary) + optional lid hinges.
     if kind == BOX:
         reqs = [Requirement("drawer",

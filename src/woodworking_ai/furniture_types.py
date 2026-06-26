@@ -1415,38 +1415,57 @@ def _legged_offsets(width: float, depth: float, leg_inset: float,
     return lx, ly
 
 
-def _drawer_cut_parts(cl: CutList, n: int, opening_w: float, box_depth: float,
-                      front_h: float, *, pull: str = "knob") -> None:
-    """Append cut-list parts + hardware for *n* identical apron-hung drawers.
+def _drawer_cut_parts(cl: CutList, heights: list[float], opening_w: float,
+                      box_depth: float, *, pull: str = "knob",
+                      corner_joint: str = "rabbet") -> None:
+    """Append cut-list parts + hardware for apron-hung drawers.
 
-    A simple four-side box (sides + front/back + a captured ply bottom) on a
-    ball-bearing slide pair per drawer, behind an overlay/inset drawer front.
+    *heights* is the front height of each drawer (so a graduated stack passes
+    e.g. ``[120, 180]``); a uniform stack is one repeated value. Identical
+    consecutive heights are grouped into one aggregated part set, so a uniform
+    stack stays a single ``Drawer front`` row while a graduated stack emits a
+    numbered set per height. Each drawer is a four-side box (sides + front/back +
+    a captured ply bottom) on a ball-bearing slide pair, with *corner_joint*
+    box corners.
     """
+    n = len(heights)
     if n <= 0:
         return
     bt = 12.0                       # box wall thickness (solid-wood drawer box)
     bottom_t = 6.0                  # captured ply bottom
-    # Box width/height come from the one shared helper so these apron-hung
-    # drawers can't drift from cabinet drawers (this path used to hardcode a
-    # 13.0 side clearance and a 25mm height drop — the very conflict the
-    # constants unification retired in favour of SLIDE_SIDE_CLEARANCE=12.7 and
-    # DRAWER_BOX_HEIGHT_DROP=40.0). Depth is supplied by the caller (the apron
-    # opening already bounds it), so the helper's depth result is unused.
-    box_w, box_h, _ = drawer_box_dims(
-        opening_w, front_h, box_depth, width_floor=MIN_DRAWER_BOX_WIDTH_3D)
-    cl.parts.append(Part(
-        "Drawer front", n, length=opening_w, width=front_h, thickness=18.0,
-        material=MAT_DOOR_FRONT, grain="length", notes="drawer face"))
-    cl.parts.append(Part(
-        "Drawer side", 2 * n, length=box_depth, width=box_h, thickness=bt,
-        material=MAT_DRAWER_BOX, notes="box side, grooved for the bottom"))
-    cl.parts.append(Part(
-        "Drawer end", 2 * n, length=max(box_w - 2 * bt, 40.0), width=box_h,
-        thickness=bt, material=MAT_DRAWER_BOX, notes="box front & back"))
-    cl.parts.append(Part(
-        "Drawer bottom", n, length=max(box_w - 2 * bt, 40.0),
-        width=max(box_depth - bt, 40.0), thickness=bottom_t,
-        material=MAT_DRAWER_BOX, grain="width", notes="ply bottom in a groove"))
+    cj = str(corner_joint).replace("_", " ")
+    # Group consecutive identical heights so a uniform stack collapses to one set.
+    groups: list[tuple[float, int]] = []
+    for h in heights:
+        if groups and groups[-1][0] == h:
+            groups[-1] = (h, groups[-1][1] + 1)
+        else:
+            groups.append((h, 1))
+    multi = len(groups) > 1
+    for gi, (front_h, qty) in enumerate(groups, start=1):
+        sfx = f" {gi}" if multi else ""
+        # Box width/height come from the one shared helper so these apron-hung
+        # drawers can't drift from cabinet drawers (SLIDE_SIDE_CLEARANCE /
+        # DRAWER_BOX_HEIGHT_DROP). Depth is supplied by the caller (the apron
+        # opening bounds it), so the helper's depth result is unused.
+        box_w, box_h, _ = drawer_box_dims(
+            opening_w, front_h, box_depth, width_floor=MIN_DRAWER_BOX_WIDTH_3D)
+        cl.parts.append(Part(
+            f"Drawer front{sfx}", qty, length=opening_w, width=front_h,
+            thickness=18.0, material=MAT_DOOR_FRONT, grain="length",
+            notes=f"drawer face; {cj} box corners"))
+        cl.parts.append(Part(
+            f"Drawer side{sfx}", 2 * qty, length=box_depth, width=box_h,
+            thickness=bt, material=MAT_DRAWER_BOX,
+            notes=f"box side, grooved for the bottom; {cj} corners"))
+        cl.parts.append(Part(
+            f"Drawer end{sfx}", 2 * qty, length=max(box_w - 2 * bt, 40.0),
+            width=box_h, thickness=bt, material=MAT_DRAWER_BOX,
+            notes="box front & back"))
+        cl.parts.append(Part(
+            f"Drawer bottom{sfx}", qty, length=max(box_w - 2 * bt, 40.0),
+            width=max(box_depth - bt, 40.0), thickness=bottom_t,
+            material=MAT_DRAWER_BOX, grain="width", notes="ply bottom in a groove"))
     cl.hardware.append(Hardware(
         hw.DRAWER_SLIDE.name, n, hw.DRAWER_SLIDE.note, sku=hw.DRAWER_SLIDE.sku,
         category="hardware"))
@@ -1486,12 +1505,38 @@ def _leg_apron_joinery(spec, cl, leg_label="Leg") -> JoineryOp:
         tool, w, d, note = ("doweling jig (10mm)", 10.0, 30.0,
                             "two 10mm dowels per joint + corner block")
     else:
-        tool, w, d, note = ("pocket-hole jig", 0.0, 0.0,
-                            "pocket screws + glue blocks (racks more than M&T)")
+        # Pocket screws are bored at ~15° into the apron face; the pilot
+        # counterbore is ~9.5mm and the pocket runs roughly the apron thickness
+        # plus the screw reach — report real numbers, not 0×0.
+        tool, w, d, note = ("pocket-hole jig", 9.5,
+                            round(spec.apron_thickness + 12.0, 1),
+                            "two ~15° pocket screws per joint + glue blocks "
+                            "(racks more than M&T)")
     return JoineryOp(
         part="Leg / apron", operation="leg-to-apron joint", tool=tool,
         width=w, depth=d, reference="apron into leg", part_id=pid(leg_label),
         note=note)
+
+
+# Drawer/box corner joint → (tool, note), shared by the apron-hung drawer types.
+_DRAWER_CORNER_TOOL: dict[str, tuple[str, str]] = {
+    "dovetail":       ("dovetail jig / saw", "tails on the sides so the front can't pull off"),
+    "box":            ("box-joint jig / dado", "interlocking fingers — strong glue surface"),
+    "locking_rabbet": ("dado / router", "interlocking locking rabbet"),
+    "rabbet":         ("dado / router", "rabbeted corner, pinned & glued"),
+    "dowel":          ("doweling jig", "doweled corner + glue"),
+    "butt":           ("saw", "glued butt — weak, reinforce with pins"),
+}
+
+
+def _drawer_corner_joinery(spec, part_id: str) -> JoineryOp:
+    """The drawer-box corner-joint op for an apron-hung drawer type."""
+    cj = str(getattr(spec, "drawer_corner_joint", "rabbet")).strip().lower()
+    tool, note = _DRAWER_CORNER_TOOL.get(cj, ("dado / router", ""))
+    return JoineryOp(
+        part="Drawer box", operation=f"{cj.replace('_', ' ')} corners",
+        tool=tool, width=0.0, depth=12.0, reference="four box corners",
+        part_id=part_id, note=note)
 
 
 # ===========================================================================
@@ -1531,13 +1576,13 @@ def _nightstand_panels(spec: NightstandSpec) -> list[PanelBox]:
     n = _nightstand_drawer_count(spec)
     front_face_y = -(D / 2 - spec.leg_inset)
     dft = 18.0
-    fh = spec.drawer_front_height
     gap = 3.0
-    zone_top = H - tt - rail_h
-    for k in range(n):
-        z_center = zone_top - gap - fh / 2 - k * (fh + gap)
+    z = H - tt - rail_h            # top of the drawer zone; stack downward
+    for k, fh in enumerate(spec.front_heights(n)):
+        z_center = z - gap - fh / 2
         add(f"Drawer front {k + 1}", (apron_x, dft, fh),
             (0, front_face_y + dft / 2, z_center), "drawer", "Drawer")
+        z -= gap + fh
 
     if spec.shelf:
         st = spec.shelf_thickness
@@ -1572,8 +1617,8 @@ def _nightstand_cutlist(spec: NightstandSpec) -> CutList:
 
     n = _nightstand_drawer_count(spec)
     box_depth = max(D - spec.leg_inset - 40.0, 100.0)
-    _drawer_cut_parts(cl, n, apron_x, box_depth, spec.drawer_front_height,
-                      pull=spec.pull)
+    _drawer_cut_parts(cl, spec.front_heights(n), apron_x, box_depth,
+                      pull=spec.pull, corner_joint=spec.drawer_corner_joint)
 
     if spec.shelf:
         cl.parts.append(Part(
@@ -1602,7 +1647,7 @@ def _nightstand_validate(spec: NightstandSpec) -> list[Issue]:
         warn("height", "unusual nightstand height (typically ~500-700mm)")
     n = _nightstand_drawer_count(spec)
     if n:
-        stack = n * (spec.drawer_front_height + 3) + 30
+        stack = sum(spec.front_heights(n)) + n * 3 + 30
         if stack > spec.height - spec.top_thickness:
             warn("drawers",
                  "the drawer stack is taller than the apron zone; reduce the "
@@ -1620,6 +1665,7 @@ def _nightstand_joinery(spec: NightstandSpec, cl) -> list[JoineryOp]:
     pid = cl.part_id_for_label
     ops = [_leg_apron_joinery(spec, cl)]
     if _nightstand_drawer_count(spec):
+        ops.append(_drawer_corner_joinery(spec, pid("Drawer side")))
         ops.append(JoineryOp(
             part="Drawer box", operation="groove + slide bore",
             tool="dado / drill", width=6.0, depth=6.0,
@@ -1727,9 +1773,8 @@ def _desk_panels(spec: DeskSpec) -> list[PanelBox]:
     else:
         front_face_y = -(D / 2 - spec.leg_inset)
         dft, gap = 18.0, 4.0
-        fh = spec.drawer_front_height
         seg = apron_x / n
-        for k in range(n):
+        for k, fh in enumerate(spec.front_heights(n)):
             cx = -apron_x / 2 + (k + 0.5) * seg
             add(f"Drawer front {k + 1}", (seg - gap, dft, fh),
                 (cx, front_face_y + dft / 2, H - tt - gap - fh / 2),
@@ -1772,8 +1817,8 @@ def _desk_cutlist(spec: DeskSpec) -> CutList:
     else:
         seg = apron_x / n
         box_depth = max(D - spec.leg_inset - 40.0, 100.0)
-        _drawer_cut_parts(cl, n, seg - 4.0, box_depth, spec.drawer_front_height,
-                          pull=spec.pull)
+        _drawer_cut_parts(cl, spec.front_heights(n), seg - 4.0, box_depth,
+                          pull=spec.pull, corner_joint=spec.drawer_corner_joint)
     if spec.modesty_panel:
         cl.parts.append(Part(
             "Modesty panel", 1, length=apron_x, width=spec.modesty_height,
@@ -1824,6 +1869,7 @@ def _desk_joinery(spec: DeskSpec, cl) -> list[JoineryOp]:
     pid = cl.part_id_for_label
     ops = [_leg_apron_joinery(spec, cl)]
     if _desk_drawer_count(spec):
+        ops.append(_drawer_corner_joinery(spec, pid("Drawer side")))
         ops.append(JoineryOp(
             part="Drawer box", operation="groove + slide bore",
             tool="dado / drill", width=6.0, depth=6.0,
