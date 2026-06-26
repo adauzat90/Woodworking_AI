@@ -428,6 +428,25 @@ def test_offcuts_lower_the_quote_and_report_savings():
     assert sum(g["sheet_count"] for g in d["nesting"]) == e["total_sheets"]
 
 
+def test_shopping_list_matches_quote_with_offcuts_and_combine():
+    """The purchase order's grand total equals the cost total in every mode,
+    so the buy-list never contradicts the quote (Dale's catch)."""
+    def grand(body):
+        d = client.post("/api/build", json=body).json()
+        po = d["purchase_order"]
+        return round(d["estimate"]["total"], 2), round(po["grand_total"], 2)
+    boards = [{"length": 1500, "width": 1200, "thickness": 18, "qty": 1}]
+    for body in (
+        {"spec": VALID_SPEC, "glb": False},
+        {"spec": VALID_SPEC, "glb": False, "profile": {"combine_sheet_stock": True}},
+        {"spec": VALID_SPEC, "glb": False, "boards": boards},
+        {"spec": VALID_SPEC, "glb": False, "boards": boards,
+         "profile": {"combine_sheet_stock": True}},
+    ):
+        cost, po = grand(body)
+        assert cost == po, f"{body}: cost {cost} != PO {po}"
+
+
 def test_build_bundle_includes_nesting_matching_estimate():
     d = client.post("/api/build", json={"spec": VALID_SPEC, "glb": False}).json()
     assert "nesting" in d and d["nesting"]

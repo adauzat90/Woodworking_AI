@@ -98,6 +98,7 @@ class SheetGroup:
     oversize: int = 0         # parts too big for one sheet
     form: str = ""            # physical form, when declared (plywood/mdf/...)
     species: str = ""         # wood species, when declared
+    unit_price: float = 0.0   # per-sheet price actually charged (0 = derive it)
 
 
 @dataclass
@@ -293,7 +294,7 @@ def _pack_sheet_groups(parts, prices: PriceBook, sheet: SheetSize,
         sheet_groups.append(SheetGroup(
             material=disp, thickness=thickness, part_count=len(rects),
             sheets=sheets, utilization=util, oversize=oversize,
-            form=form, species=species))
+            form=form, species=species, unit_price=price))
     return sheet_groups, material_cost
 
 

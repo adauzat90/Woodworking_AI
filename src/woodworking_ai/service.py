@@ -382,6 +382,7 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
     }
 
     est = asm.estimate
+    po_est = est   # the estimate the buy-list bills off (reduced below for offcuts)
     result["estimate"] = {
         "currency": est.currency,
         "total": round(est.total, 2),
@@ -457,11 +458,16 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
             ]
             result["nesting"] = nest_parts(
                 reduced, sheet=ss, combine_sheet_stock=combine_sheet_stock)
+            # Bill the buy-list off the reduced estimate so the shopping list
+            # matches the quote (and stops listing stock you already own).
+            po_est = _replace(est, material_cost=net_material, groups=net_groups)
+            po_est._rate = getattr(est, "_rate", pb.shop_rate_per_hour)
 
-    # Purchase order — the orderable buy-list grouped by supplier/brand. Its
-    # grand total reconciles with the estimate above (same prices/sheet).
+    # Purchase order — the orderable buy-list grouped by supplier/brand. Bills off
+    # the same estimate shown above (combine-aware, and reduced for offcuts) so the
+    # buy-list total equals the quote.
     from .purchasing import purchase_order
-    po = purchase_order(spec, prices=prices, sheet=sheet, cutlist=cl)
+    po = purchase_order(spec, prices=prices, sheet=sheet, cutlist=cl, est=po_est)
     def _po_line(ln):
         return {"supplier": ln.supplier, "category": ln.category, "item": ln.item,
                 "spec": ln.spec, "qty": round(ln.qty, 3), "unit": ln.unit,
