@@ -218,6 +218,36 @@ def test_llm_client_is_injectable(monkeypatch):
     assert seen["model"] == "claude-haiku-4-5-20251001"
 
 
+def test_taxonomy_is_single_sourced():
+    # KNOWN_KINDS, the loader, and dispatch.spec_kind must all derive from the
+    # one LEAF_SPEC_TYPES registry — adding a furniture type is one row, not
+    # three hand-synced ladders.
+    from woodworking_ai.dsl import (
+        LEAF_SPEC_TYPES, KNOWN_KINDS, _GROUP_KINDS, spec_from_dict,
+    )
+    from woodworking_ai.dispatch import spec_kind
+
+    # 1) KNOWN_KINDS == every leaf kind + alias + the group/placeholder kinds.
+    leaf_kinds = {k for kind, _c, al in LEAF_SPEC_TYPES for k in (kind, *al)}
+    assert KNOWN_KINDS == leaf_kinds | set(_GROUP_KINDS)
+
+    # 2) The loader builds the registered class for each canonical kind, and
+    #    spec_kind round-trips that spec back to the same kind string.
+    minimal = dict(name="X", width=600, height=720, depth=560)
+    for kind, cls, _aliases in LEAF_SPEC_TYPES:
+        spec = spec_from_dict({**minimal, "kind": kind})
+        assert isinstance(spec, cls), f"{kind} loaded as {type(spec).__name__}"
+        assert spec_kind(spec) == kind, f"{kind} dispatches as {spec_kind(spec)}"
+
+
+def test_schema_hint_documents_every_taxonomy_kind():
+    # Belt-and-suspenders with the existing schema-hint test: every canonical
+    # leaf kind in the registry appears in the designer prompt.
+    from woodworking_ai.dsl import LEAF_SPEC_TYPES, DSL_SCHEMA_HINT
+    for kind, _cls, _aliases in LEAF_SPEC_TYPES:
+        assert f'"{kind}"' in DSL_SCHEMA_HINT, f"{kind} missing from schema hint"
+
+
 def test_door_panel_dims_single_source():
     # The 5-piece door cut list and the 3D model must derive from one helper so
     # they can't silently drift: the model tiles the *visible* opening, the cut
