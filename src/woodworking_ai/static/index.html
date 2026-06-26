@@ -321,6 +321,18 @@
   .price-row span { font-size:11.5px; color:var(--muted); }
   input.price-input { width:96px; flex:0 0 auto; padding:5px 7px; }
 
+  /* ---- offcut / owned-stock editor ---- */
+  .offcut-head, .offcut-row { display:grid; grid-template-columns:1fr 1fr 1fr .7fr 26px;
+    gap:5px; align-items:center; margin:4px 0; }
+  .offcut-head { font-size:10px; text-transform:uppercase; letter-spacing:.03em;
+    margin-top:8px; }
+  .offcut-row input { padding:5px 6px; font-size:12px; }
+  .offcut-row .rm { width:26px; height:28px; margin:0; padding:0; background:var(--surface);
+    border:1px solid var(--line); color:var(--muted); font-size:15px; line-height:1;
+    box-shadow:none; }
+  .offcut-row .rm:hover { background:var(--bad-bg); color:var(--bad);
+    border-color:var(--bad); transform:none; }
+
   /* ---- starter gallery ---- */
   .gallery-summary { font-weight:600; cursor:pointer; padding:4px 0; color:var(--wood);
                      font-size:13px; }
@@ -723,6 +735,23 @@
       </details>
     </fieldset>
     <fieldset style="margin-top:14px">
+      <legend>Offcuts &amp; owned stock</legend>
+      <details id="offcutDetails">
+        <summary>Cut from sheets I already have</summary>
+        <p class="muted" style="font-size:11px;margin:6px 0">
+          List leftover sheets/panels on hand. The build fits parts onto these
+          first (matched by thickness) and the <b>From stock</b> tab shows what
+          lands on your offcuts vs. what's still left to buy. Saved in this browser.</p>
+        <div class="offcut-head muted">
+          <span>L (<span class="ulen">mm</span>)</span><span>W (<span class="ulen">mm</span>)</span>
+          <span>Thk (<span class="ulen">mm</span>)</span><span>Qty</span><span></span>
+        </div>
+        <div id="offcutRows"></div>
+        <button id="addOffcut" class="secondary" type="button"
+          style="margin-top:8px">+ Add offcut</button>
+      </details>
+    </fieldset>
+    <fieldset style="margin-top:14px">
       <legend>Library</legend>
       <button id="saveBtn" class="secondary">💾 Save current design</button>
       <label>Saved designs</label>
@@ -788,6 +817,7 @@
         <button data-t="drawings">Drawings</button>
         <button data-t="steps">Build steps</button>
         <button data-t="lumber">Lumber</button>
+        <button data-t="stock">From stock</button>
         <button data-t="drilling">Drilling</button>
         <button data-t="joinery">Joinery</button>
         <button data-t="tools">Tools</button>
@@ -930,6 +960,7 @@ function applyUnitChange() {
     }
     formUnit = newU;
     setUnitLabels();
+    renderOffcuts();   // offcut rows show the current display unit too
   }
   paint();
 }
@@ -1057,7 +1088,7 @@ async function post(url, body) {
 }
 $("buildBtn").onclick = async () => {
   setBusy(true);
-  try { render(await post("/api/build", {spec: specFromForm(), ...currentPricing(), profile: currentProfile()})); }
+  try { render(await post("/api/build", {spec: specFromForm(), ...currentPricing(), profile: currentProfile(), boards: currentBoards()})); }
   catch (e) { showError(e.message); } finally { setBusy(false); health(); }
 };
 $("designBtn").onclick = async () => {
@@ -1065,7 +1096,7 @@ $("designBtn").onclick = async () => {
   if (!prompt) return;
   setBusy(true);
   try {
-    const d = await post("/api/design", {prompt, ...currentPricing(), profile: currentProfile()});
+    const d = await post("/api/design", {prompt, ...currentPricing(), profile: currentProfile(), boards: currentBoards()});
     syncForm(d.spec); render(d);
   } catch (e) { showError(e.message); } finally { setBusy(false); health(); }
 };
@@ -1330,7 +1361,7 @@ async function editDimension(key) {
   try {
     if (FORM_KINDS.has(spec.kind || "cabinet") && $(key)) syncForm(spec);
     render(await post("/api/build",
-      {spec, ...currentPricing(), profile: currentProfile()}));
+      {spec, ...currentPricing(), profile: currentProfile(), boards: currentBoards()}));
   } catch (e) { showError(e.message); }
   finally { setBusy(false); }
 }
@@ -1426,7 +1457,7 @@ function loadFromHash() {
   try {
     const spec = JSON.parse(decodeURIComponent(escape(atob(m[1]))));
     syncForm(spec);
-    post("/api/build", {spec, ...currentPricing(), profile: currentProfile()}).then(render).catch(e => showError(e.message));
+    post("/api/build", {spec, ...currentPricing(), profile: currentProfile(), boards: currentBoards()}).then(render).catch(e => showError(e.message));
   } catch (e) {}
 }
 
@@ -1458,6 +1489,8 @@ function paint() {
        + `~${fmtArea(area)} sheet goods</p>`;
   } else if (tab === "lumber") {
     h = lumberPane(d);
+  } else if (tab === "stock") {
+    h = stockPane(d);
   } else if (tab === "hardware") {
     h = table(["Item","Qty","Brand","SKU","Notes"],
       d.hardware.map(x=>[x.name,x.qty,x.brand||"",x.sku||"",x.notes]));
@@ -1731,6 +1764,69 @@ function nestDiagram(d) {
   return h;
 }
 
+// --- "From stock" tab: fit parts onto offcuts you already own ----------------
+// Shows what lands on each owned board (to scale, with yield) and what's still
+// left to buy. Driven by the bundle's `cutplan`, present only when offcuts were
+// declared in the sidebar.
+function stockPane(d) {
+  const n = currentBoards().length;
+  if (!d.cutplan) {
+    return `<p class="muted">Add the leftover sheets you already own in
+      <b>Offcuts &amp; owned stock</b> (sidebar), then build — this shows which
+      parts you can cut from them and what's left to buy.${
+        n ? " Rebuild to refresh." : ""}</p>`;
+  }
+  const cp = d.cutplan, u = unitLabel();
+  const pct = v => Math.round((v || 0) * 100) + "%";
+  const W = 300;
+  const placedNote = cp.complete
+    ? `<span class="pill ok nodot">Every part fits your stock</span>`
+    : `<span class="pill warn nodot">${cp.shortfall.length} part(s) still to buy</span>`;
+  let h = `<div class="headline" style="gap:24px">
+      <div><div class="big">${cp.placed_count}</div>
+        <div class="sub">parts on your stock
+          <div class="muted">across ${cp.boards_used} board${cp.boards_used === 1 ? "" : "s"} · ${pct(cp.yield)} yield</div></div></div>
+    </div><div style="margin:-6px 0 12px">${placedNote}</div>`;
+
+  for (const b of cp.boards) {
+    const scale = W / b.length, sh = b.width * scale;
+    const name = b.id || `${fmtLen(b.length)}×${fmtLen(b.width)} ${u}`;
+    h += `<div class="nest-grp"><div class="nest-head">` +
+      `<b>${esc(name)}</b> ${fmtLen(b.thickness, true)}` +
+      (b.instance > 1 ? ` · #${b.instance}` : "") +
+      ` · ${b.part_count} part${b.part_count === 1 ? "" : "s"} · ${pct(b.yield)} used</div>`;
+    let svg = `<svg class="nest-svg" width="${W}" height="${sh}" viewBox="0 0 ${W} ${sh}" ` +
+      `role="img" aria-label="${esc(name)} layout">`;
+    svg += `<rect x="0.5" y="0.5" width="${W - 1}" height="${sh - 1}" class="nest-board"/>`;
+    for (const p of b.placements) {
+      const x = p.x * scale, y = p.y * scale, w = p.length * scale, hh = p.width * scale;
+      const id = esc(String(p.part_id || p.label).split(" ")[0]);
+      svg += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" ` +
+        `width="${Math.max(0, w - 1).toFixed(1)}" height="${Math.max(0, hh - 1).toFixed(1)}" ` +
+        `class="nest-part"><title>${esc(p.label)} — ${fmtLen(p.length)}×${fmtLen(p.width)} ${u}</title></rect>`;
+      if (w > 22 && hh > 12)
+        svg += `<text x="${(x + w / 2).toFixed(1)}" y="${(y + hh / 2 + 3).toFixed(1)}" ` +
+          `class="nest-label" text-anchor="middle">${id}</text>`;
+    }
+    svg += `</svg>`;
+    h += `<div class="nest-sheets"><div class="nest-cell">${svg}</div></div></div>`;
+  }
+
+  if (cp.shortfall.length) {
+    h += `<h4>Still to buy (didn't fit your stock)</h4>`;
+    h += table(["ID", "Part", `L (${u})`, `W (${u})`, `Thk (${u})`, "Why"],
+      cp.shortfall.map(s => [s.part_id || "", s.label, fmtLen(s.length),
+        fmtLen(s.width), fmtLen(s.thickness), s.reason]));
+    h += `<p class="muted" style="font-size:11px;margin-top:6px">These fall back to
+      new sheets in the cost estimate's nesting. "Too big" means no owned board is
+      large enough; "no matching board" means none match the thickness.</p>`;
+  } else {
+    h += `<p class="muted" style="font-size:11.5px">Nice — the whole project comes
+      out of stock you already have.</p>`;
+  }
+  return h;
+}
+
 // --- Drilling tab: every hole, where to bore it ------------------------------
 // Headlines the hole count with a per-type breakdown, lists the operations, then
 // exposes the exact bore positions (u/v/Ø/depth, metric) under each operation.
@@ -1894,6 +1990,62 @@ function savePricing() {
 }
 // What every build request sends; {} (so unchanged) until defaults have loaded.
 function currentPricing() { return pricing ? readPricing() : {}; }
+
+// --- offcuts / owned stock ("cut from my stock") -----------------------------
+// Stored internally in mm; the row inputs show/accept the current display unit.
+const OFFCUTS_LS = "woodai_offcuts";
+let offcuts = [];   // [{length, width, thickness, qty}] in mm
+function loadOffcuts() {
+  try { offcuts = JSON.parse(localStorage.getItem(OFFCUTS_LS) || "[]") || []; }
+  catch (e) { offcuts = []; }
+  if (!Array.isArray(offcuts)) offcuts = [];
+  renderOffcuts();
+}
+function saveOffcuts() {
+  try { localStorage.setItem(OFFCUTS_LS, JSON.stringify(offcuts)); } catch (e) {}
+}
+function renderOffcuts() {
+  const box = $("offcutRows"); if (!box) return;
+  if (!offcuts.length) {
+    box.innerHTML = '<p class="ph-mini">No offcuts yet — add a leftover sheet.</p>';
+    return;
+  }
+  const d = mm => mm ? roundDisp(dispFromMM(mm)) : "";
+  box.innerHTML = offcuts.map((o, i) =>
+    `<div class="offcut-row">
+      <input type="number" data-i="${i}" data-k="length" value="${d(o.length)}" min="0" />
+      <input type="number" data-i="${i}" data-k="width" value="${d(o.width)}" min="0" />
+      <input type="number" data-i="${i}" data-k="thickness" value="${d(o.thickness)}" min="0" />
+      <input type="number" data-i="${i}" data-k="qty" value="${o.qty || 1}" min="1" step="1" />
+      <button class="rm" type="button" data-rm="${i}" title="Remove" aria-label="Remove offcut">×</button>
+    </div>`).join("");
+  box.querySelectorAll("input").forEach(inp => inp.oninput = () => {
+    const i = +inp.dataset.i, k = inp.dataset.k, v = parseFloat(inp.value);
+    if (!offcuts[i]) return;
+    offcuts[i][k] = k === "qty"
+      ? Math.max(1, Math.round(v) || 1)
+      : (isFinite(v) && v > 0 ? mmFromDisp(v) : 0);
+    saveOffcuts(); maybeAuto();
+  });
+  box.querySelectorAll("button[data-rm]").forEach(b => b.onclick = () => {
+    offcuts.splice(+b.dataset.rm, 1); saveOffcuts(); renderOffcuts(); maybeAuto();
+  });
+}
+// Valid boards to send: complete dimensions only (matched by thickness server-side).
+function currentBoards() {
+  return offcuts
+    .filter(o => o.length > 0 && o.width > 0 && o.thickness > 0 && (o.qty || 1) > 0)
+    .map(o => ({length: o.length, width: o.width, thickness: o.thickness,
+                qty: o.qty || 1}));
+}
+if ($("addOffcut")) $("addOffcut").onclick = () => {
+  // Seed with a common offcut size in the current unit (a quarter-sheet-ish).
+  offcuts.push({length: mmFromDisp(unit() === "imperial" ? 48 : 1220),
+                width: mmFromDisp(unit() === "imperial" ? 24 : 600),
+                thickness: mmFromDisp(unit() === "imperial" ? 0.75 : 18), qty: 1});
+  saveOffcuts(); renderOffcuts();
+};
+
 async function loadPricing() {
   try { pricingDefaults = await (await fetch("/api/pricing")).json(); }
   catch (e) { pricingDefaults = null; return; }
@@ -2130,7 +2282,7 @@ $("revLoadBtn").onclick = async () => {
   const r = revs[+$("revList").value];
   if (!r) return;
   syncForm(r.spec);
-  try { render(await post("/api/build", {spec: r.spec, ...currentPricing(), profile: currentProfile()})); }
+  try { render(await post("/api/build", {spec: r.spec, ...currentPricing(), profile: currentProfile(), boards: currentBoards()})); }
   catch (e) { showError(e.message); }
 };
 $("revDiffBtn").onclick = async () => {
@@ -2150,7 +2302,7 @@ $("loadBtn").onclick = async () => {
   const d = savedCache.find(x => x._id === $("savedList").value);
   if (!d) return;
   syncForm(d.spec);
-  try { render(await post("/api/build", {spec: d.spec, ...currentPricing(), profile: currentProfile()})); }
+  try { render(await post("/api/build", {spec: d.spec, ...currentPricing(), profile: currentProfile(), boards: currentBoards()})); }
   catch (e) { showError(e.message); }
 };
 $("delBtn").onclick = async () => {
@@ -2236,7 +2388,7 @@ async function loadGallery() {
         // every kind still builds + renders from its spec.
         if (t.spec && FORM_KINDS.has(t.spec.kind || "cabinet")) syncForm(t.spec);
         render(await post("/api/build",
-          {spec: t.spec, ...currentPricing(), profile: currentProfile()}));
+          {spec: t.spec, ...currentPricing(), profile: currentProfile(), boards: currentBoards()}));
       } catch (e) { showError(e.message); }
       finally { setBusy(false); health(); }
     };
@@ -2254,6 +2406,7 @@ health();
 loadPricing();
 loadStandards();
 loadTooling();
+loadOffcuts();
 refreshSaved();
 refreshRevisions();
 loadFromHash();

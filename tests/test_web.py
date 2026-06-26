@@ -397,6 +397,21 @@ def test_build_combine_sheet_stock_reduces_sheets():
     assert sum(g["sheet_count"] for g in comb["nesting"]) == comb["estimate"]["total_sheets"]
 
 
+def test_build_with_owned_boards_returns_cutplan():
+    """Declaring offcuts adds a 'cut from my stock' plan to the bundle."""
+    boards = [{"length": 1200, "width": 1200, "thickness": 18, "qty": 1,
+               "id": "shop offcut"}]
+    d = client.post("/api/build", json={
+        "spec": VALID_SPEC, "glb": False, "boards": boards}).json()
+    cp = d.get("cutplan")
+    assert cp is not None
+    assert cp["placed_count"] >= 1 and cp["boards_used"] >= 1
+    assert "shortfall" in cp
+    # No boards -> no cutplan section (unchanged bundle).
+    d2 = client.post("/api/build", json={"spec": VALID_SPEC, "glb": False}).json()
+    assert "cutplan" not in d2
+
+
 def test_build_bundle_includes_nesting_matching_estimate():
     d = client.post("/api/build", json={"spec": VALID_SPEC, "glb": False}).json()
     assert "nesting" in d and d["nesting"]
