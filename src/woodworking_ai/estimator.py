@@ -259,7 +259,7 @@ def _edge_banding_metres(spec: CabinetSpec) -> float:
     return (2 * spec.box_height + spec.interior_width) / 1000.0
 
 
-def _pack_sheet_groups(parts, prices: PriceBook, sheet: SheetSize,
+def pack_sheet_groups(parts, prices: PriceBook, sheet: SheetSize,
                        combine_sheet_stock: bool) -> tuple[list[SheetGroup], float]:
     """Pack sheet-good *parts* onto sheets; return (groups, material_cost).
 
@@ -360,7 +360,7 @@ def _estimate_project(project: ComponentGroup, prices: PriceBook,
     # (and re-price it) instead of the per-component sum — so the quote matches
     # the run-wide nesting diagram and captures the cross-cabinet savings.
     if combine_sheet_stock:
-        sheet_groups, material_cost = _pack_sheet_groups(
+        sheet_groups, material_cost = pack_sheet_groups(
             generate_cutlist(project).parts, prices, sheet, True)
     else:
         sheet_groups = sorted(groups.values(),
@@ -407,10 +407,10 @@ def estimate(spec, *, cutlist: CutList | None = None,
                                  combine_sheet_stock=combine_sheet_stock)
     cl = cutlist or generate_cutlist(spec)
 
-    # Pack the sheet goods (see :func:`_pack_sheet_groups`): each buyable product
+    # Pack the sheet goods (see :func:`pack_sheet_groups`): each buyable product
     # on its own sheets by default, or all same-thickness parts nested together
     # when ``combine_sheet_stock`` is set.
-    sheet_groups, material_cost = _pack_sheet_groups(
+    sheet_groups, material_cost = pack_sheet_groups(
         cl.parts, prices, sheet, combine_sheet_stock)
 
     # Solid lumber, priced by the board foot (with a milling-waste allowance).

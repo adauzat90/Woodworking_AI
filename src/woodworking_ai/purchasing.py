@@ -296,14 +296,14 @@ def _consumable_lines(spec, est: Estimate, cl: CutList) -> list[POLine]:
     its quantity rounds to zero.
     """
     import math
-    from .planning import _glue_up_count
+    from .planning import glue_up_count
     from .finishing import finishing_schedule
     from . import species as species_mod
 
     lines: list[POLine] = []
 
     # Glue — ~one 250ml bottle per two glue-ups, at least one for any glued build.
-    glue_ups = max(_glue_up_count(spec), 0)
+    glue_ups = max(glue_up_count(spec), 0)
     bottles = max(1, math.ceil(glue_ups / 2)) if glue_ups else 0
     if bottles:
         lines.append(POLine(

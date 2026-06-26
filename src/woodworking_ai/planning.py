@@ -185,7 +185,7 @@ def _part_count(spec) -> int:
         return 0
 
 
-def _glue_up_count(spec) -> int:
+def glue_up_count(spec) -> int:
     """How many glue-ups the build involves — a key difficulty driver.
 
     Counts the carcass case glue-up, each non-false drawer box, a solid-wood
@@ -196,7 +196,7 @@ def _glue_up_count(spec) -> int:
     if kind == VOID:
         return 0
     if kind == GROUP:
-        return sum(_glue_up_count(c.spec) for c in spec.components)
+        return sum(glue_up_count(c.spec) for c in spec.components)
     if kind == TABLE:
         return 1   # the leg/apron/top assembly
     # A cabinet (and, by fall-through, the other leaf furniture types).
@@ -261,7 +261,7 @@ def skill(spec) -> dict:
         score += 1
         drivers.append(f"{parts} parts")
 
-    glue_ups = _glue_up_count(spec)
+    glue_ups = glue_up_count(spec)
     if glue_ups >= 4:
         score += 2
         drivers.append(f"{glue_ups} glue-ups")
@@ -392,7 +392,7 @@ def build_time(spec, tooling: ShopTooling | None = None) -> dict:
         phases["mill"] += parts * 0.02   # cut sheets to rough size
 
     # 3. Assembly / glue-ups.
-    glue_ups = _glue_up_count(spec)
+    glue_ups = glue_up_count(spec)
     phases["assembly"] += glue_ups * _ASSEMBLY_PER_GLUEUP
 
     # 4. Finishing (only when a finish is specified).

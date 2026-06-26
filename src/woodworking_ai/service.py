@@ -351,7 +351,7 @@ def _reconcile_offcuts(result, est, cl, *, boards, prices, sheet,
     if not (boards and result.get("cutplan")):
         return po_est
     from dataclasses import replace as _replace
-    from .estimator import PriceBook, SheetSize, _pack_sheet_groups
+    from .estimator import PriceBook, SheetSize, pack_sheet_groups
     from .nesting import nest_parts
     placed: dict[str, int] = {}
     for b in result["cutplan"]["boards"]:
@@ -367,7 +367,7 @@ def _reconcile_offcuts(result, est, cl, *, boards, prices, sheet,
                 reduced.append(_replace(p, qty=q) if cut else p)
         pb = prices or PriceBook()
         ss = sheet or SheetSize()
-        net_groups, net_material = _pack_sheet_groups(
+        net_groups, net_material = pack_sheet_groups(
             reduced, pb, ss, combine_sheet_stock)
         gross_material = est.material_cost
         e = result["estimate"]
