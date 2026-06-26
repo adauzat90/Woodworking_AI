@@ -571,6 +571,21 @@ def _list_to_mm(d: dict, field_name: str) -> None:
                          and not isinstance(x, bool) else x for x in v]
 
 
+def _coerce_legged_slide(value) -> str:
+    """Normalize an apron-hung drawer's runner choice.
+
+    ``ball_bearing`` (metal slide pair, the default) | ``wood`` (a traditional
+    wooden side runner the grooved drawer rides on — a hand-tool build) |
+    ``none`` (the drawer rides on a web frame / the case bottom, no slide).
+    """
+    s = str(value or "").strip().lower().replace("-", "_").replace(" ", "_")
+    if s in ("wood", "wooden", "runner", "runners", "wood_runner", "wooden_runner"):
+        return "wood"
+    if s in ("none", "no", "slip", "web_frame", "web"):
+        return "none"
+    return "ball_bearing"
+
+
 def leg_taper_note(spec) -> str:
     """Cut-list note suffix describing a leg taper, or '' when the legs are square.
 
@@ -1394,6 +1409,7 @@ class NightstandSpec:
     # when empty every drawer uses ``drawer_front_height``.
     drawer_front_heights: list = field(default_factory=list)
     drawer_corner_joint: CornerJoint = CornerJoint.RABBET  # drawer box corners
+    slide_type: str = "ball_bearing"  # ball_bearing | wood (runners) | none
     shelf: bool = True             # a lower shelf between the legs
     shelf_thickness: float = 18.0
     shelf_setback: float = 120.0   # shelf height off the floor
@@ -1412,6 +1428,7 @@ class NightstandSpec:
         self.joinery = _coerce_enum(Joinery, self.joinery, aliases=JOINERY_ALIASES)
         self.top_fixing = _coerce_enum(TopFixing, self.top_fixing)
         self.drawer_corner_joint = _coerce_enum(CornerJoint, self.drawer_corner_joint)
+        self.slide_type = _coerce_legged_slide(self.slide_type)
         self.grain = _coerce_enum(
             Grain, self.grain, aliases={"quarter": "quartersawn",
                                         "flat": "flatsawn"})
@@ -1481,6 +1498,7 @@ class DeskSpec:
     # Optional per-drawer front heights (left→right); empty = uniform.
     drawer_front_heights: list = field(default_factory=list)
     drawer_corner_joint: CornerJoint = CornerJoint.RABBET  # drawer box corners
+    slide_type: str = "ball_bearing"  # ball_bearing | wood (runners) | none
     modesty_panel: bool = True     # a back privacy panel between the legs
     modesty_height: float = 250.0
     grommet: bool = True           # a cable grommet bored in the top
@@ -1500,6 +1518,7 @@ class DeskSpec:
         self.joinery = _coerce_enum(Joinery, self.joinery, aliases=JOINERY_ALIASES)
         self.top_fixing = _coerce_enum(TopFixing, self.top_fixing)
         self.drawer_corner_joint = _coerce_enum(CornerJoint, self.drawer_corner_joint)
+        self.slide_type = _coerce_legged_slide(self.slide_type)
         self.grain = _coerce_enum(
             Grain, self.grain, aliases={"quarter": "quartersawn",
                                         "flat": "flatsawn"})
@@ -2276,12 +2295,14 @@ an optional lower shelf.
   "width": <e.g. 450>, "depth": <e.g. 400>, "height": <e.g. 600>,
   "top_thickness": 20,
   "leg": <square leg, e.g. 40>, "leg_inset": <from the top edge, e.g. 25>,
+  "leg_taper": true | false, "leg_tip": <tapered foot section, 0=auto>,
   "apron_height": 90, "apron_thickness": 20,
   "drawers": <0-3 stacked drawers>,
   "drawer_front_height": 130,                  // uniform front height
   "drawer_front_heights": [120, 180],          // OPTIONAL per-drawer override,
                                                // top->bottom (graduate the stack)
   "drawer_corner_joint": {_opts(CornerJoint)}, // drawer box corners (default rabbet)
+  "slide_type": "ball_bearing" | "wood" | "none",  // wood = traditional runners
   "shelf": true | false, "shelf_setback": <shelf height off floor, e.g. 120>,
   "joinery": {_opts(Joinery)},      // leg-to-apron: mortise_tenon/domino resist racking
   "pull": "knob" | "bar" | "none",
@@ -2297,10 +2318,12 @@ back modesty panel and a cable grommet.
   "units": "mm",
   "width": <length, e.g. 1200>, "depth": <e.g. 600>, "height": <~740>,
   "top_thickness": 25,
-  "leg": 60, "leg_inset": 40, "apron_height": 90, "apron_thickness": 20,
+  "leg": 60, "leg_inset": 40, "leg_taper": true | false, "leg_tip": <0=auto>,
+  "apron_height": 90, "apron_thickness": 20,
   "drawers": <0-3 across the front>, "drawer_front_height": 100,
   "drawer_front_heights": [100, 100, 100],     // OPTIONAL per-drawer override
   "drawer_corner_joint": {_opts(CornerJoint)}, // drawer box corners (default rabbet)
+  "slide_type": "ball_bearing" | "wood" | "none",  // wood = traditional runners
   "modesty_panel": true | false, "modesty_height": 250,
   "grommet": true | false, "grommet_dia": 60,
   "joinery": {_opts(Joinery)}, "pull": "bar" | "knob" | "none",

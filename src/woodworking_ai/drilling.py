@@ -204,6 +204,10 @@ def _legged_slide_ops(spec, panels, pid) -> list[DrillOp]:
     n = int(getattr(spec, "drawers", 0) or 0)
     if n <= 0:
         return []
+    # Only metal ball-bearing slides need screw holes; wooden runners and a bare
+    # web frame are joinery, not boring.
+    if str(getattr(spec, "slide_type", "ball_bearing")).lower() != "ball_bearing":
+        return []
     side_aprons = [p for p in panels if p.label == "Apron side"]
     if not side_aprons:
         return []

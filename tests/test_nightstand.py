@@ -174,3 +174,23 @@ def test_drawer_slide_holes_in_drilling_schedule():
     # No drawers -> no slide ops.
     assert not any("slide" in o.operation.lower()
                    for o in drilling_schedule(_ns(drawers=0)).ops)
+
+
+def test_wooden_runner_slide_option():
+    from woodworking_ai.cutlist import generate_cutlist
+    from woodworking_ai.drilling import drilling_schedule
+    # Default ball-bearing: metal slide hardware + slide-screw drilling.
+    bb = generate_cutlist(_ns(drawers=2))
+    assert any("slide" in h.name.lower() for h in bb.hardware)
+    assert not any(p.name == "Drawer runner" for p in bb.parts)
+    assert drilling_schedule(_ns(drawers=2)).total_holes > 0
+    # Wooden runners: no metal slide, runner parts present, no slide drilling.
+    wood = _ns(drawers=2, slide_type="wood")
+    wcl = generate_cutlist(wood)
+    assert not any("slide" in h.name.lower() for h in wcl.hardware)
+    assert sum(p.qty for p in wcl.parts if p.name == "Drawer runner") == 4
+    assert not any("slide" in o.operation.lower()
+                   for o in drilling_schedule(wood).ops)
+    # Aliases normalize.
+    from woodworking_ai.dsl import spec_from_dict
+    assert spec_from_dict({"kind": "desk", "slide_type": "wooden"}).slide_type == "wood"

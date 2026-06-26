@@ -1417,7 +1417,8 @@ def _legged_offsets(width: float, depth: float, leg_inset: float,
 
 def _drawer_cut_parts(cl: CutList, heights: list[float], opening_w: float,
                       box_depth: float, *, pull: str = "knob",
-                      corner_joint: str = "rabbet") -> None:
+                      corner_joint: str = "rabbet",
+                      slide_type: str = "ball_bearing") -> None:
     """Append cut-list parts + hardware for apron-hung drawers.
 
     *heights* is the front height of each drawer (so a graduated stack passes
@@ -1425,8 +1426,12 @@ def _drawer_cut_parts(cl: CutList, heights: list[float], opening_w: float,
     consecutive heights are grouped into one aggregated part set, so a uniform
     stack stays a single ``Drawer front`` row while a graduated stack emits a
     numbered set per height. Each drawer is a four-side box (sides + front/back +
-    a captured ply bottom) on a ball-bearing slide pair, with *corner_joint*
-    box corners.
+    a captured ply bottom), with *corner_joint* box corners.
+
+    *slide_type* picks the runner: ``ball_bearing`` adds a metal slide pair per
+    drawer; ``wood`` adds a pair of wooden side runners (no metal hardware) the
+    grooved drawer rides on — a hand-tool build; ``none`` adds neither (the
+    drawer rides on a web frame / the case bottom).
     """
     n = len(heights)
     if n <= 0:
@@ -1466,9 +1471,18 @@ def _drawer_cut_parts(cl: CutList, heights: list[float], opening_w: float,
             f"Drawer bottom{sfx}", qty, length=max(box_w - 2 * bt, 40.0),
             width=max(box_depth - bt, 40.0), thickness=bottom_t,
             material=MAT_DRAWER_BOX, grain="width", notes="ply bottom in a groove"))
-    cl.hardware.append(Hardware(
-        hw.DRAWER_SLIDE.name, n, hw.DRAWER_SLIDE.note, sku=hw.DRAWER_SLIDE.sku,
-        category="hardware"))
+    st = str(slide_type).strip().lower()
+    if st == "ball_bearing":
+        cl.hardware.append(Hardware(
+            hw.DRAWER_SLIDE.name, n, hw.DRAWER_SLIDE.note, sku=hw.DRAWER_SLIDE.sku,
+            category="hardware"))
+    elif st == "wood":
+        # A wooden side runner glued inside each side apron (no metal hardware);
+        # the drawer side is grooved to ride it.
+        cl.parts.append(Part(
+            "Drawer runner", 2 * n, length=box_depth, width=18.0, thickness=12.0,
+            material=MAT_SOLID, notes="wooden side runner; drawer side grooved to ride it"))
+    # st == "none": the drawer rides on a web frame / the case bottom — no part.
     if str(pull).strip().lower() != "none":
         cl.hardware.append(Hardware(
             hw.DRAWER_PULL.name, n, f"{pull} pull", sku=hw.DRAWER_PULL.sku,
@@ -1537,6 +1551,28 @@ def _drawer_corner_joinery(spec, part_id: str) -> JoineryOp:
         part="Drawer box", operation=f"{cj.replace('_', ' ')} corners",
         tool=tool, width=0.0, depth=12.0, reference="four box corners",
         part_id=part_id, note=note)
+
+
+def _drawer_runner_joinery(spec, part_id: str) -> JoineryOp:
+    """The drawer groove / slide op, adapted to the runner type."""
+    st = str(getattr(spec, "slide_type", "ball_bearing")).strip().lower()
+    if st == "wood":
+        return JoineryOp(
+            part="Drawer box", operation="groove for wooden runner + bottom",
+            tool="dado / plough", width=12.0, depth=6.0,
+            reference="side groove rides the runner; bottom groove",
+            part_id=part_id, note="traditional wooden side runner — no metal slide")
+    if st == "none":
+        return JoineryOp(
+            part="Drawer box", operation="bottom groove",
+            tool="dado / plough", width=6.0, depth=6.0,
+            reference="bottom groove; rides on a web frame / the case bottom",
+            part_id=part_id, note="no slides")
+    return JoineryOp(
+        part="Drawer box", operation="groove + slide bore",
+        tool="dado / drill", width=6.0, depth=6.0,
+        reference="bottom groove; slide screw holes",
+        part_id=part_id, note="ball-bearing slides need side clearance")
 
 
 # ===========================================================================
@@ -1618,7 +1654,8 @@ def _nightstand_cutlist(spec: NightstandSpec) -> CutList:
     n = _nightstand_drawer_count(spec)
     box_depth = max(D - spec.leg_inset - 40.0, 100.0)
     _drawer_cut_parts(cl, spec.front_heights(n), apron_x, box_depth,
-                      pull=spec.pull, corner_joint=spec.drawer_corner_joint)
+                      pull=spec.pull, corner_joint=spec.drawer_corner_joint,
+                      slide_type=spec.slide_type)
 
     if spec.shelf:
         cl.parts.append(Part(
@@ -1666,11 +1703,7 @@ def _nightstand_joinery(spec: NightstandSpec, cl) -> list[JoineryOp]:
     ops = [_leg_apron_joinery(spec, cl)]
     if _nightstand_drawer_count(spec):
         ops.append(_drawer_corner_joinery(spec, pid("Drawer side")))
-        ops.append(JoineryOp(
-            part="Drawer box", operation="groove + slide bore",
-            tool="dado / drill", width=6.0, depth=6.0,
-            reference="bottom groove; slide screw holes",
-            part_id=pid("Drawer side"), note="ball-bearing slides need side clearance"))
+        ops.append(_drawer_runner_joinery(spec, pid("Drawer side")))
     if spec.shelf:
         ops.append(JoineryOp(
             part="Shelf / legs", operation="shelf cleats / dado",
@@ -1818,7 +1851,8 @@ def _desk_cutlist(spec: DeskSpec) -> CutList:
         seg = apron_x / n
         box_depth = max(D - spec.leg_inset - 40.0, 100.0)
         _drawer_cut_parts(cl, spec.front_heights(n), seg - 4.0, box_depth,
-                          pull=spec.pull, corner_joint=spec.drawer_corner_joint)
+                          pull=spec.pull, corner_joint=spec.drawer_corner_joint,
+                          slide_type=spec.slide_type)
     if spec.modesty_panel:
         cl.parts.append(Part(
             "Modesty panel", 1, length=apron_x, width=spec.modesty_height,
@@ -1870,11 +1904,7 @@ def _desk_joinery(spec: DeskSpec, cl) -> list[JoineryOp]:
     ops = [_leg_apron_joinery(spec, cl)]
     if _desk_drawer_count(spec):
         ops.append(_drawer_corner_joinery(spec, pid("Drawer side")))
-        ops.append(JoineryOp(
-            part="Drawer box", operation="groove + slide bore",
-            tool="dado / drill", width=6.0, depth=6.0,
-            reference="bottom groove; slide screw holes",
-            part_id=pid("Drawer side"), note="full-extension slides for a desk drawer"))
+        ops.append(_drawer_runner_joinery(spec, pid("Drawer side")))
     if spec.grommet:
         ops.append(JoineryOp(
             part="Top", operation="bore cable grommet",
