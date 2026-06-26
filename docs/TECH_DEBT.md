@@ -75,6 +75,17 @@ is collapsing the three parallel type registries (HIGH-2).
   `geometry.classify_panel_role`, exposed as `PanelBox.role`) instead of
   open-coded `label.startswith("Side")` tests. Golden drilling output byte-identical.
 
+**Follow-on safe cleanups (all ✅, golden byte-identical):**
+- ✅ **2.2** species board-foot price no longer duplicated in `estimator` — it
+  derives from `species.price_per_bdft`; only the deliberate `oak` override
+  remains. Drift-guarded.
+- ✅ **4.2** the silent `except Exception: return <empty>` clusters in `tooling`,
+  `planning`, `service` now log on degrade (warning for pure-math paths, debug for
+  best-effort render/GLB probes); outputs unchanged.
+- ✅ **3.7 (partial)** the repeated `str(spec.joinery).strip().lower()` decode is
+  centralized in `dsl.joinery_key()` across the 9 joinery sites. The
+  `corner_joint`/`slide_type` string sites use different transforms and are left.
+
 **Deliberately deferred** (cost/risk now exceeds value — same reasons the
 original maintainers deferred them):
 
