@@ -600,6 +600,17 @@ def _validate_cabinet(spec) -> list[Issue]:
             warn("doors", "a bookcase is open shelving; set doors to 0")
         if spec.shelves == 0:
             warn("shelves", "a bookcase usually has shelves")
+        else:
+            # Clear height of each shelf bay: the interior split into shelves+1
+            # bays, each losing one shelf's thickness. Hardbacks want ~300mm.
+            bays = spec.shelves + 1
+            bay_clear = (spec.box_height - 2 * m.carcass
+                         - spec.shelves * m.shelf) / bays
+            if bay_clear < 300:
+                warn("shelves",
+                     f"~{bay_clear:.0f}mm clear per shelf bay is tight for "
+                     "hardbacks (~300mm); use fewer shelves or a taller box "
+                     "(paperbacks need ~200mm)")
     elif spec.cabinet_type == CabinetType.DRESSER:
         if not spec.drawers:
             warn("drawers", "a dresser is a drawer bank; add some drawers")

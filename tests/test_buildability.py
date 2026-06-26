@@ -45,3 +45,20 @@ def test_frameless_drawer_has_no_buildout_warning():
     crit = critique(_cab(doors=0,
                          drawers=[Drawer(front_height=150, slide_type="side_mount")]))
     assert not any("build-out" in w.message for w in crit.warnings)
+
+
+def test_bookcase_warns_on_tight_shelf_bay():
+    from woodworking_ai.dsl import spec_from_dict
+    from woodworking_ai.validator import validate
+    tight = spec_from_dict({"kind": "cabinet", "cabinet_type": "bookcase",
+                            "width": 800, "height": 1800, "depth": 300,
+                            "shelves": 5, "doors": 0, "toe_kick": None,
+                            "material": {"shelf": 25}})
+    msgs = [str(i) for i in validate(tight).issues if i.field == "shelves"]
+    assert any("hardback" in m for m in msgs)
+    assert validate(tight).ok            # advisory, not an error
+    roomy = spec_from_dict({"kind": "cabinet", "cabinet_type": "bookcase",
+                            "width": 800, "height": 1800, "depth": 300,
+                            "shelves": 4, "doors": 0, "toe_kick": None,
+                            "material": {"shelf": 25}})
+    assert not any("hardback" in str(i) for i in validate(roomy).issues)
