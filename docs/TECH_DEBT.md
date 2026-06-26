@@ -71,12 +71,23 @@ is collapsing the three parallel type registries (HIGH-2).
   `_estimate_section` / `_reconcile_offcuts` (which localizes the estimator
   private access) / `_purchase_order_section`; `_validate_cabinet`'s largest
   block extracted to `_check_cabinet_drawers_and_hinges` (321 → ~225 lines).
+- ✅ **HIGH-2 §3.2** drilling dispatches on a typed `PanelRole` (decoded once in
+  `geometry.classify_panel_role`, exposed as `PanelBox.role`) instead of
+  open-coded `label.startswith("Side")` tests. Golden drilling output byte-identical.
 
-**Still open** (next up): bring drilling/estimator under the registry
-(HIGH-2 §3.2, a `PanelRole` enum on `PanelBox`), split the `furniture_types.py`
-god-module into one module per type (HIGH-3), and a shared `LeggedSpec` base
-(MED-2). These touch geometry/drilling output or class structure, so each wants
-its own focused PR with the golden-output net.
+**Deliberately deferred** (cost/risk now exceeds value — same reasons the
+original maintainers deferred them):
+
+- **Split `furniture_types.py`** (HIGH-3) — purely organizational; the 2088-line
+  module works, and a per-module split is large churn (re-deriving each module's
+  imports against the enforced `F401` lint) for no functional gain.
+- **`LeggedSpec` base** (MED-2) — the 5 legged specs have accumulated real
+  per-class divergences (Workbench has no `top_fixing`/`grain`; the `grain` alias
+  maps differ between table/bench and nightstand/desk; defaults differ), so a
+  shared base needs enough per-class configuration that it adds complexity and
+  risks subtly changing what each spec accepts. Low dedup payoff, real risk.
+
+If these are picked up later, do each as its own PR behind the golden-output net.
 
 ---
 
