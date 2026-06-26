@@ -277,8 +277,16 @@ def joinery_feasibility(spec) -> list[Issue]:
     min_end = round(END_DISTANCE_FACTOR * m.carcass, 1)
     try:
         sched = joinery_schedule(spec)
-    except Exception:
+    except Exception as exc:
+        # Never silently drop the check: a failed schedule must surface as
+        # "could not verify", not as an implicit all-clear (this is a safety
+        # check — short-grain blow-out — so a quiet skip reads as "safe").
         sched = None
+        issues.append(Issue(
+            "warning", "joinery",
+            "could not verify the housed-joint short-grain clearance — the "
+            f"joinery schedule failed to build ({type(exc).__name__}); review "
+            "the joinery manually"))
     if sched is not None:
         for op in sched.ops:
             if "groove for back" not in op.operation or op.depth <= 0:
@@ -316,8 +324,15 @@ def joinery_feasibility(spec) -> list[Issue]:
     if getattr(spec, "shelves", 0) > 0 and getattr(spec, "drawers", None):
         try:
             ds = drilling_schedule(spec)
-        except Exception:
+        except Exception as exc:
+            # As above: surface the gap rather than skipping the slide-vs-pin
+            # collision check silently.
             ds = None
+            issues.append(Issue(
+                "warning", "drawers",
+                "could not verify the drawer-slide vs shelf-pin clearance — the "
+                f"drilling schedule failed to build ({type(exc).__name__}); "
+                "review the slide and pin layout manually"))
         if ds is not None:
             pin_v: dict[str, list[float]] = {}
             slide_v: dict[str, list[tuple[float, str]]] = {}

@@ -183,3 +183,38 @@ def test_negative_material_check_skips_without_build123d(monkeypatch):
     assert crit.ok
     assert any(i.kind == "geometry" and "could not build machined model"
                in i.message for i in crit.warnings)
+
+
+# --- safety checks degrade with a warning, never a silent skip -----------
+
+def test_failed_joinery_schedule_surfaces_warning(monkeypatch):
+    """If the joinery schedule can't be built, the short-grain check must report
+    'could not verify' — not silently pass as if the joint were safe."""
+    import woodworking_ai.joinery as joinery
+
+    def boom(spec):
+        raise RuntimeError("schedule broke")
+
+    # _joinery_feasibility imports joinery_schedule from its home module at call
+    # time, so patching the source is what the function actually sees.
+    monkeypatch.setattr(joinery, "joinery_schedule", boom)
+
+    issues = _joinery_feasibility(cab(shelves=1, doors=2))
+    assert any(i.severity == "warning" and "could not verify" in i.message
+               and "short-grain" in i.message for i in issues)
+
+
+def test_failed_drilling_schedule_surfaces_warning(monkeypatch):
+    """If the drilling schedule can't be built, the slide-vs-pin collision check
+    must report 'could not verify' rather than skipping silently."""
+    import woodworking_ai.drilling as drilling
+
+    def boom(spec, **kw):
+        raise RuntimeError("schedule broke")
+
+    monkeypatch.setattr(drilling, "drilling_schedule", boom)
+
+    # shelves + drawers triggers the slide-vs-pin block.
+    issues = _joinery_feasibility(cab(shelves=1, drawers=[Drawer(150)]))
+    assert any(i.severity == "warning" and "could not verify" in i.message
+               and "slide" in i.message for i in issues)
