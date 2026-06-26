@@ -8,182 +8,405 @@
 <script type="module"
   src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
 <style>
-  :root { --bg:#1c1a17; --panel:#262320; --line:#3a352f; --wood:#caa472;
-          --accent:#9c6b43; --text:#ece6dd; --muted:#a59c8e; }
+  /* ============================================================
+     Woodworking AI — design system
+     Warm, crafted, precise. Single file, system fonts, no CDN.
+     ============================================================ */
+  :root {
+    color-scheme: dark;
+    --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+                 Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+
+    /* Surfaces — real luminance steps so depth reads */
+    --bg:        #16130f;
+    --panel:     #211c17;
+    --surface:   #2a241d;
+    --surface-2: #342d24;
+    --card:      #2a241d;
+    --line:      #3d352b;
+    --line-soft: #2d271f;
+    --stage-1:   #241d16;
+    --stage-2:   #100c08;
+
+    /* Brand — warm wood; accent is saturated enough to read "click me" */
+    --wood:      #e0aa6b;
+    --wood-deep: #b9763c;
+    --accent:    #c47a3d;
+    --accent-hi: #d98c4a;
+    --accent-ink:#1a1208;
+    --accent-soft: rgba(196,122,61,.14);
+
+    /* Text */
+    --text:  #f2ebe0;
+    --muted: #b3a896;
+    --faint: #80776a;
+
+    /* Semantic */
+    --ok:#7fcf91;  --ok-bg:#1d3a26;
+    --bad:#e8978a; --bad-bg:#3d2120;
+    --warn:#e8cd76; --warn-bg:#3a3320;
+
+    /* Radius */
+    --r-sm:7px; --r-md:11px; --r-lg:15px; --r-pill:999px;
+
+    /* Elevation */
+    --sh-1:0 1px 2px rgba(0,0,0,.30);
+    --sh-2:0 6px 18px rgba(0,0,0,.38);
+    --sh-3:0 16px 40px rgba(0,0,0,.50);
+    --sh-inset:inset 0 1px 0 rgba(255,255,255,.04);
+
+    /* Spacing */
+    --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px;
+  }
+
+  /* Light palette — warm paper, not clinical white. Applied when the OS asks
+     for light (unless the user forced dark) or when the user picks light. */
+  @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+      color-scheme: light;
+      --bg:#f3ecdf; --panel:#fbf7ef; --surface:#fffdf8; --surface-2:#f1e7d4;
+      --card:#fffdf8; --line:#e2d6c2; --line-soft:#ece2d0;
+      --stage-1:#efe4d1; --stage-2:#d9c9ad;
+      --wood:#a9651f; --wood-deep:#8a4e16; --accent:#b56a2c; --accent-hi:#a25d23;
+      --accent-ink:#fff; --accent-soft:rgba(181,106,44,.12);
+      --text:#2a2118; --muted:#6b5f4f; --faint:#9a8d79;
+      --ok:#2f8a4d; --ok-bg:#dcefe0; --bad:#bb4a3c; --bad-bg:#f6dcd7;
+      --warn:#9a7a16; --warn-bg:#f4ead0;
+      --sh-1:0 1px 2px rgba(60,40,20,.08); --sh-2:0 6px 18px rgba(60,40,20,.12);
+      --sh-3:0 16px 40px rgba(60,40,20,.18); --sh-inset:inset 0 1px 0 rgba(255,255,255,.6);
+  } }
+  :root[data-theme="light"] {
+      color-scheme: light;
+      --bg:#f3ecdf; --panel:#fbf7ef; --surface:#fffdf8; --surface-2:#f1e7d4;
+      --card:#fffdf8; --line:#e2d6c2; --line-soft:#ece2d0;
+      --stage-1:#efe4d1; --stage-2:#d9c9ad;
+      --wood:#a9651f; --wood-deep:#8a4e16; --accent:#b56a2c; --accent-hi:#a25d23;
+      --accent-ink:#fff; --accent-soft:rgba(181,106,44,.12);
+      --text:#2a2118; --muted:#6b5f4f; --faint:#9a8d79;
+      --ok:#2f8a4d; --ok-bg:#dcefe0; --bad:#bb4a3c; --bad-bg:#f6dcd7;
+      --warn:#9a7a16; --warn-bg:#f4ead0;
+      --sh-1:0 1px 2px rgba(60,40,20,.08); --sh-2:0 6px 18px rgba(60,40,20,.12);
+      --sh-3:0 16px 40px rgba(60,40,20,.18); --sh-inset:inset 0 1px 0 rgba(255,255,255,.6);
+  }
+
   * { box-sizing: border-box; }
-  body { margin:0; font:14px/1.5 system-ui, sans-serif; background:var(--bg);
-         color:var(--text); }
-  header { padding:14px 20px; border-bottom:1px solid var(--line);
-           display:flex; align-items:baseline; gap:12px; }
-  header h1 { font-size:18px; margin:0; }
-  header span { color:var(--muted); font-size:13px; }
-  .wrap { display:grid; grid-template-columns:340px 1fr; gap:0; height:calc(100vh - 53px); }
-  .controls { padding:18px; overflow-y:auto; border-right:1px solid var(--line); }
-  .preview { display:flex; flex-direction:column; min-width:0; }
-  .stage { flex:1; background:#141210; display:flex; align-items:center;
-           justify-content:center; min-height:240px; position:relative; }
-  model-viewer, .stage img { width:100%; height:100%; }
-  .stage .ph { color:var(--muted); }
-  .buildbar { position:absolute; left:50%; bottom:12px; transform:translateX(-50%);
-    display:flex; align-items:center; gap:12px; background:rgba(28,26,23,.86);
-    border:1px solid var(--line); border-radius:10px; padding:8px 14px;
-    backdrop-filter:blur(4px); max-width:92%; }
+  html, body { height:100%; }
+  body { margin:0; font:14px/1.55 var(--font-sans); background:var(--bg);
+         color:var(--text); -webkit-font-smoothing:antialiased; }
+
+  /* ---- header / app bar ---- */
+  header { padding:12px 20px; background:var(--panel);
+           border-bottom:1px solid var(--line); box-shadow:var(--sh-1);
+           display:flex; align-items:center; gap:12px; position:relative; z-index:5; }
+  .brand { display:flex; align-items:center; gap:10px; }
+  .brand .mark { width:30px; height:30px; border-radius:9px; flex:0 0 auto;
+    background:linear-gradient(150deg, var(--accent), var(--wood-deep));
+    display:flex; align-items:center; justify-content:center; box-shadow:var(--sh-1); }
+  .brand .mark svg { width:18px; height:18px; color:#fff; }
+  header h1 { font-size:16px; font-weight:650; margin:0; letter-spacing:-.01em; }
+  header .tag { color:var(--muted); font-size:12.5px; }
+  header .spacer { flex:1; }
+  header .hdr-btn { width:auto; margin:0; padding:7px 12px; font-size:12.5px;
+    background:var(--surface); color:var(--text); border:1px solid var(--line);
+    display:inline-flex; align-items:center; gap:6px; }
+  header .hdr-btn:hover { background:var(--surface-2); border-color:var(--wood); }
+
+  /* ---- layout ---- */
+  .wrap { display:grid; grid-template-columns:360px 1fr; gap:0;
+          height:calc(100vh - 55px); }
+  .controls { padding:18px; overflow-y:auto; background:var(--panel);
+              border-right:1px solid var(--line); }
+  .preview { display:flex; flex-direction:column; min-width:0; background:var(--bg); }
+  .stage { flex:1; display:flex; align-items:center; justify-content:center;
+           min-height:240px; position:relative; overflow:hidden;
+           background:radial-gradient(125% 125% at 50% 22%, var(--stage-1) 0%, var(--stage-2) 100%); }
+  model-viewer { width:100%; height:100%; --poster-color:transparent; }
+  .stage img { max-width:100%; max-height:100%; object-fit:contain; }
+  .stage .ph { color:var(--muted); padding:24px; text-align:center; }
+
+  /* ---- value-prop empty state ---- */
+  .empty { max-width:430px; text-align:center; padding:24px; }
+  .empty svg.art { width:120px; height:120px; color:var(--wood);
+    opacity:.85; margin-bottom:6px; }
+  .empty h2 { font-size:20px; margin:6px 0 8px; font-weight:650;
+    letter-spacing:-.01em; color:var(--text); }
+  .empty p { color:var(--muted); font-size:13.5px; margin:0 auto 16px; max-width:360px; }
+  .empty .outcomes { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+  .empty .oc { font-size:11.5px; color:var(--wood); background:var(--accent-soft);
+    border:1px solid var(--line); border-radius:var(--r-pill); padding:4px 11px;
+    display:inline-flex; align-items:center; gap:5px; }
+
+  /* ---- build bar / overlays ---- */
+  .buildbar { position:absolute; left:50%; bottom:14px; transform:translateX(-50%);
+    display:flex; align-items:center; gap:14px; background:rgba(20,16,12,.82);
+    border:1px solid var(--line); border-radius:var(--r-lg); padding:9px 16px;
+    backdrop-filter:blur(8px); box-shadow:var(--sh-2); max-width:92%; }
   .buildbar label { margin:0; color:var(--text); font-size:12px; display:flex;
-    align-items:center; gap:6px; white-space:nowrap; }
+    align-items:center; gap:6px; white-space:nowrap; text-transform:none; letter-spacing:0; }
   .buildbar input[type=range] { width:160px; accent-color:var(--accent); }
-  .buildbar .sec { color:var(--wood); font-weight:600; font-size:12px;
-    min-width:120px; }
+  .buildbar .sec { color:var(--wood); font-weight:600; font-size:12px; min-width:120px;
+    font-variant-numeric:tabular-nums; }
   .buildbar input[type=checkbox] { width:auto; accent-color:var(--accent); }
-  /* Assembly-walkthrough caption synced to the build stepper (G2a). */
-  .buildcap { position:absolute; left:50%; bottom:64px; transform:translateX(-50%);
-    background:rgba(28,26,23,.92); border:1px solid var(--line); border-radius:9px;
-    padding:7px 12px; max-width:80%; color:var(--text); font-size:12px;
-    backdrop-filter:blur(4px); pointer-events:none; }
-  .buildcap ul { color:var(--muted); }
+  .buildbar button { width:auto; }
+  .buildcap { position:absolute; left:50%; bottom:70px; transform:translateX(-50%);
+    background:rgba(20,16,12,.90); border:1px solid var(--line); border-radius:var(--r-md);
+    padding:8px 14px; max-width:80%; color:var(--text); font-size:12px;
+    backdrop-filter:blur(8px); box-shadow:var(--sh-2); pointer-events:auto;
+    animation:fadeIn .25s ease; }
+  .buildcap ul { color:var(--muted); margin:3px 0 0; }
   .step-show { cursor:pointer; }
-  .step-show:hover { text-decoration:underline; }
-  /* Click-to-edit dimension overlay on the 3D view (G2b). */
-  .dimoverlay { position:absolute; top:10px; right:10px; display:flex;
-    align-items:center; gap:6px; background:rgba(28,26,23,.82);
-    border:1px solid var(--line); border-radius:8px; padding:5px 8px;
-    backdrop-filter:blur(4px); font-size:12px; flex-wrap:wrap; max-width:60%; }
-  .dim-chip { cursor:pointer; padding:1px 6px; border-radius:5px;
-    border:1px solid transparent; color:var(--text); }
-  .dim-chip:hover { border-color:var(--wood); background:var(--bg); }
-  .dim-chip b { color:var(--wood); }
+  .step-show:hover { text-decoration:underline; color:var(--wood); }
+
+  .dimoverlay { position:absolute; top:12px; right:12px; display:flex;
+    align-items:center; gap:6px; background:rgba(20,16,12,.80);
+    border:1px solid var(--line); border-radius:var(--r-md); padding:6px 10px;
+    backdrop-filter:blur(8px); box-shadow:var(--sh-1); font-size:12px;
+    flex-wrap:wrap; max-width:62%; }
+  .dim-chip { cursor:pointer; padding:2px 7px; border-radius:6px;
+    border:1px solid transparent; color:var(--text); transition:.12s; }
+  .dim-chip:hover { border-color:var(--wood); background:var(--accent-soft); }
+  .dim-chip b { color:var(--wood); font-variant-numeric:tabular-nums; }
   .dim-unit { font-size:10px; }
-  .results { height:42%; border-top:1px solid var(--line); display:flex;
-             flex-direction:column; }
-  fieldset { border:1px solid var(--line); border-radius:8px; margin:0 0 14px;
-             padding:12px; }
-  legend { padding:0 6px; color:var(--muted); font-size:12px; text-transform:uppercase;
-           letter-spacing:.05em; }
-  label { display:block; margin:8px 0 3px; font-size:12px; color:var(--muted); }
+
+  /* ---- results panel ---- */
+  .results { height:44%; min-height:300px; border-top:1px solid var(--line);
+             display:flex; flex-direction:column; background:var(--panel); }
+
+  /* ---- forms ---- */
+  fieldset { border:1px solid var(--line-soft); border-radius:var(--r-md);
+             margin:0 0 14px; padding:14px; background:var(--surface);
+             box-shadow:var(--sh-inset); }
+  legend { padding:0 7px; color:var(--muted); font-size:10.5px; font-weight:600;
+           text-transform:uppercase; letter-spacing:.06em; }
+  label { display:block; margin:9px 0 4px; font-size:11.5px; color:var(--muted);
+          font-weight:500; }
   input, select, textarea { width:100%; background:var(--bg); color:var(--text);
-    border:1px solid var(--line); border-radius:6px; padding:7px 9px; font:inherit; }
+    border:1px solid var(--line); border-radius:var(--r-sm); padding:8px 10px;
+    font:inherit; transition:border-color .12s, box-shadow .12s; box-shadow:var(--sh-inset); }
+  input:hover, select:hover, textarea:hover { border-color:var(--faint); }
+  input:focus, select:focus, textarea:focus { outline:none; border-color:var(--accent);
+    box-shadow:0 0 0 3px var(--accent-soft); }
+  select { appearance:none; -webkit-appearance:none; padding-right:30px;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23b3a896' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat:no-repeat; background-position:right 10px center; }
   textarea { resize:vertical; min-height:60px; }
-  .row { display:flex; gap:8px; } .row > div { flex:1; }
+  .row { display:flex; gap:8px; } .row > div { flex:1; min-width:0; }
   .check { display:flex; align-items:center; gap:8px; margin-top:10px; }
-  .check input { width:auto; }
-  button { width:100%; margin-top:10px; padding:10px; border:0; border-radius:7px;
-    background:var(--accent); color:#fff; font-weight:600; cursor:pointer; }
-  button.secondary { background:#3a352f; }
-  button:disabled { opacity:.5; cursor:not-allowed; }
-  .or { text-align:center; color:var(--muted); margin:14px 0; font-size:12px; }
-  .status { padding:10px 16px; border-bottom:1px solid var(--line); font-size:13px;
-            display:flex; gap:16px; flex-wrap:wrap; align-items:center; }
-  .pill { padding:2px 9px; border-radius:99px; font-size:12px; }
-  .ok { background:#244a2c; color:#b6e7c0; } .bad { background:#4a2424; color:#e7b6b6; }
-  .warn { background:#4a4124; color:#e7dab6; }
+  .check input { width:auto; accent-color:var(--accent); }
+  .check label { margin:0; }
+
+  /* ---- buttons ---- */
+  button { width:100%; margin-top:10px; padding:10px 14px; border:1px solid transparent;
+    border-radius:var(--r-sm); background:var(--accent); color:var(--accent-ink);
+    font:inherit; font-weight:600; cursor:pointer; box-shadow:var(--sh-1);
+    transition:background .12s, transform .08s, box-shadow .12s, border-color .12s;
+    display:inline-flex; align-items:center; justify-content:center; gap:7px; }
+  button:hover { background:var(--accent-hi); transform:translateY(-1px); box-shadow:var(--sh-2); }
+  button:active { transform:translateY(0); box-shadow:var(--sh-1); }
+  button.secondary { background:var(--surface); color:var(--text); border-color:var(--line); }
+  button.secondary:hover { background:var(--surface-2); border-color:var(--wood); }
+  button:disabled { opacity:.5; cursor:not-allowed; transform:none; box-shadow:none; }
+  #buildBtn { padding:12px; font-size:14px; }
+  .or { text-align:center; color:var(--faint); margin:14px 0; font-size:11px;
+        text-transform:uppercase; letter-spacing:.06em; }
+
+  /* ---- focus ring everywhere ---- */
+  :where(a,button,input,select,textarea,summary,.gcard,.dim-chip,.tabs button,.downloads button):focus-visible {
+    outline:none; box-shadow:0 0 0 3px var(--accent-soft); }
+
+  /* ---- status / money line ---- */
+  .status { padding:11px 18px; border-bottom:1px solid var(--line); font-size:13px;
+            display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .status .total { margin-left:auto; display:flex; align-items:baseline; gap:8px; }
+  .status .total .amt { font:700 21px/1 var(--font-mono); color:var(--wood);
+    font-variant-numeric:tabular-nums; }
+  .status .total .sub { color:var(--muted); font-size:12px; }
+  .pill { padding:3px 11px; border-radius:var(--r-pill); font-size:11.5px; font-weight:600;
+          display:inline-flex; align-items:center; gap:6px; }
+  .pill::before { content:"●"; font-size:8px; line-height:1; }
+  .pill.nodot::before { content:none; }
+  .ok { background:var(--ok-bg); color:var(--ok); }
+  .bad { background:var(--bad-bg); color:var(--bad); }
+  .warn { background:var(--warn-bg); color:var(--warn); }
+
+  /* ---- downloads ---- */
   .downloads { display:flex; gap:6px; align-items:center; flex-wrap:wrap;
-               padding:8px 16px; border-bottom:1px solid var(--line); }
-  .downloads button { width:auto; margin:0; padding:4px 10px; font-size:12px;
-    background:#3a352f; font-weight:500; }
-  .downloads button.share { background:var(--accent); margin-left:auto; }
-  .tabs { display:flex; gap:2px; padding:8px 12px 0; align-items:center; }
-  .tabs button { width:auto; margin:0; padding:6px 12px; background:transparent;
-    color:var(--muted); border-bottom:2px solid transparent; border-radius:0; font-weight:500; }
+               padding:10px 18px; border-bottom:1px solid var(--line); }
+  .downloads .dl-label { color:var(--muted); font-size:11.5px; }
+  .downloads button { width:auto; margin:0; padding:5px 11px; font-size:12px;
+    background:var(--surface); color:var(--text); border:1px solid var(--line);
+    font-weight:500; box-shadow:none; }
+  .downloads button:hover { background:var(--surface-2); border-color:var(--wood); transform:none; }
+  .downloads button.share { background:var(--accent); color:var(--accent-ink);
+    border-color:transparent; margin-left:auto; font-weight:600; }
+  .downloads button.share:hover { background:var(--accent-hi); }
+
+  /* ---- tabs ---- */
+  .tabs { display:flex; gap:2px; padding:8px 14px 0; align-items:center;
+          border-bottom:1px solid var(--line); }
+  .tabs button { width:auto; margin:0; padding:7px 13px; background:transparent;
+    color:var(--muted); border:0; border-bottom:2px solid transparent; border-radius:0;
+    font-weight:550; box-shadow:none; transition:color .12s, border-color .15s; }
+  .tabs button:hover { color:var(--text); transform:none; background:transparent; }
   .tabs button.active { color:var(--text); border-color:var(--accent); }
-  .units-toggle { display:flex; align-items:center; gap:6px; margin-left:auto;
-    font-size:11px; }
-  .units-toggle select { width:auto; margin:0; padding:3px 6px; font-size:11px; }
-  .tabpane { flex:1; overflow:auto; padding:6px 16px 16px; }
+  .units-toggle { display:flex; align-items:center; gap:6px; margin-left:auto; font-size:11px; }
+  .units-toggle select { width:auto; margin:0; padding:4px 26px 4px 8px; font-size:11px; }
+  .tabpane { flex:1; overflow:auto; padding:10px 18px 18px; }
+
+  /* ---- tables ---- */
   table { width:100%; border-collapse:collapse; font-size:12.5px; }
-  th, td { text-align:left; padding:5px 8px; border-bottom:1px solid var(--line); }
-  th { color:var(--muted); font-weight:600; position:sticky; top:0; background:var(--panel); }
-  .cost-grid { display:grid; grid-template-columns:auto auto; gap:4px 24px; max-width:340px; }
-  .cost-grid .total { font-weight:700; border-top:1px solid var(--line); padding-top:6px; }
+  th, td { text-align:left; padding:7px 10px; border-bottom:1px solid var(--line-soft); }
+  th { color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase;
+       letter-spacing:.03em; position:sticky; top:0; background:var(--panel);
+       box-shadow:0 1px 0 var(--line); }
+  tbody tr { transition:background .1s; }
+  tbody tr:nth-child(even) { background:rgba(255,255,255,.018); }
+  tbody tr:hover { background:var(--accent-soft); }
+  th.num { text-align:right; }
+  td.num { text-align:right; font-variant-numeric:tabular-nums; font-family:var(--font-mono); }
+  td.id { font-family:var(--font-mono); color:var(--wood); font-weight:600; }
+
+  .cost-grid { display:grid; grid-template-columns:auto auto; gap:5px 24px; max-width:360px; }
+  .cost-grid > div:nth-child(even) { text-align:right; font-variant-numeric:tabular-nums;
+    font-family:var(--font-mono); }
+  .cost-grid .total { font-weight:700; border-top:1px solid var(--line); padding-top:7px;
+    color:var(--wood); }
   .muted { color:var(--muted); }
-  /* Headline summary for the Lumber and Drilling tabs. */
+
+  /* ---- headline summary (Lumber / Drilling tabs) ---- */
   .headline { display:flex; align-items:center; gap:14px; margin:6px 0 14px; }
-  .headline .big { font-size:34px; font-weight:700; color:var(--wood); line-height:1; }
+  .headline .big { font:700 34px/1 var(--font-mono); color:var(--wood);
+    font-variant-numeric:tabular-nums; }
   .headline .sub { font-size:12.5px; }
   .chips { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 12px; }
-  .chip { background:#3a352f; border-radius:7px; padding:5px 11px; font-size:12px; }
-  .chip b { color:var(--wood); font-weight:700; }
-  details { margin:6px 0; border:1px solid var(--line); border-radius:7px;
-            padding:4px 10px; background:var(--bg); }
-  details[open] { padding-bottom:8px; }
-  summary { cursor:pointer; padding:3px 0; font-size:12.5px; list-style:none; }
+  .chip { background:var(--surface); border:1px solid var(--line); border-radius:var(--r-sm);
+    padding:6px 12px; font-size:12px; }
+  .chip b { color:var(--wood); font-weight:700; font-variant-numeric:tabular-nums; }
+
+  details { margin:6px 0; border:1px solid var(--line-soft); border-radius:var(--r-sm);
+            padding:5px 12px; background:var(--bg); }
+  details[open] { padding-bottom:9px; }
+  summary { cursor:pointer; padding:4px 0; font-size:12.5px; list-style:none; }
   summary::-webkit-details-marker { display:none; }
   summary::before { content:"▸ "; color:var(--muted); }
   details[open] summary::before { content:"▾ "; }
   summary .count { color:var(--muted); }
-  h4 { margin:16px 0 6px; font-size:12px; color:var(--muted);
+  h4 { margin:18px 0 7px; font-size:11px; color:var(--muted);
        text-transform:uppercase; letter-spacing:.05em; }
-  /* Pricing editor (sidebar). */
-  .price-sec { font-size:11px; color:var(--wood); text-transform:uppercase;
-               letter-spacing:.04em; margin:12px 0 3px; }
+
+  /* ---- pricing editor ---- */
+  .price-sec { font-size:10.5px; color:var(--wood); text-transform:uppercase;
+               letter-spacing:.05em; margin:13px 0 4px; font-weight:600; }
   .price-row { display:flex; align-items:center; justify-content:space-between;
                gap:8px; margin:3px 0; }
   .price-row span { font-size:11.5px; color:var(--muted); }
   input.price-input { width:96px; flex:0 0 auto; padding:5px 7px; }
-  /* Starter-project gallery (G3). */
-  .gallery-summary { font-weight:600; cursor:pointer; padding:4px 0;
-                     color:var(--wood); }
-  .gallery { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin:4px 0 8px; }
-  .gcard { text-align:left; padding:7px 9px; border:1px solid var(--line);
-           border-radius:7px; background:var(--card); cursor:pointer;
-           display:flex; flex-direction:column; gap:2px; transition:.12s; }
-  .gcard:hover { border-color:var(--wood); background:var(--bg);
-                 transform:translateY(-1px); }
-  .gcard .gtitle { font-weight:600; font-size:12.5px; }
-  .gcard .gcat { font-size:10px; text-transform:uppercase; letter-spacing:.04em;
-                 color:var(--wood); }
-  .gcard .gblurb { font-size:10.5px; color:var(--muted); line-height:1.25; }
+
+  /* ---- starter gallery ---- */
+  .gallery-summary { font-weight:600; cursor:pointer; padding:4px 0; color:var(--wood);
+                     font-size:13px; }
+  .gallery { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:8px 0; }
+  .gcard { text-align:left; padding:10px 11px; border:1px solid var(--line);
+           border-radius:var(--r-md); background:var(--card); cursor:pointer;
+           display:flex; flex-direction:column; align-items:flex-start; gap:4px;
+           box-shadow:var(--sh-1);
+           transition:transform .12s, box-shadow .12s, border-color .12s; }
+  .gcard:hover { border-color:var(--wood); box-shadow:var(--sh-2);
+                 transform:translateY(-2px); }
+  .gcard .gcat { font-size:9.5px; text-transform:uppercase; letter-spacing:.05em;
+                 color:var(--wood); background:var(--accent-soft); align-self:flex-start;
+                 border-radius:var(--r-pill); padding:2px 8px; font-weight:600; }
+  .gcard .gtitle { font-weight:600; font-size:13px; color:var(--text); }
+  .gcard .gblurb { font-size:11px; color:var(--muted); line-height:1.35;
+                   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+                   overflow:hidden; }
   .ph-mini { font-size:11px; color:var(--muted); padding:6px; }
 
-  /* --- Responsive: stack the sidebar above the preview on a phone/tablet
-     (G5). The bench is where plans get used — one-handed, full-width. --- */
-  @media (max-width: 820px) {
-    .wrap { grid-template-columns:1fr; height:auto; min-height:calc(100vh - 53px); }
-    .controls { border-right:none; border-bottom:1px solid var(--line);
-                max-height:none; }
-    .preview { min-height:70vh; }
+  /* ---- toasts ---- */
+  #toasts { position:fixed; right:18px; bottom:18px; z-index:50; display:flex;
+            flex-direction:column; gap:8px; pointer-events:none; }
+  .toast { background:var(--surface-2); color:var(--text); border:1px solid var(--line);
+    border-left:3px solid var(--accent); border-radius:var(--r-sm); padding:10px 14px;
+    font-size:12.5px; box-shadow:var(--sh-2); animation:toastIn .2s ease;
+    display:flex; align-items:center; gap:8px; max-width:320px; }
+  .toast.bad { border-left-color:var(--bad); }
+  .toast.ok { border-left-color:var(--ok); }
+
+  /* ---- skeleton / loading ---- */
+  @keyframes shimmer { 100% { background-position:-200% 0; } }
+  @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+  @keyframes toastIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .skeleton { background:linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 37%,
+    var(--surface) 63%); background-size:200% 100%; animation:shimmer 1.2s infinite;
+    border-radius:var(--r-sm); }
+  .stage .building { display:flex; flex-direction:column; align-items:center; gap:14px;
+    color:var(--muted); }
+  .stage .building .spinner { width:34px; height:34px; border-radius:50%;
+    border:3px solid var(--line); border-top-color:var(--accent); animation:spin .8s linear infinite; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition:none !important; animation:none !important; }
+  }
+
+  /* --- Responsive: stack the sidebar above the preview on phone/tablet --- */
+  @media (max-width: 860px) {
+    .wrap { grid-template-columns:1fr; height:auto; min-height:calc(100vh - 55px); }
+    .controls { border-right:none; border-bottom:1px solid var(--line); max-height:none; }
+    .preview { min-height:72vh; }
     .stage { min-height:46vh; }
     .results { height:auto; }
     .tabs { flex-wrap:wrap; }
     .gallery { grid-template-columns:1fr; }
-    header span { display:none; }       /* keep the title bar compact */
+    header .tag { display:none; }
   }
   @media (max-width: 480px) {
     .row { flex-wrap:wrap; }
-    .buildcap { display:none; }         /* too small to overlay; tab still has it */
+    .buildcap { display:none; }
   }
 
-  /* --- Print: a clean black-on-white shop printout of the active report
-     (cut list / drilling / shopping list / build steps). Tape it to the
-     wall. Hides the app chrome and the 3D canvas (G5). --- */
+  /* --- Print: clean black-on-white shop printout of the active report --- */
   @media print {
     @page { margin: 14mm; }
     header, .controls, .stage, .buildbar, .buildcap, .downloads, .tabs,
-    .gallery, #galleryWrap { display:none !important; }
+    .gallery, #galleryWrap, #toasts { display:none !important; }
     html, body { background:#fff !important; color:#000 !important; }
     .wrap { display:block; height:auto; }
-    .preview, .results { display:block; height:auto; border:none; }
+    .preview, .results { display:block; height:auto; border:none; background:#fff !important; }
     .status { color:#000 !important; border:none; padding:0 0 8px; font-size:13px; }
-    .status .muted, .muted { color:#333 !important; }
+    .status .muted, .muted, .status .total .amt, .status .total .sub { color:#000 !important; }
     #pane { overflow:visible !important; height:auto !important; }
     table { border-collapse:collapse; width:100%; }
-    th, td { border:1px solid #999 !important; color:#000 !important;
-             padding:3px 6px !important; }
+    th, td { border:1px solid #999 !important; color:#000 !important; padding:3px 6px !important; }
     th { background:#eee !important; }
     a { color:#000 !important; text-decoration:underline; }
     details { display:block !important; }
-    /* Encourage the report not to split a row across a page. */
     tr, li, details { break-inside:avoid; }
   }
 </style>
 </head>
 <body>
 <header>
-  <h1>🪵 Woodworking AI</h1>
-  <span>AI cabinet &amp; furniture designer — parametric language → buildable output</span>
+  <div class="brand">
+    <span class="mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 21h18"/><path d="M5 21V8l7-5 7 5v13"/><path d="M9 21v-6h6v6"/>
+      </svg>
+    </span>
+    <h1>Woodworking AI</h1>
+  </div>
+  <span class="tag">Describe a piece — get a 3D model, cut list &amp; shopping list you can build from.</span>
+  <span class="spacer"></span>
+  <button id="themeBtn" class="hdr-btn" type="button" title="Switch light / dark theme">
+    <span id="themeIcon">◐</span> Theme
+  </button>
 </header>
+<div id="toasts" aria-live="polite"></div>
 <div class="wrap">
   <div class="controls">
     <details id="galleryWrap" open>
-      <summary class="gallery-summary">🧰 Start from a project</summary>
+      <summary class="gallery-summary">Start from a project</summary>
       <p class="muted" style="font-size:11px;margin:6px 0">
         Pick a starter design to build now, then tweak the parameters.</p>
       <div id="gallery" class="gallery"><div class="ph-mini">Loading…</div></div>
@@ -431,11 +654,33 @@
   </div>
 
   <div class="preview">
-    <div class="stage" id="stage"><div class="ph">Build a cabinet to see it here</div></div>
+    <div class="stage" id="stage">
+      <div class="empty">
+        <svg class="art" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="1.5"/>
+          <line x1="3" y1="9" x2="21" y2="9"/><line x1="12" y1="9" x2="12" y2="21"/>
+          <line x1="3" y1="15" x2="12" y2="15"/>
+          <circle cx="7.5" cy="12" r=".6" fill="currentColor"/>
+          <circle cx="16.5" cy="13" r=".6" fill="currentColor"/>
+        </svg>
+        <h2>Design something buildable</h2>
+        <p>Pick a starter project, describe it in plain English, or dial in the
+           parameters — and get an interactive 3D model plus everything you need
+           to build it.</p>
+        <div class="outcomes">
+          <span class="oc">3D model</span>
+          <span class="oc">Cut list</span>
+          <span class="oc">Shopping list</span>
+          <span class="oc">Shop drawings</span>
+          <span class="oc">Cost</span>
+        </div>
+      </div>
+    </div>
     <div class="results">
       <div class="status" id="status"><span class="muted">No design yet.</span></div>
       <div class="downloads" id="downloads" style="display:none">
-        <span class="muted" style="font-size:12px">Download:</span>
+        <span class="dl-label">Download:</span>
         <button data-f="step">STEP</button><button data-f="stl">STL</button>
         <button data-f="glb">GLB</button><button data-f="dae" title="Collada — imports into SketchUp">DAE</button><button data-f="dxf">DXF</button>
         <button data-f="drawings">Drawings</button>
@@ -481,6 +726,37 @@ function esc(s) {
 }
 let last = null, tab = "cutlist";
 let _walkTimer = null;   // assembly-walkthrough auto-advance timer (G2a)
+
+// --- toasts: brief, non-blocking confirmation for downloads/saves/errors -----
+function toast(msg, kind) {
+  const wrap = $("toasts"); if (!wrap) return;
+  const el = document.createElement("div");
+  el.className = "toast" + (kind ? " " + kind : "");
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(() => { el.style.opacity = "0"; el.style.transition = "opacity .3s";
+    setTimeout(() => el.remove(), 300); }, 2600);
+}
+
+// --- light / dark theme toggle (system default, overridable, remembered) -----
+const THEME_LS = "woodai_theme";
+function applyTheme(t) {
+  const root = document.documentElement;
+  if (t === "light" || t === "dark") root.setAttribute("data-theme", t);
+  else root.removeAttribute("data-theme");
+  const icon = $("themeIcon");
+  if (icon) icon.textContent = t === "light" ? "☀" : t === "dark" ? "☾" : "◐";
+}
+(function initTheme() {
+  applyTheme(localStorage.getItem(THEME_LS) || "");
+})();
+if ($("themeBtn")) $("themeBtn").onclick = () => {
+  // Cycle system → dark → light → system.
+  const cur = localStorage.getItem(THEME_LS) || "";
+  const next = cur === "" ? "dark" : cur === "dark" ? "light" : "";
+  if (next) localStorage.setItem(THEME_LS, next); else localStorage.removeItem(THEME_LS);
+  applyTheme(next);
+};
 
 // --- display units (engine is millimetre-native; this is display only) ------
 const MM_PER_IN = 25.4;
@@ -660,7 +936,8 @@ function specFromForm() {
 
 function setBusy(b) {
   $("buildBtn").disabled = b; $("designBtn").disabled = b;
-  if (b) $("stage").innerHTML = '<div class="ph">Building…</div>';
+  if (b) $("stage").innerHTML =
+    '<div class="building"><div class="spinner"></div><div>Building your design…</div></div>';
 }
 async function post(url, body) {
   const r = await fetch(url, {method:"POST", headers:{"Content-Type":"application/json"},
@@ -726,31 +1003,67 @@ function render(d) {
   if (d.errors && d.errors.length) {
     showError(d.errors.map(e => e.field+": "+e.message).join("; ")); return;
   }
-  // 3D / image stage
-  if (d.glb) {
-    const sections = d.model_sections || [];
-    const bar = sections.length > 1 ? buildBarHtml(sections) : "";
-    $("stage").innerHTML =
-      `<model-viewer id="mv" camera-controls auto-rotate shadow-intensity="1"
-        exposure="1.1" src="${d.glb}"></model-viewer>${bar}`;
-    if (sections.length > 1) wireBuildBar(sections);
-  } else if (d.render_png) {
-    $("stage").innerHTML = `<img src="${d.render_png}" style="object-fit:contain" />`;
-  } else $("stage").innerHTML = '<div class="ph">No preview available</div>';
+  // 3D / image stage — robust against a missing/slow model-viewer (the script
+  // loads from a CDN, which can be blocked or slow). We never leave a blank
+  // canvas: fall back to the static render, and upgrade to the interactive model
+  // if/when the component is ready.
+  showStage(d);
   addDimOverlay(d);
 
-  // status
+  // status — the confident "money line": badges left, total right.
   const e = d.estimate, cr = d.critique;
   const bits = [];
   bits.push(`<span class="pill ${d.valid?'ok':'bad'}">${d.valid?'valid':'invalid'}</span>`);
   if (cr) bits.push(`<span class="pill ${cr.ok?'ok':'warn'}">geometry ${cr.ok?'verified':'check'}</span>`);
-  if (e) bits.push(`<strong>${esc(e.currency)}${e.total.toFixed(2)}</strong> · ${e.total_sheets} sheets · ${e.labour_hours}h`);
   if (d.warnings && d.warnings.length)
-    bits.push(`<span class="pill warn">${d.warnings.length} warning(s)</span>`);
-  if (d.attempts) bits.push(`<span class="muted">AI: ${d.attempts} attempt(s)</span>`);
+    bits.push(`<span class="pill warn">${d.warnings.length} warning${d.warnings.length>1?'s':''}</span>`);
+  if (d.attempts) bits.push(`<span class="muted">AI · ${d.attempts} attempt${d.attempts>1?'s':''}</span>`);
+  if (e) bits.push(`<span class="total"><span class="amt">${esc(e.currency)}${e.total.toFixed(2)}</span>`
+    + `<span class="sub">est. · ${e.total_sheets} sheet${e.total_sheets===1?'':'s'} · ${e.labour_hours}h</span></span>`);
   $("status").innerHTML = bits.join("");
   $("downloads").style.display = "flex";
   paint();
+}
+
+// Build the preview stage. Prefers the interactive GLB via <model-viewer>, but
+// guarantees a visible result: if the component isn't loaded (CDN blocked/slow)
+// or the GLB fails to parse, it shows the server render PNG instead.
+function stageFallback(d) {
+  return d.render_png
+    ? `<img src="${d.render_png}" alt="rendered preview of the design" />`
+    : '<div class="ph">Preview needs build123d (3D) or matplotlib (render) installed on the server.</div>';
+}
+function mountModelViewer(d, sections) {
+  const stage = $("stage");
+  const bar = sections.length > 1 ? buildBarHtml(sections) : "";
+  stage.innerHTML =
+    `<model-viewer id="mv" camera-controls auto-rotate shadow-intensity="1"
+      exposure="1.1" src="${d.glb}"></model-viewer>${bar}`;
+  const mv = $("mv");
+  if (mv) mv.addEventListener("error", () => {
+    if (last !== d) return;                 // a newer build already replaced it
+    stage.innerHTML = stageFallback(d);     // never leave a blank canvas
+    addDimOverlay(d);
+  }, { once: true });
+  if (sections.length > 1) wireBuildBar(sections);
+}
+function showStage(d) {
+  const stage = $("stage");
+  const sections = d.model_sections || [];
+  const mvReady = window.customElements && customElements.get("model-viewer");
+  if (d.glb && mvReady) { mountModelViewer(d, sections); return; }
+  // No GLB, or the model-viewer script hasn't arrived yet — show the render now.
+  stage.innerHTML = stageFallback(d);
+  if (d.glb && window.customElements && customElements.whenDefined) {
+    Promise.race([
+      customElements.whenDefined("model-viewer"),
+      new Promise(r => setTimeout(r, 3000)),
+    ]).then(() => {
+      if (last === d && customElements.get("model-viewer")) {
+        mountModelViewer(d, sections); addDimOverlay(d);
+      }
+    });
+  }
 }
 
 // --- 3D build view: explode + step through the sub-assemblies ----------------
@@ -907,13 +1220,17 @@ async function download(fmt) {
   const r = await fetch("/api/export/" + fmt, {method:"POST",
     headers:{"Content-Type":"application/json"},
     body: JSON.stringify({spec: last.spec, units: unit()})});
-  if (!r.ok) { alert((await r.json().catch(()=>({detail:r.statusText}))).detail); return; }
+  if (!r.ok) {
+    const detail = (await r.json().catch(() => ({detail: r.statusText}))).detail;
+    toast(detail || "Export failed", "bad"); return;
+  }
   const blob = await r.blob();
   const cd = r.headers.get("Content-Disposition") || "";
   const m = cd.match(/filename="(.+?)"/);
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob); a.download = m ? m[1] : ("cabinet." + fmt);
   a.click(); URL.revokeObjectURL(a.href);
+  toast("Downloaded " + (m ? m[1] : fmt), "ok");
 }
 $("downloads").querySelectorAll("button[data-f]").forEach(b =>
   b.onclick = () => download(b.dataset.f));
@@ -1220,10 +1537,27 @@ function drillingPane(d) {
   return h;
 }
 function table(cols, rows) {
-  return "<table><thead><tr>" + cols.map(c=>`<th>${esc(c)}</th>`).join("") +
-    "</tr></thead><tbody>" +
-    rows.map(r=>"<tr>"+r.map(c=>`<td>${esc(c)}</td>`).join("")+"</tr>").join("") +
-    "</tbody></table>";
+  // Right-align + tabular-nums on numeric columns, and treat a leading "ID"
+  // column as the mono part-ID accent — so cut lists scan like a precision tool.
+  const isNum = v => {
+    if (typeof v === "number") return true;
+    const s = String(v).trim();
+    return s !== "" && /^[$£€]?[\d]/.test(s);
+  };
+  const idCol = cols.length > 0 && /^id$/i.test(String(cols[0]).trim());
+  const numCol = cols.map((_, i) => {
+    let num = 0, tot = 0;
+    for (const r of rows) { const v = r[i]; if (v === "" || v == null) continue;
+      tot++; if (isNum(v)) num++; }
+    return tot > 0 && num / tot >= 0.6;
+  });
+  const th = cols.map((c, i) =>
+    `<th${numCol[i] && !(idCol && i === 0) ? ' class="num"' : ''}>${esc(c)}</th>`).join("");
+  const body = rows.map(r => "<tr>" + r.map((c, i) => {
+    const cls = idCol && i === 0 ? "id" : (numCol[i] ? "num" : "");
+    return `<td${cls ? ` class="${cls}"` : ""}>${esc(c)}</td>`;
+  }).join("") + "</tr>").join("");
+  return `<table><thead><tr>${th}</tr></thead><tbody>${body}</tbody></table>`;
 }
 $("tabs").querySelectorAll("button").forEach(b => b.onclick = () => {
   tab = b.dataset.t;
