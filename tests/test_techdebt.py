@@ -218,6 +218,46 @@ def test_llm_client_is_injectable(monkeypatch):
     assert seen["model"] == "claude-haiku-4-5-20251001"
 
 
+def test_door_panel_dims_single_source():
+    # The 5-piece door cut list and the 3D model must derive from one helper so
+    # they can't silently drift: the model tiles the *visible* opening, the cut
+    # list saws that opening plus a groove tongue at each end.
+    from woodworking_ai.partmath import door_panel_dims
+    from woodworking_ai.constants import (
+        DOOR_STILE_WIDTH, DOOR_RAIL_WIDTH, DOOR_PANEL_GROOVE,
+    )
+
+    w, h = 597.0, 716.0
+    d = door_panel_dims(w, h)
+    # Visible opening = leaf minus the frame members.
+    assert d.opening_w == pytest.approx(w - 2 * DOOR_STILE_WIDTH)
+    assert d.opening_h == pytest.approx(h - 2 * DOOR_RAIL_WIDTH)
+    # Cut sizes = visible opening + a tongue each end. This *is* the 20mm the
+    # model and cut list legitimately differ by — now defined in exactly one place.
+    assert d.rail_length == pytest.approx(d.opening_w + 2 * DOOR_PANEL_GROOVE)
+    assert d.panel_w == pytest.approx(d.opening_w + 2 * DOOR_PANEL_GROOVE)
+    assert d.panel_h == pytest.approx(d.opening_h + 2 * DOOR_PANEL_GROOVE)
+
+
+def test_door_cutlist_and_geometry_agree_via_helper():
+    # End-to-end: for the same shaker door, the cut-list centre panel and the
+    # geometry centre panel differ by exactly the groove tongue (2*groove) — the
+    # model tiles the visible opening, the cut list saws the tongue too. This
+    # locks the two consumers to the shared door_panel_dims relationship.
+    from woodworking_ai.constants import DOOR_PANEL_GROOVE
+
+    spec = _spec(doors=2, door_style="shaker")
+    parts = {p.name: p for p in generate_cutlist(spec).parts}
+    panels = {p.label: p for p in panel_layout(spec)}
+
+    model_panel = next(p for lbl, p in panels.items() if lbl.startswith("Panel"))
+    cut_panel = parts["Door panel"]
+    # PanelBox.size is (X=width, thickness, Z=height); the cut Part is (length=Z,
+    # width=X).
+    assert cut_panel.width == pytest.approx(model_panel.size[0] + 2 * DOOR_PANEL_GROOVE)
+    assert cut_panel.length == pytest.approx(model_panel.size[2] + 2 * DOOR_PANEL_GROOVE)
+
+
 def test_legged_drawer_box_uses_shared_partmath_dims():
     # The legged-furniture drawer builder (nightstand/desk/workbench) must size
     # its box through partmath.drawer_box_dims — not a local clearance. This

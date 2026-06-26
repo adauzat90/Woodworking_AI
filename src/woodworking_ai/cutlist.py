@@ -21,11 +21,11 @@ from .dispatch import spec_kind, VOID, GROUP, TABLE, CABINET
 from . import furniture
 from .geometry import front_plan, component_tag
 # Construction constants now live in one neutral module shared with geometry.
-from .partmath import drawer_box_dims
+from .partmath import drawer_box_dims, door_panel_dims
 from .constants import (
     SHELF_SIDE_CLEARANCE, SHELF_SETBACK, STRETCHER_WIDTH,
     FRAME_WIDTH, FRAME_THICKNESS, DRAWER_BOX_DEPTH_GAP,
-    DOOR_STILE_WIDTH, DOOR_RAIL_WIDTH, DOOR_PANEL_GROOVE,
+    DOOR_STILE_WIDTH, DOOR_RAIL_WIDTH,
     GLUE_UP_BOARD_WIDTH,
 )
 from .hardware import (
@@ -479,16 +479,14 @@ def _add_door_parts(cl: "CutList", spec: CabinetSpec, doors, front_note: str) ->
         "Door stile", 2 * n, length=d0.height, width=DOOR_STILE_WIDTH,
         thickness=m.door, material=MAT_DOOR_FRONT, grain="length",
         notes=f"{style} door, vertical"))
-    rail_len = d0.width - 2 * DOOR_STILE_WIDTH + 2 * DOOR_PANEL_GROOVE
+    dims = door_panel_dims(d0.width, d0.height)
     cl.parts.append(Part(
-        "Door rail", 2 * n, length=max(rail_len, 50.0), width=DOOR_RAIL_WIDTH,
+        "Door rail", 2 * n, length=max(dims.rail_length, 50.0), width=DOOR_RAIL_WIDTH,
         thickness=m.door, material=MAT_DOOR_FRONT,
         notes="cope-and-stick into stiles"))
-    panel_h = d0.height - 2 * DOOR_RAIL_WIDTH + 2 * DOOR_PANEL_GROOVE
-    panel_w = d0.width - 2 * DOOR_STILE_WIDTH + 2 * DOOR_PANEL_GROOVE
     solid = style == "raised_panel"
     cl.parts.append(Part(
-        "Door panel", n, length=max(panel_h, 50.0), width=max(panel_w, 50.0),
+        "Door panel", n, length=max(dims.panel_h, 50.0), width=max(dims.panel_w, 50.0),
         thickness=m.door_panel, material=MAT_DOOR_PANEL, grain="length",
         notes="raised, solid" if solid else "flat panel, floats in groove"))
 

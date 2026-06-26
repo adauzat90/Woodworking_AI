@@ -28,7 +28,7 @@ from .constants import (
     FRAME_WIDTH, FRAME_THICKNESS, MULLION_WIDTH,
     DOOR_STILE_WIDTH, DOOR_RAIL_WIDTH, MIN_DRAWER_BOX_WIDTH_3D,
 )
-from .partmath import drawer_box_dims
+from .partmath import drawer_box_dims, door_panel_dims
 
 
 @dataclass
@@ -592,8 +592,11 @@ def _door_panels(it: "FrontItem", spec: CabinetSpec) -> list[PanelBox]:
     hinge_left = it.hand != "R"          # L door / single door hinge on the left
     sign = -1.0 if hinge_left else 1.0
     edge = w / 2 - stile / 2
-    inner_w = max(w - 2 * stile, 10.0)
-    inner_h = max(h - 2 * rail, 10.0)
+    # The model tiles the *visible* frame opening (parts touch, never overlap) —
+    # the same opening the cut list extends by the groove tongue. One source.
+    dims = door_panel_dims(w, h)
+    inner_w = max(dims.opening_w, 10.0)
+    inner_h = max(dims.opening_h, 10.0)
     # Centre panel recessed: thinner stock, set flush to the frame's back face.
     panel_y = it.y + t / 2 - pt / 2
 
