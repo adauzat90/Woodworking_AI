@@ -187,6 +187,8 @@ def drilling_schedule(spec) -> DrillingSchedule:
     sched.ops.extend(_pocket_ops(spec, panels, pid))
     if kind in (NIGHTSTAND, DESK):
         sched.ops.extend(_legged_slide_ops(spec, panels, pid))
+    if kind == DESK and getattr(spec, "grommet", False):
+        sched.ops.extend(_grommet_ops(spec, panels, pid))
     if kind == WORKBENCH:
         sched.ops.extend(_dog_hole_ops(spec))
     return sched
@@ -195,9 +197,10 @@ def drilling_schedule(spec) -> DrillingSchedule:
 def _legged_slide_ops(spec, panels, pid) -> list[DrillOp]:
     """Drawer-slide screw holes for an apron-hung (nightstand/desk) drawer.
 
-    Each drawer rides a ball-bearing slide pair screwed to the side aprons (and,
-    for a lower drawer, a runner level with it). The holes are mirrored on both
-    sides, so one op per drawer captures the boring without claiming zero."""
+    Each drawer rides a ball-bearing slide pair: a slide screws to the LEFT side
+    apron and a mirror slide to the RIGHT one, so the schedule lists both sides
+    (a machinist drilling only the holes shown must see the full set, not half).
+    """
     n = int(getattr(spec, "drawers", 0) or 0)
     if n <= 0:
         return []
@@ -209,12 +212,29 @@ def _legged_slide_ops(spec, panels, pid) -> list[DrillOp]:
     v = round(ah / 2, 1)
     ops: list[DrillOp] = []
     for di in range(1, n + 1):
-        holes = [Hole("slide screw", u, v, 4.0, 12.0) for u in us]
+        holes = [Hole(f"slide screw ({side})", u, v, 4.0, 12.0)
+                 for side in ("left", "right") for u in us]
         ops.append(DrillOp(
-            part="Apron side", operation=f"drawer {di} slide screws",
-            note="ball-bearing slide; mirror on both side aprons / runners",
+            part="Apron side (×2)", operation=f"drawer {di} slide screws",
+            note="3 screws on each side apron / runner (left + right)",
             part_id=pid("Apron side"), holes=holes))
     return ops
+
+
+def _grommet_ops(spec, panels, pid) -> list[DrillOp]:
+    """The cable-grommet bore through a desk top."""
+    dia = round(float(getattr(spec, "grommet_dia", 60.0)), 1)
+    depth = round(float(getattr(spec, "top_thickness", 25.0)), 1)
+    top = next((p for p in panels if p.label == "Top"), None)
+    if top is None:
+        return []
+    w, d, _ = top.size
+    u = round(w / 2, 1)                 # centred across the width
+    v = round(max(d - 100.0, d / 2), 1)  # ~100mm in from the rear edge
+    return [DrillOp(
+        part="Top", operation="cable grommet bore",
+        note=f"⌀{dia:.0f}mm through; fit the grommet ring after finishing",
+        part_id=pid("Top"), holes=[Hole("grommet", u, v, dia, depth)])]
 
 
 def _pocket_ops(spec, panels, pid) -> list[DrillOp]:

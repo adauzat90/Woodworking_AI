@@ -72,3 +72,11 @@ def test_built_envelope_matches_spec():
 def test_inside_project():
     proj = Project(name="Office", components=[Component(spec=_desk(), x=0)])
     assert validate(proj).ok and estimate(proj).total > 0
+
+
+def test_grommet_bore_in_drilling_schedule():
+    from woodworking_ai.drilling import drilling_schedule
+    g = drilling_schedule(_desk(grommet=True))
+    assert any("grommet" in o.operation.lower() for o in g.ops)
+    assert not any("grommet" in o.operation.lower()
+                   for o in drilling_schedule(_desk(grommet=False)).ops)

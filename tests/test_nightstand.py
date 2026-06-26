@@ -167,7 +167,10 @@ def test_drawer_slide_holes_in_drilling_schedule():
     from woodworking_ai.drilling import drilling_schedule
     sched = drilling_schedule(_ns(drawers=2, joinery="mortise_tenon"))
     slide_ops = [o for o in sched.ops if "slide" in o.operation.lower()]
-    assert len(slide_ops) == 2 and sched.total_holes > 0
+    # One op per drawer, listing BOTH side aprons (3 screws each = 6 holes), so a
+    # machinist following the schedule drills both sides, not half.
+    assert len(slide_ops) == 2
+    assert all(len(o.holes) == 6 for o in slide_ops)
     # No drawers -> no slide ops.
     assert not any("slide" in o.operation.lower()
                    for o in drilling_schedule(_ns(drawers=0)).ops)
