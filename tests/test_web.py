@@ -386,6 +386,17 @@ def test_build_rejects_cyclic_subassembly():
     assert r.status_code == 400          # bad spec, surfaced not 500'd
 
 
+def test_build_bundle_includes_nesting_matching_estimate():
+    d = client.post("/api/build", json={"spec": VALID_SPEC, "glb": False}).json()
+    assert "nesting" in d and d["nesting"]
+    total = sum(g["sheet_count"] for g in d["nesting"])
+    assert total == d["estimate"]["total_sheets"]
+    # Every group carries to-scale sheet dims and labelled placements.
+    g = d["nesting"][0]
+    assert g["sheet_length"] > 0 and g["sheet_width"] > 0
+    assert all(r["label"] for s in g["sheets"] for r in s)
+
+
 def test_build_bundle_lists_model_sections():
     d = client.post("/api/build", json={"spec": VALID_SPEC}).json()
     assert "model_sections" in d

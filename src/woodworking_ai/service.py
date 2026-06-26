@@ -348,6 +348,11 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
     ]
     result["cutlist_summary"] = cl.summary()
 
+    # Sheet-nesting placements for the visual cut diagram — the same pack the
+    # cost estimate counts sheets from, so the diagram and the quote agree.
+    from .nesting import nest_layout
+    result["nesting"] = nest_layout(spec, sheet=sheet, cutlist=cl)
+
     # Optional "cut from my stock" plan — only when the caller supplied owned
     # boards, so the bundle is unchanged for every existing caller.
     if boards:

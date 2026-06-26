@@ -341,6 +341,18 @@
                    overflow:hidden; }
   .ph-mini { font-size:11px; color:var(--muted); padding:6px; }
 
+  /* ---- sheet-nesting diagram ---- */
+  .nest-grp { margin:10px 0 16px; }
+  .nest-head { font-size:12.5px; margin-bottom:6px; }
+  .nest-head b { color:var(--wood); }
+  .nest-sheets { display:flex; flex-wrap:wrap; gap:14px; }
+  .nest-cell { display:flex; flex-direction:column; }
+  .nest-svg { display:block; border-radius:4px; background:var(--bg); }
+  .nest-board { fill:var(--surface); stroke:var(--line); stroke-width:1; }
+  .nest-part { fill:var(--accent-soft); stroke:var(--wood); stroke-width:1; }
+  .nest-part:hover { fill:var(--wood); fill-opacity:.45; }
+  .nest-label { fill:var(--text); font:600 9px var(--font-mono); pointer-events:none; }
+
   /* ---- toasts ---- */
   #toasts { position:fixed; right:18px; bottom:18px; z-index:50; display:flex;
             flex-direction:column; gap:8px; pointer-events:none; }
@@ -1600,6 +1612,49 @@ function lumberPane(d) {
       (lumberCost ? ` · <b>${esc(e.currency)}${lumberCost.toFixed(2)}</b>` : "") +
       ` total.</p>`;
   }
+  h += nestDiagram(d);
+  return h;
+}
+
+// Visual sheet-nesting diagram (G-trust): draw each bought sheet to scale with
+// every part packed on it and its ID, so the sheet count is something you can
+// see and check — the same pack the cost estimate counts from.
+function nestDiagram(d) {
+  const groups = (d.nesting || []).filter(g => g.sheet_count > 0);
+  if (!groups.length) return "";
+  const W = 320;                                  // diagram width (px) per sheet
+  let h = `<h4>Sheet nesting (how parts pack)</h4>`;
+  for (const g of groups) {
+    const scale = W / g.sheet_length;
+    const sh = g.sheet_width * scale;
+    const util = Math.round(g.utilization * 100);
+    h += `<div class="nest-grp"><div class="nest-head">` +
+      `<b>${esc(g.stock)}</b> ${fmtLen(g.thickness, true)} · ` +
+      `${g.sheet_count} sheet${g.sheet_count === 1 ? "" : "s"} · ${util}% used</div>`;
+    h += `<div class="nest-sheets">`;
+    g.sheets.forEach((parts, si) => {
+      let svg = `<svg class="nest-svg" width="${W}" height="${sh}" ` +
+        `viewBox="0 0 ${W} ${sh}" role="img" aria-label="Sheet ${si + 1} layout">`;
+      svg += `<rect x="0.5" y="0.5" width="${W - 1}" height="${sh - 1}" class="nest-board"/>`;
+      for (const p of parts) {
+        const x = p.x * scale, y = p.y * scale, w = p.w * scale, hh = p.h * scale;
+        const id = esc(String(p.label).split(" ")[0]);
+        svg += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" ` +
+          `width="${Math.max(0, w - 1).toFixed(1)}" height="${Math.max(0, hh - 1).toFixed(1)}" ` +
+          `class="nest-part"><title>${esc(p.label)} — ${fmtLen(p.w)}×${fmtLen(p.h)} ${unitLabel()}</title></rect>`;
+        if (w > 22 && hh > 12)
+          svg += `<text x="${(x + w / 2).toFixed(1)}" y="${(y + hh / 2 + 3).toFixed(1)}" ` +
+            `class="nest-label" text-anchor="middle">${id}</text>`;
+      }
+      svg += `</svg>`;
+      h += `<div class="nest-cell"><div class="muted" style="font-size:10px;margin-bottom:2px">` +
+        `Sheet ${si + 1}</div>${svg}</div>`;
+    });
+    h += `</div></div>`;
+  }
+  h += `<p class="muted" style="font-size:11px;margin-top:6px">To scale on ` +
+    `${fmtLen(groups[0].sheet_length)}×${fmtLen(groups[0].sheet_width)} ${unitLabel()} sheets. ` +
+    `Hover a part for its size; IDs match the cut list.</p>`;
   return h;
 }
 
