@@ -166,6 +166,21 @@ def test_material_label_tables_use_canonical_vocabulary():
     assert set(PriceBook().sheet_price) <= MATERIAL_LABELS
 
 
+def test_joinery_key_centralizes_normalization():
+    # The joinery-string decode lives in one helper now; call sites that key a
+    # lookup/message off it use joinery_key(spec) instead of re-spelling
+    # str(spec.joinery).strip().lower().
+    from woodworking_ai.dsl import joinery_key, Joinery
+
+    assert joinery_key(_spec(joinery=Joinery.DADO)) == "dado"
+    assert joinery_key(_spec(joinery="screw")) == "screw"
+    # Missing joinery falls back to the given default.
+    assert joinery_key(object(), "mortise_tenon") == "mortise_tenon"
+    # The value always matches the enum's own string value.
+    for j in Joinery:
+        assert joinery_key(_spec(joinery=j)) == j.value
+
+
 def test_tooling_failure_is_logged_not_silent(monkeypatch, caplog):
     # A failure building the tool requirements must degrade *observably* (a log
     # warning), not vanish into an empty checklist with no trace.

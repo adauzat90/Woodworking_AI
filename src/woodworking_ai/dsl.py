@@ -1808,6 +1808,18 @@ def _spec_from_dict(data: dict[str, Any], defs: "_Defs | None", stack: frozenset
     return CabinetSpec.from_dict(data)
 
 
+def joinery_key(spec, default: str = "") -> str:
+    """A spec's joinery as a normalized lowercase string.
+
+    The one place that decodes the :class:`Joinery` enum (or a raw string) for the
+    call sites that *key a lookup table or a message* off the joinery — so they
+    don't each re-spell ``str(spec.joinery).strip().lower()`` (where a stray
+    variation could quietly diverge). Returns *default* when the spec has no
+    joinery field.
+    """
+    return str(getattr(spec, "joinery", default)).strip().lower()
+
+
 def spec_from_dict(data: dict[str, Any]):
     """Pick the right furniture spec from a payload.
 

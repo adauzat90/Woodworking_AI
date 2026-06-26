@@ -15,7 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from .dsl import (CabinetSpec, TableSpec, ComponentGroup, BackStyle,
-                  Joinery)
+                  Joinery, joinery_key)
 from .dispatch import spec_kind, VOID, GROUP, TABLE, CABINET
 from . import furniture
 from .cutlist import generate_cutlist
@@ -199,7 +199,7 @@ def _cabinet_joinery(spec: CabinetSpec, cl) -> list[JoineryOp]:
 
 def _table_joinery(spec: TableSpec, cl) -> list[JoineryOp]:
     pid = cl.part_id_for_label
-    j = str(spec.joinery).lower()
+    j = joinery_key(spec)
     if j == "mortise_tenon":   # spec-derived geometry, not a fixed tool
         tool, w, d, note = ("mortiser / saw", round(spec.apron_thickness / 3, 1),
                             round(spec.leg * 0.6, 1), "haunched M&T into the leg")

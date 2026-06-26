@@ -16,7 +16,7 @@ import math
 from dataclasses import dataclass, field, replace
 
 from .dsl import (CabinetSpec, TableSpec, ComponentGroup, BackStyle,
-                  Construction, CabinetType)
+                  Construction, CabinetType, joinery_key)
 from .dispatch import spec_kind, VOID, GROUP, TABLE, CABINET
 from . import furniture
 from .geometry import front_plan, component_tag
@@ -499,7 +499,7 @@ def _add_assembly_hardware(cl: "CutList", spec: CabinetSpec) -> None:
     assembly screws. Counts are per-cabinet estimates a shop rounds up — the
     point is that the BOM is orderable, not that it is exact to the screw.
     """
-    j = str(spec.joinery).strip().lower()
+    j = joinery_key(spec)
     # Four carcass corners; tall/dressers add fixed shelves/dividers → more.
     base = 8 if spec.has_full_top else 6
     if j in ("screw",):

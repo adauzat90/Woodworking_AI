@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from .dsl import (
     TableSpec, ComponentGroup, CabinetType, Joinery, ApplianceVoid,
     CornerJoint, DovetailTails, SlideType, APPLIANCE_VOID_TOLERANCE,
+    joinery_key,
 )
 from .dispatch import spec_kind, VOID, GROUP, TABLE, CABINET
 from . import engineering, stock, proportion, furniture
@@ -160,7 +161,7 @@ def _validate_table(spec: TableSpec) -> ValidationResult:
                  "room to slide")
 
     # --- leg-to-apron joinery vs. racking (STRUCT-002) -------------------
-    joint = str(getattr(spec, "joinery", "mortise_tenon")).strip().lower()
+    joint = joinery_key(spec, "mortise_tenon")
     if joint in ("pocket", "butt", "screw"):
         warn("joinery",
              f"a {joint.replace('_', ' ')} leg-to-apron joint resists racking "
