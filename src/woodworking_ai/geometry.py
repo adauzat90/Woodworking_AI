@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from enum import Enum
 
 from .dsl import (
     CabinetSpec, TableSpec, ComponentGroup, Component, BackStyle,
@@ -29,6 +30,41 @@ from .constants import (
     DOOR_STILE_WIDTH, DOOR_RAIL_WIDTH, MIN_DRAWER_BOX_WIDTH_3D,
 )
 from .partmath import drawer_box_dims, door_panel_dims
+
+
+class PanelRole(Enum):
+    """What a placed panel *is*, for stages that act on panel identity.
+
+    Decoded once from the panel label convention (see :func:`classify_panel_role`)
+    so a consumer like the drilling schedule dispatches on a typed role instead of
+    re-deriving it from ``label.startswith("Side")`` string tests. ``SIDE_LEFT`` /
+    ``SIDE_RIGHT`` carry the hand the boring needs; everything unrecognised is
+    ``OTHER``.
+    """
+
+    SIDE_LEFT = "side_left"
+    SIDE_RIGHT = "side_right"
+    DOOR = "door"
+    DRAWER_FRONT = "drawer_front"
+    OTHER = "other"
+
+
+def classify_panel_role(label: str) -> PanelRole:
+    """Map a panel label to its :class:`PanelRole` — the one place the label
+    convention is decoded.
+
+    Mirrors exactly the matches the drilling schedule used to open-code: any
+    ``Side*`` panel is a side (right when the label ends in ``R``, else left); a
+    ``Door``/``Door L``/``Door R`` is a door; a ``Drawer front N`` is a drawer
+    front. Keep this in sync with the labels the layout functions emit.
+    """
+    if label.startswith("Side"):
+        return PanelRole.SIDE_RIGHT if label.endswith("R") else PanelRole.SIDE_LEFT
+    if label == "Door" or label.startswith("Door "):
+        return PanelRole.DOOR
+    if label.startswith("Drawer front"):
+        return PanelRole.DRAWER_FRONT
+    return PanelRole.OTHER
 
 
 @dataclass
@@ -51,6 +87,15 @@ class PanelBox:
     # for a countertop's sink/cooktop cut-out; the compiler subtracts a box (only
     # when build123d is present, so a CAD-free run is unaffected).
     openings: tuple = ()
+
+    @property
+    def role(self) -> "PanelRole":
+        """The panel's identity (side/door/drawer-front/other), typed.
+
+        Derived from the label convention in one place so drilling and any other
+        identity-driven stage dispatch on the enum, not on string prefixes.
+        """
+        return classify_panel_role(self.label)
 
     @property
     def is_front(self) -> bool:

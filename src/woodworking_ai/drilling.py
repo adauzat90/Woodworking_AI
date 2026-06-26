@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 
 from .dsl import ComponentGroup
 from .dispatch import spec_kind, VOID, GROUP
-from .geometry import panel_layout, component_tag, trailing_index
+from .geometry import panel_layout, component_tag, trailing_index, PanelRole
 from .cutlist import generate_cutlist
 from .hardware import hinge_count, select_slide, PLATE_SCREW_INSET
 from .constants import (
@@ -170,14 +170,16 @@ def drilling_schedule(spec) -> DrillingSchedule:
         slide_types = {i + 1: str(getattr(d, "slide_type", "side_mount"))
                        for i, d in enumerate(_drawers)}
 
-    sides = [p for p in panels if p.label.startswith("Side")]
-    side_by_hand = {("R" if s.label.endswith("R") else "L"): s for s in sides}
+    # Dispatch on the panel's typed role rather than re-deriving it from label
+    # prefixes (the convention is decoded once in geometry.classify_panel_role).
+    sides = [p for p in panels if p.role in (PanelRole.SIDE_LEFT, PanelRole.SIDE_RIGHT)]
+    side_by_hand = {("R" if p.role is PanelRole.SIDE_RIGHT else "L"): p
+                    for p in sides}
     drawer_fronts = sorted(
-        [p for p in panels if p.label.startswith("Drawer front")],
+        [p for p in panels if p.role is PanelRole.DRAWER_FRONT],
         key=lambda p: p.label,
     )
-    doors = [p for p in panels if p.label == "Door"
-             or p.label.startswith("Door ")]
+    doors = [p for p in panels if p.role is PanelRole.DOOR]
 
     sched.ops.extend(_shelf_pin_ops(spec, sides, pid))
     sched.ops.extend(_slide_ops(sides, drawer_fronts, brand, slide_types, pid))

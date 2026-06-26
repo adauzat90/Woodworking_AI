@@ -218,6 +218,26 @@ def test_llm_client_is_injectable(monkeypatch):
     assert seen["model"] == "claude-haiku-4-5-20251001"
 
 
+def test_panel_role_classifier_and_drilling_dispatch():
+    # The drilling schedule dispatches on PanelBox.role (a typed enum decoded once
+    # in geometry.classify_panel_role), not on label.startswith(...) string tests.
+    from woodworking_ai.geometry import classify_panel_role, PanelRole, panel_layout
+
+    assert classify_panel_role("Side L") is PanelRole.SIDE_LEFT
+    assert classify_panel_role("Side R") is PanelRole.SIDE_RIGHT
+    assert classify_panel_role("Door") is PanelRole.DOOR
+    assert classify_panel_role("Door L") is PanelRole.DOOR
+    assert classify_panel_role("Drawer front 2") is PanelRole.DRAWER_FRONT
+    assert classify_panel_role("Shelf 1") is PanelRole.OTHER
+
+    # A real cabinet tags its structural panels so drilling can find them.
+    spec = _spec(doors=2, shelves=1)
+    roles = {p.label: p.role for p in panel_layout(spec)}
+    assert roles["Side L"] is PanelRole.SIDE_LEFT
+    assert roles["Side R"] is PanelRole.SIDE_RIGHT
+    assert any(r is PanelRole.DOOR for r in roles.values())
+
+
 def test_taxonomy_is_single_sourced():
     # KNOWN_KINDS, the loader, and dispatch.spec_kind must all derive from the
     # one LEAF_SPEC_TYPES registry — adding a furniture type is one row, not
