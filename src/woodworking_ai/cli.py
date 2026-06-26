@@ -322,8 +322,19 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "build":
         import json as _json
-        data = _json.loads(Path(args.spec_file).read_text(encoding="utf-8"))
-        return _emit(spec_from_dict(data), args, tooling=tooling)
+        try:
+            text = Path(args.spec_file).read_text(encoding="utf-8")
+            spec = spec_from_dict(_json.loads(text))
+        except FileNotFoundError:
+            print(f"error: spec file not found: {args.spec_file}", file=sys.stderr)
+            return 2
+        except (ValueError, TypeError, AttributeError, KeyError) as exc:
+            # Malformed JSON or an invalid spec: report it cleanly instead of
+            # dumping a traceback (the web layer returns HTTP 400 for the same).
+            print(f"error: could not parse spec '{args.spec_file}': {exc}",
+                  file=sys.stderr)
+            return 2
+        return _emit(spec, args, tooling=tooling)
 
     return 2
 

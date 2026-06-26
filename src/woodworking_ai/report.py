@@ -49,7 +49,7 @@ def _parts_diagram(parts, avail_w, unit):
     scale = min(96.0 / max_dim, 0.12)
     label_h, gap = 18.0, 12.0
     placed, x, y, row_h = [], 0.0, 0.0, 0.0
-    for p, (lng, wid) in zip(parts, faces):
+    for p, (lng, wid) in zip(parts, faces, strict=False):
         pw, ph = max(lng * scale, 8.0), max(wid * scale, 8.0)
         cell_w = max(pw, 46.0)
         if x + cell_w > avail_w and x > 0:

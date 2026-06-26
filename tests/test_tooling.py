@@ -6,7 +6,7 @@ the designer prompt constraint, ShopProfile round-trip, and the service bundle's
 tool checklist.
 """
 
-from woodworking_ai.dsl import CabinetSpec, TableSpec, Drawer, Joinery
+from woodworking_ai.dsl import TableSpec, Drawer, Joinery
 from woodworking_ai.tooling import (
     ShopTooling, HAND_TOOL_SHOP, HOBBYIST_SHOP, can_make, substitute,
     required_operations, tooling_advisories, tools_needed, designer_constraint,
@@ -14,12 +14,7 @@ from woodworking_ai.tooling import (
 from woodworking_ai.validator import validate
 from woodworking_ai.profile import ShopProfile, profile_from_dict, profile_to_dict
 from woodworking_ai.service import build_result
-
-
-def _cab(**kw):
-    base = dict(width=600, height=720, depth=560, doors=2, shelves=1)
-    base.update(kw)
-    return CabinetSpec(**base)
+from factories import cab as _cab
 
 
 # --- capability model ------------------------------------------------------

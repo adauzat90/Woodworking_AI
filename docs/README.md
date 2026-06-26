@@ -1,18 +1,36 @@
-# Woodworking AI — Design & Validation Knowledge Base
+# Woodworking AI — Documentation
 
-This directory holds the domain research that underpins the Woodworking AI
-**compiler / validator**. The compiler takes a furniture design (parametric
-model, parts list, joinery graph) and checks it against a body of rules drawn
-from ergonomics, structural engineering, material science, manufacturing
-standards, and safety regulations — the same way a programming-language
-compiler checks a program against type rules and semantics.
+This directory holds the project's living documentation and a domain
+knowledge base. The completed/historical planning and audit docs live under
+[`archive/`](./archive/) — kept for rationale, but not maintained.
 
-## Documents
+## Living docs
+
+| File | Purpose |
+|------|---------|
+| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | The system design: agent-writes-language + execute-verify-repair, the pipeline stages, prior art, and the engine rationale. |
+| [`ROADMAP.md`](./ROADMAP.md) | What has shipped and what's next. Folds in the old `IMPLEMENTATION_PLAN` / `HOBBYIST_*` / `DSL_*` plans. |
+| [`TECH_DEBT.md`](./TECH_DEBT.md) | The current outstanding code-quality debt, graded with `file:line` evidence. Supersedes the three archived audits. |
+
+## Domain knowledge base
+
+The research that underpins the **compiler / validator**: it checks a furniture
+design (parametric model, parts list, joinery graph) against rules drawn from
+ergonomics, structural engineering, material science, and manufacturing/safety
+standards — the way a programming-language compiler checks a program.
 
 | File | Purpose |
 |------|---------|
 | [`design-principles.md`](./design-principles.md) | How furniture, cabinets, and casework are *properly* designed: standard dimensions, ergonomics, proportion, joinery selection, material behavior. The "why" behind the rules. |
 | [`validation-rules.md`](./validation-rules.md) | The concrete catalog of checks the compiler should run, organized by category, each with a severity, a trigger condition, and a rationale. The "what to enforce." |
+
+## Archive
+
+[`archive/`](./archive/) holds completed plans and superseded audits:
+`IMPLEMENTATION_PLAN.md`, `HOBBYIST_ROADMAP.md`, `HOBBYIST_PLAN_V2.md`,
+`DSL_REVIEW.md`, `DSL_AGENT_AUTHORING_REVIEW.md`, `DSL_IMPLEMENTATION_PLAN.md`,
+`TECH_DEBT_AUDIT.md`, `TECH_DEBT_AUDIT_INTEGRATION.md`,
+`TECH_DEBT_CLEANUP_PLAN.md`, and `TESTING_CHECKLIST.md`.
 
 ## Mental model: the design as a compilable artifact
 

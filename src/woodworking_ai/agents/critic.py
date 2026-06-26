@@ -44,6 +44,13 @@ from . import llm
 # overlaps beyond this count as interference.
 TOUCH_EPS = 0.01
 DIM_TOL = 0.5
+# A router bit "matches" a housing width when within this tolerance (mm).
+ROUTER_BIT_MATCH_TOL = 0.6
+# Face-frame overhang past the carcass side a side-mount slide can still reach
+# before it needs build-out blocks (mm).
+FRAME_SLIDE_LIP_MAX = 3.0
+# Warn when door/drawer fronts cover less than this fraction of the face (%).
+MIN_FRONT_COVERAGE_PCT = 60.0
 
 
 @dataclass
@@ -256,7 +263,7 @@ def _buildability_issues(spec: CabinetSpec, tools=DEFAULT_TOOLS
     if spec.joinery in (Joinery.DADO, Joinery.RABBET):
         w = m.carcass
         if (w > tools.dado_max or w < tools.dado_min) and \
-                not any(abs(w - b) < 0.6 for b in tools.router_bits):
+                not any(abs(w - b) < ROUTER_BIT_MATCH_TOL for b in tools.router_bits):
             warn("machinability",
                  f"a {w:.0f}mm housing is outside the dado stack "
                  f"({tools.dado_min:.0f}-{tools.dado_max:.0f}mm) and matches no "
@@ -282,7 +289,7 @@ def _buildability_issues(spec: CabinetSpec, tools=DEFAULT_TOOLS
              if not d.false_front and str(d.slide_type).lower() == "side_mount"]
     if spec.construction == Construction.FACE_FRAME and boxed:
         lip = FRAME_WIDTH - m.carcass    # frame overhang past the carcass side
-        if lip > 3.0:
+        if lip > FRAME_SLIDE_LIP_MAX:
             warn("clearance",
                  f"face-frame drawers: the frame overhangs the carcass side by "
                  f"{lip:.0f}mm, so side-mount slides won't reach the box — add "
@@ -480,7 +487,7 @@ def critique(spec, *, use_cad: bool = False, brep: bool = False,
             min_x = min(p.bounds()[0][0] for p in fronts)
             if max_x - min_x > spec.width + DIM_TOL:
                 err("coverage", "door/drawer fronts overhang the cabinet width")
-            if coverage < 60:
+            if coverage < MIN_FRONT_COVERAGE_PCT:
                 warn("coverage",
                      f"fronts cover only {coverage:.0f}% of the face — large gaps")
         else:

@@ -4,6 +4,10 @@ on:
   push:
     branches: ["**"]
   pull_request:
+  # Weekly + on-demand run of the heavy CAD suite (see the `cad` job).
+  schedule:
+    - cron: "0 6 * * 1"   # Mondays 06:00 UTC
+  workflow_dispatch:
 
 jobs:
   test:
@@ -22,15 +26,46 @@ jobs:
           cache: pip
 
       - name: Install (core + render + web + dev)
-        # build123d (OpenCascade) is intentionally omitted — it is heavy, and the
-        # tests that need it skip gracefully via pytest.importorskip. The
-        # pure-math, render, and web suites give the bulk of the coverage.
+        # build123d (OpenCascade) is intentionally omitted here — it is heavy, and
+        # the tests that need it skip gracefully via pytest.importorskip. The
+        # pure-math, render, and web suites give the bulk of the coverage; the
+        # `cad` job below exercises the geometry/export paths on a schedule.
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[render,web,dev]"
 
-      - name: Lint (ruff — Pyflakes rules)
+      - name: Lint (ruff — Pyflakes + bugbear)
         run: ruff check src tests
 
       - name: Run tests
         run: pytest -q
+
+  cad:
+    # The geometry compiler (builder.py) and the STEP/STL/GLB exporters only run
+    # when build123d is installed, so on the fast `test` job their tests skip
+    # silently. This job installs the heavy OpenCascade kernel so those paths are
+    # actually gated — weekly and on manual dispatch, to keep per-push CI fast.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install (everything, incl. build123d)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[cad,render,web,pdf,agent,dev]"
+
+      - name: Verify build123d is importable
+        # Guard against the CAD suite silently going dark: every geometry/export
+        # test skips via pytest.importorskip("build123d"), so if the heavy install
+        # were broken they'd all skip and CI would stay green. Fail loudly instead.
+        run: python -c "import build123d; print('build123d', build123d.__version__)"
+
+      - name: Run tests (build123d available — geometry/export not skipped)
+        run: pytest -q -rs

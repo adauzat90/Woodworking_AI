@@ -18,61 +18,41 @@ Pure data — no CAD dependency.
 
 from __future__ import annotations
 
-from .dsl import (
-    ApplianceVoid, ComponentGroup, TableSpec, WallShelfSpec, BoxSpec, BenchSpec,
-    FrameSpec, BedSpec, CuttingBoardSpec, NightstandSpec, DeskSpec, WorkbenchSpec,
-)
+from .dsl import ApplianceVoid, ComponentGroup, LEAF_SPEC_TYPES
 
-# Canonical pipeline kinds. ``GROUP`` covers Project and Assembly (and any
-# future ComponentGroup subclass); ``CABINET`` is the default leaf. Each leaf
-# kind has a registered implementation in :mod:`furniture`.
+# Canonical pipeline kinds. For every leaf type the category string *is* its
+# taxonomy kind (``TABLE == "table"``), so these are exported straight from the
+# one registry in :mod:`dsl` — they can't drift from what the loader accepts.
+# ``VOID`` (an ApplianceVoid placeholder) and ``GROUP`` (a Project/Assembly
+# ComponentGroup) are the two non-leaf categories; ``CABINET`` is the default.
 VOID = "void"
 GROUP = "group"
-TABLE = "table"
-WALL_SHELF = "wall_shelf"
-BOX = "box"
-BENCH = "bench"
-FRAME = "frame"
-BED = "bed"
-CUTTING_BOARD = "cutting_board"
-NIGHTSTAND = "nightstand"
-DESK = "desk"
-WORKBENCH = "workbench"
+
+# Bind each leaf kind as a module constant (TABLE, BOX, …) for callers that
+# import them by name, and build the type→kind map spec_kind dispatches on.
+_KIND_BY_CLASS: dict[type, str] = {}
+for _kind, _cls, _aliases in LEAF_SPEC_TYPES:
+    globals()[_kind.upper()] = _kind
+    _KIND_BY_CLASS[_cls] = _kind
+del _kind, _cls, _aliases
+
+# CABINET is the default leaf and must exist even though it is also a row above.
 CABINET = "cabinet"
 
 
 def spec_kind(spec) -> str:
     """The pipeline category of *spec*.
 
-    Order matters: an ``ApplianceVoid`` is a leaf placeholder, a
-    ``ComponentGroup`` aggregates components, then the leaf furniture types in
-    turn, and everything else is treated as a cabinet.
+    An ``ApplianceVoid`` is a leaf placeholder and a ``ComponentGroup``
+    aggregates components (both need an ``isinstance`` test — the latter has
+    subclasses); every other spec maps by its exact type through the one
+    taxonomy, defaulting to a cabinet.
     """
     if isinstance(spec, ApplianceVoid):
         return VOID
     if isinstance(spec, ComponentGroup):
         return GROUP
-    if isinstance(spec, TableSpec):
-        return TABLE
-    if isinstance(spec, WallShelfSpec):
-        return WALL_SHELF
-    if isinstance(spec, BoxSpec):
-        return BOX
-    if isinstance(spec, BenchSpec):
-        return BENCH
-    if isinstance(spec, FrameSpec):
-        return FRAME
-    if isinstance(spec, BedSpec):
-        return BED
-    if isinstance(spec, CuttingBoardSpec):
-        return CUTTING_BOARD
-    if isinstance(spec, NightstandSpec):
-        return NIGHTSTAND
-    if isinstance(spec, DeskSpec):
-        return DESK
-    if isinstance(spec, WorkbenchSpec):
-        return WORKBENCH
-    return CABINET
+    return _KIND_BY_CLASS.get(type(spec), CABINET)
 
 
 def is_group(spec) -> bool:

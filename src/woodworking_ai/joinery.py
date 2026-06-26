@@ -13,9 +13,10 @@ and a dado/groove is cut to the *mating* panel's thickness so it seats snug.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import Enum
 
 from .dsl import (CabinetSpec, TableSpec, ComponentGroup, BackStyle,
-                  Joinery)
+                  Joinery, joinery_key)
 from .dispatch import spec_kind, VOID, GROUP, TABLE, CABINET
 from . import furniture
 from .cutlist import generate_cutlist
@@ -23,6 +24,39 @@ from .geometry import component_tag
 from .constants import (
     DOOR_PANEL_GROOVE, HOUSED_DEPTH_FRACTION, GROOVE_BACK_INSET,
 )
+
+
+class JoineryEdge(Enum):
+    """Which edge/region of a panel a housed joint's ``reference`` points at.
+
+    The reference is free text ("near the rear edge", "from the bottom"); both the
+    B-Rep builder and the DXF nester need to know *which* edge it houses against
+    to place the cut. Decoding that lived as duplicated ``"rear" in ref`` /
+    ``"top" in ref`` substring ladders in :mod:`builder` and :mod:`dxf`; it now
+    lives once in :func:`classify_joinery_edge`, and they dispatch on this enum.
+    """
+
+    REAR = "rear"
+    TOP = "top"
+    BOTTOM = "bottom"
+    OTHER = "other"
+
+
+def classify_joinery_edge(reference: str) -> JoineryEdge:
+    """Decode a :attr:`JoineryOp.reference` to the panel edge it houses against.
+
+    The one place the reference-text convention is read. Order matters and
+    mirrors the original ladders: rear/back first, then top, then bottom, else an
+    unlocated housing (a drawer-bottom groove or a generic cut).
+    """
+    ref = (reference or "").lower()
+    if "rear" in ref or "back" in ref:
+        return JoineryEdge.REAR
+    if "top" in ref:
+        return JoineryEdge.TOP
+    if "bottom" in ref:
+        return JoineryEdge.BOTTOM
+    return JoineryEdge.OTHER
 
 
 @dataclass
@@ -199,7 +233,7 @@ def _cabinet_joinery(spec: CabinetSpec, cl) -> list[JoineryOp]:
 
 def _table_joinery(spec: TableSpec, cl) -> list[JoineryOp]:
     pid = cl.part_id_for_label
-    j = str(spec.joinery).lower()
+    j = joinery_key(spec)
     if j == "mortise_tenon":   # spec-derived geometry, not a fixed tool
         tool, w, d, note = ("mortiser / saw", round(spec.apron_thickness / 3, 1),
                             round(spec.leg * 0.6, 1), "haunched M&T into the leg")

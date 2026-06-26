@@ -1700,16 +1700,47 @@ def place_run(specs, *, start: tuple[float, float] = (0.0, 0.0),
     return out
 
 
+# --- the one furniture taxonomy --------------------------------------------
+# Every "what kind of thing is this spec" decision in the pipeline derives from
+# this single table, so adding a furniture type is one new row here (plus the
+# spec class and its ``furniture.register`` stages) — not edits to three
+# hand-synced ladders (the loader below, ``KNOWN_KINDS``, and
+# ``dispatch.spec_kind``).
+#
+# Each row is ``(canonical kind, leaf spec class, alias kinds)``. Leaf classes
+# are disjoint (no inheritance between them), so ``dispatch.spec_kind`` can map
+# ``type(spec) -> kind`` directly. ``CabinetSpec`` is the default leaf. The
+# aggregate/placeholder kinds (project / assembly / appliance_void) are not plain
+# leaves — they have their own ``from_dict`` signatures and dispatch — so they
+# live in ``_GROUP_KINDS`` and are handled explicitly by the loader.
+LEAF_SPEC_TYPES: tuple[tuple[str, type, tuple[str, ...]], ...] = (
+    ("table", TableSpec, ()),
+    ("wall_shelf", WallShelfSpec, ()),
+    ("box", BoxSpec, ("chest",)),
+    ("bench", BenchSpec, ("stool",)),
+    ("frame", FrameSpec, ()),
+    ("bed", BedSpec, ()),
+    ("cutting_board", CuttingBoardSpec, ("board",)),
+    ("nightstand", NightstandSpec, ()),
+    ("desk", DeskSpec, ()),
+    ("workbench", WorkbenchSpec, ()),
+    ("cabinet", CabinetSpec, ()),
+)
+
+_GROUP_KINDS = ("project", "assembly", "appliance_void")
+
+# kind-or-alias -> leaf class (the loader's dispatch table).
+_LEAF_BY_KIND: dict[str, type] = {
+    k: cls for kind, cls, aliases in LEAF_SPEC_TYPES for k in (kind, *aliases)
+}
+
 # Discriminators the loader recognizes. A spec *without* a ``kind`` still routes
 # by shape — every stored cabinet/table/project predates the field, so the
 # heuristic fallback keeps them loading. A spec that names an **unknown** kind is
 # rejected (rather than silently built as a cabinet) so a hallucinated type
-# surfaces as a repairable error in the designer loop.
-KNOWN_KINDS = frozenset({
-    "cabinet", "table", "wall_shelf", "box", "chest", "bench", "stool",
-    "frame", "bed", "cutting_board", "board", "nightstand", "desk",
-    "workbench", "project", "assembly", "appliance_void",
-})
+# surfaces as a repairable error in the designer loop. Derived from the table
+# above so it can never drift from what the loader actually accepts.
+KNOWN_KINDS = frozenset(set(_LEAF_BY_KIND) | set(_GROUP_KINDS))
 
 # Stamped onto every serialized spec (see ``to_dict``) so a future breaking
 # change has something to branch on. Accepted and ignored on input.
@@ -1760,38 +1791,33 @@ def _spec_from_dict(data: dict[str, Any], defs: "_Defs | None", stack: frozenset
         raise ValueError(
             f"unknown kind {kind!r}; expected one of "
             f"{', '.join(sorted(KNOWN_KINDS))}")
+    # Aggregates / placeholders have bespoke from_dict signatures and dispatch.
     if kind == "appliance_void":
         return ApplianceVoid.from_dict(data)
     if kind == "assembly":
         return Assembly.from_dict(data, parent_defs=defs, _stack=stack)
     if kind == "project" or "components" in data or "runs" in data:
         return Project.from_dict(data, parent_defs=defs, _stack=stack)
-    if kind == "wall_shelf":
-        return WallShelfSpec.from_dict(data)
-    if kind == "box" or kind == "chest":
-        return BoxSpec.from_dict(data)
-    if kind == "bench" or kind == "stool":
-        return BenchSpec.from_dict(data)
-    if kind == "frame":
-        return FrameSpec.from_dict(data)
-    if kind == "bed":
-        return BedSpec.from_dict(data)
-    if kind == "cutting_board" or kind == "board":
-        return CuttingBoardSpec.from_dict(data)
-    if kind == "nightstand":
-        return NightstandSpec.from_dict(data)
-    if kind == "desk":
-        return DeskSpec.from_dict(data)
-    if kind == "workbench":
-        return WorkbenchSpec.from_dict(data)
-    if kind == "table":
-        return TableSpec.from_dict(data)
-    if kind == "cabinet":
-        return CabinetSpec.from_dict(data)
+    # Every plain leaf type (and its aliases) routes through the one taxonomy.
+    leaf = _LEAF_BY_KIND.get(kind)
+    if leaf is not None:
+        return leaf.from_dict(data)
     # No explicit kind: infer a table from its tell-tale fields, else a cabinet.
     if "leg" in data or "top_thickness" in data:
         return TableSpec.from_dict(data)
     return CabinetSpec.from_dict(data)
+
+
+def joinery_key(spec, default: str = "") -> str:
+    """A spec's joinery as a normalized lowercase string.
+
+    The one place that decodes the :class:`Joinery` enum (or a raw string) for the
+    call sites that *key a lookup table or a message* off the joinery — so they
+    don't each re-spell ``str(spec.joinery).strip().lower()`` (where a stray
+    variation could quietly diverge). Returns *default* when the spec has no
+    joinery field.
+    """
+    return str(getattr(spec, "joinery", default)).strip().lower()
 
 
 def spec_from_dict(data: dict[str, Any]):

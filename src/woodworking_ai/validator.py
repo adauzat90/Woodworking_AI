@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from .dsl import (
     TableSpec, ComponentGroup, CabinetType, Joinery, ApplianceVoid,
     CornerJoint, DovetailTails, SlideType, APPLIANCE_VOID_TOLERANCE,
+    joinery_key,
 )
 from .dispatch import spec_kind, VOID, GROUP, TABLE, CABINET
 from . import engineering, stock, proportion, furniture
@@ -160,7 +161,7 @@ def _validate_table(spec: TableSpec) -> ValidationResult:
                  "room to slide")
 
     # --- leg-to-apron joinery vs. racking (STRUCT-002) -------------------
-    joint = str(getattr(spec, "joinery", "mortise_tenon")).strip().lower()
+    joint = joinery_key(spec, "mortise_tenon")
     if joint in ("pocket", "butt", "screw"):
         warn("joinery",
              f"a {joint.replace('_', ' ')} leg-to-apron joint resists racking "
@@ -277,8 +278,16 @@ def joinery_feasibility(spec) -> list[Issue]:
     min_end = round(END_DISTANCE_FACTOR * m.carcass, 1)
     try:
         sched = joinery_schedule(spec)
-    except Exception:
+    except Exception as exc:
+        # Never silently drop the check: a failed schedule must surface as
+        # "could not verify", not as an implicit all-clear (this is a safety
+        # check — short-grain blow-out — so a quiet skip reads as "safe").
         sched = None
+        issues.append(Issue(
+            "warning", "joinery",
+            "could not verify the housed-joint short-grain clearance — the "
+            f"joinery schedule failed to build ({type(exc).__name__}); review "
+            "the joinery manually"))
     if sched is not None:
         for op in sched.ops:
             if "groove for back" not in op.operation or op.depth <= 0:
@@ -316,8 +325,15 @@ def joinery_feasibility(spec) -> list[Issue]:
     if getattr(spec, "shelves", 0) > 0 and getattr(spec, "drawers", None):
         try:
             ds = drilling_schedule(spec)
-        except Exception:
+        except Exception as exc:
+            # As above: surface the gap rather than skipping the slide-vs-pin
+            # collision check silently.
             ds = None
+            issues.append(Issue(
+                "warning", "drawers",
+                "could not verify the drawer-slide vs shelf-pin clearance — the "
+                f"drilling schedule failed to build ({type(exc).__name__}); "
+                "review the slide and pin layout manually"))
         if ds is not None:
             pin_v: dict[str, list[float]] = {}
             slide_v: dict[str, list[tuple[float, str]]] = {}
@@ -365,6 +381,121 @@ def _validate_core(spec) -> ValidationResult:
     # Every leaf type validates through the furniture registry, which returns a
     # flat list of issues; a new type adds its checks by registering.
     return ValidationResult(furniture.get(kind).validate(spec))
+
+
+def _check_cabinet_drawers_and_hinges(spec) -> list[Issue]:
+    """Drawer slides + box joinery (HW-001/002, STRUCT-011/012) and hinge bores.
+
+    Extracted from :func:`_validate_cabinet` — the single largest check group.
+    Self-contained: it re-derives the material and the shared front layout.
+    """
+    issues: list[Issue] = []
+    m = spec.material
+
+    def err(fieldname: str, msg: str) -> None:
+        issues.append(Issue("error", fieldname, msg))
+
+    def warn(fieldname: str, msg: str) -> None:
+        issues.append(Issue("warning", fieldname, msg))
+
+    # Shared front layout (single source of truth for door/drawer sizing).
+    plan = front_plan(spec)
+
+    # --- drawer slides + box joinery (HW-001/002, STRUCT-011, GRAIN-001) -
+    boxed = [d for d in spec.drawers if not d.false_front]
+    if boxed:
+        opening_w = plan.opening_w
+        interior_depth = spec.interior_depth
+
+        # Corner joints — dedupe so N identical drawers don't spam N warnings.
+        for cj in {d.corner_joint for d in boxed}:
+            if cj == CornerJoint.BUTT:
+                warn("drawers",
+                     "drawer corners use a butt joint (end-grain glue, weak and "
+                     "pulls apart when opened); use dovetail, box, or a locking "
+                     "rabbet")
+            elif cj not in STRONG_DRAWER_JOINTS:
+                warn("drawers",
+                     f"drawer corner '{cj}' is weak for the pull-open load; "
+                     "prefer dovetail, box joint, or a locking rabbet")
+
+        # STRUCT-012: a front dovetail must have its tails on the drawer SIDES
+        # so the interlock resists the front being pulled off when opened.
+        for tails in {d.dovetail_tails for d in boxed
+                      if d.corner_joint == CornerJoint.DOVETAIL}:
+            if tails != DovetailTails.SIDES:
+                err("drawers",
+                    f"dovetail tails are on the '{tails}'; put the tails on the "
+                    "drawer sides (pins on the front) so the front can't pull "
+                    "off when the drawer is opened")
+
+        # Side-mount slide clearance (HW-001) + resulting box width.
+        for clr in {round(d.slide_clearance, 2) for d in boxed
+                    if d.slide_type == SlideType.SIDE_MOUNT}:
+            if not (10.0 <= clr <= 14.0):
+                warn("drawers",
+                     f"side-mount slides need ~{SIDE_MOUNT_CLEARANCE:.1f}mm "
+                     f"(½in) per side; got {clr:.1f}mm — drawer will bind or rattle")
+            box_w = opening_w - 2 * clr
+            if box_w <= 0:
+                err("drawers",
+                    "opening is too narrow for side-mount slides plus a box")
+            elif box_w < MIN_DRAWER_BOX_WIDTH:
+                warn("drawers",
+                     f"drawer box only {box_w:.0f}mm wide after slide clearance; "
+                     "barely usable")
+
+        # Slide length vs. cabinet depth (HW-002).
+        for sl in {round(d.slide_length, 1) for d in boxed if d.slide_length > 0}:
+            if sl > interior_depth:
+                err("drawers",
+                    f"drawer slide length {sl:.0f}mm exceeds the {interior_depth:.0f}mm "
+                    "interior depth; it won't fit")
+
+        # HW-003: depth that wastes a slide size. When the box is auto-sized to
+        # the longest standard slide that fits, a deep cabinet may leave enough
+        # room for the next 50mm size up — flag it so the depth isn't wasted.
+        if any(d.slide_length <= 0 for d in boxed):
+            usable = interior_depth - DRAWER_BOX_DEPTH_GAP
+            fit = longest_slide_for(usable)
+            if fit > 0 and usable - fit > SLIDE_DEPTH_WASTE_MM:
+                warn("depth",
+                     f"interior depth allows only a {fit:.0f}mm slide but leaves "
+                     f"~{usable - fit:.0f}mm unused; a slightly deeper cabinet "
+                     "would take the next standard slide size and a deeper box")
+
+    # --- concealed hinge bore vs. door (HW-005) --------------------------
+    has_door = spec.doors > 0 or spec.cabinet_type == CabinetType.CORNER_DIAGONAL
+    if has_door:
+        # A 35mm cup bores 12.5mm deep; the door must host it with backing.
+        # Blow-through (A3, depth axis): a cup that leaves less than the minimum
+        # backing punches through the door face — a hard error, not a warning.
+        backing = m.door - HINGE_CUP_DEPTH
+        if backing < HINGE_MIN_DOOR_BACKING:
+            err("material.door",
+                f"a {m.door:.0f}mm door leaves only {max(backing, 0.0):.1f}mm behind "
+                f"a {HINGE_CUP_DEPTH:.1f}mm hinge cup (need ≥{HINGE_MIN_DOOR_BACKING:.0f}"
+                "mm) — the 35mm cup blows through the face; use ≥16mm door stock or a "
+                "shallower hinge")
+        elif m.door < 16.0:
+            # Hosts the cup with the minimum backing, but thin stock telegraphs
+            # the cup and offers little screw purchase — buildable, worth a note.
+            warn("material.door",
+                 f"only {backing:.1f}mm of material behind a {HINGE_CUP_DEPTH:.1f}mm "
+                 "hinge cup; use ≥16mm door stock for a 35mm concealed hinge")
+
+    if spec.doors > 0 and not spec.is_corner and plan.doors:
+        door_w = min(d.width for d in plan.doors)  # narrowest leaf
+        if door_w < HINGE_MIN_DOOR_WIDTH:
+            err("doors",
+                f"each door is only {door_w:.0f}mm wide — too narrow for a 35mm "
+                f"hinge cup (needs ≥{HINGE_MIN_DOOR_WIDTH:.0f}mm); use one door, "
+                "drop the center mullion, or fit a compact hinge")
+        elif door_w < HINGE_MIN_DOOR_WIDTH + 10.0:
+            warn("doors",
+                 f"each door is {door_w:.0f}mm wide — tight for a 35mm hinge cup; "
+                 "consider a wider door or a compact hinge")
+    return issues
 
 
 def _validate_cabinet(spec) -> list[Issue]:
@@ -528,103 +659,7 @@ def _validate_cabinet(spec) -> list[Issue]:
              "a glued butt joint is weak in tension/shear for a carcass; use "
              "dado/rabbet/dowel/domino so panels are mechanically captured")
 
-    # Shared front layout (single source of truth for door/drawer sizing).
-    plan = front_plan(spec)
-
-    # --- drawer slides + box joinery (HW-001/002, STRUCT-011, GRAIN-001) -
-    boxed = [d for d in spec.drawers if not d.false_front]
-    if boxed:
-        opening_w = plan.opening_w
-        interior_depth = spec.interior_depth
-
-        # Corner joints — dedupe so N identical drawers don't spam N warnings.
-        for cj in {d.corner_joint for d in boxed}:
-            if cj == CornerJoint.BUTT:
-                warn("drawers",
-                     "drawer corners use a butt joint (end-grain glue, weak and "
-                     "pulls apart when opened); use dovetail, box, or a locking "
-                     "rabbet")
-            elif cj not in STRONG_DRAWER_JOINTS:
-                warn("drawers",
-                     f"drawer corner '{cj}' is weak for the pull-open load; "
-                     "prefer dovetail, box joint, or a locking rabbet")
-
-        # STRUCT-012: a front dovetail must have its tails on the drawer SIDES
-        # so the interlock resists the front being pulled off when opened.
-        for tails in {d.dovetail_tails for d in boxed
-                      if d.corner_joint == CornerJoint.DOVETAIL}:
-            if tails != DovetailTails.SIDES:
-                err("drawers",
-                    f"dovetail tails are on the '{tails}'; put the tails on the "
-                    "drawer sides (pins on the front) so the front can't pull "
-                    "off when the drawer is opened")
-
-        # Side-mount slide clearance (HW-001) + resulting box width.
-        for clr in {round(d.slide_clearance, 2) for d in boxed
-                    if d.slide_type == SlideType.SIDE_MOUNT}:
-            if not (10.0 <= clr <= 14.0):
-                warn("drawers",
-                     f"side-mount slides need ~{SIDE_MOUNT_CLEARANCE:.1f}mm "
-                     f"(½in) per side; got {clr:.1f}mm — drawer will bind or rattle")
-            box_w = opening_w - 2 * clr
-            if box_w <= 0:
-                err("drawers",
-                    "opening is too narrow for side-mount slides plus a box")
-            elif box_w < MIN_DRAWER_BOX_WIDTH:
-                warn("drawers",
-                     f"drawer box only {box_w:.0f}mm wide after slide clearance; "
-                     "barely usable")
-
-        # Slide length vs. cabinet depth (HW-002).
-        for sl in {round(d.slide_length, 1) for d in boxed if d.slide_length > 0}:
-            if sl > interior_depth:
-                err("drawers",
-                    f"drawer slide length {sl:.0f}mm exceeds the {interior_depth:.0f}mm "
-                    "interior depth; it won't fit")
-
-        # HW-003: depth that wastes a slide size. When the box is auto-sized to
-        # the longest standard slide that fits, a deep cabinet may leave enough
-        # room for the next 50mm size up — flag it so the depth isn't wasted.
-        if any(d.slide_length <= 0 for d in boxed):
-            usable = interior_depth - DRAWER_BOX_DEPTH_GAP
-            fit = longest_slide_for(usable)
-            if fit > 0 and usable - fit > SLIDE_DEPTH_WASTE_MM:
-                warn("depth",
-                     f"interior depth allows only a {fit:.0f}mm slide but leaves "
-                     f"~{usable - fit:.0f}mm unused; a slightly deeper cabinet "
-                     "would take the next standard slide size and a deeper box")
-
-    # --- concealed hinge bore vs. door (HW-005) --------------------------
-    has_door = spec.doors > 0 or spec.cabinet_type == CabinetType.CORNER_DIAGONAL
-    if has_door:
-        # A 35mm cup bores 12.5mm deep; the door must host it with backing.
-        # Blow-through (A3, depth axis): a cup that leaves less than the minimum
-        # backing punches through the door face — a hard error, not a warning.
-        backing = m.door - HINGE_CUP_DEPTH
-        if backing < HINGE_MIN_DOOR_BACKING:
-            err("material.door",
-                f"a {m.door:.0f}mm door leaves only {max(backing, 0.0):.1f}mm behind "
-                f"a {HINGE_CUP_DEPTH:.1f}mm hinge cup (need ≥{HINGE_MIN_DOOR_BACKING:.0f}"
-                "mm) — the 35mm cup blows through the face; use ≥16mm door stock or a "
-                "shallower hinge")
-        elif m.door < 16.0:
-            # Hosts the cup with the minimum backing, but thin stock telegraphs
-            # the cup and offers little screw purchase — buildable, worth a note.
-            warn("material.door",
-                 f"only {backing:.1f}mm of material behind a {HINGE_CUP_DEPTH:.1f}mm "
-                 "hinge cup; use ≥16mm door stock for a 35mm concealed hinge")
-
-    if spec.doors > 0 and not spec.is_corner and plan.doors:
-        door_w = min(d.width for d in plan.doors)  # narrowest leaf
-        if door_w < HINGE_MIN_DOOR_WIDTH:
-            err("doors",
-                f"each door is only {door_w:.0f}mm wide — too narrow for a 35mm "
-                f"hinge cup (needs ≥{HINGE_MIN_DOOR_WIDTH:.0f}mm); use one door, "
-                "drop the center mullion, or fit a compact hinge")
-        elif door_w < HINGE_MIN_DOOR_WIDTH + 10.0:
-            warn("doors",
-                 f"each door is {door_w:.0f}mm wide — tight for a 35mm hinge cup; "
-                 "consider a wider door or a compact hinge")
+    issues += _check_cabinet_drawers_and_hinges(spec)
 
     # --- buildable from real stock (MAT-001/002) -------------------------
     box_h = spec.box_height

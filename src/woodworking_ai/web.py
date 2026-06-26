@@ -264,7 +264,7 @@ def _parse_spec(body: _SpecBody) -> CabinetSpec | TableSpec | ComponentGroup:
         # Log the detail server-side; the parse error is built from
         # user-influenced spec data, so do not echo it back to the client.
         logger.exception("spec parse failed")
-        raise HTTPException(status_code=400, detail="invalid spec")
+        raise HTTPException(status_code=400, detail="invalid spec") from None
 
 
 @app.post("/api/build")
@@ -279,7 +279,7 @@ def api_build(body: BuildRequest) -> JSONResponse:
             boards=body.boards or None))
     except Exception:  # defensive: never 500 with a stack trace
         logger.exception("build failed")
-        raise HTTPException(status_code=500, detail="build failed")
+        raise HTTPException(status_code=500, detail="build failed") from None
 
 
 @app.post("/api/design")
@@ -300,7 +300,7 @@ def api_design(body: DesignRequest) -> JSONResponse:
                                  tooling=tooling)
     except Exception:  # surface a generic agent error to the UI
         logger.exception("designer failed")
-        raise HTTPException(status_code=502, detail="designer failed")
+        raise HTTPException(status_code=502, detail="designer failed") from None
     prices, sheet = _pricing_overrides(body)
     bundle = build_result(res.spec, want_glb=body.glb, prices=prices, sheet=sheet,
                           tooling=tooling, combine_sheet_stock=_combine_stock(body),
@@ -326,10 +326,10 @@ def api_model(body: ModelRequest) -> Response:
     try:
         data = model_glb_bytes(spec, factor=body.factor, include=include)
     except RuntimeError as exc:   # build123d missing
-        raise HTTPException(status_code=503, detail=str(exc))
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception:
         logger.exception("model build failed")
-        raise HTTPException(status_code=500, detail="model build failed")
+        raise HTTPException(status_code=500, detail="model build failed") from None
     return Response(content=data, media_type="model/gltf-binary")
 
 
@@ -351,7 +351,7 @@ def api_diff(body: DiffRequest) -> dict[str, Any]:
         spec_b = spec_from_dict(body.to or {})
     except (TypeError, ValueError, AttributeError):
         logger.exception("diff spec parse failed")
-        raise HTTPException(status_code=400, detail="invalid spec")
+        raise HTTPException(status_code=400, detail="invalid spec") from None
     changes = spec_diff(spec_a.to_dict(), spec_b.to_dict())
     prices, sheet = _pricing_overrides(body)
     try:
@@ -386,12 +386,12 @@ def api_export(fmt: str, body: ExportRequest) -> Response:
     try:
         data, mime, filename = export_bytes(spec, fmt, units=body.units)
     except ValueError as exc:
-        raise HTTPException(status_code=415, detail=str(exc))
+        raise HTTPException(status_code=415, detail=str(exc)) from exc
     except RuntimeError as exc:  # e.g. build123d missing for STEP/STL/GLB
-        raise HTTPException(status_code=503, detail=str(exc))
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception:  # never leak a stack trace to the client
         logger.exception("export failed (fmt=%s)", fmt)
-        raise HTTPException(status_code=500, detail="export failed")
+        raise HTTPException(status_code=500, detail="export failed") from None
     return Response(content=data, media_type=mime, headers={
         "Content-Disposition": f'attachment; filename="{filename}"'})
 

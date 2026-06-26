@@ -56,13 +56,15 @@ class PriceBook:
         "top": 9.0, "leg": 7.0, "apron": 6.0, "frame": 6.5,
     })
     board_foot_price_default: float = 7.0
-    # Per-species board-foot price for solid lumber (overrides the label price
-    # when a species is declared). Common cabinet/furniture woods.
-    species_board_foot_price: dict[str, float] = field(default_factory=lambda: {
-        "pine": 4.0, "poplar": 4.5, "birch": 6.0, "beech": 7.0, "ash": 8.0,
-        "maple": 8.0, "red_oak": 8.5, "oak": 9.0, "hickory": 9.0,
-        "white_oak": 11.0, "cherry": 12.0, "mahogany": 14.0, "walnut": 18.0,
-    })
+    # Per-species board-foot OVERRIDE for solid lumber. The base $/bd-ft now comes
+    # from the wood-species database (``species.price_per_bdft``) — the single
+    # source — so this table only carries deliberate shop overrides, not a second
+    # copy of every wood's price that could silently drift. ``oak`` is kept because
+    # the species DB resolves bare "oak" to *red* oak ($8.5) while the shop prices
+    # generic oak at $9.0; making that the one explicit exception stops the two
+    # from disagreeing by accident.
+    species_board_foot_price: dict[str, float] = field(
+        default_factory=lambda: {"oak": 9.0})
     # Species cost multiplier applied to sheet goods (veneer premium) and to any
     # solid stock priced off a label rather than the per-species table above.
     species_multiplier: dict[str, float] = field(default_factory=lambda: {
@@ -257,7 +259,7 @@ def _edge_banding_metres(spec: CabinetSpec) -> float:
     return (2 * spec.box_height + spec.interior_width) / 1000.0
 
 
-def _pack_sheet_groups(parts, prices: PriceBook, sheet: SheetSize,
+def pack_sheet_groups(parts, prices: PriceBook, sheet: SheetSize,
                        combine_sheet_stock: bool) -> tuple[list[SheetGroup], float]:
     """Pack sheet-good *parts* onto sheets; return (groups, material_cost).
 
@@ -358,7 +360,7 @@ def _estimate_project(project: ComponentGroup, prices: PriceBook,
     # (and re-price it) instead of the per-component sum — so the quote matches
     # the run-wide nesting diagram and captures the cross-cabinet savings.
     if combine_sheet_stock:
-        sheet_groups, material_cost = _pack_sheet_groups(
+        sheet_groups, material_cost = pack_sheet_groups(
             generate_cutlist(project).parts, prices, sheet, True)
     else:
         sheet_groups = sorted(groups.values(),
@@ -405,10 +407,10 @@ def estimate(spec, *, cutlist: CutList | None = None,
                                  combine_sheet_stock=combine_sheet_stock)
     cl = cutlist or generate_cutlist(spec)
 
-    # Pack the sheet goods (see :func:`_pack_sheet_groups`): each buyable product
+    # Pack the sheet goods (see :func:`pack_sheet_groups`): each buyable product
     # on its own sheets by default, or all same-thickness parts nested together
     # when ``combine_sheet_stock`` is set.
-    sheet_groups, material_cost = _pack_sheet_groups(
+    sheet_groups, material_cost = pack_sheet_groups(
         cl.parts, prices, sheet, combine_sheet_stock)
 
     # Solid lumber, priced by the board foot (with a milling-waste allowance).

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from enum import Enum
 
 from .dsl import (
     CabinetSpec, TableSpec, ComponentGroup, Component, BackStyle,
@@ -28,7 +29,42 @@ from .constants import (
     FRAME_WIDTH, FRAME_THICKNESS, MULLION_WIDTH,
     DOOR_STILE_WIDTH, DOOR_RAIL_WIDTH, MIN_DRAWER_BOX_WIDTH_3D,
 )
-from .partmath import drawer_box_dims
+from .partmath import drawer_box_dims, door_panel_dims
+
+
+class PanelRole(Enum):
+    """What a placed panel *is*, for stages that act on panel identity.
+
+    Decoded once from the panel label convention (see :func:`classify_panel_role`)
+    so a consumer like the drilling schedule dispatches on a typed role instead of
+    re-deriving it from ``label.startswith("Side")`` string tests. ``SIDE_LEFT`` /
+    ``SIDE_RIGHT`` carry the hand the boring needs; everything unrecognised is
+    ``OTHER``.
+    """
+
+    SIDE_LEFT = "side_left"
+    SIDE_RIGHT = "side_right"
+    DOOR = "door"
+    DRAWER_FRONT = "drawer_front"
+    OTHER = "other"
+
+
+def classify_panel_role(label: str) -> PanelRole:
+    """Map a panel label to its :class:`PanelRole` — the one place the label
+    convention is decoded.
+
+    Mirrors exactly the matches the drilling schedule used to open-code: any
+    ``Side*`` panel is a side (right when the label ends in ``R``, else left); a
+    ``Door``/``Door L``/``Door R`` is a door; a ``Drawer front N`` is a drawer
+    front. Keep this in sync with the labels the layout functions emit.
+    """
+    if label.startswith("Side"):
+        return PanelRole.SIDE_RIGHT if label.endswith("R") else PanelRole.SIDE_LEFT
+    if label == "Door" or label.startswith("Door "):
+        return PanelRole.DOOR
+    if label.startswith("Drawer front"):
+        return PanelRole.DRAWER_FRONT
+    return PanelRole.OTHER
 
 
 @dataclass
@@ -51,6 +87,15 @@ class PanelBox:
     # for a countertop's sink/cooktop cut-out; the compiler subtracts a box (only
     # when build123d is present, so a CAD-free run is unaffected).
     openings: tuple = ()
+
+    @property
+    def role(self) -> "PanelRole":
+        """The panel's identity (side/door/drawer-front/other), typed.
+
+        Derived from the label convention in one place so drilling and any other
+        identity-driven stage dispatch on the enum, not on string prefixes.
+        """
+        return classify_panel_role(self.label)
 
     @property
     def is_front(self) -> bool:
@@ -592,8 +637,11 @@ def _door_panels(it: "FrontItem", spec: CabinetSpec) -> list[PanelBox]:
     hinge_left = it.hand != "R"          # L door / single door hinge on the left
     sign = -1.0 if hinge_left else 1.0
     edge = w / 2 - stile / 2
-    inner_w = max(w - 2 * stile, 10.0)
-    inner_h = max(h - 2 * rail, 10.0)
+    # The model tiles the *visible* frame opening (parts touch, never overlap) —
+    # the same opening the cut list extends by the groove tongue. One source.
+    dims = door_panel_dims(w, h)
+    inner_w = max(dims.opening_w, 10.0)
+    inner_h = max(dims.opening_h, 10.0)
     # Centre panel recessed: thinner stock, set flush to the frame's back face.
     panel_y = it.y + t / 2 - pt / 2
 

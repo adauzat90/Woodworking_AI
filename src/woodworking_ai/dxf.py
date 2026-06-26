@@ -21,7 +21,7 @@ from .drilling import (
     placement_rotated, place_rect, drilling_schedule, holes_by_part_id,
     ops_for_instance, place_holes,
 )
-from .joinery import joinery_schedule
+from .joinery import joinery_schedule, classify_joinery_edge, JoineryEdge
 from .estimator import SheetSize
 from .packing import pack as _pack_positions  # shared shelf nester
 
@@ -200,16 +200,16 @@ def _housing_band(op, length: float, width: float):
       * otherwise → a cross-panel band at the panel's mid-length
     The band thickness is the op's cut ``width``; its length spans the panel.
     """
-    ref = (op.reference or "").lower()
+    edge = classify_joinery_edge(op.reference)
     w = max(op.width, 1.0)              # drawn band thickness = cut width
-    if "rear" in ref or "back" in ref:
+    if edge is JoineryEdge.REAR:
         # Lengthwise groove just in from the back edge (u = width side).
         u0 = max(width - _EDGE_INSET - w, 0.0)
         return (u0, 0.0, w, length)
-    if "top" in ref:
+    if edge is JoineryEdge.TOP:
         v0 = max(length - _EDGE_INSET - w, 0.0)
         return (0.0, v0, width, w)
-    if "bottom" in ref:
+    if edge is JoineryEdge.BOTTOM:
         return (0.0, _EDGE_INSET, width, w)
     # Unlocated housing (drawer-bottom groove, generic): centre it lengthwise.
     return (0.0, max(length / 2 - w / 2, 0.0), width, w)

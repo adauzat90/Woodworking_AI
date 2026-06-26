@@ -166,6 +166,74 @@ def test_material_label_tables_use_canonical_vocabulary():
     assert set(PriceBook().sheet_price) <= MATERIAL_LABELS
 
 
+def test_joinery_edge_classifier_single_source():
+    # The builder (B-Rep) and the DXF nester both decode a housed joint's edge
+    # from one classifier instead of re-testing "rear"/"top"/"bottom" substrings.
+    from woodworking_ai.joinery import classify_joinery_edge, JoineryEdge
+
+    assert classify_joinery_edge("near the rear edge") is JoineryEdge.REAR
+    assert classify_joinery_edge("back groove") is JoineryEdge.REAR
+    assert classify_joinery_edge("from the top") is JoineryEdge.TOP
+    assert classify_joinery_edge("housed at the bottom") is JoineryEdge.BOTTOM
+    assert classify_joinery_edge("drawer-bottom groove, centred") is JoineryEdge.BOTTOM
+    assert classify_joinery_edge("") is JoineryEdge.OTHER
+    assert classify_joinery_edge("mid-length groove") is JoineryEdge.OTHER
+    # Order: rear wins over a stray "top" later in the text (mirrors the ladders).
+    assert classify_joinery_edge("rear, below the top rail") is JoineryEdge.REAR
+
+
+def test_joinery_key_centralizes_normalization():
+    # The joinery-string decode lives in one helper now; call sites that key a
+    # lookup/message off it use joinery_key(spec) instead of re-spelling
+    # str(spec.joinery).strip().lower().
+    from woodworking_ai.dsl import joinery_key, Joinery
+
+    assert joinery_key(_spec(joinery=Joinery.DADO)) == "dado"
+    assert joinery_key(_spec(joinery="screw")) == "screw"
+    # Missing joinery falls back to the given default.
+    assert joinery_key(object(), "mortise_tenon") == "mortise_tenon"
+    # The value always matches the enum's own string value.
+    for j in Joinery:
+        assert joinery_key(_spec(joinery=j)) == j.value
+
+
+def test_tooling_failure_is_logged_not_silent(monkeypatch, caplog):
+    # A failure building the tool requirements must degrade *observably* (a log
+    # warning), not vanish into an empty checklist with no trace.
+    import logging
+    import woodworking_ai.tooling as tooling
+
+    def boom(spec):
+        raise RuntimeError("kaboom")
+
+    monkeypatch.setattr(tooling, "required_operations", boom)
+    with caplog.at_level(logging.WARNING, logger="woodworking_ai.tooling"):
+        out = tooling.tools_needed(_spec(), tooling.HOBBYIST_SHOP)
+    assert out == []                                   # still degrades
+    assert any("required_operations failed" in r.message for r in caplog.records)
+
+
+def test_board_foot_price_defers_to_species_db():
+    # The estimator no longer keeps a second copy of every wood's $/bd-ft: the
+    # base price comes from the species database, and species_board_foot_price
+    # holds only deliberate overrides. Guard that the two can't silently drift
+    # for the derived species, and that the one documented override (oak) stands.
+    from woodworking_ai import species
+    from woodworking_ai.estimator import PriceBook, _board_foot_price
+
+    pb = PriceBook()
+    overrides = set(pb.species_board_foot_price)
+    assert overrides == {"oak"}, "only oak should be an explicit override"
+    # Every priced wood that is NOT overridden bills at exactly the species-DB price.
+    for name in species.names():
+        price = species.price_per_bdft(name)
+        if price is None or name in overrides:
+            continue
+        assert _board_foot_price(pb, "frame", name) == price, name
+    # The override stands.
+    assert _board_foot_price(pb, "frame", "oak") == 9.0
+
+
 def test_appliance_facet_tables_key_off_one_vocabulary():
     # Void widths (dsl), rough-in + clearance guidance (appliances) are separate
     # *facets* keyed by the same ApplianceType vocabulary. Guard that none drifts
@@ -216,6 +284,120 @@ def test_llm_client_is_injectable(monkeypatch):
         llm.set_client(None)
     assert out == "hello"
     assert seen["model"] == "claude-haiku-4-5-20251001"
+
+
+def test_panel_role_classifier_and_drilling_dispatch():
+    # The drilling schedule dispatches on PanelBox.role (a typed enum decoded once
+    # in geometry.classify_panel_role), not on label.startswith(...) string tests.
+    from woodworking_ai.geometry import classify_panel_role, PanelRole, panel_layout
+
+    assert classify_panel_role("Side L") is PanelRole.SIDE_LEFT
+    assert classify_panel_role("Side R") is PanelRole.SIDE_RIGHT
+    assert classify_panel_role("Door") is PanelRole.DOOR
+    assert classify_panel_role("Door L") is PanelRole.DOOR
+    assert classify_panel_role("Drawer front 2") is PanelRole.DRAWER_FRONT
+    assert classify_panel_role("Shelf 1") is PanelRole.OTHER
+
+    # A real cabinet tags its structural panels so drilling can find them.
+    spec = _spec(doors=2, shelves=1)
+    roles = {p.label: p.role for p in panel_layout(spec)}
+    assert roles["Side L"] is PanelRole.SIDE_LEFT
+    assert roles["Side R"] is PanelRole.SIDE_RIGHT
+    assert any(r is PanelRole.DOOR for r in roles.values())
+
+
+def test_taxonomy_is_single_sourced():
+    # KNOWN_KINDS, the loader, and dispatch.spec_kind must all derive from the
+    # one LEAF_SPEC_TYPES registry — adding a furniture type is one row, not
+    # three hand-synced ladders.
+    from woodworking_ai.dsl import (
+        LEAF_SPEC_TYPES, KNOWN_KINDS, _GROUP_KINDS, spec_from_dict,
+    )
+    from woodworking_ai.dispatch import spec_kind
+
+    # 1) KNOWN_KINDS == every leaf kind + alias + the group/placeholder kinds.
+    leaf_kinds = {k for kind, _c, al in LEAF_SPEC_TYPES for k in (kind, *al)}
+    assert KNOWN_KINDS == leaf_kinds | set(_GROUP_KINDS)
+
+    # 2) The loader builds the registered class for each canonical kind, and
+    #    spec_kind round-trips that spec back to the same kind string.
+    minimal = dict(name="X", width=600, height=720, depth=560)
+    for kind, cls, _aliases in LEAF_SPEC_TYPES:
+        spec = spec_from_dict({**minimal, "kind": kind})
+        assert isinstance(spec, cls), f"{kind} loaded as {type(spec).__name__}"
+        assert spec_kind(spec) == kind, f"{kind} dispatches as {spec_kind(spec)}"
+
+
+def test_schema_hint_documents_every_taxonomy_kind():
+    # Belt-and-suspenders with the existing schema-hint test: every canonical
+    # leaf kind in the registry appears in the designer prompt.
+    from woodworking_ai.dsl import LEAF_SPEC_TYPES, DSL_SCHEMA_HINT
+    for kind, _cls, _aliases in LEAF_SPEC_TYPES:
+        assert f'"{kind}"' in DSL_SCHEMA_HINT, f"{kind} missing from schema hint"
+
+
+def test_door_panel_dims_single_source():
+    # The 5-piece door cut list and the 3D model must derive from one helper so
+    # they can't silently drift: the model tiles the *visible* opening, the cut
+    # list saws that opening plus a groove tongue at each end.
+    from woodworking_ai.partmath import door_panel_dims
+    from woodworking_ai.constants import (
+        DOOR_STILE_WIDTH, DOOR_RAIL_WIDTH, DOOR_PANEL_GROOVE,
+    )
+
+    w, h = 597.0, 716.0
+    d = door_panel_dims(w, h)
+    # Visible opening = leaf minus the frame members.
+    assert d.opening_w == pytest.approx(w - 2 * DOOR_STILE_WIDTH)
+    assert d.opening_h == pytest.approx(h - 2 * DOOR_RAIL_WIDTH)
+    # Cut sizes = visible opening + a tongue each end. This *is* the 20mm the
+    # model and cut list legitimately differ by — now defined in exactly one place.
+    assert d.rail_length == pytest.approx(d.opening_w + 2 * DOOR_PANEL_GROOVE)
+    assert d.panel_w == pytest.approx(d.opening_w + 2 * DOOR_PANEL_GROOVE)
+    assert d.panel_h == pytest.approx(d.opening_h + 2 * DOOR_PANEL_GROOVE)
+
+
+def test_door_cutlist_and_geometry_agree_via_helper():
+    # End-to-end: for the same shaker door, the cut-list centre panel and the
+    # geometry centre panel differ by exactly the groove tongue (2*groove) — the
+    # model tiles the visible opening, the cut list saws the tongue too. This
+    # locks the two consumers to the shared door_panel_dims relationship.
+    from woodworking_ai.constants import DOOR_PANEL_GROOVE
+
+    spec = _spec(doors=2, door_style="shaker")
+    parts = {p.name: p for p in generate_cutlist(spec).parts}
+    panels = {p.label: p for p in panel_layout(spec)}
+
+    model_panel = next(p for lbl, p in panels.items() if lbl.startswith("Panel"))
+    cut_panel = parts["Door panel"]
+    # PanelBox.size is (X=width, thickness, Z=height); the cut Part is (length=Z,
+    # width=X).
+    assert cut_panel.width == pytest.approx(model_panel.size[0] + 2 * DOOR_PANEL_GROOVE)
+    assert cut_panel.length == pytest.approx(model_panel.size[2] + 2 * DOOR_PANEL_GROOVE)
+
+
+def test_legged_drawer_box_uses_shared_partmath_dims():
+    # The legged-furniture drawer builder (nightstand/desk/workbench) must size
+    # its box through partmath.drawer_box_dims — not a local clearance. This
+    # guards against re-introducing the retired 13.0 side clearance / 25mm drop
+    # (the canonical values are SLIDE_SIDE_CLEARANCE=12.7, DRAWER_BOX_HEIGHT_DROP=40).
+    from woodworking_ai.cutlist import CutList
+    from woodworking_ai.furniture_types import _drawer_cut_parts
+    from woodworking_ai.partmath import drawer_box_dims
+    from woodworking_ai.constants import MIN_DRAWER_BOX_WIDTH_3D
+
+    opening_w, box_depth, front_h = 400.0, 300.0, 150.0
+    cl = CutList(spec_name="t")
+    _drawer_cut_parts(cl, 1, opening_w, box_depth, front_h)
+
+    box_w, box_h, _ = drawer_box_dims(
+        opening_w, front_h, box_depth, width_floor=MIN_DRAWER_BOX_WIDTH_3D)
+    parts = {p.name: p for p in cl.parts}
+    bt = 12.0
+    assert parts["Drawer end"].length == pytest.approx(max(box_w - 2 * bt, 40.0))
+    assert parts["Drawer side"].width == pytest.approx(box_h)
+    # And the old 13.0-clearance width must NOT be what we produce.
+    assert box_w != pytest.approx(max(opening_w - 2 * 13.0, 80.0))
 
 
 def test_generated_part_materials_are_canonical():

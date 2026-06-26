@@ -26,10 +26,14 @@ count; it is safe to call on a cabinet, a table, or a whole project/assembly.
 
 from __future__ import annotations
 
+import logging
+
 from .dispatch import spec_kind, VOID, GROUP, TABLE, CABINET
 from .tooling import (
     JOINT_WAYS, ShopTooling, Requirement, required_operations, _norm,
 )
+
+log = logging.getLogger(__name__)
 
 # ===========================================================================
 # Method model — which *kind* of tool makes a joint, and how slow each is.
@@ -177,10 +181,11 @@ def _part_count(spec) -> int:
         cl = generate_cutlist(spec)
         return sum(p.qty for p in cl.parts)
     except Exception:
+        log.warning("plan: cut list failed; counting 0 parts", exc_info=True)
         return 0
 
 
-def _glue_up_count(spec) -> int:
+def glue_up_count(spec) -> int:
     """How many glue-ups the build involves — a key difficulty driver.
 
     Counts the carcass case glue-up, each non-false drawer box, a solid-wood
@@ -191,7 +196,7 @@ def _glue_up_count(spec) -> int:
     if kind == VOID:
         return 0
     if kind == GROUP:
-        return sum(_glue_up_count(c.spec) for c in spec.components)
+        return sum(glue_up_count(c.spec) for c in spec.components)
     if kind == TABLE:
         return 1   # the leg/apron/top assembly
     # A cabinet (and, by fall-through, the other leaf furniture types).
@@ -256,7 +261,7 @@ def skill(spec) -> dict:
         score += 1
         drivers.append(f"{parts} parts")
 
-    glue_ups = _glue_up_count(spec)
+    glue_ups = glue_up_count(spec)
     if glue_ups >= 4:
         score += 2
         drivers.append(f"{glue_ups} glue-ups")
@@ -271,7 +276,7 @@ def skill(spec) -> dict:
 
     if str(getattr(spec, "finish", "none")).lower() != "none":
         score += 1
-        drivers.append(f"a {getattr(spec, 'finish')} finish to apply")
+        drivers.append(f"a {spec.finish} finish to apply")
 
     if score >= 4:
         level = "advanced"
@@ -288,6 +293,8 @@ def _safe_reqs(spec) -> list[Requirement]:
     try:
         return required_operations(spec)
     except Exception:
+        log.warning("plan: required_operations failed; no joinery requirements",
+                    exc_info=True)
         return []
 
 
@@ -385,7 +392,7 @@ def build_time(spec, tooling: ShopTooling | None = None) -> dict:
         phases["mill"] += parts * 0.02   # cut sheets to rough size
 
     # 3. Assembly / glue-ups.
-    glue_ups = _glue_up_count(spec)
+    glue_ups = glue_up_count(spec)
     phases["assembly"] += glue_ups * _ASSEMBLY_PER_GLUEUP
 
     # 4. Finishing (only when a finish is specified).

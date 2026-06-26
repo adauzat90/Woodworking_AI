@@ -118,7 +118,7 @@ def test_explode_moves_panels_but_keeps_count():
     ex = explode_panels(spec, 1.0)
     assert len(ex) == len(base)
     # At least the doors and countertop have moved from their assembled centre.
-    moved = sum(1 for a, b in zip(base, ex) if a.center != b.center)
+    moved = sum(1 for a, b in zip(base, ex, strict=True) if a.center != b.center)
     assert moved > 0
 
 
@@ -126,7 +126,7 @@ def test_explode_factor_zero_is_assembled():
     spec = _cab()
     base = panel_layout(spec)
     ex = explode_panels(spec, 0.0)
-    for a, b in zip(base, ex):
+    for a, b in zip(base, ex, strict=True):
         assert a.center == b.center
 
 

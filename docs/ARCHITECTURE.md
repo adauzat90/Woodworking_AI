@@ -241,8 +241,8 @@ needed only to render and export 3D geometry.
    whole run as one GLB/STEP/DXF. **L-/U-shaped runs** are supported: components
    are anchored by a front-left corner + wall angle (`place_run` lays a run
    along a wall), and overlaps use oriented 2D footprints (SAT), so the inner
-   corner where two perpendicular runs meet is verified. See `docs/DSL_REVIEW.md`
-   for the review that drove this.
+   corner where two perpendicular runs meet is verified. See
+   `docs/archive/DSL_REVIEW.md` for the review that drove this.
 9. ✅ **Sub-assemblies:** the run layer is now **recursive**. `Project` and the
    new `Assembly` share a `ComponentGroup` base, and a `Component.spec` may be a
    group, so a group nests inside a group and the whole pipeline (validate, cut

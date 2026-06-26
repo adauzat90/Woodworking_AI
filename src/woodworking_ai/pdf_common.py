@@ -71,10 +71,13 @@ def elevation_flowable(spec, unit, avail_w, *, show_ids: bool, colors: dict):
                 bx = ox + margin
                 by = margin
 
-                def sx(hh):
+                # Bind the per-view loop vars as defaults so these helpers can't
+                # capture a later iteration's values (they're called in-loop, so
+                # this is belt-and-suspenders, but it satisfies the closure check).
+                def sx(hh, bx=bx, hmin=hmin):
                     return bx + (hh - hmin) * scale
 
-                def sy(vv):
+                def sy(vv, by=by, vmin=vmin):
                     return by + (vv - vmin) * scale
 
                 c.setFont("Helvetica-Bold", 8)

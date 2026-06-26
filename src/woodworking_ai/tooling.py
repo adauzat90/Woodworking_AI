@@ -20,7 +20,10 @@ them in a profile.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, fields
+
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -354,6 +357,8 @@ def tooling_advisories(spec, tooling: ShopTooling | None
     try:
         reqs = required_operations(spec)
     except Exception:
+        log.warning("tooling advisories: required_operations failed; "
+                    "treating as no requirements", exc_info=True)
         return out
     for r in reqs:
         if can_make(r.joint, tooling):
@@ -432,6 +437,8 @@ def tools_needed(spec, tooling: ShopTooling | None = None) -> list[ToolNeed]:
     try:
         reqs = required_operations(spec)
     except Exception:
+        log.warning("tools-needed: required_operations failed; "
+                    "returning an empty checklist", exc_info=True)
         return needs
     for r in reqs:
         if r.joint in seen:

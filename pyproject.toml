@@ -24,9 +24,10 @@ web = ["fastapi>=0.110", "uvicorn>=0.27"]
 pdf = ["reportlab>=4"]
 dev = ["pytest>=7", "matplotlib>=3.6", "fastapi>=0.110", "httpx>=0.27",
        "reportlab>=4", "ruff>=0.6"]
-all = ["anthropic>=0.40", "build123d>=0.7", "matplotlib>=3.6",
-       "fastapi>=0.110", "uvicorn>=0.27", "reportlab>=4", "pytest>=7",
-       "httpx>=0.27"]
+# "all" is every other extra by reference, so it can't drift out of sync (it used
+# to omit ruff, so `pip install .[all]` couldn't lint, and `pytest-cov` was
+# missing for coverage runs).
+all = ["woodworking-ai[agent,cad,render,web,pdf,dev]", "pytest-cov>=4"]
 
 [project.scripts]
 woodai = "woodworking_ai.cli:main"
@@ -47,4 +48,9 @@ target-version = "py311"  # StrEnum (dsl.py) requires 3.11+
 src = ["src", "tests"]
 
 [tool.ruff.lint]
-select = ["F"]
+# Pyflakes ("F") for the real bugs (unused imports, undefined names), plus
+# flake8-bugbear ("B") for a bug-class the F rules miss: mutable defaults,
+# loop-variable closures, `except`/`raise` chaining, zip-length mismatches.
+# Pure style rules (E/W line length, import sorting, pyupgrade) are still left
+# out on purpose — they bikeshed without catching defects.
+select = ["F", "B"]

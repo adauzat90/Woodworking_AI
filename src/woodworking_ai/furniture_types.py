@@ -40,8 +40,11 @@ from .dsl import (
     WallShelfSpec, BoxSpec, BenchSpec, FrameSpec, BedSpec, CuttingBoardSpec,
     NightstandSpec, DeskSpec, WorkbenchSpec,
     ShelfFixing, FrameJoint, FrameHanger, FrameContents, BedConnector, GrainStyle,
+    joinery_key,
 )
 from .geometry import PanelBox
+from .partmath import drawer_box_dims
+from .constants import MIN_DRAWER_BOX_WIDTH_3D
 from .cutlist import CutList, Part, Hardware, assign_ids, resolve_part_stock
 from .materials import (
     MAT_TOP, MAT_LEG, MAT_APRON, MAT_SOLID, MAT_SOLID_PANEL,
@@ -554,7 +557,7 @@ def _bench_validate(spec: BenchSpec) -> list[Issue]:
         warn("height", "unusual seat height (benches ~400-460mm, stools ~600-760mm)")
 
     # Leg-to-apron joinery vs. racking — a seat takes a real load.
-    joint = str(spec.joinery).strip().lower()
+    joint = joinery_key(spec)
     if joint in ("pocket", "butt", "screw"):
         warn("joinery",
              f"a {joint.replace('_', ' ')} leg-to-apron joint racks under a "
@@ -569,7 +572,7 @@ def _bench_validate(spec: BenchSpec) -> list[Issue]:
 
 def _bench_joinery(spec: BenchSpec, cl) -> list[JoineryOp]:
     pid = cl.part_id_for_label
-    j = str(spec.joinery).strip().lower()
+    j = joinery_key(spec)
     if j == "mortise_tenon":
         tool, w, d, note = ("mortiser / saw", round(spec.apron_thickness / 3, 1),
                             round(spec.leg * 0.6, 1), "haunched M&T into the leg")
@@ -1421,11 +1424,16 @@ def _drawer_cut_parts(cl: CutList, n: int, opening_w: float, box_depth: float,
     """
     if n <= 0:
         return
-    bt = 12.0                       # box wall thickness
-    bottom_t = 6.0
-    clear = 13.0                    # side-mount slide clearance each side
-    box_h = max(front_h - 25.0, 60.0)
-    box_w = max(opening_w - 2 * clear, 80.0)
+    bt = 12.0                       # box wall thickness (solid-wood drawer box)
+    bottom_t = 6.0                  # captured ply bottom
+    # Box width/height come from the one shared helper so these apron-hung
+    # drawers can't drift from cabinet drawers (this path used to hardcode a
+    # 13.0 side clearance and a 25mm height drop — the very conflict the
+    # constants unification retired in favour of SLIDE_SIDE_CLEARANCE=12.7 and
+    # DRAWER_BOX_HEIGHT_DROP=40.0). Depth is supplied by the caller (the apron
+    # opening already bounds it), so the helper's depth result is unused.
+    box_w, box_h, _ = drawer_box_dims(
+        opening_w, front_h, box_depth, width_floor=MIN_DRAWER_BOX_WIDTH_3D)
     cl.parts.append(Part(
         "Drawer front", n, length=opening_w, width=front_h, thickness=18.0,
         material=MAT_DOOR_FRONT, grain="length", notes="drawer face"))
@@ -1467,7 +1475,7 @@ def _legged_validate_common(spec, issues, dims) -> bool:
 def _leg_apron_joinery(spec, cl, leg_label="Leg") -> JoineryOp:
     """The leg-to-apron joint op, by joinery family (shared with bench logic)."""
     pid = cl.part_id_for_label
-    j = str(spec.joinery).strip().lower()
+    j = joinery_key(spec)
     if j == "mortise_tenon":
         tool, w, d, note = ("mortiser / saw", round(spec.apron_thickness / 3, 1),
                             round(spec.leg * 0.6, 1), "haunched M&T into the leg")
@@ -1601,7 +1609,7 @@ def _nightstand_validate(spec: NightstandSpec) -> list[Issue]:
                  "drawer count/height or raise the nightstand")
     if spec.shelf and spec.shelf_setback >= spec.height - spec.top_thickness:
         warn("shelf_setback", "the shelf sits above the apron; lower it")
-    j = str(spec.joinery).strip().lower()
+    j = joinery_key(spec)
     if j in ("pocket", "butt", "screw"):
         warn("joinery",
              f"a {j} leg-to-apron joint racks; prefer mortise & tenon or domino")
@@ -1804,7 +1812,7 @@ def _desk_validate(spec: DeskSpec) -> list[Issue]:
                  "the drawers are very narrow for this width; use fewer or a wider top")
     if spec.modesty_panel and spec.modesty_height > spec.height - spec.top_thickness - spec.apron_height:
         warn("modesty_height", "the modesty panel is taller than the leg room below the apron")
-    j = str(spec.joinery).strip().lower()
+    j = joinery_key(spec)
     if j in ("pocket", "butt", "screw"):
         warn("joinery",
              f"a {j} leg-to-apron joint racks on a desk; prefer mortise & tenon "
@@ -2001,7 +2009,7 @@ def _workbench_validate(spec: WorkbenchSpec) -> list[Issue]:
     if not spec.stretchers:
         warn("stretchers",
              "a bench without stretchers racks under planing; add lower rails")
-    j = str(spec.joinery).strip().lower()
+    j = joinery_key(spec)
     if j in ("pocket", "butt", "screw", "dowel"):
         warn("joinery",
              f"a {j} base joint racks under bench loads; use draw-bored mortise & "
