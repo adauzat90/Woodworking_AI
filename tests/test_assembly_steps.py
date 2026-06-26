@@ -1,16 +1,10 @@
 """Assembly sequence: ordered, complete, drilling-before-glue-up."""
 
-from woodworking_ai.dsl import (CabinetSpec, TableSpec, Drawer, Project,
+from woodworking_ai.dsl import (TableSpec, Drawer, Project,
                                 Component, Construction)
 from woodworking_ai.cutlist import generate_cutlist
 from woodworking_ai.assembly_steps import assembly_sequence, assembly_plan
-
-
-def _cab(**kw):
-    base = dict(width=600, height=720, depth=560, shelves=1, doors=2,
-                drawers=[Drawer(front_height=140)])
-    base.update(kw)
-    return CabinetSpec(**base)
+from factories import cab_with_drawer as _cab
 
 
 def test_steps_are_numbered_in_order():

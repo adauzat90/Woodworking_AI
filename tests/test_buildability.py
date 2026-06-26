@@ -1,13 +1,8 @@
 """Critic buildability checks: machinability, door swing, FF slide stack-up."""
 
-from woodworking_ai.dsl import CabinetSpec, Drawer, Material, Construction
+from woodworking_ai.dsl import Drawer, Material, Construction
 from woodworking_ai.agents.critic import critique
-
-
-def _cab(**kw):
-    base = dict(width=600, height=720, depth=560, doors=2, shelves=1)
-    base.update(kw)
-    return CabinetSpec(**base)
+from factories import cab as _cab
 
 
 def test_normal_cabinet_has_no_buildability_warnings():

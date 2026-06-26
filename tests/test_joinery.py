@@ -1,16 +1,10 @@
 """Joinery setup sheet: machining dimensions keyed to part IDs."""
 
-from woodworking_ai.dsl import (CabinetSpec, TableSpec, Drawer, BackStyle,
+from woodworking_ai.dsl import (TableSpec, Drawer, BackStyle,
                                 Joinery, Project, Component)
 from woodworking_ai.cutlist import generate_cutlist
 from woodworking_ai.joinery import joinery_schedule
-
-
-def _cab(**kw):
-    base = dict(width=600, height=720, depth=560, shelves=1, doors=2,
-                drawers=[Drawer(front_height=140)])
-    base.update(kw)
-    return CabinetSpec(**base)
+from factories import cab_with_drawer as _cab
 
 
 def test_dado_cut_to_mating_thickness_and_half_depth():
