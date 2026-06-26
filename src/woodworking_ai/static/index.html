@@ -229,6 +229,25 @@
   .bad { background:var(--bad-bg); color:var(--bad); }
   .warn { background:var(--warn-bg); color:var(--warn); }
 
+  /* ---- design notes / checks panel ---- */
+  .checks { padding:12px 18px; border-bottom:1px solid var(--line);
+            background:var(--bg); animation:fadeIn .2s ease; }
+  .checks .ck-grp { margin:0 0 10px; }
+  .checks .ck-grp:last-child { margin-bottom:0; }
+  .checks h5 { margin:0 0 6px; font-size:10.5px; text-transform:uppercase;
+    letter-spacing:.05em; color:var(--muted); font-weight:600; }
+  .checks ul { list-style:none; margin:0; padding:0; display:flex;
+    flex-direction:column; gap:5px; }
+  .checks li { font-size:12.5px; display:flex; gap:8px; align-items:flex-start;
+    line-height:1.4; }
+  .checks li .ic { flex:0 0 auto; font-size:12px; margin-top:1px; }
+  .checks li.pass .ic { color:var(--ok); }
+  .checks li.warnrow .ic { color:var(--warn); }
+  .checks li.errrow .ic { color:var(--bad); }
+  .checks li .fld { color:var(--muted); font-family:var(--font-mono); font-size:11px; }
+  .status .pill.clickable { cursor:pointer; }
+  .status .pill.clickable:hover { filter:brightness(1.12); }
+
   /* ---- downloads ---- */
   .downloads { display:flex; gap:6px; align-items:center; flex-wrap:wrap;
                padding:10px 18px; border-bottom:1px solid var(--line); }
@@ -413,8 +432,8 @@
     </details>
     <fieldset>
       <legend>Describe it</legend>
-      <textarea id="prompt" placeholder="e.g. 900mm sink base, two shaker doors, soft-close, one shelf"></textarea>
-      <button id="designBtn" class="secondary">✨ Design with AI</button>
+      <textarea id="prompt" placeholder="e.g. 36 inch sink base, two shaker doors, soft-close, one shelf — or &quot;a 4-foot oak bookcase, 5 shelves&quot;"></textarea>
+      <button id="designBtn" class="secondary">Design with AI</button>
       <div id="llmNote" class="muted" style="font-size:11px;margin-top:6px"></div>
     </fieldset>
     <div class="or">— or build from parameters —</div>
@@ -434,6 +453,8 @@
             <option value="base">Base</option>
             <option value="wall">Wall</option>
             <option value="tall">Tall / pantry</option>
+            <option value="bookcase">Bookcase</option>
+            <option value="dresser">Dresser</option>
             <option value="corner_blind">Corner — blind</option>
             <option value="corner_diagonal">Corner — diagonal</option>
           </select></div>
@@ -444,9 +465,9 @@
           </select></div>
       </div>
       <div class="row">
-        <div><label>Width</label><input id="width" type="number" value="600" /></div>
-        <div><label>Height</label><input id="height" type="number" value="720" /></div>
-        <div><label>Depth</label><input id="depth" type="number" value="560" /></div>
+        <div><label>Width (<span class="ulen">mm</span>)</label><input id="width" type="number" value="600" /></div>
+        <div><label>Height (<span class="ulen">mm</span>)</label><input id="height" type="number" value="720" /></div>
+        <div><label>Depth (<span class="ulen">mm</span>)</label><input id="depth" type="number" value="560" /></div>
       </div>
     </fieldset>
     <fieldset>
@@ -458,8 +479,8 @@
         <div><label>Shelves</label><input id="shelves" type="number" value="1" min="0" /></div>
       </div>
       <div class="row">
-        <div><label>Reveal (mm)</label><input id="reveal" type="number" value="3" /></div>
-        <div><label>Toe kick (mm, 0=none)</label><input id="toe" type="number" value="100" /></div>
+        <div><label>Reveal (<span class="ulen">mm</span>)</label><input id="reveal" type="number" value="3" /></div>
+        <div><label>Toe kick (<span class="ulen">mm</span>, 0=none)</label><input id="toe" type="number" value="100" /></div>
       </div>
       <div class="row">
         <div><label>Door style</label>
@@ -481,8 +502,8 @@
           </select></div>
       </div>
       <div class="check"><input id="mullion" type="checkbox" /><label style="margin:0">Center mullion</label></div>
-      <div id="blindWrap" style="display:none"><label>Blind width (mm)</label><input id="blind_width" type="number" value="350" /></div>
-      <div id="diagWrap" style="display:none"><label>Corner cut (mm)</label><input id="corner_cut" type="number" value="450" /></div>
+      <div id="blindWrap" style="display:none"><label>Blind width (<span class="ulen">mm</span>)</label><input id="blind_width" type="number" value="350" /></div>
+      <div id="diagWrap" style="display:none"><label>Corner cut (<span class="ulen">mm</span>)</label><input id="corner_cut" type="number" value="450" /></div>
     </fieldset>
     </div><!-- /cabinetFields -->
     <div id="tableFields" style="display:none">
@@ -490,18 +511,18 @@
       <legend>Table</legend>
       <label>Name</label><input id="t_name" value="My Table" />
       <div class="row">
-        <div><label>Length</label><input id="t_width" type="number" value="1400" /></div>
-        <div><label>Depth</label><input id="t_depth" type="number" value="800" /></div>
-        <div><label>Height</label><input id="t_height" type="number" value="740" /></div>
+        <div><label>Length (<span class="ulen">mm</span>)</label><input id="t_width" type="number" value="1400" /></div>
+        <div><label>Depth (<span class="ulen">mm</span>)</label><input id="t_depth" type="number" value="800" /></div>
+        <div><label>Height (<span class="ulen">mm</span>)</label><input id="t_height" type="number" value="740" /></div>
       </div>
       <div class="row">
-        <div><label>Top thickness</label><input id="t_top" type="number" value="25" /></div>
-        <div><label>Leg (sq)</label><input id="t_leg" type="number" value="60" /></div>
-        <div><label>Leg inset</label><input id="t_inset" type="number" value="40" /></div>
+        <div><label>Top thk (<span class="ulen">mm</span>)</label><input id="t_top" type="number" value="25" /></div>
+        <div><label>Leg sq (<span class="ulen">mm</span>)</label><input id="t_leg" type="number" value="60" /></div>
+        <div><label>Leg inset (<span class="ulen">mm</span>)</label><input id="t_inset" type="number" value="40" /></div>
       </div>
       <div class="row">
-        <div><label>Apron height</label><input id="t_apronh" type="number" value="90" /></div>
-        <div><label>Apron thickness</label><input id="t_apront" type="number" value="20" /></div>
+        <div><label>Apron ht (<span class="ulen">mm</span>)</label><input id="t_apronh" type="number" value="90" /></div>
+        <div><label>Apron thk (<span class="ulen">mm</span>)</label><input id="t_apront" type="number" value="20" /></div>
       </div>
     </fieldset>
     </div><!-- /tableFields -->
@@ -679,6 +700,7 @@
     </div>
     <div class="results">
       <div class="status" id="status"><span class="muted">No design yet.</span></div>
+      <div class="checks" id="checks" style="display:none"></div>
       <div class="downloads" id="downloads" style="display:none">
         <span class="dl-label">Download:</span>
         <button data-f="step">STEP</button><button data-f="stl">STL</button>
@@ -1012,17 +1034,68 @@ function render(d) {
 
   // status — the confident "money line": badges left, total right.
   const e = d.estimate, cr = d.critique;
+  const hasNotes = (d.warnings && d.warnings.length) || (d.errors && d.errors.length)
+    || (cr && cr.report && Object.keys(cr.report).length);
+  const clk = hasNotes ? " clickable" : "";
   const bits = [];
-  bits.push(`<span class="pill ${d.valid?'ok':'bad'}">${d.valid?'valid':'invalid'}</span>`);
-  if (cr) bits.push(`<span class="pill ${cr.ok?'ok':'warn'}">geometry ${cr.ok?'verified':'check'}</span>`);
+  bits.push(`<span class="pill ${d.valid?'ok':'bad'}${clk}">${d.valid?'valid':'invalid'}</span>`);
+  if (cr) bits.push(`<span class="pill ${cr.ok?'ok':'warn'}${clk}">geometry ${cr.ok?'verified':'check'}</span>`);
   if (d.warnings && d.warnings.length)
-    bits.push(`<span class="pill warn">${d.warnings.length} warning${d.warnings.length>1?'s':''}</span>`);
+    bits.push(`<span class="pill warn${clk}">${d.warnings.length} note${d.warnings.length>1?'s':''}</span>`);
   if (d.attempts) bits.push(`<span class="muted">AI · ${d.attempts} attempt${d.attempts>1?'s':''}</span>`);
   if (e) bits.push(`<span class="total"><span class="amt">${esc(e.currency)}${e.total.toFixed(2)}</span>`
     + `<span class="sub">est. · ${e.total_sheets} sheet${e.total_sheets===1?'':'s'} · ${e.labour_hours}h</span></span>`);
   $("status").innerHTML = bits.join("");
+  // Plain-English "what we checked" + the actual advisory notes (sag, wood
+  // movement, tool substitutions) — the hobbyist judgment, made readable.
+  buildChecks(d);
+  if (hasNotes)
+    $("status").querySelectorAll(".pill.clickable").forEach(p =>
+      p.onclick = () => { const c = $("checks");
+        c.style.display = c.style.display === "none" ? "block" : "none"; });
   $("downloads").style.display = "flex";
   paint();
+}
+
+// Render the collapsible "Design notes" panel: plain-language checks the Critic
+// ran, plus every validator note (deflection/sag, seasonal wood movement,
+// unmakeable-joint substitutions, clearances) spelled out.
+function buildChecks(d) {
+  const box = $("checks"); if (!box) return;
+  const u = unitLabel();
+  const fl = mm => fmtLen(mm) + " " + u;
+  const cr = d.critique, r = (cr && cr.report) || {};
+  const pass = [];
+  if (typeof r.interference_count === "number")
+    pass.push(r.interference_count === 0
+      ? "No parts overlap or collide"
+      : `${r.interference_count} part interference(s) — see errors`);
+  if (typeof r.front_coverage_pct === "number" && r.front_coverage_pct > 0)
+    pass.push(`Doors/drawers cover ${r.front_coverage_pct.toFixed(0)}% of the face`);
+  if (r.opening_width && r.opening_height)
+    pass.push(`Clear opening ${fl(r.opening_width)} × ${fl(r.opening_height)}`);
+  if (typeof r.component_count === "number" && r.component_count > 1)
+    pass.push(`${r.component_count} cabinets placed without collisions`);
+  if (typeof r.panel_count === "number")
+    pass.push(`${r.panel_count} panels laid out and verified`);
+
+  const sec = (title, items) => items.length
+    ? `<div class="ck-grp"><h5>${esc(title)}</h5><ul>${items.join("")}</ul></div>` : "";
+  const row = (cls, ic, text, field) =>
+    `<li class="${cls}"><span class="ic">${ic}</span><span>${esc(text)}` +
+    (field ? ` <span class="fld">${esc(field)}</span>` : "") + `</span></li>`;
+
+  let html = "";
+  if (d.errors && d.errors.length)
+    html += sec("Problems to fix", d.errors.map(x => row("errrow", "✗", x.message, x.field)));
+  if (d.warnings && d.warnings.length)
+    html += sec("Worth a look", d.warnings.map(x => row("warnrow", "⚠", x.message, x.field)));
+  if (cr && cr.ok && pass.length)
+    html += sec("Geometry verified", pass.map(t => row("pass", "✓", t)));
+
+  if (!html) { box.style.display = "none"; box.innerHTML = ""; return; }
+  box.innerHTML = html;
+  box.style.display = "none";   // collapsed until a status pill is clicked
 }
 
 // Build the preview stage. Prefers the interactive GLB via <model-viewer>, but
@@ -1689,7 +1762,10 @@ function loadStandards() {
     const syncUnits = () => {
       $("units").value = su.value === "in" ? "imperial" : "metric";
     };
-    syncUnits();                                  // initial display unit
+    // One unit governs both the form inputs and the reports. Reconcile the form
+    // to the shop's saved display unit on load (not just on change), so we never
+    // end up with the form in inches while the cut list is in mm.
+    syncUnits(); applyUnitChange();
     su.addEventListener("change", () => { syncUnits(); applyUnitChange(); });
   }
   for (const f of STD_FIELDS) {
