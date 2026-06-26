@@ -93,13 +93,38 @@ def test_combine_sheet_stock_lowers_or_equals_cost_and_sheets():
                nest_layout(spec, combine_sheet_stock=True)) == comb.total_sheets
 
 
-def test_nest_project_aggregates_components():
-    proj = _spec({"kind": "project", "name": "K", "components": [
+def _kitchen():
+    return _spec({"kind": "project", "name": "K", "components": [
         {"label": "A", "x": 0, "y": 0,
          "spec": {"cabinet_type": "base", "width": 600, "doors": 2, "shelves": 1}},
         {"label": "B", "x": 600, "y": 0,
          "spec": {"cabinet_type": "base", "width": 600,
-                  "drawers": [{"front_height": 160}]}},
+                  "drawers": [{"front_height": 160}, {"front_height": 160}]}},
+        {"label": "C", "x": 1200, "y": 0,
+         "spec": {"cabinet_type": "base", "width": 900, "doors": 2, "shelves": 1}},
     ]})
-    out = nest_layout(proj)
+
+
+def test_nest_project_aggregates_components():
+    out = nest_layout(_kitchen())
     assert out and sum(g["sheet_count"] for g in out) >= 1
+
+
+def test_project_diagram_matches_quote_both_modes():
+    """The run-wide diagram and the quote agree, per-component AND combined."""
+    from woodworking_ai.estimator import estimate
+    k = _kitchen()
+    for combine in (False, True):
+        e = estimate(k, combine_sheet_stock=combine)
+        n = sum(g["sheet_count"] for g in
+                nest_layout(k, combine_sheet_stock=combine))
+        assert n == e.total_sheets, f"combine={combine}: {n} != {e.total_sheets}"
+
+
+def test_combine_saves_sheets_across_cabinets():
+    """Nesting a whole run together buys fewer sheets than per cabinet."""
+    from woodworking_ai.estimator import estimate
+    k = _kitchen()
+    per = estimate(k).total_sheets
+    run = estimate(k, combine_sheet_stock=True).total_sheets
+    assert run < per

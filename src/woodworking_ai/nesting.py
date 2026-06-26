@@ -18,6 +18,7 @@ from typing import Any
 from .cutlist import CutList, generate_cutlist
 from .estimator import SheetSize
 from .materials import MAT_DOOR_FRONT
+from .dispatch import GROUP, spec_kind
 from .packing import pack
 
 
@@ -41,9 +42,24 @@ def nest_layout(spec, *, sheet: SheetSize | None = None,
           ],
         }
 
-    Solid lumber is excluded (it is bought by the board foot, not as sheets).
+    Mirrors the estimator so the diagram and the quote always agree: a project
+    nests **per component** by default (each cabinet cut from its own sheets) and
+    **run-wide** when ``combine_sheet_stock`` pools the whole order onto shared
+    sheets. Solid lumber is excluded (bought by the board foot, not as sheets).
     """
     sheet = sheet or SheetSize()
+
+    # A project quoted per component (combine off) nests each cabinet on its own
+    # sheets — so sum the per-component layouts, exactly as the estimate does.
+    # (A passed combined cutlist can't express per-component packing, so dispatch
+    # on the spec, not on whether a cutlist was handed in.)
+    if spec_kind(spec) == GROUP and not combine_sheet_stock:
+        out: list[dict[str, Any]] = []
+        for comp in spec.components:
+            out.extend(nest_layout(comp.spec, sheet=sheet,
+                                   combine_sheet_stock=False))
+        return out
+
     cl = cutlist or generate_cutlist(spec)
 
     # Group sheet-good parts by the same key the estimator buys stock by, and
