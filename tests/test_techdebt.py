@@ -166,6 +166,22 @@ def test_material_label_tables_use_canonical_vocabulary():
     assert set(PriceBook().sheet_price) <= MATERIAL_LABELS
 
 
+def test_joinery_edge_classifier_single_source():
+    # The builder (B-Rep) and the DXF nester both decode a housed joint's edge
+    # from one classifier instead of re-testing "rear"/"top"/"bottom" substrings.
+    from woodworking_ai.joinery import classify_joinery_edge, JoineryEdge
+
+    assert classify_joinery_edge("near the rear edge") is JoineryEdge.REAR
+    assert classify_joinery_edge("back groove") is JoineryEdge.REAR
+    assert classify_joinery_edge("from the top") is JoineryEdge.TOP
+    assert classify_joinery_edge("housed at the bottom") is JoineryEdge.BOTTOM
+    assert classify_joinery_edge("drawer-bottom groove, centred") is JoineryEdge.BOTTOM
+    assert classify_joinery_edge("") is JoineryEdge.OTHER
+    assert classify_joinery_edge("mid-length groove") is JoineryEdge.OTHER
+    # Order: rear wins over a stray "top" later in the text (mirrors the ladders).
+    assert classify_joinery_edge("rear, below the top rail") is JoineryEdge.REAR
+
+
 def test_joinery_key_centralizes_normalization():
     # The joinery-string decode lives in one helper now; call sites that key a
     # lookup/message off it use joinery_key(spec) instead of re-spelling

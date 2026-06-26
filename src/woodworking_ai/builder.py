@@ -28,6 +28,7 @@ from typing import Any
 from .dsl import CabinetSpec, ComponentGroup
 from .dispatch import is_group
 from .geometry import panel_layout, project_layout, explode_panels
+from .joinery import classify_joinery_edge, JoineryEdge
 
 log = logging.getLogger(__name__)
 
@@ -103,8 +104,8 @@ def _apply_joinery(panel_solid: Any, ops, size: tuple[float, float, float],
         # runs vertically near the rear edge.
         dims = [0.0, 0.0, 0.0]
         pos = [0.0, 0.0, 0.0]
-        is_back = "rear" in ref or "back" in ref
-        if is_back:
+        edge = classify_joinery_edge(ref)
+        if edge is JoineryEdge.REAR:
             # Vertical housing near the rear edge, full height, into the face.
             dims[plane] = width
             dims[2] = sz * 2.0
@@ -113,13 +114,15 @@ def _apply_joinery(panel_solid: Any, ops, size: tuple[float, float, float],
             pos[plane] = half[plane] - width / 2.0
             pos[normal] = half[normal]          # break the inner face
         else:
-            # Horizontal dado across the panel for the bottom/top shelf.
+            # Horizontal dado across the panel for the bottom/top shelf. A TOP
+            # reference houses near the top edge; BOTTOM and any unlocated
+            # housing default to the bottom.
             dims[plane] = span * 1.01
             dims[2] = width
             dims[normal] = depth * 2.0
-            if "top" in ref:
+            if edge is JoineryEdge.TOP:
                 pos[2] = half[2] - width / 2.0
-            else:                                # "bottom" (default housed shelf)
+            else:                                # bottom (default housed shelf)
                 pos[2] = -half[2] + width / 2.0
             pos[normal] = half[normal]           # break the inner face
         cutter = Pos(*pos) * Box(*dims)
