@@ -272,7 +272,8 @@ def required_operations(spec) -> list[Requirement]:
     inspection — mirrors what :func:`joinery.joinery_schedule` and
     :func:`drilling.drilling_schedule` actually emit.
     """
-    from .dispatch import spec_kind, GROUP, TABLE, VOID, WALL_SHELF, BOX, BENCH
+    from .dispatch import (spec_kind, GROUP, VOID, TABLE, BENCH, BOX, WALL_SHELF,
+                           BED, FRAME, CUTTING_BOARD, NIGHTSTAND, DESK, WORKBENCH)
 
     kind = spec_kind(spec)
     if kind == VOID:
@@ -284,10 +285,12 @@ def required_operations(spec) -> list[Requirement]:
             for r in required_operations(comp.spec):
                 out.append(Requirement(r.role, r.joint, f"{tag}: {r.where}"))
         return out
-    # A legged piece (table or bench): one frame joint for legs↔aprons/stretchers.
-    if kind in (TABLE, BENCH):
-        where = ("leg-to-apron/stretcher joints" if kind == BENCH
-                 else "leg-to-apron joints")
+    # A legged piece (table, bench, nightstand, desk, workbench): one frame joint
+    # for legs↔aprons. Their drawer boxes are plain (no special jig), so — like a
+    # table — they add no drawer requirement. ``joinery`` carries the leg joint.
+    if kind in (TABLE, BENCH, NIGHTSTAND, DESK, WORKBENCH):
+        where = ("leg-to-apron/stretcher joints"
+                 if getattr(spec, "stretchers", False) else "leg-to-apron joints")
         return [Requirement("frame",
                             _norm(getattr(spec, "joinery", "mortise_tenon")), where)]
     # A box / chest: corner joints (drawer-corner vocabulary) + optional lid hinges.
@@ -305,10 +308,24 @@ def required_operations(spec) -> list[Requirement]:
             reqs.append(Requirement("fab", "bevel_rip", "French-cleat bevel"))
         reqs.append(Requirement("fab", "screw", "wall mounting"))
         return reqs
+    # A knock-down bed: the head/foot are mortise-and-tenon post-and-rail frames;
+    # the rails join the posts with knock-down hardware (no glued case joint).
+    if kind == BED:
+        return [Requirement("frame", "mortise_tenon", "headboard/footboard frames"),
+                Requirement("fab", "screw", "knock-down rail connectors")]
+    # A picture / mirror frame: mitered corners (FrameJoint vocabulary) + a rabbet.
+    if kind == FRAME:
+        return [Requirement("frame",
+                            _norm(getattr(spec, "corner_joint", "splined_miter")),
+                            "frame corners")]
+    # A glued-up cutting board is a panel glue-up — no tool-gated joinery.
+    if kind == CUTTING_BOARD:
+        return []
 
     # A cabinet. ------------------------------------------------------------
     reqs: list[Requirement] = []
-    reqs.append(Requirement("carcass", _norm(spec.joinery), "carcass case joints"))
+    reqs.append(Requirement("carcass", _norm(getattr(spec, "joinery", "dado")),
+                            "carcass case joints"))
 
     back = _norm(getattr(spec, "back", ""))
     if back == "rabbeted":

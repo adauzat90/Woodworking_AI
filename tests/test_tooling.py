@@ -213,6 +213,38 @@ def test_wall_shelf_cleat_needs_bevel_no_bogus_substitute():
     assert adv and "switch to" not in adv[0]
 
 
+def test_required_operations_handles_every_leaf_kind_without_crashing():
+    """Regression: bed/frame/cutting_board lack a ``joinery`` field, so the old
+    cabinet fall-through raised AttributeError on ``spec.joinery`` (degrading the
+    drilling/build plan). Every leaf kind must dispatch and never read a missing
+    field."""
+    from woodworking_ai.dsl import spec_from_dict
+    cases = {
+        "bed": {"kind": "bed", "size": "queen"},
+        "frame": {"kind": "frame", "opening_w": 400, "opening_h": 500},
+        "cutting_board": {"kind": "cutting_board", "length": 450, "width": 300},
+        "nightstand": {"kind": "nightstand", "drawers": 1},
+        "desk": {"kind": "desk", "drawers": 1},
+        "workbench": {"kind": "workbench", "vise": True},
+    }
+    for kind, d in cases.items():
+        reqs = required_operations(spec_from_dict(d))  # must not raise
+        assert isinstance(reqs, list), kind
+    # The bed's head/foot are mortise-and-tenon frames; the legged pieces carry a
+    # leg-to-apron frame joint — not a (non-existent) cabinet ``carcass`` joint.
+    bed = required_operations(spec_from_dict({"kind": "bed", "size": "queen"}))
+    assert any(r.role == "frame" and r.joint == "mortise_tenon" for r in bed)
+    for kind in ("nightstand", "desk", "workbench"):
+        reqs = required_operations(spec_from_dict({"kind": kind}))
+        assert reqs and reqs[0].role == "frame"
+        assert not any(r.role == "carcass" for r in reqs), kind
+    # A picture frame's tool-gated joint is its mitered corner.
+    frame = required_operations(spec_from_dict(
+        {"kind": "frame", "opening_w": 400, "opening_h": 500,
+         "corner_joint": "half_lap"}))
+    assert any(r.role == "frame" and r.joint == "half_lap" for r in frame)
+
+
 def test_new_types_tools_needed_nonempty():
     from woodworking_ai.dsl import spec_from_dict
     for d in ({"kind": "box", "name": "B", "width": 400, "height": 250,
