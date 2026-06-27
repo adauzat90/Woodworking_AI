@@ -25,11 +25,11 @@ from . import furniture
 
 # Construction constants shared with the cut list (neutral module, no cycle).
 from .constants import (
-    STRETCHER_WIDTH, SHELF_SIDE_CLEARANCE, SHELF_SETBACK,
+    STRETCHER_WIDTH,
     FRAME_WIDTH, FRAME_THICKNESS, MULLION_WIDTH,
     DOOR_STILE_WIDTH, DOOR_RAIL_WIDTH, MIN_DRAWER_BOX_WIDTH_3D,
 )
-from .partmath import drawer_box_dims, door_panel_dims
+from .partmath import drawer_box_dims, door_panel_dims, carcass_dims
 
 
 class PanelRole(Enum):
@@ -393,8 +393,10 @@ def _cabinet_layout(spec) -> list[PanelBox]:
     m = spec.material
     toe_h = spec.toe_kick_height
     box_h = spec.box_height
-    interior_w = spec.interior_width
     interior_d = spec.interior_depth
+    # Part *sizes* come from the shared carcass-dimension math so the 3D model
+    # and the cut list cannot drift; positions stay a compiler concern.
+    dims = carcass_dims(spec)
     # A captured back sits inside the carcass, so the rear rail is set forward of
     # it; an applied back lays on the outside rear face and needs no inset.
     back_inset = 0.0 if spec.back == BackStyle.APPLIED else m.back
@@ -410,48 +412,49 @@ def _cabinet_layout(spec) -> list[PanelBox]:
 
     # --- sides -----------------------------------------------------------
     x_side = spec.width / 2 - m.carcass / 2
-    add("Side L", (m.carcass, spec.depth, box_h), (-x_side, y_center, z_box))
-    add("Side R", (m.carcass, spec.depth, box_h), (x_side, y_center, z_box))
+    add("Side L", (dims.carcass, dims.depth, dims.box_height),
+        (-x_side, y_center, z_box))
+    add("Side R", (dims.carcass, dims.depth, dims.box_height),
+        (x_side, y_center, z_box))
 
     # --- bottom ----------------------------------------------------------
-    add("Bottom", (interior_w, interior_d, m.carcass),
+    add("Bottom", (dims.interior_width, dims.interior_depth, dims.carcass),
         (0, interior_d / 2, toe_h + m.carcass / 2))
 
     # --- top: a full panel (wall/tall) or two rails (base) ---------------
     z_top = toe_h + box_h - m.carcass / 2
     if spec.has_full_top:
-        add("Top", (interior_w, interior_d, m.carcass),
+        add("Top", (dims.interior_width, dims.interior_depth, dims.carcass),
             (0, interior_d / 2, z_top))
     else:
-        add("Stretcher front", (interior_w, STRETCHER_WIDTH, m.carcass),
+        add("Stretcher front", (dims.interior_width, STRETCHER_WIDTH, dims.carcass),
             (0, STRETCHER_WIDTH / 2, z_top))
-        add("Stretcher back", (interior_w, STRETCHER_WIDTH, m.carcass),
+        add("Stretcher back", (dims.interior_width, STRETCHER_WIDTH, dims.carcass),
             (0, spec.depth - back_inset - STRETCHER_WIDTH / 2, z_top))
 
     # --- back ------------------------------------------------------------
     if spec.back == BackStyle.APPLIED:
         # Lays on the rear face, adding its thickness behind the carcass.
-        add("Back", (spec.width, m.back, box_h),
+        add("Back", (dims.back_w, dims.back_thickness, dims.back_h),
             (0, spec.depth + m.back / 2, z_box), category="back")
     else:  # captured between the sides, in front of the rear edge
-        add("Back", (interior_w, m.back, box_h - m.carcass),
+        add("Back", (dims.back_w, dims.back_thickness, dims.back_h),
             (0, spec.depth - m.back / 2, z_box), category="back")
 
     # --- shelves (evenly distributed in the interior) --------------------
     if spec.shelves > 0:
-        shelf_w = interior_w - 2 * SHELF_SIDE_CLEARANCE
-        shelf_d = interior_d - SHELF_SETBACK
+        shelf_d = dims.shelf_depth
         usable = box_h - 2 * m.carcass
         for i in range(spec.shelves):
             frac = (i + 1) / (spec.shelves + 1)
             z = toe_h + m.carcass + frac * usable
-            add(f"Shelf {i + 1}", (shelf_w, shelf_d, m.shelf),
+            add(f"Shelf {i + 1}", (dims.shelf_width, shelf_d, dims.shelf_thickness),
                 (0, shelf_d / 2 + m.back, z), category="shelf")
 
     # --- toe kick --------------------------------------------------------
     if spec.toe_kick and toe_h > 0:
         setback = spec.toe_kick.setback
-        add("Toe kick", (spec.width, m.carcass, toe_h),
+        add("Toe kick", (dims.width, dims.carcass, dims.toe_height),
             (0, setback + m.carcass / 2, toe_h / 2), category="toe")
 
     # --- face frame (stiles + rails) for face-frame construction ---------

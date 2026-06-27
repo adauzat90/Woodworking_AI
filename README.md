@@ -285,6 +285,8 @@ front end.
 | `src/woodworking_ai/exporters.py` | STEP / STL / GLB / DXF / CSV export |
 | `src/woodworking_ai/agents/designer.py` | Claude designer + validate/critic-repair loop |
 | `src/woodworking_ai/agents/critic.py` | Computational + render-based (visual) verification |
+| `src/woodworking_ai/partmath.py` | Shared part-dimension math — one source for sizes the model and cut list must agree on |
+| `src/woodworking_ai/designer_eval.py` | Designer accuracy eval (prompt → spec scoring) |
 | `examples/base_cabinet.py` | End-to-end example, no LLM required |
 | `tests/` | Pure-math tests (no CAD / API key needed) |
 
@@ -294,6 +296,35 @@ front end.
 pip install -e ".[dev]"
 pytest
 ```
+
+## Measure the AI: designer accuracy eval
+
+The deterministic engine is verified by the test suite; the *natural-language*
+step — does "36 inch sink base, two shaker doors" actually become that spec? —
+is measured separately by an eval harness. It runs a prompt set through the
+designer and scores each result two independent ways:
+
+- **Buildable** — the produced spec passes the validator *and* the geometry
+  Critic with no errors (so a miss means the agent gave up).
+- **Intent match** — per-prompt checks that the spec is what was unambiguously
+  asked for (a 36″ *base* ~914 mm wide with `doors == 2`, `door_style == shaker`).
+  Defaults the prompt left open are not checked, so a miss is a real disagreement.
+
+A case passes only when it is buildable *and* meets every required intent. The
+report prints per-case pass/fail with the exact reasons (missed intents,
+validation/critic errors), plus aggregate **pass / buildable / intent** rates.
+
+```bash
+export ANTHROPIC_API_KEY=sk-...
+woodai eval                          # run the prompt set, print the report
+woodai eval --json eval.json         # also write the full report as JSON
+woodai eval --min-pass 0.8           # exit nonzero if pass rate < 80% (CI gate)
+```
+
+The scoring is pure and deterministic — it runs headless in CI against
+hand-built specs (`tests/test_designer_eval.py`), so only the live `woodai eval`
+run needs an API key. Add prompts and intent checks in
+[`designer_eval.py`](src/woodworking_ai/designer_eval.py).
 
 ## Status & roadmap
 

@@ -96,6 +96,17 @@ is collapsing the three parallel type registries (HIGH-2).
   /`pdf_common.py` were already covered via the reportlab suite that runs in CI.
 - ✅ **6 (packaging)** the `all` extra is now self-referential, so it can't drift
   out of sync (it had omitted `ruff` and `pytest-cov`).
+- ✅ **1.2 (generalized) — carcass dimension SSOT made structural.** The door-panel
+  fix shared the door formula; the *carcass* parts (sides, bottom, top, stretchers,
+  back, shelf, toe kick) were still sized by independent arithmetic in
+  `geometry._cabinet_layout` and `cutlist._cabinet_cutlist` — the same drift class
+  as the 20 mm door bug, latent. Both now read every carcass size from one
+  `partmath.carcass_dims(spec)` (`CarcassDims`); each consumer only *arranges* them
+  (the compiler into 3D extents + positions, the cut list into length/width). The
+  duplicated shelf-clearance and captured-vs-applied-back formulas live in exactly
+  one place. Golden output byte-identical; a new `tests/test_carcass_ssot.py`
+  asserts the 3D panel and the cut-list part agree across a base/wall/tall/applied/
+  face-frame spread, so the guarantee is now *enforced*, not aspirational.
 
 **Deliberately deferred** (cost/risk now exceeds value — same reasons the
 original maintainers deferred them):

@@ -1,0 +1,371 @@
+"""Designer accuracy eval — does natural language actually become the spec asked for?
+
+The value of this project is the deterministic DSL + validator + compiler; the
+*weak* link is the natural-language step that writes the spec. This harness
+measures that step with two independent scores per case:
+
+* **Buildable** — the produced spec passes :func:`validate` (no errors) *and* the
+  geometry :func:`critique` (no errors). This is the same gate the agent already
+  repairs against, so a buildable=False here means the agent gave up.
+* **Intent match** — a set of per-case checks (``IntentCheck``) asserting the spec
+  matches what the prompt unambiguously asked for (a 36" base with two doors is a
+  ``base`` ~914 mm wide with ``doors == 2``). Defaults the prompt left open are
+  *not* checked, so a miss is a real disagreement, not a stylistic choice.
+
+A case **passes** only when it is buildable *and* every *required* intent holds.
+The scoring (``score_design`` / ``score_spec``) is pure and deterministic — it
+runs headless against a hand-built spec with no API key, so CI covers the logic.
+``run_eval`` is the only part that calls the agent (and so needs a key); it is
+imported lazily. The CLI entry point is ``woodai eval``.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Callable, Iterable
+
+from .validator import ValidationResult
+from .agents.critic import CritiqueResult
+
+
+# --------------------------------------------------------------------------- #
+# Intent predicates — small, robust readers over a spec of any furniture type. #
+# They never raise on the "wrong" spec type; they simply return False, which   #
+# is the correct behaviour (the agent produced the wrong kind of thing).       #
+# --------------------------------------------------------------------------- #
+
+def _enum_str(value) -> str:
+    return str(getattr(value, "value", value)).strip().lower()
+
+
+def cabinet_type_is(name: str) -> Callable[[object], bool]:
+    return lambda s: _enum_str(getattr(s, "cabinet_type", "")) == name
+
+
+def is_table() -> Callable[[object], bool]:
+    return lambda s: type(s).__name__ == "TableSpec"
+
+
+def dim_near(attr: str, target: float, tol: float = 30.0) -> Callable[[object], bool]:
+    def check(s):
+        v = getattr(s, attr, None)
+        return v is not None and abs(float(v) - target) <= tol
+    return check
+
+
+def doors_eq(n: int) -> Callable[[object], bool]:
+    return lambda s: int(getattr(s, "doors", 0) or 0) == n
+
+
+def drawers_eq(n: int) -> Callable[[object], bool]:
+    return lambda s: len(getattr(s, "drawers", []) or []) == n
+
+
+def shelves_at_least(n: int) -> Callable[[object], bool]:
+    return lambda s: int(getattr(s, "shelves", 0) or 0) >= n
+
+
+def door_style_is(name: str) -> Callable[[object], bool]:
+    return lambda s: _enum_str(getattr(s, "door_style", "")) == name
+
+
+def construction_is(name: str) -> Callable[[object], bool]:
+    return lambda s: _enum_str(getattr(s, "construction", "")) == name
+
+
+@dataclass(frozen=True)
+class IntentCheck:
+    """One checkable thing the prompt asked for. ``required`` checks gate the
+    pass/fail verdict; non-required ones are scored but never fail a case."""
+
+    desc: str
+    check: Callable[[object], bool]
+    required: bool = True
+
+
+@dataclass(frozen=True)
+class EvalCase:
+    name: str
+    prompt: str
+    intents: tuple[IntentCheck, ...]
+
+
+# An inch is 25.4 mm; the band on inch-authored prompts allows the agent's own
+# rounding (e.g. 36" -> 900 or 914 mm both count).
+def _in(x: float) -> float:
+    return x * 25.4
+
+
+DEFAULT_CASES: tuple[EvalCase, ...] = (
+    EvalCase(
+        "sink_base_36in_two_doors",
+        "36 inch sink base cabinet, two shaker doors, one shelf",
+        (
+            IntentCheck("is a base cabinet", cabinet_type_is("base")),
+            IntentCheck("~36in wide", dim_near("width", _in(36), tol=20)),
+            IntentCheck("two doors", doors_eq(2)),
+            IntentCheck("shaker door style", door_style_is("shaker")),
+            IntentCheck("at least one shelf", shelves_at_least(1)),
+        ),
+    ),
+    EvalCase(
+        "tall_pantry_600_4_shelves",
+        "tall pantry cabinet 600 wide, 4 shelves",
+        (
+            IntentCheck("is a tall cabinet", cabinet_type_is("tall")),
+            IntentCheck("600 wide", dim_near("width", 600)),
+            IntentCheck("at least 4 shelves", shelves_at_least(4)),
+        ),
+    ),
+    EvalCase(
+        "drawer_base_30in_3_drawers",
+        "30 inch drawer base, 3 drawers, no doors",
+        (
+            IntentCheck("is a base cabinet", cabinet_type_is("base")),
+            IntentCheck("~30in wide", dim_near("width", _in(30), tol=20)),
+            IntentCheck("three drawers", drawers_eq(3)),
+            IntentCheck("no doors", doors_eq(0)),
+        ),
+    ),
+    EvalCase(
+        "wall_cabinet_760x700_two_doors",
+        "wall cabinet 760 wide and 700 tall, two doors",
+        (
+            IntentCheck("is a wall cabinet", cabinet_type_is("wall")),
+            IntentCheck("760 wide", dim_near("width", 760)),
+            IntentCheck("700 tall", dim_near("height", 700)),
+            IntentCheck("two doors", doors_eq(2)),
+        ),
+    ),
+    EvalCase(
+        "coffee_table_1200x600",
+        "coffee table 1200 long, 600 deep, 450 tall",
+        (
+            IntentCheck("is a table", is_table()),
+            IntentCheck("1200 long", dim_near("width", 1200)),
+            IntentCheck("600 deep", dim_near("depth", 600)),
+            IntentCheck("450 tall", dim_near("height", 450)),
+        ),
+    ),
+    EvalCase(
+        "faceframe_bookcase_900x1800",
+        "face frame bookcase 900 wide, 1800 tall, 4 shelves",
+        (
+            IntentCheck("is a bookcase", cabinet_type_is("bookcase")),
+            IntentCheck("face-frame construction", construction_is("face_frame")),
+            IntentCheck("at least 4 shelves", shelves_at_least(4)),
+        ),
+    ),
+    EvalCase(
+        "frameless_base_450_single_door",
+        "frameless base cabinet 450 wide with a single door",
+        (
+            IntentCheck("is a base cabinet", cabinet_type_is("base")),
+            IntentCheck("450 wide", dim_near("width", 450)),
+            IntentCheck("one door", doors_eq(1)),
+            IntentCheck("frameless", construction_is("frameless")),
+        ),
+    ),
+    EvalCase(
+        "dresser_800_5_drawers",
+        "dresser 800 wide with 5 drawers",
+        (
+            IntentCheck("is a dresser", cabinet_type_is("dresser")),
+            IntentCheck("800 wide", dim_near("width", 800)),
+            IntentCheck("five drawers", drawers_eq(5)),
+        ),
+    ),
+)
+
+
+# --------------------------------------------------------------------------- #
+# Scoring (pure, deterministic, no API).                                       #
+# --------------------------------------------------------------------------- #
+
+@dataclass
+class CaseResult:
+    name: str
+    prompt: str
+    buildable: bool
+    intents_passed: int
+    intents_total: int
+    required_missed: list[str] = field(default_factory=list)
+    optional_missed: list[str] = field(default_factory=list)
+    validation_errors: list[str] = field(default_factory=list)
+    critic_errors: list[str] = field(default_factory=list)
+    attempts: int | None = None
+    error: str | None = None      # the agent raised or never returned a spec
+
+    @property
+    def passed(self) -> bool:
+        """A case passes only if it built and met every *required* intent."""
+        return (self.error is None and self.buildable
+                and not self.required_missed)
+
+    @property
+    def intent_score(self) -> float:
+        if self.intents_total == 0:
+            return 1.0
+        return self.intents_passed / self.intents_total
+
+    def to_dict(self) -> dict:
+        return {
+            "name": self.name,
+            "prompt": self.prompt,
+            "passed": self.passed,
+            "buildable": self.buildable,
+            "intent_score": round(self.intent_score, 3),
+            "intents_passed": self.intents_passed,
+            "intents_total": self.intents_total,
+            "required_missed": self.required_missed,
+            "optional_missed": self.optional_missed,
+            "validation_errors": self.validation_errors,
+            "critic_errors": self.critic_errors,
+            "attempts": self.attempts,
+            "error": self.error,
+        }
+
+
+def score_spec(case: EvalCase, spec, validation: ValidationResult,
+               crit: CritiqueResult | None = None, *,
+               attempts: int | None = None) -> CaseResult:
+    """Score a produced *spec* against *case* — the deterministic core.
+
+    Buildable means it passes validation with no errors and, when a critique is
+    supplied, the geometry critic with no errors. Each intent is evaluated and
+    bucketed into required/optional misses.
+    """
+    buildable = validation.ok and (crit is None or crit.ok)
+    passed = 0
+    required_missed: list[str] = []
+    optional_missed: list[str] = []
+    for ic in case.intents:
+        try:
+            ok = bool(ic.check(spec))
+        except Exception:
+            ok = False
+        if ok:
+            passed += 1
+        elif ic.required:
+            required_missed.append(ic.desc)
+        else:
+            optional_missed.append(ic.desc)
+    return CaseResult(
+        name=case.name, prompt=case.prompt, buildable=buildable,
+        intents_passed=passed, intents_total=len(case.intents),
+        required_missed=required_missed, optional_missed=optional_missed,
+        validation_errors=[str(i) for i in validation.errors],
+        critic_errors=[str(i) for i in crit.errors] if crit else [],
+        attempts=attempts,
+    )
+
+
+def score_design(case: EvalCase, design_result) -> CaseResult:
+    """Score a :class:`agents.designer.DesignResult` for *case*."""
+    return score_spec(
+        case, design_result.spec, design_result.validation,
+        design_result.critique, attempts=design_result.attempts,
+    )
+
+
+def _failure_result(case: EvalCase, error: str) -> CaseResult:
+    """A case where the agent raised or never produced a usable spec."""
+    return CaseResult(
+        name=case.name, prompt=case.prompt, buildable=False,
+        intents_passed=0, intents_total=len(case.intents),
+        required_missed=[ic.desc for ic in case.intents if ic.required],
+        error=error,
+    )
+
+
+@dataclass
+class EvalReport:
+    results: list[CaseResult]
+
+    @property
+    def total(self) -> int:
+        return len(self.results)
+
+    @property
+    def pass_rate(self) -> float:
+        if not self.results:
+            return 0.0
+        return sum(r.passed for r in self.results) / self.total
+
+    @property
+    def buildable_rate(self) -> float:
+        if not self.results:
+            return 0.0
+        return sum(r.buildable for r in self.results) / self.total
+
+    @property
+    def intent_rate(self) -> float:
+        if not self.results:
+            return 0.0
+        return sum(r.intent_score for r in self.results) / self.total
+
+    def to_dict(self) -> dict:
+        return {
+            "pass_rate": round(self.pass_rate, 3),
+            "buildable_rate": round(self.buildable_rate, 3),
+            "intent_rate": round(self.intent_rate, 3),
+            "total": self.total,
+            "passed": sum(r.passed for r in self.results),
+            "cases": [r.to_dict() for r in self.results],
+        }
+
+    def format(self) -> str:
+        lines = ["Designer accuracy eval", "=" * 60]
+        for r in self.results:
+            mark = "PASS" if r.passed else "FAIL"
+            lines.append(
+                f"[{mark}] {r.name}  "
+                f"intent {r.intents_passed}/{r.intents_total}"
+                f"  {'buildable' if r.buildable else 'NOT buildable'}"
+            )
+            if r.error:
+                lines.append(f"        agent error: {r.error}")
+            for m in r.required_missed:
+                lines.append(f"        missed (required): {m}")
+            for m in r.optional_missed:
+                lines.append(f"        missed (optional): {m}")
+            for e in r.validation_errors:
+                lines.append(f"        validation: {e}")
+            for e in r.critic_errors:
+                lines.append(f"        critic: {e}")
+        lines.append("-" * 60)
+        lines.append(
+            f"pass rate {self.pass_rate:.0%}  ·  "
+            f"buildable {self.buildable_rate:.0%}  ·  "
+            f"intent {self.intent_rate:.0%}  "
+            f"({sum(r.passed for r in self.results)}/{self.total} cases)"
+        )
+        return "\n".join(lines)
+
+
+def run_eval(cases: Iterable[EvalCase] | None = None, *,
+             model: str | None = None, max_attempts: int = 3,
+             run_critic: bool = True,
+             progress: Callable[[EvalCase], None] | None = None) -> EvalReport:
+    """Run the agent over *cases* and score each. Needs ``ANTHROPIC_API_KEY``.
+
+    The designer import is lazy so importing this module (and its pure scoring)
+    never requires the optional ``anthropic`` dependency.
+    """
+    from .agents.designer import design_from_prompt
+
+    cases = list(cases) if cases is not None else list(DEFAULT_CASES)
+    results: list[CaseResult] = []
+    for case in cases:
+        if progress is not None:
+            progress(case)
+        try:
+            dr = design_from_prompt(
+                case.prompt, model=model, max_attempts=max_attempts,
+                run_critic=run_critic,
+            )
+        except Exception as exc:  # the agent itself failed — record, don't abort
+            results.append(_failure_result(case, f"{type(exc).__name__}: {exc}"))
+            continue
+        results.append(score_design(case, dr))
+    return EvalReport(results)

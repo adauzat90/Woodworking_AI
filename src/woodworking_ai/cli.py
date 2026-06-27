@@ -254,6 +254,27 @@ def _write_outputs(spec, asm, args, unit: str, *, is_group: bool) -> None:
             print(f"Wrote {base}.dae")
 
 
+def _run_eval(args) -> int:
+    """``woodai eval`` — run the designer accuracy harness and print a report."""
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        print("error: eval calls the designer agent and needs ANTHROPIC_API_KEY",
+              file=sys.stderr)
+        return 2
+    from .designer_eval import run_eval
+    report = run_eval(
+        model=args.model, max_attempts=args.attempts,
+        run_critic=not args.no_critic,
+        progress=lambda c: print(f"… {c.name}", file=sys.stderr),
+    )
+    print(report.format())
+    if args.json_out:
+        import json as _json
+        Path(args.json_out).write_text(
+            _json.dumps(report.to_dict(), indent=2), encoding="utf-8")
+        print(f"\nwrote {args.json_out}", file=sys.stderr)
+    return 0 if report.pass_rate >= args.min_pass else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="woodai", description=__doc__)
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -319,7 +340,22 @@ def main(argv: list[str] | None = None) -> int:
                              help="build from an existing spec JSON file")
     p_build.add_argument("spec_file", help="path to a spec .json file")
 
+    p_eval = sub.add_parser(
+        "eval", help="measure designer accuracy on a prompt set (needs API key)")
+    p_eval.add_argument("--model", help="override the Claude model id")
+    p_eval.add_argument("--attempts", type=int, default=3,
+                        help="max repair attempts per prompt")
+    p_eval.add_argument("--json", dest="json_out", metavar="FILE",
+                        help="write the full report as JSON")
+    p_eval.add_argument("--min-pass", dest="min_pass", type=float, default=0.0,
+                        help="exit nonzero if the pass rate is below this (0..1)")
+    p_eval.add_argument("--no-critic", dest="no_critic", action="store_true",
+                        help="skip the geometry critic (validation gate only)")
+
     args = parser.parse_args(argv)
+
+    if args.cmd == "eval":
+        return _run_eval(args)
 
     tooling = _tooling_from_args(args)
 

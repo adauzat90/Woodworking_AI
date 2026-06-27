@@ -21,9 +21,9 @@ from .dispatch import spec_kind, VOID, GROUP, TABLE, CABINET
 from . import furniture
 from .geometry import front_plan, component_tag
 # Construction constants now live in one neutral module shared with geometry.
-from .partmath import drawer_box_dims, door_panel_dims
+from .partmath import drawer_box_dims, door_panel_dims, carcass_dims
 from .constants import (
-    SHELF_SIDE_CLEARANCE, SHELF_SETBACK, STRETCHER_WIDTH,
+    STRETCHER_WIDTH,
     FRAME_WIDTH, FRAME_THICKNESS, DRAWER_BOX_DEPTH_GAP,
     DOOR_STILE_WIDTH, DOOR_RAIL_WIDTH,
     GLUE_UP_BOARD_WIDTH,
@@ -783,63 +783,63 @@ def _cabinet_cutlist(spec) -> CutList:
     if spec.cabinet_type == CabinetType.CORNER_DIAGONAL:
         return _diagonal_cutlist(spec)
 
-    m = spec.material
     cl = CutList(spec_name=spec.name)
 
     toe_h = spec.toe_kick_height
     box_height = spec.box_height
-    interior_width = spec.interior_width
     interior_depth = spec.interior_depth  # back recessed by its thickness
+    # Carcass part sizes come from the shared math so the cut list and the 3D
+    # model can't drift; the cut list only reshapes them into length/width.
+    dims = carcass_dims(spec)
 
     # ---- carcass --------------------------------------------------------
     # Frameless: the front edges of the gables, bottom and front stretcher show
     # and get banded ("L" = the front long edge). A face frame hides these.
     band = bool(spec.edge_banding) and spec.construction != Construction.FACE_FRAME
     cl.parts.append(Part(
-        "Side", 2, length=box_height, width=spec.depth, thickness=m.carcass,
+        "Side", 2, length=dims.box_height, width=dims.depth, thickness=dims.carcass,
         grain="length", notes="full-height gable",
         banded_edges="L" if band else "",
     ))
     cl.parts.append(Part(
-        "Bottom", 1, length=interior_width, width=interior_depth,
-        thickness=m.carcass, grain="none", notes="between sides",
+        "Bottom", 1, length=dims.interior_width, width=dims.interior_depth,
+        thickness=dims.carcass, grain="none", notes="between sides",
         banded_edges="L" if band else "",
     ))
     # Wall/tall cabinets are enclosed with a full top panel; base cabinets use
     # two top rails, leaving room for a sink/drawers and to fasten the counter.
     if spec.has_full_top:
         cl.parts.append(Part(
-            "Top", 1, length=interior_width, width=interior_depth,
-            thickness=m.carcass, grain="none", notes="enclosed top",
+            "Top", 1, length=dims.interior_width, width=dims.interior_depth,
+            thickness=dims.carcass, grain="none", notes="enclosed top",
             banded_edges="L" if band else "",
         ))
     else:
         cl.parts.append(Part(
-            "Top stretcher", 2, length=interior_width, width=STRETCHER_WIDTH,
-            thickness=m.carcass, grain="none", notes="front & back top rail",
+            "Top stretcher", 2, length=dims.interior_width, width=STRETCHER_WIDTH,
+            thickness=dims.carcass, grain="none", notes="front & back top rail",
             # Only the front rail's front edge shows; banded on the front piece.
             banded_edges="L" if band else "",
         ))
 
     # ---- back -----------------------------------------------------------
     if spec.back == BackStyle.APPLIED:
-        back_l, back_w = box_height, spec.width
         back_note = "applied to rear edges"
     else:  # rabbeted / grooved: captured between the sides
-        back_l, back_w = box_height - m.carcass, interior_width
         back_note = f"{spec.back.value} back"
     cl.parts.append(Part(
-        "Back", 1, length=max(back_l, back_w), width=min(back_l, back_w),
-        thickness=m.back, material=MAT_BACK, grain="none", notes=back_note,
+        "Back", 1, length=max(dims.back_h, dims.back_w),
+        width=min(dims.back_h, dims.back_w),
+        thickness=dims.back_thickness, material=MAT_BACK, grain="none",
+        notes=back_note,
     ))
 
     # ---- shelves --------------------------------------------------------
     if spec.shelves > 0:
-        shelf_w = interior_width - 2 * SHELF_SIDE_CLEARANCE
-        shelf_d = interior_depth - SHELF_SETBACK
         cl.parts.append(Part(
             "Adjustable shelf", spec.shelves,
-            length=shelf_w, width=shelf_d, thickness=m.shelf, grain="none",
+            length=dims.shelf_width, width=dims.shelf_depth,
+            thickness=dims.shelf_thickness, grain="none",
             notes="on shelf pins",
             # The front edge (along the shelf width) shows and is banded.
             banded_edges="L" if spec.edge_banding else "",
@@ -849,7 +849,8 @@ def _cabinet_cutlist(spec) -> CutList:
     # ---- toe kick -------------------------------------------------------
     if spec.toe_kick and toe_h > 0:
         cl.parts.append(Part(
-            "Toe kick", 1, length=spec.width, width=toe_h, thickness=m.carcass,
+            "Toe kick", 1, length=dims.width, width=dims.toe_height,
+            thickness=dims.carcass,
             grain="none", notes=f"set back {spec.toe_kick.setback:.0f}mm",
         ))
 

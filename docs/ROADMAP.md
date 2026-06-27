@@ -45,6 +45,16 @@ The historical plans are essentially complete. Highlights, by workstream:
 generated-and-guarded schema hint, `Project`/`Assembly` + `definitions`/`ref`
 composition, the `ApplianceVoid` placeholder, and the verify-repair feedback path.
 
+**Trust & measurement (✅ shipped):**
+- **Designer accuracy eval** (`designer_eval.py`, `woodai eval`) — scores the
+  natural-language→spec step on a prompt set: *buildable* (passes validator +
+  Critic) and *intent match* (the spec is what the prompt asked for), with a
+  CI-gating `--min-pass`. Pure scoring is unit-tested headless; only the live run
+  needs a key. Closes the "the AI is the least-measured part" gap.
+- **Carcass dimension SSOT made structural** — every carcass part size now flows
+  from one `partmath.carcass_dims`, with a drift-guard test asserting the 3D model
+  and the cut list agree (`TECH_DEBT.md`, follow-on §1.2).
+
 ---
 
 ## Next / candidate work
