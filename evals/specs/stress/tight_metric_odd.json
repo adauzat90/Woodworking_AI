@@ -1,0 +1,13 @@
+{
+  "kind": "cabinet",
+  "cabinet_type": "wall",
+  "name": "Wall Cabinet",
+  "units": "mm",
+  "width": 725,
+  "height": 720,
+  "depth": 340,
+  "doors": 2,
+  "construction": "frameless",
+  "toe_kick": null,
+  "shelves": 1
+}

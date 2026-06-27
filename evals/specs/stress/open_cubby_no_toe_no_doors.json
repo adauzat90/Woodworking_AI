@@ -1,0 +1,11 @@
+{
+  "kind": "cabinet",
+  "cabinet_type": "base",
+  "name": "Open Cubby",
+  "width": 500,
+  "height": 720,
+  "depth": 560,
+  "doors": 0,
+  "shelves": 2,
+  "toe_kick": null
+}

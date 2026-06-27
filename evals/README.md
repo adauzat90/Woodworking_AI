@@ -7,14 +7,35 @@ actually become that spec?*
 
 ## Result (2026-06-27)
 
-| Suite | Cases | Pass | Buildable | Intent |
-|---|---|---|---|---|
-| `default` (curated, unambiguous) | 8 | **8/8 (100%)** | 100% | 100% |
-| `adversarial` (unit traps, inferred type, missing dims, over-constrained) | 8 | **8/8 (100%)** | 100% | 100% |
-| **all** | 16 | **16/16 (100%)** | 100% | 100% |
+| Suite | Cases | Produced by | Pass | Buildable | Intent |
+|---|---|---|---|---|---|
+| `default` (curated, unambiguous) | 8 | Opus-class | **8/8** | 100% | 100% |
+| `adversarial` (unit traps, inferred type, missing dims, over-constrained) | 8 | Opus-class | **8/8** | 100% | 100% |
+| `stress` (fractional-inch/odd-metric conversion, specific enums, per-drawer attrs, exact multiset, exclusions) | 6 | **Haiku** | **6/6** | 100% | 100% |
+| **committed total** | **22** | mixed | **22/22 (100%)** | 100% | 100% |
+
+The `adversarial` suite was **also** run on Haiku and scored **8/8** (those
+specs aren't the ones committed here). So across both model tiers, every prompt
+tried — **30/30** — passed.
 
 Full per-case detail is in [`baseline.json`](baseline.json); the specs the
 designer produced are under [`specs/`](specs/).
+
+### What this says about the failure boundary
+
+We deliberately pushed for failures: a cheaper, weaker model (**Haiku**) and a
+**strict** suite (fractional inches like `37 3/8″`, odd metric like `0.725 m`
+held to ±3 mm, specific enum values, per-drawer `undermount`/`dovetail`, an exact
+`{140,180,180,220}` drawer-height multiset, and a "no toe kick, no doors"
+exclusion). It still scored 6/6. **The boundary was not reached** — the
+structured DSL + schema hint + the validate/critique repair loop carry even a
+small model. That is evidence *for* the project's core thesis (LLMs are reliable
+at writing and repairing *language*, not binary geometry).
+
+What is **not** yet tested, and where failures most likely live: genuinely
+ambiguous intent with no single right answer, multi-cabinet **projects/kitchens**,
+and prompts that should trigger a clarifying question or a refusal rather than a
+guess. Those are the next cases to add.
 
 A case **passes** only if the spec is *buildable* (passes the validator **and**
 the geometry critic with no errors) **and** meets every *required* intent check

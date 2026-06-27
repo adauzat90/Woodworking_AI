@@ -1,0 +1,11 @@
+{
+  "kind": "cabinet",
+  "cabinet_type": "base",
+  "name": "Base Cabinet",
+  "units": "in",
+  "width": 37.375,
+  "height": 28.5,
+  "depth": 22,
+  "doors": 1,
+  "shelves": 1
+}

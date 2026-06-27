@@ -318,17 +318,22 @@ validation/critic errors), plus aggregate **pass / buildable / intent** rates.
 export ANTHROPIC_API_KEY=sk-...
 woodai eval                          # the curated set
 woodai eval --suite adversarial      # unit traps, inferred type, missing dims…
+woodai eval --suite stress           # strict: fractional inches, enums, per-drawer attrs
 woodai eval --suite all --json eval.json
 woodai eval --min-pass 0.8           # exit nonzero if pass rate < 80% (CI gate)
 ```
 
-**Measured baseline:** the latest run scores **16/16 (100% pass · 100%
-buildable · 100% intent)** across the curated *and* adversarial suites — see
-[`evals/`](evals/) for the full report and the exact specs the designer produced
-(including the unit-trap and missing-dimension cases). That is a strong model
-with a repair loop clearing these prompts, not "solved" — the failure boundary
-needs cheaper models or genuinely ambiguous prompts, which the adversarial suite
-is the place to grow.
+**Measured baseline:** the committed run scores **22/22 (100% pass · buildable ·
+intent)** across the curated, adversarial, and strict *stress* suites — see
+[`evals/`](evals/) for the full report and the exact specs the designer produced.
+We pushed hard to find the failure boundary: the strict stress suite (fractional
+inches like `37 3/8″`, odd metric held to ±3 mm, specific enums, per-drawer
+`undermount`/`dovetail`, exact drawer-height multisets, exclusions) was run on
+**Haiku** — the cheapest model — and still scored **6/6**; the adversarial suite
+on Haiku scored 8/8 too (**30/30** across both model tiers). The boundary wasn't
+reached: the structured DSL + schema hint + repair loop carry even a small model.
+Not yet tested — ambiguous intent with no right answer, and multi-cabinet
+projects — is where failures most likely live.
 
 The scoring is pure and deterministic — it runs headless in CI against
 hand-built specs (`tests/test_designer_eval.py`) and re-scores the committed

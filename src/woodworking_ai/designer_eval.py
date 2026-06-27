@@ -80,6 +80,30 @@ def dim_between(attr: str, lo: float, hi: float) -> Callable[[object], bool]:
     return check
 
 
+def no_toe_kick() -> Callable[[object], bool]:
+    return lambda s: float(getattr(s, "toe_kick_height", 0) or 0) == 0
+
+
+def drawer_front_heights(values, tol: float = 2.0) -> Callable[[object], bool]:
+    """Every drawer front height the prompt named is present (order-free)."""
+    want = sorted(float(v) for v in values)
+
+    def check(s):
+        ds = getattr(s, "drawers", []) or []
+        got = sorted(float(getattr(d, "front_height", 0) or 0) for d in ds)
+        return (len(got) == len(want)
+                and all(abs(a - b) <= tol for a, b in zip(got, want, strict=False)))
+    return check
+
+
+def all_drawers_attr(attr: str, value: str) -> Callable[[object], bool]:
+    """Every drawer sets *attr* to *value* (enum or string)."""
+    def check(s):
+        ds = getattr(s, "drawers", []) or []
+        return bool(ds) and all(_enum_str(getattr(d, attr, None)) == value for d in ds)
+    return check
+
+
 def door_style_is(name: str) -> Callable[[object], bool]:
     return lambda s: _enum_str(getattr(s, "door_style", "")) == name
 
@@ -293,11 +317,94 @@ ADVERSARIAL_CASES: tuple[EvalCase, ...] = (
 )
 
 
+# Stress set — strict, compositional checks meant to find the failure boundary:
+# fractional-inch and odd-metric conversions held to a few mm, specific enum
+# values (raised-panel doors, undermount slides), per-drawer attributes, an exact
+# multiset of drawer heights, and an exclusion the model must honour (no toe
+# kick). Buildability is cheap (the repair loop fixes it); these probe whether
+# the spec is *what was asked* down to the detail. All checks are required.
+STRESS_CASES: tuple[EvalCase, ...] = (
+    EvalCase(
+        "fractional_inch_width",
+        "base cabinet 37 and 3/8 inches wide, one door, one shelf",
+        (
+            IntentCheck("is a base cabinet", cabinet_type_is("base")),
+            IntentCheck("37-3/8 in -> ~949 mm wide",
+                        dim_near("width", 37.375 * 25.4, tol=4)),
+            IntentCheck("one door", doors_eq(1)),
+            IntentCheck("one shelf", shelves_at_least(1)),
+        ),
+    ),
+    EvalCase(
+        "exact_drawer_heights",
+        "drawer base 600 wide, four drawers with front heights 140, 180, 180 "
+        "and 220 mm from top to bottom, no doors",
+        (
+            IntentCheck("is a base cabinet", cabinet_type_is("base")),
+            IntentCheck("600 wide", dim_near("width", 600, tol=10)),
+            IntentCheck("no doors", doors_eq(0)),
+            IntentCheck("four drawers", drawers_eq(4)),
+            IntentCheck("exact front heights 140/180/180/220",
+                        drawer_front_heights([140, 180, 180, 220])),
+        ),
+    ),
+    EvalCase(
+        "open_cubby_no_toe_no_doors",
+        "a base cabinet 500 wide, no toe kick and no doors — just an open cubby "
+        "with two fixed shelves",
+        (
+            IntentCheck("is a base cabinet", cabinet_type_is("base")),
+            IntentCheck("500 wide", dim_near("width", 500, tol=10)),
+            IntentCheck("no doors", doors_eq(0)),
+            IntentCheck("no toe kick", no_toe_kick()),
+            IntentCheck("two shelves", shelves_at_least(2)),
+        ),
+    ),
+    EvalCase(
+        "undermount_dovetail_drawers",
+        "30 inch drawer base, three drawers, on undermount slides with "
+        "dovetailed boxes, no doors",
+        (
+            IntentCheck("is a base cabinet", cabinet_type_is("base")),
+            IntentCheck("~30in wide", dim_near("width", 30 * 25.4, tol=20)),
+            IntentCheck("three drawers", drawers_eq(3)),
+            IntentCheck("all undermount slides",
+                        all_drawers_attr("slide_type", "undermount")),
+            IntentCheck("all dovetailed boxes",
+                        all_drawers_attr("corner_joint", "dovetail")),
+        ),
+    ),
+    EvalCase(
+        "raised_panel_faceframe",
+        "a face frame base cabinet 800 wide with two raised panel doors",
+        (
+            IntentCheck("is a base cabinet", cabinet_type_is("base")),
+            IntentCheck("800 wide", dim_near("width", 800, tol=10)),
+            IntentCheck("two doors", doors_eq(2)),
+            IntentCheck("face-frame construction", construction_is("face_frame")),
+            IntentCheck("raised-panel door style", door_style_is("raised_panel")),
+        ),
+    ),
+    EvalCase(
+        "tight_metric_odd",
+        "wall cabinet 0.725 metres wide and 0.34 deep, two doors, frameless",
+        (
+            IntentCheck("is a wall cabinet", cabinet_type_is("wall")),
+            IntentCheck("0.725 m -> 725 mm wide", dim_near("width", 725, tol=3)),
+            IntentCheck("0.34 m -> 340 mm deep", dim_near("depth", 340, tol=3)),
+            IntentCheck("two doors", doors_eq(2)),
+            IntentCheck("frameless", construction_is("frameless")),
+        ),
+    ),
+)
+
+
 # Named suites for the runner / CLI.
 SUITES: dict[str, tuple[EvalCase, ...]] = {
     "default": DEFAULT_CASES,
     "adversarial": ADVERSARIAL_CASES,
-    "all": DEFAULT_CASES + ADVERSARIAL_CASES,
+    "stress": STRESS_CASES,
+    "all": DEFAULT_CASES + ADVERSARIAL_CASES + STRESS_CASES,
 }
 
 

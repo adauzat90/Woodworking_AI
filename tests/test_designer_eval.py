@@ -16,7 +16,9 @@ from woodworking_ai.designer_eval import (
     EvalCase, IntentCheck, CaseResult, EvalReport,
     cabinet_type_is, is_table, dim_near, doors_eq, drawers_eq, drawers_at_least,
     shelves_at_least, dim_between, door_style_is, construction_is,
-    score_spec, _failure_result, DEFAULT_CASES, ADVERSARIAL_CASES, SUITES,
+    no_toe_kick, drawer_front_heights, all_drawers_attr,
+    score_spec, _failure_result,
+    DEFAULT_CASES, ADVERSARIAL_CASES, STRESS_CASES, SUITES,
 )
 
 
@@ -170,7 +172,7 @@ def test_failure_result_records_error_and_fails():
 
 # --- the shipped dataset is well-formed --------------------------------------
 
-@pytest.mark.parametrize("cases", [DEFAULT_CASES, ADVERSARIAL_CASES])
+@pytest.mark.parametrize("cases", [DEFAULT_CASES, ADVERSARIAL_CASES, STRESS_CASES])
 def test_cases_are_well_formed(cases):
     names = [c.name for c in cases]
     assert len(names) == len(set(names))          # unique names
@@ -181,11 +183,28 @@ def test_cases_are_well_formed(cases):
 
 
 def test_suites_registry():
-    assert set(SUITES) == {"default", "adversarial", "all"}
-    assert SUITES["all"] == DEFAULT_CASES + ADVERSARIAL_CASES
+    assert set(SUITES) == {"default", "adversarial", "stress", "all"}
+    assert SUITES["all"] == DEFAULT_CASES + ADVERSARIAL_CASES + STRESS_CASES
     # every case name is globally unique across suites
     names = [c.name for c in SUITES["all"]]
     assert len(names) == len(set(names))
+
+
+def test_stress_predicates():
+    spec = CabinetSpec(name="DB", width=600, height=720, depth=560, doors=0,
+                       toe_kick=None,
+                       drawers=[Drawer(140), Drawer(180), Drawer(180),
+                                Drawer(220, slide_type="undermount")])
+    assert no_toe_kick()(spec) is True
+    assert drawer_front_heights([220, 180, 140, 180])(spec) is True   # order-free
+    assert drawer_front_heights([140, 180, 180, 200])(spec) is False  # 220 != 200
+    # not every drawer is undermount here
+    assert all_drawers_attr("slide_type", "undermount")(spec) is False
+    allu = CabinetSpec(name="x", width=600, height=720, depth=560, doors=0,
+                       drawers=[Drawer(160, slide_type="undermount"),
+                                Drawer(160, slide_type="undermount")])
+    assert all_drawers_attr("slide_type", "undermount")(allu) is True
+    assert all_drawers_attr("corner_joint", "dovetail")(allu) is True  # default
 
 
 def test_new_predicates():

@@ -1,0 +1,13 @@
+{
+  "kind": "cabinet",
+  "cabinet_type": "base",
+  "name": "Face Frame Base Cabinet",
+  "width": 800,
+  "height": 720,
+  "depth": 560,
+  "construction": "face_frame",
+  "door_style": "raised_panel",
+  "doors": 2,
+  "shelves": 1,
+  "center_mullion": true
+}

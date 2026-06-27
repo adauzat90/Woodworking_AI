@@ -1,13 +1,14 @@
 {
   "generated": "2026-06-27",
-  "method": "Each prompt was handed to Claude (Opus-class) acting as the Designer agent through the project's real SYSTEM_PROMPT + DSL schema hint, with no knowledge of the intent checks. Each agent self-repaired its spec to buildability against the validator + geometry critic, then the spec was scored by designer_eval.score_spec. This is an API-key-free proxy for `woodai eval`; it exercises the same scoring but stands in subagents for the live agent + repair loop.",
+  "method": "Each prompt was handed to a Claude subagent acting as the Designer agent through the project's real SYSTEM_PROMPT + DSL schema hint, with no knowledge of the intent checks. Each agent self-repaired its spec to buildability against the validator + geometry critic; the spec was then scored by designer_eval.score_spec. An API-key-free proxy for `woodai eval` (subagents stand in for the live agent + repair loop).",
   "scored_by": "woodworking_ai.designer_eval.score_spec",
+  "findings": "30/30 across runs. default+adversarial produced by an Opus-class model (16/16); the strict stress suite by Haiku (6/6); the adversarial suite was ALSO run on Haiku and scored 8/8 (those specs not committed here). The failure boundary was not reached even with a cheaper model and strict checks (fractional-inch / odd-metric conversion, specific enums, per-drawer attributes, exact multiset, exclusions) -- the structured DSL + schema hint + repair loop carries it. Untested: genuinely ambiguous intent with no single right answer, and multi-cabinet projects.",
   "aggregate": {
     "pass_rate": 1.0,
     "buildable_rate": 1.0,
     "intent_rate": 1.0,
-    "passed": 16,
-    "total": 16
+    "passed": 22,
+    "total": 22
   },
   "suites": {
     "default": {
@@ -137,7 +138,8 @@
           "attempts": null,
           "error": null
         }
-      ]
+      ],
+      "produced_by": "claude-opus"
     },
     "adversarial": {
       "pass_rate": 1.0,
@@ -266,7 +268,108 @@
           "attempts": null,
           "error": null
         }
-      ]
+      ],
+      "produced_by": "claude-opus"
+    },
+    "stress": {
+      "pass_rate": 1.0,
+      "buildable_rate": 1.0,
+      "intent_rate": 1.0,
+      "total": 6,
+      "passed": 6,
+      "cases": [
+        {
+          "name": "fractional_inch_width",
+          "prompt": "base cabinet 37 and 3/8 inches wide, one door, one shelf",
+          "passed": true,
+          "buildable": true,
+          "intent_score": 1.0,
+          "intents_passed": 4,
+          "intents_total": 4,
+          "required_missed": [],
+          "optional_missed": [],
+          "validation_errors": [],
+          "critic_errors": [],
+          "attempts": null,
+          "error": null
+        },
+        {
+          "name": "exact_drawer_heights",
+          "prompt": "drawer base 600 wide, four drawers with front heights 140, 180, 180 and 220 mm from top to bottom, no doors",
+          "passed": true,
+          "buildable": true,
+          "intent_score": 1.0,
+          "intents_passed": 5,
+          "intents_total": 5,
+          "required_missed": [],
+          "optional_missed": [],
+          "validation_errors": [],
+          "critic_errors": [],
+          "attempts": null,
+          "error": null
+        },
+        {
+          "name": "open_cubby_no_toe_no_doors",
+          "prompt": "a base cabinet 500 wide, no toe kick and no doors \u2014 just an open cubby with two fixed shelves",
+          "passed": true,
+          "buildable": true,
+          "intent_score": 1.0,
+          "intents_passed": 5,
+          "intents_total": 5,
+          "required_missed": [],
+          "optional_missed": [],
+          "validation_errors": [],
+          "critic_errors": [],
+          "attempts": null,
+          "error": null
+        },
+        {
+          "name": "undermount_dovetail_drawers",
+          "prompt": "30 inch drawer base, three drawers, on undermount slides with dovetailed boxes, no doors",
+          "passed": true,
+          "buildable": true,
+          "intent_score": 1.0,
+          "intents_passed": 5,
+          "intents_total": 5,
+          "required_missed": [],
+          "optional_missed": [],
+          "validation_errors": [],
+          "critic_errors": [],
+          "attempts": null,
+          "error": null
+        },
+        {
+          "name": "raised_panel_faceframe",
+          "prompt": "a face frame base cabinet 800 wide with two raised panel doors",
+          "passed": true,
+          "buildable": true,
+          "intent_score": 1.0,
+          "intents_passed": 5,
+          "intents_total": 5,
+          "required_missed": [],
+          "optional_missed": [],
+          "validation_errors": [],
+          "critic_errors": [],
+          "attempts": null,
+          "error": null
+        },
+        {
+          "name": "tight_metric_odd",
+          "prompt": "wall cabinet 0.725 metres wide and 0.34 deep, two doors, frameless",
+          "passed": true,
+          "buildable": true,
+          "intent_score": 1.0,
+          "intents_passed": 5,
+          "intents_total": 5,
+          "required_missed": [],
+          "optional_missed": [],
+          "validation_errors": [],
+          "critic_errors": [],
+          "attempts": null,
+          "error": null
+        }
+      ],
+      "produced_by": "claude-haiku"
     }
   }
 }

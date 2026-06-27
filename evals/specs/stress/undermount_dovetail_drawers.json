@@ -1,0 +1,39 @@
+{
+  "kind": "cabinet",
+  "cabinet_type": "base",
+  "name": "Drawer Base",
+  "units": "mm",
+  "width": 762,
+  "height": 720,
+  "depth": 610,
+  "doors": 0,
+  "drawers": [
+    {
+      "front_height": 200,
+      "corner_joint": "dovetail",
+      "dovetail_tails": "sides",
+      "slide_type": "undermount",
+      "false_front": false
+    },
+    {
+      "front_height": 200,
+      "corner_joint": "dovetail",
+      "dovetail_tails": "sides",
+      "slide_type": "undermount",
+      "false_front": false
+    },
+    {
+      "front_height": 200,
+      "corner_joint": "dovetail",
+      "dovetail_tails": "sides",
+      "slide_type": "undermount",
+      "false_front": false
+    }
+  ],
+  "construction": "frameless",
+  "material": {
+    "carcass": 18,
+    "back": 6,
+    "drawer_box": 12
+  }
+}

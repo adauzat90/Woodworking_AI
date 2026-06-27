@@ -21,8 +21,11 @@ EVALS = pathlib.Path(__file__).resolve().parent.parent / "evals"
 SPECS = EVALS / "specs"
 
 
+BASELINE_SUITES = ("default", "adversarial", "stress")
+
+
 def _cases():
-    for suite in ("default", "adversarial"):
+    for suite in BASELINE_SUITES:
         for case in SUITES[suite]:
             yield suite, case
 
@@ -46,7 +49,7 @@ def test_baseline_json_matches_committed_specs():
     # exactly what re-scoring the committed specs yields.
     passed = 0
     total = 0
-    for suite in ("default", "adversarial"):
+    for suite in BASELINE_SUITES:
         for case in SUITES[suite]:
             raw = json.loads((SPECS / suite / f"{case.name}.json").read_text())
             spec = spec_from_dict(raw)

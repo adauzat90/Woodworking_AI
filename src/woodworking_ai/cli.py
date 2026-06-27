@@ -343,7 +343,8 @@ def main(argv: list[str] | None = None) -> int:
 
     p_eval = sub.add_parser(
         "eval", help="measure designer accuracy on a prompt set (needs API key)")
-    p_eval.add_argument("--suite", choices=["default", "adversarial", "all"],
+    p_eval.add_argument("--suite",
+                        choices=["default", "adversarial", "stress", "all"],
                         default="default",
                         help="which prompt set to run (default: the curated set)")
     p_eval.add_argument("--model", help="override the Claude model id")
