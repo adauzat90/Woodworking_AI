@@ -1,0 +1,60 @@
+{
+  "kind": "cabinet",
+  "cabinet_type": "dresser",
+  "name": "5-Drawer Dresser",
+  "units": "mm",
+  "width": 800,
+  "height": 1100,
+  "depth": 500,
+  "construction": "frameless",
+  "joinery": "dado",
+  "back": "rabbeted",
+  "toe_kick": {
+    "height": 100,
+    "setback": 50
+  },
+  "doors": 0,
+  "shelves": 0,
+  "anti_tip": true,
+  "drawers": [
+    {
+      "front_height": 180,
+      "corner_joint": "dovetail",
+      "dovetail_tails": "sides",
+      "slide_type": "undermount"
+    },
+    {
+      "front_height": 180,
+      "corner_joint": "dovetail",
+      "dovetail_tails": "sides",
+      "slide_type": "undermount"
+    },
+    {
+      "front_height": 180,
+      "corner_joint": "dovetail",
+      "dovetail_tails": "sides",
+      "slide_type": "undermount"
+    },
+    {
+      "front_height": 180,
+      "corner_joint": "dovetail",
+      "dovetail_tails": "sides",
+      "slide_type": "undermount"
+    },
+    {
+      "front_height": 180,
+      "corner_joint": "dovetail",
+      "dovetail_tails": "sides",
+      "slide_type": "undermount"
+    }
+  ],
+  "material_form": "plywood",
+  "species": "birch",
+  "stock": {
+    "front": {
+      "form": "solid",
+      "species": "maple"
+    }
+  },
+  "finish": "clear"
+}

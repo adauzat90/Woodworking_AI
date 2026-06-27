@@ -1,0 +1,30 @@
+{
+  "kind": "cabinet",
+  "cabinet_type": "bookcase",
+  "name": "Face Frame Bookcase",
+  "units": "mm",
+  "width": 900,
+  "height": 1800,
+  "depth": 300,
+  "construction": "face_frame",
+  "joinery": "dado",
+  "back": "rabbeted",
+  "toe_kick": {
+    "height": 100,
+    "setback": 50
+  },
+  "shelves": 4,
+  "doors": 0,
+  "shelf_species": "plywood",
+  "shelf_load_kg_per_m": 30,
+  "anti_tip": true,
+  "material_form": "plywood",
+  "species": "birch",
+  "stock": {
+    "frame": {
+      "form": "solid",
+      "species": "oak"
+    }
+  },
+  "finish": "clear"
+}

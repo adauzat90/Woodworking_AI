@@ -1,0 +1,52 @@
+{
+  "kind": "cabinet",
+  "cabinet_type": "base",
+  "name": "30in 3-Drawer Base",
+  "units": "in",
+  "width": 30,
+  "height": 34.5,
+  "depth": 24,
+  "construction": "frameless",
+  "back": "rabbeted",
+  "joinery": "dado",
+  "toe_kick": {
+    "height": 4,
+    "setback": 3
+  },
+  "doors": 0,
+  "shelves": 0,
+  "drawers": [
+    {
+      "front_height": 6,
+      "corner_joint": "dovetail",
+      "dovetail_tails": "sides",
+      "slide_type": "undermount"
+    },
+    {
+      "front_height": 10,
+      "corner_joint": "dovetail",
+      "dovetail_tails": "sides",
+      "slide_type": "undermount"
+    },
+    {
+      "front_height": 10,
+      "corner_joint": "dovetail",
+      "dovetail_tails": "sides",
+      "slide_type": "undermount"
+    }
+  ],
+  "reveal": 0.125,
+  "edge_banding": true,
+  "hardware_brand": "blum",
+  "hinge_overlay": "overlay",
+  "pull": "bar",
+  "finish": "clear",
+  "material_form": "plywood",
+  "species": "birch",
+  "stock": {
+    "front": {
+      "form": "plywood",
+      "species": "birch"
+    }
+  }
+}

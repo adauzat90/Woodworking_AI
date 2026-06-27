@@ -1,0 +1,23 @@
+{
+  "kind": "cabinet",
+  "cabinet_type": "wall",
+  "name": "Wall Cabinet 760x700",
+  "units": "mm",
+  "width": 760,
+  "height": 700,
+  "depth": 320,
+  "construction": "frameless",
+  "door_style": "shaker",
+  "doors": 2,
+  "shelves": 2,
+  "toe_kick": null,
+  "back": "rabbeted",
+  "joinery": "dado",
+  "material_form": "plywood",
+  "species": "birch",
+  "shelf_species": "plywood",
+  "shelf_load_kg_per_m": 25,
+  "hinge_overlay": "overlay",
+  "hardware_brand": "blum",
+  "finish": "clear"
+}

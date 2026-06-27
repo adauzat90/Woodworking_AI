@@ -1,0 +1,32 @@
+{
+  "kind": "cabinet",
+  "cabinet_type": "base",
+  "name": "36in Sink Base",
+  "units": "in",
+  "width": 36,
+  "height": 34.5,
+  "depth": 24,
+  "construction": "frameless",
+  "door_style": "shaker",
+  "back": "rabbeted",
+  "joinery": "dado",
+  "toe_kick": {
+    "height": 4,
+    "setback": 2.5
+  },
+  "shelves": 1,
+  "doors": 2,
+  "center_mullion": true,
+  "reveal": 0.125,
+  "edge_banding": true,
+  "hinge_overlay": "overlay",
+  "finish": "paint",
+  "material_form": "plywood",
+  "species": "birch",
+  "stock": {
+    "front": {
+      "form": "solid",
+      "species": "maple"
+    }
+  }
+}

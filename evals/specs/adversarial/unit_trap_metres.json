@@ -1,0 +1,22 @@
+{
+  "kind": "cabinet",
+  "cabinet_type": "wall",
+  "name": "Wall Cabinet",
+  "units": "mm",
+  "width": 800,
+  "height": 720,
+  "depth": 350,
+  "construction": "frameless",
+  "door_style": "slab",
+  "back": "rabbeted",
+  "joinery": "dado",
+  "toe_kick": null,
+  "shelves": 1,
+  "doors": 2,
+  "hinge_overlay": "overlay",
+  "reveal": 3,
+  "edge_banding": true,
+  "material_form": "plywood",
+  "species": "birch",
+  "finish": "clear"
+}

@@ -1,0 +1,61 @@
+{
+  "kind": "cabinet",
+  "cabinet_type": "dresser",
+  "name": "Five-Drawer Dresser",
+  "units": "mm",
+  "width": 900,
+  "height": 1200,
+  "depth": 500,
+  "construction": "frameless",
+  "joinery": "dado",
+  "back": "rabbeted",
+  "toe_kick": {
+    "height": 100,
+    "setback": 50
+  },
+  "doors": 0,
+  "shelves": 0,
+  "anti_tip": true,
+  "drawers": [
+    {
+      "front_height": 200,
+      "corner_joint": "dovetail",
+      "dovetail_tails": "sides",
+      "slide_type": "undermount"
+    },
+    {
+      "front_height": 200,
+      "corner_joint": "dovetail",
+      "dovetail_tails": "sides",
+      "slide_type": "undermount"
+    },
+    {
+      "front_height": 200,
+      "corner_joint": "dovetail",
+      "dovetail_tails": "sides",
+      "slide_type": "undermount"
+    },
+    {
+      "front_height": 200,
+      "corner_joint": "dovetail",
+      "dovetail_tails": "sides",
+      "slide_type": "undermount"
+    },
+    {
+      "front_height": 200,
+      "corner_joint": "dovetail",
+      "dovetail_tails": "sides",
+      "slide_type": "undermount"
+    }
+  ],
+  "reveal": 3,
+  "material_form": "plywood",
+  "species": "birch",
+  "stock": {
+    "front": {
+      "form": "solid",
+      "species": "walnut"
+    }
+  },
+  "finish": "oil"
+}

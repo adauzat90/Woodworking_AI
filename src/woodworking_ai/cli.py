@@ -260,8 +260,9 @@ def _run_eval(args) -> int:
         print("error: eval calls the designer agent and needs ANTHROPIC_API_KEY",
               file=sys.stderr)
         return 2
-    from .designer_eval import run_eval
+    from .designer_eval import run_eval, SUITES
     report = run_eval(
+        SUITES[args.suite],
         model=args.model, max_attempts=args.attempts,
         run_critic=not args.no_critic,
         progress=lambda c: print(f"… {c.name}", file=sys.stderr),
@@ -342,6 +343,9 @@ def main(argv: list[str] | None = None) -> int:
 
     p_eval = sub.add_parser(
         "eval", help="measure designer accuracy on a prompt set (needs API key)")
+    p_eval.add_argument("--suite", choices=["default", "adversarial", "all"],
+                        default="default",
+                        help="which prompt set to run (default: the curated set)")
     p_eval.add_argument("--model", help="override the Claude model id")
     p_eval.add_argument("--attempts", type=int, default=3,
                         help="max repair attempts per prompt")

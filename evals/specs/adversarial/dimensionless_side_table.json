@@ -1,0 +1,20 @@
+{
+  "kind": "table",
+  "name": "Sofa Side Table",
+  "units": "mm",
+  "width": 500,
+  "depth": 500,
+  "height": 600,
+  "top_thickness": 25,
+  "leg": 45,
+  "apron_height": 80,
+  "apron_thickness": 20,
+  "leg_inset": 30,
+  "solid_top": true,
+  "top_fixing": "floating",
+  "grain": "flatsawn",
+  "joinery": "mortise_tenon",
+  "material_form": "solid",
+  "species": "walnut",
+  "finish": "oil"
+}

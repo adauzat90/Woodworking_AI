@@ -14,9 +14,9 @@ from woodworking_ai.validator import validate, ValidationResult, Issue
 from woodworking_ai.agents.critic import critique
 from woodworking_ai.designer_eval import (
     EvalCase, IntentCheck, CaseResult, EvalReport,
-    cabinet_type_is, is_table, dim_near, doors_eq, drawers_eq,
-    shelves_at_least, door_style_is, construction_is,
-    score_spec, _failure_result, DEFAULT_CASES,
+    cabinet_type_is, is_table, dim_near, doors_eq, drawers_eq, drawers_at_least,
+    shelves_at_least, dim_between, door_style_is, construction_is,
+    score_spec, _failure_result, DEFAULT_CASES, ADVERSARIAL_CASES, SUITES,
 )
 
 
@@ -170,10 +170,29 @@ def test_failure_result_records_error_and_fails():
 
 # --- the shipped dataset is well-formed --------------------------------------
 
-def test_default_cases_are_well_formed():
-    names = [c.name for c in DEFAULT_CASES]
+@pytest.mark.parametrize("cases", [DEFAULT_CASES, ADVERSARIAL_CASES])
+def test_cases_are_well_formed(cases):
+    names = [c.name for c in cases]
     assert len(names) == len(set(names))          # unique names
-    assert len(DEFAULT_CASES) >= 5
-    for c in DEFAULT_CASES:
+    assert len(cases) >= 5
+    for c in cases:
         assert c.prompt and c.intents
         assert any(ic.required for ic in c.intents)
+
+
+def test_suites_registry():
+    assert set(SUITES) == {"default", "adversarial", "all"}
+    assert SUITES["all"] == DEFAULT_CASES + ADVERSARIAL_CASES
+    # every case name is globally unique across suites
+    names = [c.name for c in SUITES["all"]]
+    assert len(names) == len(set(names))
+
+
+def test_new_predicates():
+    cab = CabinetSpec(name="c", width=600, height=720, depth=560,
+                      drawers=[Drawer(160), Drawer(160), Drawer(160), Drawer(160)])
+    assert drawers_at_least(4)(cab) is True
+    assert drawers_at_least(5)(cab) is False
+    assert dim_between("height", 700, 740)(cab) is True
+    assert dim_between("height", 100, 200)(cab) is False
+    assert dim_between("missing", 0, 10)(cab) is False

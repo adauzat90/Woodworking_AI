@@ -1,0 +1,21 @@
+{
+  "kind": "cabinet",
+  "cabinet_type": "bookcase",
+  "name": "Living Room Open Bookcase",
+  "units": "mm",
+  "width": 800,
+  "height": 1200,
+  "depth": 280,
+  "construction": "frameless",
+  "back": "rabbeted",
+  "joinery": "dado",
+  "doors": 0,
+  "shelves": 4,
+  "shelf_species": "plywood",
+  "shelf_load_kg_per_m": 30,
+  "anti_tip": true,
+  "edge_banding": true,
+  "material_form": "plywood",
+  "species": "birch",
+  "finish": "clear"
+}

@@ -1,0 +1,22 @@
+{
+  "kind": "cabinet",
+  "cabinet_type": "base",
+  "name": "Base Cabinet",
+  "units": "in",
+  "width": 24,
+  "height": 36,
+  "depth": 24,
+  "construction": "frameless",
+  "door_style": "shaker",
+  "back": "rabbeted",
+  "joinery": "dado",
+  "toe_kick": {
+    "height": 4,
+    "setback": 3
+  },
+  "shelves": 1,
+  "doors": 1,
+  "material_form": "plywood",
+  "species": "birch",
+  "finish": "clear"
+}

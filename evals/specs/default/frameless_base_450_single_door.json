@@ -1,0 +1,28 @@
+{
+  "kind": "cabinet",
+  "cabinet_type": "base",
+  "name": "Frameless Base 450 Single Door",
+  "units": "mm",
+  "width": 450,
+  "height": 870,
+  "depth": 560,
+  "construction": "frameless",
+  "door_style": "slab",
+  "back": "rabbeted",
+  "joinery": "dado",
+  "toe_kick": {
+    "height": 100,
+    "setback": 50
+  },
+  "shelves": 1,
+  "doors": 1,
+  "reveal": 3,
+  "hinge_overlay": "overlay",
+  "edge_banding": true,
+  "shelf_species": "plywood",
+  "shelf_load_kg_per_m": 25,
+  "hardware_brand": "blum",
+  "material_form": "plywood",
+  "species": "birch",
+  "finish": "clear"
+}

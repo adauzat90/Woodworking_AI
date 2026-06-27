@@ -57,12 +57,27 @@ def doors_eq(n: int) -> Callable[[object], bool]:
     return lambda s: int(getattr(s, "doors", 0) or 0) == n
 
 
+def doors_at_least(n: int) -> Callable[[object], bool]:
+    return lambda s: int(getattr(s, "doors", 0) or 0) >= n
+
+
 def drawers_eq(n: int) -> Callable[[object], bool]:
     return lambda s: len(getattr(s, "drawers", []) or []) == n
 
 
+def drawers_at_least(n: int) -> Callable[[object], bool]:
+    return lambda s: len(getattr(s, "drawers", []) or []) >= n
+
+
 def shelves_at_least(n: int) -> Callable[[object], bool]:
     return lambda s: int(getattr(s, "shelves", 0) or 0) >= n
+
+
+def dim_between(attr: str, lo: float, hi: float) -> Callable[[object], bool]:
+    def check(s):
+        v = getattr(s, attr, None)
+        return v is not None and lo <= float(v) <= hi
+    return check
 
 
 def door_style_is(name: str) -> Callable[[object], bool]:
@@ -176,6 +191,114 @@ DEFAULT_CASES: tuple[EvalCase, ...] = (
         ),
     ),
 )
+
+
+# Adversarial set — the cases that actually probe the natural-language step:
+# unit traps (feet / metres / mixed units in one prompt), type that must be
+# *inferred* from a use-case with no type word, missing dimensions the agent must
+# default sanely, an over-constrained prompt that must still build, and an
+# implied quantity. Intent checks stay objective; where the "right" answer is
+# genuinely open the tighter checks are marked optional so only real disagreement
+# (or an unbuildable result) fails a case.
+DEFAULT_TOL = 25.0   # mm slack for unit-conversion rounding to tidy numbers
+
+ADVERSARIAL_CASES: tuple[EvalCase, ...] = (
+    EvalCase(
+        "unit_trap_feet",
+        "base cabinet two feet wide and three feet tall, one door",
+        (
+            IntentCheck("is a base cabinet", cabinet_type_is("base")),
+            IntentCheck("2 ft -> ~610 mm wide",
+                        dim_near("width", 2 * 304.8, tol=DEFAULT_TOL)),
+            IntentCheck("3 ft -> ~914 mm tall",
+                        dim_near("height", 3 * 304.8, tol=DEFAULT_TOL)),
+            IntentCheck("one door", doors_eq(1)),
+        ),
+    ),
+    EvalCase(
+        "unit_trap_metres",
+        "wall cabinet 0.8 metres wide and 0.35 deep, two doors",
+        (
+            IntentCheck("is a wall cabinet", cabinet_type_is("wall")),
+            IntentCheck("0.8 m -> 800 mm wide", dim_near("width", 800, tol=DEFAULT_TOL)),
+            IntentCheck("0.35 m -> 350 mm deep", dim_near("depth", 350, tol=DEFAULT_TOL)),
+            IntentCheck("two doors", doors_eq(2)),
+        ),
+    ),
+    EvalCase(
+        "mixed_units_one_prompt",
+        "base cabinet 24 inches wide and 720 mm tall, single door",
+        (
+            IntentCheck("is a base cabinet", cabinet_type_is("base")),
+            IntentCheck("24 in -> ~610 mm wide",
+                        dim_near("width", 24 * 25.4, tol=DEFAULT_TOL)),
+            IntentCheck("720 mm tall", dim_near("height", 720, tol=DEFAULT_TOL)),
+            IntentCheck("one door", doors_eq(1)),
+        ),
+    ),
+    EvalCase(
+        "implicit_wall_from_use",
+        "I want to hang a cupboard above my kitchen counter for mugs and "
+        "plates, about 700 wide",
+        (
+            IntentCheck("inferred a wall cabinet", cabinet_type_is("wall")),
+            IntentCheck("~700 wide", dim_near("width", 700, tol=40)),
+            IntentCheck("has at least one door", doors_at_least(1), required=False),
+        ),
+    ),
+    EvalCase(
+        "implicit_open_shelving",
+        "open shelving for my paperback books in the living room",
+        (
+            # Type is genuinely open (bookcase or a doorless tall unit); score the
+            # *observable* intent: open (no doors), several shelves, and buildable.
+            IntentCheck("open — no doors", doors_eq(0)),
+            IntentCheck("multiple shelves", shelves_at_least(3)),
+            IntentCheck("a bookcase", cabinet_type_is("bookcase"), required=False),
+        ),
+    ),
+    EvalCase(
+        "over_constrained_narrow",
+        "300 mm wide base cabinet with two doors and a center mullion",
+        (
+            # 300 mm is too narrow for a sensible two-door split; the honest
+            # outcome is *something buildable* near 300 wide. Two-door + mullion
+            # are optional — the test is whether it degrades gracefully.
+            IntentCheck("is a base cabinet", cabinet_type_is("base")),
+            IntentCheck("~300 wide", dim_near("width", 300, tol=DEFAULT_TOL)),
+            IntentCheck("kept two doors", doors_eq(2), required=False),
+        ),
+    ),
+    EvalCase(
+        "implied_drawer_quantity",
+        "a dresser about 1200 mm tall, filled with as many equal drawers as "
+        "look right",
+        (
+            IntentCheck("is a dresser", cabinet_type_is("dresser")),
+            IntentCheck("~1200 tall", dim_near("height", 1200, tol=50)),
+            IntentCheck("several drawers (>=4)", drawers_at_least(4)),
+        ),
+    ),
+    EvalCase(
+        "dimensionless_side_table",
+        "a small side table to go next to a sofa",
+        (
+            IntentCheck("is a table", is_table()),
+            IntentCheck("sane sofa-side height (350-700 mm)",
+                        dim_between("height", 350, 700)),
+            IntentCheck("small footprint (<=700 mm)",
+                        dim_between("width", 250, 700)),
+        ),
+    ),
+)
+
+
+# Named suites for the runner / CLI.
+SUITES: dict[str, tuple[EvalCase, ...]] = {
+    "default": DEFAULT_CASES,
+    "adversarial": ADVERSARIAL_CASES,
+    "all": DEFAULT_CASES + ADVERSARIAL_CASES,
+}
 
 
 # --------------------------------------------------------------------------- #

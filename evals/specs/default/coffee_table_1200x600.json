@@ -1,0 +1,20 @@
+{
+  "kind": "table",
+  "name": "Coffee Table",
+  "units": "mm",
+  "width": 1200,
+  "depth": 600,
+  "height": 450,
+  "top_thickness": 30,
+  "leg": 60,
+  "apron_height": 90,
+  "apron_thickness": 20,
+  "leg_inset": 40,
+  "solid_top": true,
+  "top_fixing": "floating",
+  "grain": "flatsawn",
+  "joinery": "mortise_tenon",
+  "material_form": "solid",
+  "species": "walnut",
+  "finish": "oil"
+}

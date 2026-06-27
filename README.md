@@ -316,13 +316,23 @@ validation/critic errors), plus aggregate **pass / buildable / intent** rates.
 
 ```bash
 export ANTHROPIC_API_KEY=sk-...
-woodai eval                          # run the prompt set, print the report
-woodai eval --json eval.json         # also write the full report as JSON
+woodai eval                          # the curated set
+woodai eval --suite adversarial      # unit traps, inferred type, missing dims…
+woodai eval --suite all --json eval.json
 woodai eval --min-pass 0.8           # exit nonzero if pass rate < 80% (CI gate)
 ```
 
+**Measured baseline:** the latest run scores **16/16 (100% pass · 100%
+buildable · 100% intent)** across the curated *and* adversarial suites — see
+[`evals/`](evals/) for the full report and the exact specs the designer produced
+(including the unit-trap and missing-dimension cases). That is a strong model
+with a repair loop clearing these prompts, not "solved" — the failure boundary
+needs cheaper models or genuinely ambiguous prompts, which the adversarial suite
+is the place to grow.
+
 The scoring is pure and deterministic — it runs headless in CI against
-hand-built specs (`tests/test_designer_eval.py`), so only the live `woodai eval`
+hand-built specs (`tests/test_designer_eval.py`) and re-scores the committed
+baseline specs (`tests/test_eval_baseline.py`), so only the live `woodai eval`
 run needs an API key. Add prompts and intent checks in
 [`designer_eval.py`](src/woodworking_ai/designer_eval.py).
 

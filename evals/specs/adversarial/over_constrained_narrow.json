@@ -1,0 +1,21 @@
+{
+  "kind": "cabinet",
+  "cabinet_type": "base",
+  "name": "Narrow Base Cabinet",
+  "units": "mm",
+  "width": 300,
+  "height": 720,
+  "depth": 560,
+  "construction": "frameless",
+  "door_style": "slab",
+  "doors": 2,
+  "center_mullion": true,
+  "shelves": 1,
+  "toe_kick": {
+    "height": 100,
+    "setback": 50
+  },
+  "reveal": 3,
+  "hinge_overlay": "overlay",
+  "finish": "paint"
+}
