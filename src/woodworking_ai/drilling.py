@@ -18,7 +18,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from .dsl import ComponentGroup
-from .dispatch import spec_kind, VOID, GROUP
+from .dispatch import spec_kind, VOID, GROUP, WORKBENCH, NIGHTSTAND, DESK
 from .geometry import panel_layout, component_tag, trailing_index, PanelRole
 from .cutlist import generate_cutlist
 from .hardware import hinge_count, select_slide, PLATE_SCREW_INSET
@@ -184,7 +184,110 @@ def drilling_schedule(spec) -> DrillingSchedule:
     sched.ops.extend(_shelf_pin_ops(spec, sides, pid))
     sched.ops.extend(_slide_ops(sides, drawer_fronts, brand, slide_types, pid))
     sched.ops.extend(_hinge_ops(doors, sides, side_by_hand, pid))
+    sched.ops.extend(_pocket_ops(spec, panels, pid))
+    if kind in (NIGHTSTAND, DESK):
+        sched.ops.extend(_legged_slide_ops(spec, panels, pid))
+    if kind == DESK and getattr(spec, "grommet", False):
+        sched.ops.extend(_grommet_ops(spec, panels, pid))
+    if kind == WORKBENCH:
+        sched.ops.extend(_dog_hole_ops(spec))
     return sched
+
+
+def _legged_slide_ops(spec, panels, pid) -> list[DrillOp]:
+    """Drawer-slide screw holes for an apron-hung (nightstand/desk) drawer.
+
+    Each drawer rides a ball-bearing slide pair: a slide screws to the LEFT side
+    apron and a mirror slide to the RIGHT one, so the schedule lists both sides
+    (a machinist drilling only the holes shown must see the full set, not half).
+    """
+    n = int(getattr(spec, "drawers", 0) or 0)
+    if n <= 0:
+        return []
+    # Only metal ball-bearing slides need screw holes; wooden runners and a bare
+    # web frame are joinery, not boring.
+    if str(getattr(spec, "slide_type", "ball_bearing")).lower() != "ball_bearing":
+        return []
+    side_aprons = [p for p in panels if p.label == "Apron side"]
+    if not side_aprons:
+        return []
+    _, depth_y, ah = side_aprons[0].size       # (thickness, depth, height)
+    us = [37.0, round(depth_y / 2, 1), round(depth_y - 37.0, 1)]
+    v = round(ah / 2, 1)
+    ops: list[DrillOp] = []
+    for di in range(1, n + 1):
+        holes = [Hole(f"slide screw ({side})", u, v, 4.0, 12.0)
+                 for side in ("left", "right") for u in us]
+        ops.append(DrillOp(
+            part="Apron side (×2)", operation=f"drawer {di} slide screws",
+            note="3 screws on each side apron / runner (left + right)",
+            part_id=pid("Apron side"), holes=holes))
+    return ops
+
+
+def _grommet_ops(spec, panels, pid) -> list[DrillOp]:
+    """The cable-grommet bore through a desk top."""
+    dia = round(float(getattr(spec, "grommet_dia", 60.0)), 1)
+    depth = round(float(getattr(spec, "top_thickness", 25.0)), 1)
+    top = next((p for p in panels if p.label == "Top"), None)
+    if top is None:
+        return []
+    w, d, _ = top.size
+    u = round(w / 2, 1)                 # centred across the width
+    v = round(max(d - 100.0, d / 2), 1)  # ~100mm in from the rear edge
+    return [DrillOp(
+        part="Top", operation="cable grommet bore",
+        note=f"⌀{dia:.0f}mm through; fit the grommet ring after finishing",
+        part_id=pid("Top"), holes=[Hole("grommet", u, v, dia, depth)])]
+
+
+def _pocket_ops(spec, panels, pid) -> list[DrillOp]:
+    """Pocket-screw holes when the piece uses pocket joinery.
+
+    A legged piece's aprons/rails are pocket-screwed into the legs: two angled
+    pockets at each end of every apron. Bored with a pocket-hole jig, so the
+    drilling schedule should list them rather than read as zero holes."""
+    if str(getattr(spec, "joinery", "")).strip().lower() != "pocket":
+        return []
+    POCKET_DIA, POCKET_DEPTH = 9.5, 25.0
+    ops: list[DrillOp] = []
+    for p in panels:
+        if getattr(p, "category", "") != "apron":
+            continue
+        sx, sy, sz = p.size
+        length = max(sx, sy)
+        v = sz / 2
+        holes: list[Hole] = []
+        for end_u in (30.0, round(length - 30.0, 1)):
+            for dv in (-12.0, 12.0):       # two pockets stacked at each end
+                holes.append(Hole("pocket", end_u, round(v + dv, 1),
+                                  POCKET_DIA, POCKET_DEPTH,
+                                  note="~15° pocket into the leg"))
+        ops.append(DrillOp(
+            part=p.label, operation="pocket-screw holes",
+            note="2 pockets per end, drilled with a pocket-hole jig",
+            part_id=pid(p.label), holes=holes))
+    return ops
+
+
+def _dog_hole_ops(spec) -> list[DrillOp]:
+    """A row of bench-dog holes along the front of a workbench top."""
+    n = int(getattr(spec, "dog_hole_count", 0) or 0)
+    if n <= 0:
+        return []
+    dia = round(float(getattr(spec, "dog_hole_dia", 19.0)), 1)
+    depth = round(float(getattr(spec, "top_thickness", 75.0)), 1)
+    usable = spec.width - 2 * spec.leg_inset
+    x0 = spec.leg_inset
+    step = usable / (n - 1) if n > 1 else 0.0
+    front_setback = 40.0          # dog row in from the front edge of the top
+    holes = [Hole("dog hole", round(x0 + i * step, 1), front_setback, dia, depth,
+                  note="through; align with the vise")
+             for i in range(n)]
+    return [DrillOp(
+        part="Top (assembled)", operation=f"{n}x bench-dog holes",
+        note=f"⌀{dia:.0f}mm row ~{round(step) if n > 1 else 150}mm spacing "
+             "along the front", part_id="", holes=holes)]
 
 
 def _shelf_pin_ops(spec, sides, pid) -> list[DrillOp]:

@@ -181,6 +181,9 @@ JOINT_LABEL = {
     "cope_stick": "cope-and-stick (5-piece) doors",
     "hinge_cup": "35mm concealed-hinge cups", "shelf_pins": "shelf-pin holes",
     "bevel_rip": "a bevel-ripped French cleat", "butt_hinge": "butt-hinge screws",
+    "splined_miter": "splined-miter frame corners",
+    "half_lap": "half-lap frame corners",
+    "miter": "glued-miter frame corners",
 }
 
 # Each joint/operation → the ways it can be made. A way is a tuple of
@@ -205,6 +208,12 @@ JOINT_WAYS: dict[str, list[tuple]] = {
     "shelf_pins":     [("shelf_pin_jig",), ("drill_press",), ("drill",)],
     "bevel_rip":      [("table_saw",), ("hand_tools",)],   # 45° cleat bevel
     "butt_hinge":     [("drill",), ("hand_tools",)],       # screwed (opt. mortised)
+    # --- picture/mirror frame corners (FrameJoint vocabulary) ----------------
+    # A spline slot or half-lap is cut on the saw/router or by hand; a plain
+    # glued miter needs no tool (but is end-grain weak — the fallback).
+    "splined_miter":  [("table_saw",), ("router",), ("hand_tools",)],
+    "half_lap":       [("table_saw",), ("router",), ("hand_tools",)],
+    "miter":          [()],                                # glue only — weak
 }
 
 # When a joint can't be made, what to switch to — by the role it plays.
@@ -215,6 +224,10 @@ ROLE_PREFERENCE = {
     "drawer":  ["dovetail", "box", "locking_rabbet", "rabbet", "dowel",
                 "pocket", "butt"],
     "frame":   ["mortise_tenon", "domino", "dowel", "pocket", "screw"],
+    # A picture/mirror frame corner is mitered, not a leg-to-apron frame joint —
+    # so a shop that can't cut the chosen corner is steered to another *miter*
+    # corner (or a doweled miter), never to a mortise & tenon.
+    "frame_corner": ["splined_miter", "half_lap", "cope_stick", "dowel", "miter"],
 }
 
 
@@ -272,7 +285,8 @@ def required_operations(spec) -> list[Requirement]:
     inspection — mirrors what :func:`joinery.joinery_schedule` and
     :func:`drilling.drilling_schedule` actually emit.
     """
-    from .dispatch import spec_kind, GROUP, TABLE, VOID, WALL_SHELF, BOX, BENCH
+    from .dispatch import (spec_kind, GROUP, VOID, TABLE, BENCH, BOX, WALL_SHELF,
+                           BED, FRAME, CUTTING_BOARD, NIGHTSTAND, DESK, WORKBENCH)
 
     kind = spec_kind(spec)
     if kind == VOID:
@@ -284,12 +298,20 @@ def required_operations(spec) -> list[Requirement]:
             for r in required_operations(comp.spec):
                 out.append(Requirement(r.role, r.joint, f"{tag}: {r.where}"))
         return out
-    # A legged piece (table or bench): one frame joint for legs↔aprons/stretchers.
-    if kind in (TABLE, BENCH):
-        where = ("leg-to-apron/stretcher joints" if kind == BENCH
-                 else "leg-to-apron joints")
-        return [Requirement("frame",
+    # A legged piece (table, bench, nightstand, desk, workbench): one frame joint
+    # for legs↔aprons. ``joinery`` carries the leg joint.
+    if kind in (TABLE, BENCH, NIGHTSTAND, DESK, WORKBENCH):
+        where = ("leg-to-apron/stretcher joints"
+                 if getattr(spec, "stretchers", False) else "leg-to-apron joints")
+        reqs = [Requirement("frame",
                             _norm(getattr(spec, "joinery", "mortise_tenon")), where)]
+        # Nightstand/desk carry apron-hung drawers with a configurable box corner
+        # joint, so a shop-constrained build must check it can cut that corner.
+        if kind in (NIGHTSTAND, DESK) and int(getattr(spec, "drawers", 0) or 0) > 0:
+            reqs.append(Requirement(
+                "drawer", _norm(getattr(spec, "drawer_corner_joint", "rabbet")),
+                "drawer box corners"))
+        return reqs
     # A box / chest: corner joints (drawer-corner vocabulary) + optional lid hinges.
     if kind == BOX:
         reqs = [Requirement("drawer",
@@ -305,10 +327,26 @@ def required_operations(spec) -> list[Requirement]:
             reqs.append(Requirement("fab", "bevel_rip", "French-cleat bevel"))
         reqs.append(Requirement("fab", "screw", "wall mounting"))
         return reqs
+    # A knock-down bed: the head/foot are mortise-and-tenon post-and-rail frames;
+    # the rails join the posts with knock-down hardware (no glued case joint).
+    if kind == BED:
+        return [Requirement("frame", "mortise_tenon", "headboard/footboard frames"),
+                Requirement("fab", "screw", "knock-down rail connectors")]
+    # A picture / mirror frame: mitered corners (FrameJoint vocabulary). Uses the
+    # dedicated ``frame_corner`` role so an infeasible corner is swapped for
+    # another miter corner, not a leg-to-apron mortise & tenon.
+    if kind == FRAME:
+        return [Requirement("frame_corner",
+                            _norm(getattr(spec, "corner_joint", "splined_miter")),
+                            "frame corners")]
+    # A glued-up cutting board is a panel glue-up — no tool-gated joinery.
+    if kind == CUTTING_BOARD:
+        return []
 
     # A cabinet. ------------------------------------------------------------
     reqs: list[Requirement] = []
-    reqs.append(Requirement("carcass", _norm(spec.joinery), "carcass case joints"))
+    reqs.append(Requirement("carcass", _norm(getattr(spec, "joinery", "dado")),
+                            "carcass case joints"))
 
     back = _norm(getattr(spec, "back", ""))
     if back == "rabbeted":

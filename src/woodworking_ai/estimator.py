@@ -75,10 +75,27 @@ class PriceBook:
     species_multiplier_default: float = 1.0
     # Milling/defect allowance billed on solid stock (rough lumber yields less).
     lumber_waste_factor: float = 1.15
-    # Per-unit hardware prices keyed by the hardware item name.
+    # Per-unit hardware prices keyed by the hardware item name. Defaults you can
+    # override; representative shop prices, not a live feed.
     hardware_price: dict[str, float] = field(default_factory=lambda: {
         "Concealed hinge": 4.0, "Door pull": 3.5, "Drawer pull": 3.5,
         "Drawer slide (pair)": 12.0, "Shelf pin": 0.15,
+        # legged / table / bench / workbench
+        "Drawer pull / knob": 3.5, "Tabletop fastener": 0.4,
+        "Leg-to-apron bracket": 2.5, "Seat fastener": 0.4,
+        "Bench vise": 120.0, "Bench dog": 8.0, "Cable grommet": 4.0,
+        # bed (knock-down)
+        "Bed bolt + cross-dowel nut": 2.5, "Bed-bolt cover cap": 0.5,
+        # box / chest
+        "Butt hinge (lid)": 4.0, "Lid-stay / chest support": 6.0,
+        # picture / mirror frame
+        "Corner spline / V-nail": 0.3, "Glazing (glass)": 12.0,
+        "Frame backer board": 3.0, "Glazier point / turn button": 0.15,
+        "D-ring strap hanger": 1.0, "Braided picture wire": 2.0,
+        "French cleat (45° bevel pair)": 6.0, "Corner bracket": 1.5,
+        "Wall anchor / lag screw": 0.5,
+        # fasteners
+        "Assembly screw 4×35": 0.1,
     })
     edge_banding_per_m: float = 1.5
     finish_per_m2_per_coat: float = 2.5   # finish material + labour per coat·m²

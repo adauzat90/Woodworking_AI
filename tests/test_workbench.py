@@ -82,3 +82,37 @@ def test_built_envelope_matches_spec():
 def test_inside_project():
     proj = Project(name="Shop", components=[Component(spec=_wb(), x=0)])
     assert validate(proj).ok and estimate(proj).total > 0
+
+
+def test_dog_holes_dict_does_not_crash():
+    # A hand-written spec may pass dog_holes as an object by mistake; it must
+    # coerce to auto (0) instead of crashing the derived-count math.
+    from woodworking_ai import spec_from_dict
+    wb = spec_from_dict({"kind": "workbench", "width": 1800, "leg_inset": 80,
+                         "dog_holes": {"spacing": 150, "dia": 19}})
+    assert wb.dog_holes == 0
+    assert wb.dog_hole_count >= 4          # falls back to the auto row
+    assert validate(wb).ok
+
+
+def test_top_fixing_is_recognized_and_roundtrips():
+    from woodworking_ai.dsl import TopFixing
+    wb = _wb(top_fixing="floating")
+    assert wb.top_fixing == TopFixing.FLOATING
+    assert WorkbenchSpec.from_dict(wb.to_dict()) == wb
+
+
+def test_dog_holes_appear_in_drilling_schedule():
+    from woodworking_ai.drilling import drilling_schedule
+    sched = drilling_schedule(_wb(width=1800, leg_inset=80, dog_holes=10))
+    dog_ops = [o for o in sched.ops if "dog" in o.operation.lower()]
+    assert dog_ops and sum(len(o.holes) for o in dog_ops) == 10
+
+
+def test_solid_bench_build_time_is_not_trivial():
+    # Regression: a solid laminated bench used to be milled as sheet goods and
+    # estimated at ~2h; it must now reflect real stock prep + the top glue-up.
+    from woodworking_ai.planning import plan
+    p = plan(_wb(width=1800, depth=600, top_thickness=120))
+    assert p["time"]["total"] > 6.0
+    assert p["time"]["hours_by_phase"]["assembly"] > 2.0

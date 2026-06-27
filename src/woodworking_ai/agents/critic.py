@@ -98,9 +98,19 @@ class CritiqueResult:
             f"  overall:         {L('width')} W x {L('height')} H x "
             f"{L('depth')} D (carcass)",
             f"  with fronts:     {L('depth_with_fronts')} deep",
-            f"  clear opening:   {L('opening_width')} x {L('opening_height')}",
-            f"  panels:          {r.get('panel_count', 0)}",
-            f"  front coverage:  {r.get('front_coverage_pct', 0):.0f}% of the face",
+        ]
+        # Clear opening + front coverage are a cabinet/casework concept; legged
+        # and leaf pieces (table, frame, bench, …) have no face to cover, so the
+        # critic only records those keys for casework — show them only then,
+        # rather than printing a misleading "0% of the face".
+        if "front_coverage_pct" in r:
+            lines.append(
+                f"  clear opening:   {L('opening_width')} x {L('opening_height')}")
+        lines.append(f"  panels:          {r.get('panel_count', 0)}")
+        if "front_coverage_pct" in r:
+            lines.append(
+                f"  front coverage:  {r['front_coverage_pct']:.0f}% of the face")
+        lines += [
             f"  sheet goods:     ~{_fa(r.get('sheet_area_m2', 0), unit)}",
             f"  interferences:   {r.get('interference_count', 0)}",
         ]

@@ -60,6 +60,39 @@ class Joinery(StrEnum):
     BOX = "box"                 # finger joint, strong glue surface
 
 
+# Common spellings an author (or agent) may write for a joinery value, mapped to
+# the canonical enum value. Keys are matched after lowercasing and normalizing
+# hyphens/spaces to underscores (see :func:`_coerce_enum`), so a natural spelling
+# like "mortise_and_tenon" / "M&T" resolves instead of silently degrading to a
+# string (which would fall back to the wrong joint downstream).
+JOINERY_ALIASES = {
+    "mortise_and_tenon": "mortise_tenon",
+    "m&t": "mortise_tenon",
+    "mt": "mortise_tenon",
+    "tenon": "mortise_tenon",
+    "pocket_hole": "pocket",
+    "pocket_screw": "pocket",
+    "pocket_screws": "pocket",
+    "finger": "box",
+    "finger_joint": "box",
+    "box_joint": "box",
+}
+
+
+def _dealias_joinery(value: Any) -> Any:
+    """Map a joinery alias string to its canonical value; pass through non-strings.
+
+    Used on the strict cabinet load path (which raises on an unknown joinery) so
+    a known joint written a different way resolves rather than erroring, while a
+    genuinely unknown value still raises.
+    """
+    if not isinstance(value, str):
+        return value
+    s = value.strip().lower()
+    return JOINERY_ALIASES.get(
+        s, JOINERY_ALIASES.get(s.replace("-", "_").replace(" ", "_"), value))
+
+
 class CornerJoint(StrEnum):
     """Drawer-box corner joint."""
     DOVETAIL = "dovetail"
@@ -177,12 +210,36 @@ def _coerce_enum(enum_cls: type[Enum], value: Any, *, aliases: dict | None = Non
     if isinstance(value, enum_cls):
         return value
     s = str(value).strip().lower()
-    if aliases and s in aliases:
-        s = aliases[s]
+    if aliases:
+        # Match an alias against the raw lowercase value or an underscore-
+        # normalized form, so "mortise-and-tenon" / "mortise tenon" both hit the
+        # "mortise_and_tenon" key. No enum value contains a hyphen, so this is
+        # safe for the enum lookup too.
+        s = aliases.get(s, aliases.get(s.replace("-", "_").replace(" ", "_"), s))
     try:
         return enum_cls(s)
     except ValueError:
         return s
+
+
+def _as_count(value: Any, default: int = 0) -> int:
+    """Best-effort coerce *value* to a non-negative int count.
+
+    A count field (``dog_holes``, ``top_laminations``, ``slats`` …) may be fed a
+    dict/string/float from a hand-written spec. Numّbers (and numeric strings)
+    round to a non-negative int; anything uninterpretable falls back to
+    *default* (0 = "auto"), so a bad type degrades gracefully instead of
+    crashing the derived-count arithmetic downstream. Numbers and numeric
+    strings round to a non-negative int.
+    """
+    if isinstance(value, bool):
+        return default
+    if isinstance(value, (int, float)):
+        return max(0, int(value))
+    try:
+        return max(0, int(float(str(value).strip())))
+    except (TypeError, ValueError):
+        return default
 
 
 @dataclass
@@ -506,6 +563,67 @@ def _to_mm(d: dict, fields: tuple[str, ...]) -> None:
             d[f] = v * MM_PER_IN
 
 
+def _list_to_mm(d: dict, field_name: str) -> None:
+    """Convert every numeric element of a list-valued length field to mm."""
+    v = d.get(field_name)
+    if isinstance(v, list):
+        d[field_name] = [x * MM_PER_IN if isinstance(x, (int, float))
+                         and not isinstance(x, bool) else x for x in v]
+
+
+def _coerce_legged_slide(value) -> str:
+    """Normalize an apron-hung drawer's runner choice.
+
+    ``ball_bearing`` (metal slide pair, the default) | ``wood`` (a traditional
+    wooden side runner the grooved drawer rides on — a hand-tool build) |
+    ``none`` (the drawer rides on a web frame / the case bottom, no slide).
+    """
+    s = str(value or "").strip().lower().replace("-", "_").replace(" ", "_")
+    if s in ("wood", "wooden", "runner", "runners", "wood_runner", "wooden_runner"):
+        return "wood"
+    if s in ("none", "no", "slip", "web_frame", "web"):
+        return "none"
+    return "ball_bearing"
+
+
+def leg_taper_note(spec) -> str:
+    """Cut-list note suffix describing a leg taper, or '' when the legs are square.
+
+    A tapered leg keeps its full ``leg`` section at the top (so the apron joinery
+    and the overall envelope are unchanged) and tapers its inner faces down to
+    ``leg_tip`` below the apron. ``leg_tip`` of 0 (or out of range) gives a gentle
+    default taper to ~55% of the leg.
+    """
+    if not bool(getattr(spec, "leg_taper", False)):
+        return ""
+    leg = float(getattr(spec, "leg", 0) or 0)
+    tip = float(getattr(spec, "leg_tip", 0) or 0)
+    if tip <= 0 or tip >= leg:
+        tip = round(leg * 0.55, 1)
+    return f"; taper inner faces below the apron {leg:.0f}→{tip:.0f}mm"
+
+
+def _drawer_front_heights(override, uniform: float, n: int) -> list[float]:
+    """Resolve *n* drawer-front heights from an optional per-drawer *override*.
+
+    A non-empty ``override`` list is used element-by-element; if it is shorter
+    than *n* the remaining drawers fall back to *uniform*, and a longer list is
+    truncated. An empty/invalid override gives a uniform stack. Non-numeric or
+    non-positive entries fall back to *uniform* so a sloppy spec still builds.
+    """
+    if n <= 0:
+        return []
+    out: list[float] = []
+    seq = override if isinstance(override, (list, tuple)) else []
+    for i in range(n):
+        v = seq[i] if i < len(seq) else None
+        if isinstance(v, (int, float)) and not isinstance(v, bool) and v > 0:
+            out.append(float(v))
+        else:
+            out.append(float(uniform))
+    return out
+
+
 @dataclass
 class CabinetSpec:
     """A parametric cabinet. All dimensions are *overall*, in `units`."""
@@ -663,6 +781,10 @@ class CabinetSpec:
                 data["cabinet_type"] = CabinetType.TALL
             else:
                 data["cabinet_type"] = CabinetType.BASE
+        # A known joinery written a different way ("mortise_and_tenon", "M&T")
+        # resolves to its canonical value before the strict load below.
+        if "joinery" in data:
+            data["joinery"] = _dealias_joinery(data["joinery"])
         for key, enum_cls in (
             ("cabinet_type", CabinetType),
             ("construction", Construction),
@@ -701,6 +823,8 @@ class TableSpec:
     apron_height: float = 90.0
     apron_thickness: float = 20.0
     leg_inset: float = 40.0      # leg outer face set in from the top edge
+    leg_taper: bool = False      # taper the inner faces below the apron
+    leg_tip: float = 0.0         # tapered foot section (0 = auto ~55% of leg)
 
     # --- material/movement (optional; defaults describe a well-built top) ------
     solid_top: bool = True       # solid wood (moves) vs. a stable sheet good
@@ -720,7 +844,7 @@ class TableSpec:
             Grain, self.grain, aliases={"quarter": "quartersawn",
                                         "quarter_sawn": "quartersawn",
                                         "flat": "flatsawn", "flat_sawn": "flatsawn"})
-        self.joinery = _coerce_enum(Joinery, self.joinery)
+        self.joinery = _coerce_enum(Joinery, self.joinery, aliases=JOINERY_ALIASES)
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
@@ -738,7 +862,7 @@ class TableSpec:
         data = dict(data)
         if normalize_unit(data.get("units")) == IMPERIAL:
             _to_mm(data, ("width", "depth", "height", "top_thickness", "leg",
-                          "apron_height", "apron_thickness", "leg_inset"))
+                          "apron_height", "apron_thickness", "leg_inset", "leg_tip"))
             data["units"] = "mm"
         known = {f for f in cls.__dataclass_fields__}
         return cls(**{k: v for k, v in data.items() if k in known})
@@ -919,6 +1043,8 @@ class BenchSpec:
     apron_height: float = 70.0
     apron_thickness: float = 20.0
     leg_inset: float = 35.0      # leg outer face set in from the seat edge
+    leg_taper: bool = False      # taper the inner faces below the apron
+    leg_tip: float = 0.0         # tapered foot section (0 = auto ~55% of leg)
     stretchers: bool = True      # lower rails between the legs (rack resistance)
     stretcher_height: float = 30.0     # stretcher cross-section (Z)
     stretcher_thickness: float = 20.0  # stretcher cross-section (Y/X)
@@ -940,7 +1066,7 @@ class BenchSpec:
             Grain, self.grain, aliases={"quarter": "quartersawn",
                                         "quarter_sawn": "quartersawn",
                                         "flat": "flatsawn", "flat_sawn": "flatsawn"})
-        self.joinery = _coerce_enum(Joinery, self.joinery)
+        self.joinery = _coerce_enum(Joinery, self.joinery, aliases=JOINERY_ALIASES)
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
@@ -958,7 +1084,7 @@ class BenchSpec:
         data = dict(data)
         if normalize_unit(data.get("units")) == IMPERIAL:
             _to_mm(data, ("width", "depth", "height", "top_thickness", "leg",
-                          "apron_height", "apron_thickness", "leg_inset",
+                          "apron_height", "apron_thickness", "leg_inset", "leg_tip",
                           "stretcher_height", "stretcher_thickness",
                           "stretcher_setback"))
             data["units"] = "mm"
@@ -1097,6 +1223,8 @@ class BedSpec:
     rail_thickness: float = 30.0   # side-rail thickness (X)
     panel: bool = True             # frame-and-panel head/foot infill (else open)
     slats: int = 0                 # cross-slat count (0 = auto from the length)
+    center_support: bool = False   # a centre rail + leg halving the slat span
+                                   # (a queen/king needs one or the slats sag)
 
     connector: BedConnector = BedConnector.BED_BOLT
 
@@ -1257,11 +1385,11 @@ class CuttingBoardSpec:
 
 @dataclass
 class NightstandSpec:
-    """A small legged cabinet: a top on four legs/aprons with a drawer + shelf.
+    """A small legged cabinet: a top on four legs/aprons with drawers + shelf.
 
-    A table superset carrying one or two apron-hung drawers and an optional lower
-    shelf. Coordinates match the shared frame: X = width, Y = depth (front at
-    -Y), Z = height (top surface at ``height``).
+    A table superset carrying one to three apron-hung drawers and an optional
+    lower shelf. Coordinates match the shared frame: X = width, Y = depth
+    (front at -Y), Z = height (top surface at ``height``).
     """
 
     kind: str = "nightstand"
@@ -1273,10 +1401,17 @@ class NightstandSpec:
     top_thickness: float = 20.0
     leg: float = 40.0              # square leg cross-section
     leg_inset: float = 25.0        # leg outer face in from the top edge
+    leg_taper: bool = False        # taper the inner faces below the apron
+    leg_tip: float = 0.0           # tapered foot section (0 = auto ~55% of leg)
     apron_height: float = 90.0
     apron_thickness: float = 20.0
-    drawers: int = 1               # stacked apron-hung drawers (0-2)
+    drawers: int = 1               # stacked apron-hung drawers (0-3)
     drawer_front_height: float = 130.0
+    # Optional per-drawer front heights, top→bottom (graduate shallower-to-deeper);
+    # when empty every drawer uses ``drawer_front_height``.
+    drawer_front_heights: list = field(default_factory=list)
+    drawer_corner_joint: CornerJoint = CornerJoint.RABBET  # drawer box corners
+    slide_type: str = "ball_bearing"  # ball_bearing | wood (runners) | none
     shelf: bool = True             # a lower shelf between the legs
     shelf_thickness: float = 18.0
     shelf_setback: float = 120.0   # shelf height off the floor
@@ -1292,15 +1427,26 @@ class NightstandSpec:
     species: str = ""
 
     def __post_init__(self) -> None:
-        self.joinery = _coerce_enum(Joinery, self.joinery)
+        self.joinery = _coerce_enum(Joinery, self.joinery, aliases=JOINERY_ALIASES)
         self.top_fixing = _coerce_enum(TopFixing, self.top_fixing)
+        self.drawer_corner_joint = _coerce_enum(CornerJoint, self.drawer_corner_joint)
+        self.slide_type = _coerce_legged_slide(self.slide_type)
         self.grain = _coerce_enum(
             Grain, self.grain, aliases={"quarter": "quartersawn",
                                         "flat": "flatsawn"})
 
+    def front_heights(self, n: int) -> list[float]:
+        """The front height of each of *n* drawers, top→bottom.
+
+        Uses :attr:`drawer_front_heights` when given (padded/truncated to *n*
+        with the uniform :attr:`drawer_front_height`), else a uniform stack.
+        """
+        return _drawer_front_heights(self.drawer_front_heights,
+                                     self.drawer_front_height, n)
+
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
-        for k in ("joinery", "top_fixing", "grain"):
+        for k in ("joinery", "top_fixing", "grain", "drawer_corner_joint"):
             if isinstance(getattr(self, k), Enum):
                 d[k] = getattr(self, k).value
         d["schema_version"] = SCHEMA_VERSION
@@ -1314,9 +1460,10 @@ class NightstandSpec:
         data = dict(data)
         if normalize_unit(data.get("units")) == IMPERIAL:
             _to_mm(data, ("width", "depth", "height", "top_thickness", "leg",
-                          "leg_inset", "apron_height", "apron_thickness",
+                          "leg_inset", "leg_tip", "apron_height", "apron_thickness",
                           "drawer_front_height", "shelf_thickness",
                           "shelf_setback"))
+            _list_to_mm(data, "drawer_front_heights")
             data["units"] = "mm"
         known = {f for f in cls.__dataclass_fields__}
         return cls(**{k: v for k, v in data.items() if k in known})
@@ -1344,10 +1491,16 @@ class DeskSpec:
     top_thickness: float = 25.0
     leg: float = 60.0
     leg_inset: float = 40.0
+    leg_taper: bool = False        # taper the inner faces below the apron
+    leg_tip: float = 0.0           # tapered foot section (0 = auto ~55% of leg)
     apron_height: float = 90.0
     apron_thickness: float = 20.0
     drawers: int = 1               # apron-hung drawers across the front (0-3)
     drawer_front_height: float = 100.0
+    # Optional per-drawer front heights (left→right); empty = uniform.
+    drawer_front_heights: list = field(default_factory=list)
+    drawer_corner_joint: CornerJoint = CornerJoint.RABBET  # drawer box corners
+    slide_type: str = "ball_bearing"  # ball_bearing | wood (runners) | none
     modesty_panel: bool = True     # a back privacy panel between the legs
     modesty_height: float = 250.0
     grommet: bool = True           # a cable grommet bored in the top
@@ -1364,15 +1517,22 @@ class DeskSpec:
     species: str = ""
 
     def __post_init__(self) -> None:
-        self.joinery = _coerce_enum(Joinery, self.joinery)
+        self.joinery = _coerce_enum(Joinery, self.joinery, aliases=JOINERY_ALIASES)
         self.top_fixing = _coerce_enum(TopFixing, self.top_fixing)
+        self.drawer_corner_joint = _coerce_enum(CornerJoint, self.drawer_corner_joint)
+        self.slide_type = _coerce_legged_slide(self.slide_type)
         self.grain = _coerce_enum(
             Grain, self.grain, aliases={"quarter": "quartersawn",
                                         "flat": "flatsawn"})
 
+    def front_heights(self, n: int) -> list[float]:
+        """Per-drawer front heights, left→right (see NightstandSpec.front_heights)."""
+        return _drawer_front_heights(self.drawer_front_heights,
+                                     self.drawer_front_height, n)
+
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
-        for k in ("joinery", "top_fixing", "grain"):
+        for k in ("joinery", "top_fixing", "grain", "drawer_corner_joint"):
             if isinstance(getattr(self, k), Enum):
                 d[k] = getattr(self, k).value
         d["schema_version"] = SCHEMA_VERSION
@@ -1386,8 +1546,9 @@ class DeskSpec:
         data = dict(data)
         if normalize_unit(data.get("units")) == IMPERIAL:
             _to_mm(data, ("width", "depth", "height", "top_thickness", "leg",
-                          "leg_inset", "apron_height", "apron_thickness",
+                          "leg_inset", "leg_tip", "apron_height", "apron_thickness",
                           "drawer_front_height", "modesty_height", "grommet_dia"))
+            _list_to_mm(data, "drawer_front_heights")
             data["units"] = "mm"
         known = {f for f in cls.__dataclass_fields__}
         return cls(**{k: v for k, v in data.items() if k in known})
@@ -1429,13 +1590,20 @@ class WorkbenchSpec:
     shelf: bool = True             # tool shelf on the stretchers
     shelf_thickness: float = 18.0
     joinery: Joinery = Joinery.MORTISE_TENON
+    top_fixing: TopFixing = TopFixing.FIXED  # a laminated bench top is bolted down
     finish: str = "oil"
     finish_sheen: str = "satin"
     material_form: str = "solid"
     species: str = "beech"         # a hard, tough bench wood
 
     def __post_init__(self) -> None:
-        self.joinery = _coerce_enum(Joinery, self.joinery)
+        self.joinery = _coerce_enum(Joinery, self.joinery, aliases=JOINERY_ALIASES)
+        self.top_fixing = _coerce_enum(TopFixing, self.top_fixing)
+        # ``dog_holes`` / ``top_laminations`` are plain counts; a hand-written
+        # spec may pass a dict/string/float by mistake. Coerce to a safe int
+        # (0 = auto) instead of letting a bad type crash the derived-count math.
+        self.dog_holes = _as_count(self.dog_holes)
+        self.top_laminations = _as_count(self.top_laminations)
 
     @property
     def dog_hole_count(self) -> int:
@@ -1453,8 +1621,9 @@ class WorkbenchSpec:
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
-        if isinstance(self.joinery, Enum):
-            d["joinery"] = self.joinery.value
+        for k in ("joinery", "top_fixing"):
+            if isinstance(getattr(self, k), Enum):
+                d[k] = getattr(self, k).value
         d["schema_version"] = SCHEMA_VERSION
         return d
 
@@ -1576,12 +1745,18 @@ class ComponentGroup:
     components: list[Component] = field(default_factory=list)
     # Named reusable sub-assemblies a component can place by ``ref``.
     definitions: dict[str, Any] = field(default_factory=dict)
+    # Optional ONE continuous countertop spanning the run's base cabinets
+    # (and under-counter appliance gaps), as a {material, thickness, overhang,
+    # depth?} dict — the kitchen-run counter a per-cabinet top can't express.
+    countertop: dict | None = None
     kind: str = "group"
 
     def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {"kind": self.kind, "name": self.name, "units": "mm"}
         if self.definitions:
             d["definitions"] = {n: s.to_dict() for n, s in self.definitions.items()}
+        if self.countertop:
+            d["countertop"] = dict(self.countertop)
         comps: list[dict[str, Any]] = []
         for c in self.components:
             item: dict[str, Any] = {
@@ -1615,10 +1790,12 @@ class ComponentGroup:
         # resolved components (runs are an input convenience, not stored).
         for run in (data.get("runs") or []):
             comps.extend(_run_components(run, defs, _stack))
+        ct = data.get("countertop")
         return cls(
             name=str(data.get("name", cls().name)),
             units="mm", components=comps,
             definitions=defs.local(_stack),
+            countertop=dict(ct) if isinstance(ct, dict) else None,
         )
 
     @classmethod
@@ -2087,6 +2264,7 @@ rails with bed bolts or hook plates, carrying a deck of cross slats.
   "rail_height": 150, "rail_thickness": 30,
   "panel": true | false,             // frame-and-panel head/foot infill
   "slats": <cross-slat count, 0 = auto (~every 100mm)>,
+  "center_support": true | false,  // a centre rail+leg; a queen/king needs it
   "connector": {_opts(BedConnector)},  // knock-down rail joinery
   "material_form": "solid",
   "species": "walnut" | "oak" | "maple" | ...,
@@ -2128,9 +2306,14 @@ an optional lower shelf.
   "width": <e.g. 450>, "depth": <e.g. 400>, "height": <e.g. 600>,
   "top_thickness": 20,
   "leg": <square leg, e.g. 40>, "leg_inset": <from the top edge, e.g. 25>,
+  "leg_taper": true | false, "leg_tip": <tapered foot section, 0=auto>,
   "apron_height": 90, "apron_thickness": 20,
-  "drawers": <0-2 stacked drawers>,
-  "drawer_front_height": 130,
+  "drawers": <0-3 stacked drawers>,
+  "drawer_front_height": 130,                  // uniform front height
+  "drawer_front_heights": [120, 180],          // OPTIONAL per-drawer override,
+                                               // top->bottom (graduate the stack)
+  "drawer_corner_joint": {_opts(CornerJoint)}, // drawer box corners (default rabbet)
+  "slide_type": "ball_bearing" | "wood" | "none",  // wood = traditional runners
   "shelf": true | false, "shelf_setback": <shelf height off floor, e.g. 120>,
   "joinery": {_opts(Joinery)},      // leg-to-apron: mortise_tenon/domino resist racking
   "pull": "knob" | "bar" | "none",
@@ -2146,8 +2329,12 @@ back modesty panel and a cable grommet.
   "units": "mm",
   "width": <length, e.g. 1200>, "depth": <e.g. 600>, "height": <~740>,
   "top_thickness": 25,
-  "leg": 60, "leg_inset": 40, "apron_height": 90, "apron_thickness": 20,
+  "leg": 60, "leg_inset": 40, "leg_taper": true | false, "leg_tip": <0=auto>,
+  "apron_height": 90, "apron_thickness": 20,
   "drawers": <0-3 across the front>, "drawer_front_height": 100,
+  "drawer_front_heights": [100, 100, 100],     // OPTIONAL per-drawer override
+  "drawer_corner_joint": {_opts(CornerJoint)}, // drawer box corners (default rabbet)
+  "slide_type": "ball_bearing" | "wood" | "none",  // wood = traditional runners
   "modesty_panel": true | false, "modesty_height": 250,
   "grommet": true | false, "grommet_dia": 60,
   "joinery": {_opts(Joinery)}, "pull": "bar" | "knob" | "none",
@@ -2166,9 +2353,10 @@ row of bench-dog holes, an optional vise, and a tool shelf.
   "leg": <heavy, e.g. 90>, "leg_inset": 60,
   "apron_height": 120, "apron_thickness": 30,
   "stretchers": true, "stretcher_setback": 200,
-  "dog_holes": <0 = auto row along the front>, "dog_hole_dia": 19,
+  "dog_holes": <int, 0 = auto row along the front>, "dog_hole_dia": 19,
   "vise": true | false, "vise_side": "left" | "right" | "front" | "none",
   "shelf": true | false,
+  "top_fixing": {_opts(TopFixing)},  // bench top is bolted down (default fixed)
   "joinery": {_opts(Joinery)},      // mortise_tenon / domino for a bench that won't rack
   "species": "beech" | "maple" | "ash" | ..., "finish": "oil"
 }}
@@ -2184,6 +2372,7 @@ an (x, y) origin in millimetres (front-left corner for a cabinet) and an optiona
   "kind": "project",
   "name": "Kitchen",
   "units": "mm",
+  "countertop": {{"material": "butcher_block", "thickness": 38, "overhang": 25}},  // optional: ONE continuous worktop spanning the run's base cabinets
   "definitions": {{                 // optional: named, reusable SUB-ASSEMBLIES
     "drawer_bank": {{
       "kind": "assembly",

@@ -79,3 +79,20 @@ def test_schema_version_is_accepted():
 def test_known_kinds_cover_the_loader():
     assert {"cabinet", "table", "wall_shelf", "box", "bench",
             "project", "assembly", "appliance_void"} <= KNOWN_KINDS
+
+
+def test_lint_covers_legged_and_leaf_kinds():
+    # The newer kinds used to mis-route (and even crash) the linter; their own
+    # fields must be clean and a genuine unknown field still flagged.
+    assert lint_spec_dict(
+        {"kind": "desk", "drawers": 2, "modesty_panel": True, "grommet": True,
+         "drawer_front_heights": [100, 120], "drawer_corner_joint": "rabbet"}) == []
+    assert lint_spec_dict(
+        {"kind": "workbench", "dog_holes": 8, "top_fixing": "fixed",
+         "vise": True}) == []
+    assert lint_spec_dict({"kind": "frame", "opening_w": 400,
+                           "corner_joint": "splined_miter"}) == []
+    # leg_taper IS a desk field now; a genuine typo is still flagged.
+    assert lint_spec_dict({"kind": "desk", "leg_taper": True}) == []
+    assert _keys(lint_spec_dict(
+        {"kind": "desk", "drawers": 1, "leg_tapr": True})) == {"leg_tapr"}

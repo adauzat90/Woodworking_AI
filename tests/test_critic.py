@@ -156,3 +156,13 @@ def test_brep_interferences_detects_overlap_when_cad_present():
     model = b3d.Compound(children=[a, b])
     hits = _brep_interferences(model)
     assert len(hits) == 1 and hits[0][2] > 0
+
+
+def test_front_coverage_only_reported_for_casework():
+    # A cabinet shows clear-opening + front coverage; a legged piece has no face
+    # to cover, so those lines must be omitted (not a misleading "0% of face").
+    from woodworking_ai.dsl import spec_from_dict
+    cab = critique(base_spec(doors=2)).report_text()
+    assert "front coverage" in cab and "clear opening" in cab
+    ns = critique(spec_from_dict({"kind": "nightstand", "drawers": 2})).report_text()
+    assert "front coverage" not in ns and "clear opening" not in ns

@@ -72,3 +72,22 @@ def test_built_envelope_matches_spec():
 def test_inside_project():
     proj = Project(name="Office", components=[Component(spec=_desk(), x=0)])
     assert validate(proj).ok and estimate(proj).total > 0
+
+
+def test_grommet_bore_in_drilling_schedule():
+    from woodworking_ai.drilling import drilling_schedule
+    g = drilling_schedule(_desk(grommet=True))
+    assert any("grommet" in o.operation.lower() for o in g.ops)
+    assert not any("grommet" in o.operation.lower()
+                   for o in drilling_schedule(_desk(grommet=False)).ops)
+
+
+def test_leg_taper_recognized_and_noted():
+    plain = generate_cutlist(_desk()).parts
+    assert all("taper" not in p.notes for p in plain if p.name == "Leg")
+    tapered = generate_cutlist(_desk(leg_taper=True, leg_tip=25)).parts
+    leg = next(p for p in tapered if p.name == "Leg")
+    assert "taper" in leg.notes and "25mm" in leg.notes
+    # Round-trips and is a recognized field (no lint warning).
+    from woodworking_ai.dsl_lint import lint_spec_dict
+    assert lint_spec_dict({"kind": "desk", "leg_taper": True, "leg_tip": 25}) == []

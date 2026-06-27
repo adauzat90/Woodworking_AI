@@ -34,6 +34,7 @@ def _default_unit() -> str:
     return "metric"
 
 from .dsl import spec_from_dict, ComponentGroup
+from .dsl_lint import lint_spec_dict
 from . import service
 
 
@@ -73,8 +74,9 @@ def _emit(spec, args, tooling=None) -> int:
 
     asm = service.assemble(spec, tooling=tooling)
 
-    print(spec.to_json())
-    print()
+    if not getattr(args, "quiet", False):
+        print(spec.to_json())
+        print()
     result = asm.validation
     if result.warnings:
         print("Warnings:")
@@ -137,7 +139,9 @@ def _emit(spec, args, tooling=None) -> int:
     if args.drill:
         print("\n" + asm.drilling.report_text())
 
-    if not is_group and args.joinery:
+    if args.joinery:
+        # The joinery setup sheet aggregates across a project's components too,
+        # so it is no longer silently skipped for a run.
         print("\n" + asm.joinery.report_text())
 
     if not is_group and args.assembly:
@@ -158,11 +162,16 @@ def _emit(spec, args, tooling=None) -> int:
 
     if tooling is not None or getattr(args, "tools_list", False):
         from .tooling import tools_needed
+        needs = tools_needed(spec, tooling)
         print("\nTools needed:")
-        for t in tools_needed(spec, tooling):
+        if tooling is None:
+            print("  (no shop inventory set — pass --shop or --tools to mark "
+                  "have / missing)")
+        for t in needs:
             mark = "" if t.owned is None else ("  ✓ have" if t.owned
                                                else "  ✗ MISSING")
-            print(f"  {t.operation:<26} {t.tool}{mark}")
+            tool = t.tool or "any suitable method"
+            print(f"  {t.operation:<26} {tool}{mark}")
 
     if args.out:
         _write_outputs(spec, asm, args, unit, is_group=is_group)
@@ -278,6 +287,8 @@ def main(argv: list[str] | None = None) -> int:
                              "B-Rep (machine honest; needs build123d)")
     common.add_argument("--assembly", action="store_true",
                         help="print the step-by-step assembly sequence")
+    common.add_argument("--quiet", "-q", action="store_true",
+                        help="suppress the spec JSON echo at the top of the output")
     common.add_argument("--imperial", action="store_true",
                         help="show cut list and reports in fractional inches "
                              "(engine stays metric; the 32mm drilling schedule "
@@ -324,7 +335,8 @@ def main(argv: list[str] | None = None) -> int:
         import json as _json
         try:
             text = Path(args.spec_file).read_text(encoding="utf-8")
-            spec = spec_from_dict(_json.loads(text))
+            raw = _json.loads(text)
+            spec = spec_from_dict(raw)
         except FileNotFoundError:
             print(f"error: spec file not found: {args.spec_file}", file=sys.stderr)
             return 2
@@ -334,6 +346,10 @@ def main(argv: list[str] | None = None) -> int:
             print(f"error: could not parse spec '{args.spec_file}': {exc}",
                   file=sys.stderr)
             return 2
+        # Surface keys the language silently drops (a typo'd or unsupported field
+        # masks its default — the author thinks they set a value they didn't).
+        for issue in lint_spec_dict(raw):
+            print(f"warning: {issue}", file=sys.stderr)
         return _emit(spec, args, tooling=tooling)
 
     return 2
