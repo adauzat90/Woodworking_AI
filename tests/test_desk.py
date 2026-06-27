@@ -83,7 +83,6 @@ def test_grommet_bore_in_drilling_schedule():
 
 
 def test_leg_taper_recognized_and_noted():
-    from woodworking_ai.dsl import leg_taper_note
     plain = generate_cutlist(_desk()).parts
     assert all("taper" not in p.notes for p in plain if p.name == "Leg")
     tapered = generate_cutlist(_desk(leg_taper=True, leg_tip=25)).parts
