@@ -192,6 +192,8 @@ backed by the calculators in `src/woodworking_ai/engineering.py`):
 | DIM-004 | project: table top ↔ paired seat | WARN (not the catalog's ERROR) when a seat and its **best-matched** table in a project leave a thigh gap outside ~228–330 mm. Only sit-at-height tables are pairing targets (a coffee/side table beside a bench isn't a mismatch); best-fit pairing avoids cross-flagging a counter's stools against a dining table. Softened to WARN because the DSL has no explicit seat↔table link, so the pairing is inferred — and a seat whose true partner isn't modelled may still be matched to another table. |
 | DIM-005 | desk `height` / `depth` | WARN when desk height is outside ~680–800 mm, or depth is under ~500 mm (cramped for a work surface). |
 | DIM-006 | table/desk apron underside | INFO when a sit-at surface's apron underside is below ~600 mm — tight knee room for a seated user. Only checked on sit-at-height pieces (a coffee table is exempt). |
+| STRUCT-014 | cabinet `shelf_joint` | WARN when a load shelf is `screw`/`butt` — both drive the fastener/glue into end grain and work loose. Pins (default), dado, and cleat stay quiet. A new `ShelfJoint` field carries the attachment; a fixed dado/cleat shelf also adds a housing op to the joinery schedule. |
+| MOVE-003 | cabinet `door_style` | WARN when a **solid** floating door panel is used (a `raised_panel`, or a `shaker`/`cope_stick` flat panel with a solid make-up). The cut list sizes the panel to fill the groove with no allowance, so it can't expand — leave a float gap. A plywood flat panel doesn't move and stays quiet. |
 | DIM/STRUCT (existing) | `validate` | Dimensional bounds, opening fit, door/drawer fit, per-type sanity were already present pre-audit. |
 
 **Near-miss advisories.** A *passing* structural check whose measured value is
@@ -260,13 +262,22 @@ and tested (`tests/test_engineering.py`, `test_joinery_hardware.py`,
 `test_dsl_diagnostics.py`, `test_mass.py`, `test_ergonomics.py`). **Not every
 catalogued rule has a runtime emitter yet.** Now wired (Tier 3): the seat↔top
 coupling `DIM-004`, seat/desk heights `DIM-003`/`DIM-005`, knee clearance
-`DIM-006`, weight/handling `HW-007`/`STRUCT-043`. Still open:
+`DIM-006`, weight/handling `HW-007`/`STRUCT-043`, the shelf-to-side joint
+`STRUCT-014`, and the solid frame-and-panel float gap `MOVE-003`. Still open:
 - `DIM-001`/`DIM-002` (dining/counter/bar **table** heights) — **blocked**: the
   DSL has no table sub-type, so a 450 mm coffee table can't be told from an
   under-height dining table; flagging by absolute height would false-positive.
   Needs a `table` sub-type field (a §5 DSL gap) before it can be wired.
-- several `MOVE`/`GRAIN`/`STRUCT` enclosure rules (need part-to-part joints) and
-  the `STD-*` meta-rules.
+- `MOVE-005` (cross-grain glue), `GRAIN-002`/`GRAIN-004` (grain orientation /
+  mixed sawn in a glue-up) — **blocked** on a per-part/per-stave grain model
+  (today grain is one top-level enum); `MOVE-004` (breadboard slotting) needs a
+  breadboard-end feature.
+- `STRUCT-040`/`STRUCT-041` (full-enclosure) and `GRAIN-003` (over-wide single
+  board) are **moot** under today's DSL: `BackStyle` has no open/none option (a
+  cabinet always has a back, sides, bottom, and top), and the cut list already
+  auto-glues-up any solid panel wider than a board — so neither defect is
+  expressible, and emitting them would be dead code.
+- the `STD-*` meta-rules.
 
 See [`DSL_DIAGNOSTICS_REVIEW.md`](./DSL_DIAGNOSTICS_REVIEW.md) §4.3 / §5 for the
 remaining gap list and the schema work each needs.

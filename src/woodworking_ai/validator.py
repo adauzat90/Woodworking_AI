@@ -801,6 +801,23 @@ def _validate_cabinet(spec) -> list[Issue]:
     if spec.center_mullion and spec.doors != 2:
         warn("center_mullion", "a center mullion only applies to a pair of doors")
 
+    # MOVE-003: a solid floating door panel sized to fill the groove (the cut list
+    # sizes it opening + 2×groove, with no allowance) can't expand and cracks
+    # across the grain. A raised panel is always solid; a flat shaker/cope panel
+    # is solid only when the make-up is solid wood — a plywood flat panel doesn't
+    # move, so it stays quiet there.
+    door_style = str(getattr(spec, "door_style", "slab")).lower()
+    panel_is_solid = door_style == "raised_panel" or (
+        door_style in ("shaker", "cope_stick")
+        and str(getattr(spec, "material_form", "")).lower() == "solid")
+    if spec.doors and panel_is_solid:
+        warn("door_style",
+             "a solid floating panel sized to fill the groove can't expand and "
+             "will crack across the grain; leave a float gap (~¼in per 12in of "
+             "panel width, flatsawn) when sizing it", "MOVE-003",
+             fix="undersize the panel for a seasonal float gap",
+             doc_anchor="design-principles.md#41-wood-movement-seasonal-expansioncontraction")
+
     # --- per cabinet type ------------------------------------------------
     if spec.cabinet_type == CabinetType.WALL:
         if spec.toe_kick is not None:
@@ -859,6 +876,18 @@ def _validate_cabinet(spec) -> list[Issue]:
                  f"{BASE_CABINET_MAX_DEPTH:.0f}mm)", "DIM-007",
                  observed=float(spec.depth), limit=BASE_CABINET_MAX_DEPTH,
                  units="mm", direction="max")
+
+    # STRUCT-014: a load shelf screwed or butt-glued to the side drives the
+    # fastener/glue into end grain and works loose under load. Adjustable pins
+    # (the default) and a housed dado/cleat are fine; flag only screw/butt.
+    shelf_joint = str(getattr(spec, "shelf_joint", "pins")).lower()
+    if spec.shelves > 0 and shelf_joint in ("screw", "butt"):
+        warn("shelf_joint",
+             f"a load shelf attached by {shelf_joint} relies on end-grain holding "
+             "and works loose under load; house it in a dado/rabbet or hang it on "
+             "shelf pins", "STRUCT-014",
+             fix="house the shelf in a dado (or use adjustable shelf pins)",
+             doc_anchor="design-principles.md#32-joint-selection-by-load-strength-hierarchy")
 
     # --- shelf deflection / sag (STRUCT-020..022) ------------------------
     # Treat each shelf as a simply-supported beam spanning the interior width.

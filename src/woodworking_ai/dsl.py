@@ -93,6 +93,21 @@ def _dealias_joinery(value: Any) -> Any:
         s, JOINERY_ALIASES.get(s.replace("-", "_").replace(" ", "_"), value))
 
 
+class ShelfJoint(StrEnum):
+    """How a cabinet shelf attaches to the case sides.
+
+    Adjustable shelves ride on pins (the default — a pin in double shear holds
+    fine); a fixed shelf is captured in a dado or on a cleat. Screwing or butt-
+    gluing a load shelf to the side drives the fastener/glue into end grain and
+    holds poorly — the STRUCT-014 advisory flags exactly those two.
+    """
+    PINS = "pins"               # adjustable, on 5mm shelf-pin supports (default)
+    DADO = "dado"               # fixed, housed in a dado — captured in shear
+    CLEAT = "cleat"             # fixed, on side ledgers/cleats
+    SCREW = "screw"             # screwed through the side into the shelf end grain
+    BUTT = "butt"               # butt-glued to the side — end grain, weak
+
+
 class CornerJoint(StrEnum):
     """Drawer-box corner joint."""
     DOVETAIL = "dovetail"
@@ -642,6 +657,7 @@ class CabinetSpec:
 
     toe_kick: ToeKick | None = field(default_factory=ToeKick)
     shelves: int = 1
+    shelf_joint: ShelfJoint = ShelfJoint.PINS  # how shelves attach to the sides
     doors: int = 2
     drawers: list[Drawer] = field(default_factory=list)
 
@@ -684,6 +700,10 @@ class CabinetSpec:
         # store them as the canonical dicts every consumer reads.
         if self.accessories:
             self.accessories = [_accessory_to_dict(a) for a in self.accessories]
+        # Shelf joint isn't structural enough to gate the whole build path, so it
+        # coerces leniently (an unknown spelling falls back to the default) rather
+        # than raising the way the carcass joinery does.
+        self.shelf_joint = _coerce_enum(ShelfJoint, self.shelf_joint)
 
     @property
     def has_full_top(self) -> bool:
@@ -728,6 +748,8 @@ class CabinetSpec:
         d["construction"] = self.construction.value
         d["back"] = self.back.value
         d["joinery"] = self.joinery.value
+        if isinstance(self.shelf_joint, Enum):
+            d["shelf_joint"] = self.shelf_joint.value
         for dr in d.get("drawers", []):
             for k in ("corner_joint", "dovetail_tails", "slide_type"):
                 if isinstance(dr.get(k), Enum):

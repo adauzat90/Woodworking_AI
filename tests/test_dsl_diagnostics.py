@@ -310,6 +310,10 @@ def test_emitted_doc_anchors_resolve_to_real_headings():
         # a passing wall cabinet → exercises STRUCT-043's #35 anchor
         _cab(cabinet_type="wall", width=800, height=720, depth=320, shelves=1,
              doors=2),
+        # a screwed load shelf → STRUCT-014's #32 anchor
+        _cab(shelf_joint="screw", shelves=2),
+        # a solid raised door panel → MOVE-003's #41 anchor
+        _cab(doors=2, door_style="raised_panel"),
         spec_from_dict(dict(kind="table", width=1600, depth=900, height=2000,
                             top_thickness=25, leg=60, apron_height=80,
                             apron_thickness=20, leg_inset=40, top_fixing="fixed")),

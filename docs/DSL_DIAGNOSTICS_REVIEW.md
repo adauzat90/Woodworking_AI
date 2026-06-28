@@ -268,7 +268,10 @@ These are the real ceiling on diagnostic quality:
    say "the carcass joinery is butt" but can't reason about *which* edge, or
    shelf-to-side attachment, so STRUCT-014 / MOVE-003 have nothing to check
    against. → a minimal `joints: [{between: [a,b], type, edge}]` would unlock a
-   whole class of MOVE/GRAIN/STRUCT rules.
+   whole class of MOVE/GRAIN/STRUCT rules. *(Partially closed: a targeted
+   `CabinetSpec.shelf_joint` field now unblocks STRUCT-014, and MOVE-003 turned
+   out checkable from the existing `door_style` + make-up without a relation
+   model — see §6. The general `joints` relation is still what MOVE-005 needs.)*
 5. **Grain is binary (`flatsawn|quartersawn`) and top-only.** No riftsawn, no
    per-part orientation; cabinets/boxes have no grain field even though the
    back-groove short-grain rule reasons about grain. → per-part grain for solid
@@ -383,12 +386,33 @@ the deep links.
     near-miss is the actionable half, and Tier 2's `observed`/`limit` make a UI
     margin gauge free without emitting on every pass.)
 
+*The shelf-joint subset of #9 (one small schema field) is ✅ DONE:*
+
+9a. ✅ **`STRUCT-014` shelf-to-side joint + `MOVE-003` solid panel float gap**
+    (§5.4) — added a `ShelfJoint` enum and a `CabinetSpec.shelf_joint` field
+    (default `pins` → zero golden churn). `STRUCT-014` (WARN) flags a `screw`/
+    `butt` load shelf; a fixed `dado`/`cleat` shelf also flows through to the
+    joinery schedule as a housing op. `MOVE-003` (WARN, validator-only — no new
+    schema) flags a **solid** floating door panel (the cut list sizes the panel
+    to fill the groove with no expansion allowance); it stays quiet on the common
+    plywood shaker panel, which doesn't move.
+
+    While scoping this, two of the §4.3 batch turned out **moot** under today's
+    DSL and were deliberately *not* emitted (faking them would be dead code):
+    `STRUCT-040`/`STRUCT-041` (full-enclosure) — `BackStyle` has no open/none
+    option, so a cabinet always has a back/sides/bottom/top; and `GRAIN-003`
+    (over-wide single board) — the cut list already auto-glues-up any solid panel
+    wider than a board, so the defect can't arise.
+
 *Still blocked (need a §5 schema PR each):*
 
-9. **The remaining catalogued MOVE/GRAIN/STRUCT/STD rules** (§4.3) — most need
-   part-to-part `joints`, per-part grain, or a richer load model (§5) before they
-   can check anything. `DIM-001`/`DIM-002` need a table sub-type. These should
-   sequence behind a small DSL-schema PR each.
+9b. **`MOVE-005` (cross-grain glue), `GRAIN-002`/`GRAIN-004` (grain orientation /
+    mixed sawn)** — need the per-part/per-stave grain model (§5.5): grain is one
+    top-level enum today, and glue-up staves carry only a count, no per-stave
+    sawn orientation. **`MOVE-004`** (breadboard slotting) needs a breadboard-end
+    feature. **`DIM-001`/`DIM-002`** need a table sub-type. The **`STD-*`**
+    meta-rules round out the gap. These should sequence behind a small DSL-schema
+    PR each.
 
 Tiers 1–2 are behavior-preserving except the two explicit additions and should
 land with drift-guard tests keyed by the new `rule_id`. Tier 3 items that depend
