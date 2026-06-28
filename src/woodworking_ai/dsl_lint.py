@@ -21,12 +21,17 @@ import dataclasses
 from dataclasses import dataclass
 from difflib import get_close_matches
 
+from .diagnostics import Severity
 from .dsl import (
     ApplianceVoid, Material, ToeKick, Drawer, KNOWN_KINDS, LEAF_SPEC_TYPES,
 )
 
 # Re-exported so callers (and Item 2's router) share one definition.
 __all__ = ["LintIssue", "lint_spec_dict", "KNOWN_KINDS"]
+
+# Every dropped-key lint shares this stable id (the catalog's LINT-001) so a
+# consumer can suppress/audit them by rule alongside the validator's issues.
+LINT_RULE_ID = "LINT-001"
 
 
 def _fields(dc) -> frozenset[str]:
@@ -70,10 +75,25 @@ _RUN_FIELDS = frozenset({"start", "angle", "gap", "items", "labels"})
 
 @dataclass
 class LintIssue:
-    """A key the language will drop, located by a dotted path into the payload."""
+    """A key the language will drop, located by a dotted path into the payload.
+
+    Satisfies the :class:`~.diagnostics.Diagnostic` protocol so the designer loop
+    can fold lint warnings into the same stream as validator issues: ``severity``
+    is always ``"warning"`` (a dropped key never hard-fails a build — see module
+    docstring), ``field`` aliases the dotted ``path``, and ``rule_id`` is the
+    catalog's ``LINT-001``. The ``__str__`` rendering is unchanged (bare message,
+    no ``[warning] field:`` prefix) so existing lint output and tests don't move.
+    """
     path: str        # e.g. "components[1].spec"
     key: str         # the offending key
     message: str
+    severity: str = Severity.WARNING
+    rule_id: str = LINT_RULE_ID
+
+    @property
+    def field(self) -> str:
+        """Alias of :attr:`path` — the spec location, per the Diagnostic protocol."""
+        return self.path
 
     def __str__(self) -> str:
         return self.message

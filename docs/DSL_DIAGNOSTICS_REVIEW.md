@@ -303,12 +303,33 @@ Covered by `tests/test_dsl_diagnostics.py`. The remaining structured-diagnostic
 work (`observed`/`limit`/`units`, splitting `fix` from `message`, unifying
 `Issue`/`LintIssue`) is Tier 2.
 
-**Tier 2 — structure:**
-4. **Add `observed/limit/units` + split `fix` from `message`** (§2) — makes the
-   repair loop compute edits instead of parsing prose.
-5. **Unify `Issue`/`LintIssue` under one `Diagnostic`** with a shared protocol.
-6. **Lift the ~15 inline thresholds into the config table and interpolate them
-   into messages** (§3.1).
+**Tier 2 — structure: ✅ DONE**
+4. ✅ **Added `observed`/`limit`/`units` + a `fix` field** (§2) — `Issue` now
+   carries a machine-actionable record alongside the prose, populated on the
+   numeric rules (STRUCT-020/021, STRUCT-031, MOVE-001/002, HW-001/002/005,
+   DIM-007/008/010, MAT-002, single-door width). `fix` is the imperative remedy
+   split out of the message (the prose still embeds it, so rendering is
+   unchanged); `doc_anchor` deep-links each into `design-principles.md`. The web
+   `build_result` bundle serialises every populated field and omits the empty
+   ones. The repair loop can now compute the exact edit instead of regex-parsing
+   English.
+5. ✅ **Unified `Issue`/`LintIssue` under a shared `Diagnostic` protocol** — a new
+   `diagnostics.py` holds `Severity` (moved out of `validator`, still re-exported)
+   and a structural `Diagnostic` protocol (`severity`/`field`/`message`/
+   `rule_id`). `LintIssue` now reports `severity="warning"`, `field` (aliasing its
+   dotted `path`), and `rule_id="LINT-001"`; both records `isinstance`-pass the
+   protocol, so consumers fold lint + validation into one stream. `LintIssue`
+   rendering (`__str__`, `.path`/`.key`) is unchanged.
+6. ✅ **Lifted the inline thresholds into named constants and interpolated them
+   into the messages** (§3.1) — table-height bounds, seasonal-movement warn,
+   leg-ratio factors, slide-clearance band, door stock, single-door width, the
+   per-type cabinet depths/height, bookcase bay clearances, tip factor, and the
+   sheet size are all named constants now, and the prose reads the constant so it
+   can't drift from the condition.
+
+Covered by the Tier-2 additions in `tests/test_dsl_diagnostics.py` (structured
+fields on the sag/tip rules, the `Diagnostic` protocol membership, and the
+`build_result` serialisation).
 
 **Tier 3 — coverage:**
 7. **DIM-004 seat↔top coupling** (the missing coupled-dimension ERROR) + the

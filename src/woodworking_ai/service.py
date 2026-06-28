@@ -46,6 +46,30 @@ def _clean(obj: Any) -> Any:
     return obj
 
 
+def _issue_dict(i: Any) -> dict:
+    """Serialise a validator ``Issue`` for the bundle.
+
+    Always carries ``field``/``message``; the machine-actionable extras
+    (``rule_id``, ``fix``, ``observed``/``limit``/``units``, ``doc_anchor``) are
+    included only when populated, so the repair loop can compute an edit and the
+    UI can deep-link, while issues without them stay as compact as before.
+    """
+    out: dict[str, Any] = {"field": i.field, "message": i.message}
+    if getattr(i, "rule_id", ""):
+        out["rule_id"] = i.rule_id
+    if getattr(i, "fix", ""):
+        out["fix"] = i.fix
+    if getattr(i, "observed", None) is not None:
+        out["observed"] = i.observed
+    if getattr(i, "limit", None) is not None:
+        out["limit"] = i.limit
+    if getattr(i, "units", ""):
+        out["units"] = i.units
+    if getattr(i, "doc_anchor", ""):
+        out["doc_anchor"] = i.doc_anchor
+    return out
+
+
 def _stock_fields(form: str, species: str, material: str,
                   *, solid: bool) -> dict[str, str]:
     """Buyer-facing ``stock``/``product`` names for a cost/lumber group.
@@ -441,9 +465,9 @@ def build_result(spec, *, want_png: bool = True, want_glb: bool = True,
     result: dict[str, Any] = {
         "spec": spec.to_dict(),
         "valid": v.ok,
-        "warnings": [{"field": i.field, "message": i.message} for i in v.warnings],
-        "errors": [{"field": i.field, "message": i.message} for i in v.errors],
-        "advisories": [{"field": i.field, "message": i.message} for i in v.infos],
+        "warnings": [_issue_dict(i) for i in v.warnings],
+        "errors": [_issue_dict(i) for i in v.errors],
+        "advisories": [_issue_dict(i) for i in v.infos],
     }
 
     # Tool/jig checklist for the build — marked owned/missing when an inventory

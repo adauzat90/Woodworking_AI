@@ -6,6 +6,9 @@ from __future__ import annotations
 
 from woodworking_ai import spec_from_dict, validate
 from woodworking_ai import engineering
+from woodworking_ai.diagnostics import Diagnostic
+from woodworking_ai.dsl_lint import LintIssue, lint_spec_dict
+from woodworking_ai.service import build_result
 from woodworking_ai.validator import Issue, Severity
 
 
@@ -120,3 +123,96 @@ def test_oversize_panel_message_has_sheet_unit():
                       shelves=2))
     msg = " ".join(i.message for i in r.by_rule("MAT-002"))
     assert "2440×1220mm" in msg
+
+
+# --- Tier 2: structured (observed/limit/units/fix) -------------------------
+
+def test_sag_error_carries_observed_limit_units_and_fix():
+    # A long, thin, heavily loaded plywood shelf fails the structural limit.
+    r = validate(_cab(width=1400, depth=300, shelves=2, shelf_species="plywood",
+                      material={"shelf": 12}))
+    fail = r.by_rule("STRUCT-020")
+    assert fail, "expected a structural sag error"
+    iss = fail[0]
+    # The machine-actionable record: observed sag past the span/360 limit, in mm,
+    # with the remedy split out and a deep link to the principles doc.
+    assert iss.observed is not None and iss.limit is not None
+    assert iss.observed > iss.limit          # it failed because observed > limit
+    assert iss.units == "mm"
+    assert iss.fix and "support" in iss.fix
+    assert iss.doc_anchor.startswith("design-principles.md#")
+    # Rendering is unchanged: the prose still embeds the same numbers.
+    assert f"{iss.observed:.1f}mm" in iss.message
+
+
+def test_observed_and_limit_let_a_machine_decide_severity_without_prose():
+    # A pass-margin check the repair loop can compute: visible-sag warning is a
+    # smaller exceedance than the structural error.
+    r = validate(_cab(width=1100, depth=320, shelves=2, shelf_species="plywood",
+                      material={"shelf": 16}))
+    for iss in r.by_rule("STRUCT-021"):
+        assert iss.observed > iss.limit
+        assert iss.units == "mm"
+
+
+def test_tip_over_warning_carries_numeric_factor():
+    r = validate(_cab(cabinet_type="tall", width=600, height=2000, depth=300,
+                      shelves=3, anti_tip=True))
+    tip = r.by_rule("STRUCT-031")
+    assert tip
+    assert tip[0].observed is not None and tip[0].limit == 0.40
+    assert tip[0].fix
+
+
+def test_plain_bound_checks_have_no_structured_numbers():
+    # A type/range error isn't a measured-vs-limit rule; its structured fields
+    # stay empty so consumers can tell "computed" rules from bare checks.
+    r = validate(_cab(shelves=-1))
+    bad = [i for i in r.errors if i.field == "shelves"]
+    assert bad and bad[0].observed is None and bad[0].limit is None
+
+
+# --- Tier 2: Issue/LintIssue unified under the Diagnostic protocol ----------
+
+def test_issue_and_lintissue_both_satisfy_the_diagnostic_protocol():
+    iss = Issue(Severity.WARNING, "f", "m", "STRUCT-010")
+    lint = lint_spec_dict({"cabinet_type": "base", "hieght": 720})[0]
+    assert isinstance(iss, Diagnostic)
+    assert isinstance(lint, Diagnostic)
+
+
+def test_lintissue_exposes_severity_field_and_rule_id():
+    lint = lint_spec_dict({"cabinet_type": "base", "hieght": 720})[0]
+    assert lint.severity == "warning"          # a dropped key never hard-fails
+    assert lint.field == lint.path             # field aliases the dotted path
+    assert lint.rule_id == "LINT-001"
+    # Rendering is unchanged: bare message, no "[warning] field:" prefix.
+    assert str(lint) == lint.message
+
+
+def test_lintissue_str_and_path_key_unchanged():
+    lint = LintIssue("a.b", "b", "ignored unknown field 'b'")
+    assert str(lint) == "ignored unknown field 'b'"
+    assert (lint.path, lint.key) == ("a.b", "b")
+
+
+# --- Tier 2: the service bundle exposes the structured fields ---------------
+
+def test_build_result_serialises_structured_fields_when_present():
+    spec = _cab(width=1400, depth=300, shelves=2, shelf_species="plywood",
+                material={"shelf": 12})
+    bundle = build_result(spec, want_png=False, want_glb=False)
+    sag = [e for e in bundle["errors"] if e.get("rule_id") == "STRUCT-020"]
+    assert sag, "the sag error should be serialised with its rule_id"
+    e = sag[0]
+    assert e["units"] == "mm" and "fix" in e
+    assert e["observed"] > e["limit"]
+
+
+def test_build_result_omits_empty_structured_fields():
+    # A bare type/range error carries no observed/limit/fix — the dict stays slim.
+    spec = _cab(shelves=-1)
+    bundle = build_result(spec, want_png=False, want_glb=False)
+    shelf_errs = [e for e in bundle["errors"] if e["field"] == "shelves"]
+    assert shelf_errs
+    assert "observed" not in shelf_errs[0] and "fix" not in shelf_errs[0]

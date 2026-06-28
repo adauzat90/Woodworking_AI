@@ -198,6 +198,34 @@ suppression/audit by stable ID. The rendered feedback string is unchanged (the I
 is programmatic only). The high-value structural / hardware / movement / material
 / proportion / dimensional rules are tagged; bare type/bound checks have no ID.
 
+**Numeric rules are also machine-actionable.** Beyond the prose `message`, a
+computed rule carries a structured record so the repair loop can compute the exact
+edit instead of regex-parsing English, and a UI can render a gauge or an
+action-button:
+
+| Field | Meaning | Example |
+|---|---|---|
+| `observed` | the measured value the rule judged | `3.4` |
+| `limit` | the threshold it was judged against | `2.5` |
+| `units` | unit of `observed`/`limit` | `"mm"` |
+| `fix` | the imperative remedy, split out of the prose | `"thicken or shorten the span"` |
+| `doc_anchor` | deep link into `design-principles.md` for the rule | `"design-principles.md#33-shelf-sag--deflection"` |
+
+These are populated on the numeric rules (STRUCT-020/021, STRUCT-031, MOVE-001/002,
+HW-001/002/005, DIM-007/008/010, MAT-002, single-door width) and left empty on
+bare type/range checks, so a consumer can tell a *computed* rule from a plain
+bound. The web `build_result` bundle serialises every populated field; empty ones
+are omitted so unstructured issues stay compact.
+
+**One diagnostic shape across layers.** `validator.Issue` and `dsl_lint.LintIssue`
+now both satisfy the `diagnostics.Diagnostic` protocol (`severity`, `field`,
+`message`, `rule_id`), so the designer loop can fold parse-time lint and
+validation issues into one stream and filter by stable ID. A dropped-key lint
+reports `severity="warning"` and `rule_id="LINT-001"`; `Severity` itself moved to
+the shared `diagnostics` module (still re-exported from `validator`).
+
+| LINT-001 | WARN | any spec | a key the tolerant loader will silently drop (typo'd field) | Unknown field ignored; surfaced with a "did you mean" suggestion. |
+
 Backed by the `stock.py`, `proportion.py`, and `drilling.grid_violations`
 helpers. The structural calculators, the hardware/joinery feasibility checks, and
 the engineering rules in the "Implementation status" table above are implemented
