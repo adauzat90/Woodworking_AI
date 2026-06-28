@@ -246,6 +246,13 @@
   .checks li.warnrow .ic { color:var(--warn); }
   .checks li.errrow .ic { color:var(--bad); }
   .checks li.noterow .ic { color:var(--accent, #6aa0ff); }
+  .checks li.noterow.rejected { opacity:.5; text-decoration:line-through; }
+  .checks .notex { margin-left:auto; flex:0 0 auto; font-size:10px;
+    text-transform:uppercase; letter-spacing:.04em; background:none;
+    border:1px solid var(--line); color:var(--muted); border-radius:6px;
+    padding:1px 7px; cursor:pointer; }
+  .checks li.noterow.rejected .notex { text-decoration:none; }
+  .checks .redo-btn { margin-top:8px; font-size:12px; }
   .checks li .fld { color:var(--muted); font-family:var(--font-mono); font-size:11px; }
   .status .pill.clickable { cursor:pointer; }
   .status .pill.clickable:hover { filter:brightness(1.12); }
@@ -1093,15 +1100,48 @@ $("buildBtn").onclick = async () => {
   try { render(await post("/api/build", {spec: specFromForm(), ...currentPricing(), profile: currentProfile(), boards: currentBoards()})); }
   catch (e) { showError(e.message); } finally { setBusy(false); health(); }
 };
+// Indices of the current design's notes the user has rejected. Reset on each
+// fresh design; consumed by redesignWithFeedback().
+let _rejected = new Set();
+
 $("designBtn").onclick = async () => {
   const prompt = $("prompt").value.trim();
   if (!prompt) return;
   setBusy(true);
   try {
     const d = await post("/api/design", {prompt, ...currentPricing(), profile: currentProfile(), boards: currentBoards()});
+    _rejected = new Set();              // a new design — clear prior rejections
     syncForm(d.spec); render(d);
   } catch (e) { showError(e.message); } finally { setBusy(false); health(); }
 };
+
+// Toggle one note's rejected state and re-render the checks panel in place.
+function toggleNote(i) {
+  if (_rejected.has(i)) _rejected.delete(i); else _rejected.add(i);
+  if (last) buildChecks(last);
+}
+
+// Re-run the designer with the rejected assumptions fed back as feedback. The
+// notes are prose, so we don't revert deterministically — we ask the agent to
+// reconsider those specific choices while keeping everything else.
+async function redesignWithFeedback() {
+  const base = $("prompt").value.trim();
+  const notes = (last && last.notes) || [];
+  const rejected = Array.from(_rejected).map(i => notes[i]).filter(Boolean);
+  if (!base || !rejected.length) return;
+  const feedback = base
+    + "\n\nReconsider these assumptions — they are NOT what I want; make a "
+    + "different sensible choice for each and keep everything else:\n"
+    + rejected.map(n => "- " + n).join("\n");
+  setBusy(true);
+  try {
+    const d = await post("/api/design", {prompt: feedback, ...currentPricing(),
+      profile: currentProfile(), boards: currentBoards()});
+    _rejected = new Set();
+    syncForm(d.spec); render(d);
+    toast("Re-designed with your feedback");
+  } catch (e) { showError(e.message); } finally { setBusy(false); health(); }
+}
 
 function syncForm(s) {
   // Specs are always mm; show each length in the form's current unit.
@@ -1221,8 +1261,25 @@ function buildChecks(d) {
   // The AI's own account of what it assumed or changed about the request — the
   // "we changed what you asked for, because X" signal. Shown first so a silent
   // reinterpretation (e.g. a 3m cabinet split into a run) never goes unnoticed.
-  if (d.notes && d.notes.length)
-    html += sec("What the AI assumed or changed", d.notes.map(t => row("noterow", "✎", t)));
+  // Each note can be rejected; rejecting feeds the unwanted assumptions back to
+  // the agent for a re-design (the notes are prose, so there is no deterministic
+  // revert — we ask the agent to choose differently).
+  if (d.notes && d.notes.length) {
+    const lis = d.notes.map((t, i) => {
+      const rej = _rejected.has(i);
+      return `<li class="noterow${rej ? ' rejected' : ''}"><span class="ic">✎</span>`
+        + `<span>${esc(t)}</span>`
+        + `<button class="notex" type="button" onclick="toggleNote(${i})">`
+        + `${rej ? 'undo' : 'reject'}</button></li>`;
+    });
+    let block = `<div class="ck-grp"><h5>What the AI assumed or changed</h5>`
+      + `<ul>${lis.join("")}</ul>`;
+    if (_rejected.size)
+      block += `<button class="secondary redo-btn" type="button" `
+        + `onclick="redesignWithFeedback()">↻ Re-design without the `
+        + `${_rejected.size} rejected assumption${_rejected.size > 1 ? 's' : ''}</button>`;
+    html += block + `</div>`;
+  }
   if (d.errors && d.errors.length)
     html += sec("Problems to fix", d.errors.map(x => row("errrow", "✗", x.message, x.field)));
   if (d.warnings && d.warnings.length)

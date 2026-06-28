@@ -126,7 +126,10 @@ each reinterpretation (with the reason), captured on `DesignResult.notes`,
 returned as `notes` from `POST /api/design`, printed by `woodai design`, and
 shown in the web UI as a *"What the AI assumed or changed"* panel with an
 *"N AI changes"* pill — so a silent reinterpretation (a 3 m cabinet becoming a
-run) never goes unnoticed.
+run) never goes unnoticed. In the web UI each note can be **rejected**; rejecting
+one (or more) reveals a *"Re-design without the N rejected assumptions"* button
+that re-runs the designer with those choices fed back as feedback. The notes are
+prose, so this is an agent re-design, not a deterministic revert.
 
 ## Reproduce / extend
 
