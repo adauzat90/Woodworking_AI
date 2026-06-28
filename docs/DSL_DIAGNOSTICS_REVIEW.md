@@ -331,6 +331,29 @@ Covered by the Tier-2 additions in `tests/test_dsl_diagnostics.py` (structured
 fields on the sag/tip rules, the `Diagnostic` protocol membership, and the
 `build_result` serialisation).
 
+**Tier 2 — post-landing evaluation pass (addressed):** a second review of the
+Tier-2 change surfaced four fair critiques, now fixed:
+- **`(observed, limit)` wasn't self-describing.** STRUCT-031 tip-over is
+  *smaller-is-worse* while every other rule is *bigger-is-worse*, so a rule-
+  agnostic repair loop couldn't tell which way to edit. Added a `direction`
+  field (`"max"`/`"min"`/`"target"`/`""`) on every structured rule; an empty
+  `direction` also documents the `limit`-is-a-trigger (not a target) case
+  (MOVE-002), closing the `limit=None` ambiguity.
+- **STRUCT-031 carried no number in its prose and no `units`.** It now reads
+  `depth/height 0.28 < 0.40` and sets `units="ratio"`.
+- **Coverage gap:** STRUCT-042 (toe-kick minimums) was a clean numeric check
+  with no structured fields — now carries `observed/limit/units/direction/fix`.
+- **The `Diagnostic` protocol was over-sold.** It's a *latent* common shape:
+  both records conform and it's tested, but no consumer routes through it yet
+  (the designer loop / CLI / web service still handle lint and validation
+  separately). The docstrings now say so honestly, and note that
+  `@runtime_checkable isinstance` is presence-only, not type validation. Wiring
+  one consumer through the protocol is a Tier-3 follow-up.
+
+A `doc_anchor` drift-guard test now parses `design-principles.md` headings and
+asserts every emitted anchor resolves, so a heading rename can't silently break
+the deep links.
+
 **Tier 3 — coverage:**
 7. **DIM-004 seat↔top coupling** (the missing coupled-dimension ERROR) + the
    ergonomic DIM heights (§4.3), on the assembly pass the catalog already

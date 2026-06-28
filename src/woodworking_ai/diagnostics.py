@@ -11,10 +11,13 @@ common surface. This module gives them one:
   :mod:`validator`, so :mod:`dsl_lint` can share it without importing the
   CAD-aware validator.
 * :class:`Diagnostic` — a structural ``Protocol`` describing the four fields any
-  diagnostic exposes (``severity``, ``field``, ``message``, ``rule_id``). Both
-  ``Issue`` and ``LintIssue`` satisfy it, so a consumer (the web service, the
-  repair loop, the UI) can treat a mixed stream uniformly and key off the stable
-  ``rule_id`` rather than special-casing each type.
+  diagnostic exposes (``severity``, ``field``, ``message``, ``rule_id``). It
+  establishes one *common shape* so a future consumer can fold a mixed stream and
+  key off the stable ``rule_id`` instead of special-casing each type. Today it is
+  a latent contract: ``Issue`` and ``LintIssue`` both conform and the conformance
+  is tested, but the existing consumers (designer loop, CLI, web service) still
+  handle the two streams separately — wiring one through the protocol is the
+  follow-up this shape enables.
 
 Pure data — no CAD, no spec types — so every layer can import it freely.
 """
@@ -42,11 +45,20 @@ class Severity(StrEnum):
 class Diagnostic(Protocol):
     """The common shape every diagnostic record exposes.
 
-    A structural (duck-typed) protocol: any object carrying these four
-    attributes *is* a ``Diagnostic`` — no inheritance required. ``Issue`` and
-    ``LintIssue`` both conform, so consumers can iterate a heterogeneous list and
-    filter/route by ``severity`` or the stable ``rule_id`` without knowing which
-    layer produced each record.
+    A structural (duck-typed) protocol: an object carrying these four attributes
+    conforms — no inheritance required. ``Issue`` and ``LintIssue`` both do, so a
+    consumer can iterate a heterogeneous list and filter/route by ``severity`` or
+    the stable ``rule_id`` without knowing which layer produced each record.
+
+    Note on ``field``: both records expose it, but the granularity differs —
+    ``Issue.field`` is a spec field name (``"shelves"``, ``"material.door"``)
+    while ``LintIssue.field`` is the dotted *location* of a dropped key
+    (``"components[1].spec.widht"``). Treat it as "where", not "which attribute".
+
+    ``@runtime_checkable`` makes ``isinstance(x, Diagnostic)`` work, but — per the
+    CPython protocol semantics — it checks only that the four *attributes are
+    present*, not their types. It is a duck-type gate, not input validation;
+    don't rely on it to reject a malformed record.
     """
 
     @property

@@ -216,3 +216,71 @@ def test_build_result_omits_empty_structured_fields():
     shelf_errs = [e for e in bundle["errors"] if e["field"] == "shelves"]
     assert shelf_errs
     assert "observed" not in shelf_errs[0] and "fix" not in shelf_errs[0]
+
+
+# --- Tier 2 follow-up: `direction` disambiguates observed-vs-limit ----------
+
+def test_direction_distinguishes_bigger_worse_from_smaller_worse():
+    # Sag: bigger is worse (observed must end <= limit).
+    sag = validate(_cab(width=1400, depth=300, shelves=2,
+                        shelf_species="plywood", material={"shelf": 12}))
+    assert sag.by_rule("STRUCT-020")[0].direction == "max"
+    # Tip-over: smaller is worse (depth/height ratio must end >= limit) — the one
+    # rule where naive "reduce observed" would push the wrong way.
+    tip = validate(_cab(cabinet_type="tall", width=600, height=2000, depth=300,
+                        shelves=3, anti_tip=True)).by_rule("STRUCT-031")[0]
+    assert tip.direction == "min"
+    assert tip.observed < tip.limit          # below the limit is the failure
+    assert f"{tip.observed:.2f}" in tip.message  # the factor is now in the prose
+
+
+def test_every_structured_numeric_issue_declares_a_direction():
+    # Any issue carrying both observed and limit must say which way is bad, so a
+    # repair loop never has to guess. (Trigger several numeric rules at once.)
+    r = validate(_cab(cabinet_type="tall", width=600, height=1200, depth=300,
+                      shelves=4, anti_tip=True, material={"shelf": 12}))
+    structured = [i for i in r.issues
+                  if i.observed is not None and i.limit is not None]
+    assert structured, "expected at least one structured numeric issue"
+    for i in structured:
+        assert i.direction in ("max", "min", "target"), \
+            f"{i.rule_id or i.field} has observed/limit but no direction"
+
+
+# --- Tier 2 follow-up: doc_anchor deep-links must resolve (drift guard) ------
+
+def test_emitted_doc_anchors_resolve_to_real_headings():
+    import re
+    from pathlib import Path
+    import woodworking_ai
+
+    def slug(heading: str) -> str:
+        # Mirror GitHub's github-slugger: lowercase, drop punctuation (keeping
+        # spaces/hyphens), then replace each space with a hyphen WITHOUT
+        # collapsing — so "sag / deflection" -> "sag--deflection" (double).
+        s = heading.strip().lower()
+        s = re.sub(r"[^\w\s-]", "", s)
+        return s.replace(" ", "-")
+
+    docs = Path(woodworking_ai.__file__).resolve().parents[2] / "docs"
+    text = (docs / "design-principles.md").read_text(encoding="utf-8")
+    anchors = {slug(m.group(1)) for m in re.finditer(r"^#{1,6}\s+(.*)$",
+                                                     text, re.MULTILINE)}
+
+    # Drive a spread of rules that emit doc_anchors and assert each resolves.
+    specs = [
+        _cab(width=1400, depth=300, shelves=2, material={"shelf": 12}),
+        _cab(cabinet_type="tall", width=600, height=2000, depth=300, shelves=3),
+        _cab(material={"door": 14}, doors=2, width=800),
+        spec_from_dict(dict(kind="table", width=1600, depth=900, height=2000,
+                            top_thickness=25, leg=60, apron_height=80,
+                            apron_thickness=20, leg_inset=40, top_fixing="fixed")),
+    ]
+    seen = set()
+    for s in specs:
+        for i in validate(s).issues:
+            if i.doc_anchor:
+                seen.add(i.doc_anchor)
+                frag = i.doc_anchor.split("#", 1)[1]
+                assert frag in anchors, f"dead doc_anchor: {i.doc_anchor}"
+    assert seen, "expected at least one emitted doc_anchor to check"

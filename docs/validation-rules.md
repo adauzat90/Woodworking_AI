@@ -208,8 +208,21 @@ action-button:
 | `observed` | the measured value the rule judged | `3.4` |
 | `limit` | the threshold it was judged against | `2.5` |
 | `units` | unit of `observed`/`limit` | `"mm"` |
+| `direction` | which way `observed` violated `limit`, so the loop knows how to converge without rule knowledge | `"max"` |
 | `fix` | the imperative remedy, split out of the prose | `"thicken or shorten the span"` |
 | `doc_anchor` | deep link into `design-principles.md` for the rule | `"design-principles.md#33-shelf-sag--deflection"` |
+
+`direction` disambiguates rules where *bigger* is worse (sag) from rules where
+*smaller* is worse (tip-over stability) — without it, `(observed, limit)` alone
+can't tell a repair loop which way to edit:
+
+- `"max"` — `observed` must end `<= limit`; **reduce** observed (e.g. sag).
+- `"min"` — `observed` must end `>= limit`; **increase** observed (e.g. tip
+  factor, door backing, toe-kick height).
+- `"target"` — drive `observed` **toward** `limit`, a nominal/band (e.g.
+  side-mount slide clearance).
+- `""` — `limit` is an informational trigger, not a convergence target (e.g.
+  MOVE-002's absolute "a rigidly fixed top will crack"), so don't optimise it.
 
 These are populated on the numeric rules (STRUCT-020/021, STRUCT-031, MOVE-001/002,
 HW-001/002/005, DIM-007/008/010, MAT-002, single-door width) and left empty on

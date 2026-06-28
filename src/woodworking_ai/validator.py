@@ -108,6 +108,17 @@ class Issue:
       still contains it (rendering is unchanged), so this is purely additive.
     * ``observed`` / ``limit`` / ``units`` — the measured value, the threshold it
       is judged against, and their unit (e.g. ``3.4`` / ``2.5`` / ``"mm"``).
+    * ``direction`` — which way ``observed`` violated ``limit``, so a repair loop
+      can act on ``(observed, limit)`` *without* knowing the rule (the whole point
+      of the structured record). It disambiguates rules where bigger is worse
+      (sag) from rules where smaller is worse (tip stability):
+
+        - ``"max"``   — ``observed`` must end ``<= limit``; **reduce** observed.
+        - ``"min"``   — ``observed`` must end ``>= limit``; **increase** observed.
+        - ``"target"``— drive ``observed`` **toward** ``limit`` (a band/nominal).
+        - ``""``      — ``limit`` is an informational trigger, not a convergence
+          target (e.g. an absolute "this will crack" error); don't optimise it.
+
     * ``doc_anchor`` — a deep link into the principles doc for the rule.
     """
     severity: str   # Severity / "error" | "warning" | "info"
@@ -118,6 +129,7 @@ class Issue:
     observed: float | None = None    # the measured value the rule judged
     limit: float | None = None       # the threshold it was judged against
     units: str = ""                  # unit of observed/limit (e.g. "mm")
+    direction: str = ""              # "max" | "min" | "target" | "" — see above
     doc_anchor: str = ""             # deep link, e.g. "design-principles.md#33-..."
 
     def __str__(self) -> str:
@@ -200,7 +212,9 @@ def _validate_table(spec: TableSpec) -> ValidationResult:
              observed=float(spec.height),
              limit=(TABLE_HEIGHT_MIN if spec.height < TABLE_HEIGHT_MIN
                     else TABLE_HEIGHT_MAX),
-             units="mm", doc_anchor="design-principles.md#11-seating-and-work-surfaces")
+             units="mm",
+             direction=("min" if spec.height < TABLE_HEIGHT_MIN else "max"),
+             doc_anchor="design-principles.md#11-seating-and-work-surfaces")
 
     # --- wood movement on a solid top (MOVE-001/002) ---------------------
     # The top's width (depth, Y) runs across the grain and moves seasonally.
@@ -510,7 +524,8 @@ def _check_cabinet_drawers_and_hinges(spec) -> list[Issue]:
                      f"(½in) per side; got {clr:.1f}mm — drawer will bind or rattle",
                      "HW-001", fix=f"set slide clearance to ~{SIDE_MOUNT_CLEARANCE:.1f}mm "
                      "per side",
-                     observed=clr, limit=SIDE_MOUNT_CLEARANCE, units="mm")
+                     observed=clr, limit=SIDE_MOUNT_CLEARANCE, units="mm",
+                     direction="target")  # nominal: drive clearance toward the ½in target
             box_w = opening_w - 2 * clr
             if box_w <= 0:
                 err("drawers",
@@ -529,6 +544,7 @@ def _check_cabinet_drawers_and_hinges(spec) -> list[Issue]:
                     "interior depth; it won't fit", "HW-002",
                     fix="use a shorter slide or a deeper cabinet",
                     observed=sl, limit=round(interior_depth, 1), units="mm",
+                    direction="max",
                     doc_anchor="design-principles.md#51-drawers--slides")
 
         # HW-006 (extension/slide selection): depth that wastes a slide size.
@@ -561,7 +577,8 @@ def _check_cabinet_drawers_and_hinges(spec) -> list[Issue]:
                 "door stock or a shallower hinge", "HW-005",
                 fix=f"use ≥{MIN_DOOR_STOCK:.0f}mm door stock or a shallower hinge",
                 observed=round(max(backing, 0.0), 1), limit=HINGE_MIN_DOOR_BACKING,
-                units="mm", doc_anchor="design-principles.md#52-doors")
+                units="mm", direction="min",
+                doc_anchor="design-principles.md#52-doors")
         elif m.door < MIN_DOOR_STOCK:
             # Hosts the cup with the minimum backing, but thin stock telegraphs
             # the cup and offers little screw purchase — buildable, worth a note.
@@ -571,7 +588,7 @@ def _check_cabinet_drawers_and_hinges(spec) -> list[Issue]:
                  "concealed hinge", "HW-005",
                  fix=f"use ≥{MIN_DOOR_STOCK:.0f}mm door stock",
                  observed=round(m.door, 1), limit=MIN_DOOR_STOCK, units="mm",
-                 doc_anchor="design-principles.md#52-doors")
+                 direction="min", doc_anchor="design-principles.md#52-doors")
 
     if spec.doors > 0 and not spec.is_corner and plan.doors:
         door_w = min(d.width for d in plan.doors)  # narrowest leaf
@@ -656,7 +673,8 @@ def _validate_cabinet(spec) -> list[Issue]:
         warn("doors",
              f"a single door wider than {SINGLE_DOOR_MAX_WIDTH:.0f}mm tends to "
              "sag; consider two", fix="split into two doors",
-             observed=float(spec.width), limit=SINGLE_DOOR_MAX_WIDTH, units="mm")
+             observed=float(spec.width), limit=SINGLE_DOOR_MAX_WIDTH, units="mm",
+             direction="max")
     if spec.shelves > 0 and spec.drawers:
         warn("shelves", "shelves above a drawer bank may be obstructed by the box")
     if spec.center_mullion and spec.doors != 2:
@@ -670,7 +688,8 @@ def _validate_cabinet(spec) -> list[Issue]:
             warn("drawers", "drawers are unusual in a wall cabinet")
         if spec.depth > WALL_CABINET_MAX_DEPTH:
             warn("depth", "wall cabinets are typically 300-400mm deep", "DIM-008",
-                 observed=float(spec.depth), limit=WALL_CABINET_MAX_DEPTH, units="mm")
+                 observed=float(spec.depth), limit=WALL_CABINET_MAX_DEPTH,
+                 units="mm", direction="max")
     elif spec.cabinet_type == CabinetType.TALL:
         if spec.toe_kick is None:
             warn("toe_kick", "tall/pantry cabinets usually sit on a toe kick")
@@ -679,7 +698,7 @@ def _validate_cabinet(spec) -> list[Issue]:
                  f"unusually short for a tall/pantry cabinet (under "
                  f"{TALL_CABINET_MIN_HEIGHT:.0f}mm)",
                  observed=float(spec.height), limit=TALL_CABINET_MIN_HEIGHT,
-                 units="mm")
+                 units="mm", direction="min")
     elif spec.cabinet_type == CabinetType.CORNER_BLIND:
         if spec.blind_width <= 0:
             err("blind_width", "a blind corner needs a positive blind_width")
@@ -707,7 +726,8 @@ def _validate_cabinet(spec) -> list[Issue]:
                      f"hardbacks (~{HARDBACK_BAY_MIN:.0f}mm); use fewer shelves or "
                      f"a taller box (paperbacks need ~{PAPERBACK_BAY_MIN:.0f}mm)",
                      "DIM-010", fix="use fewer shelves or a taller box",
-                     observed=round(bay_clear), limit=HARDBACK_BAY_MIN, units="mm")
+                     observed=round(bay_clear), limit=HARDBACK_BAY_MIN, units="mm",
+                     direction="min")
     elif spec.cabinet_type == CabinetType.DRESSER:
         if not spec.drawers:
             warn("drawers", "a dresser is a drawer bank; add some drawers")
@@ -717,7 +737,7 @@ def _validate_cabinet(spec) -> list[Issue]:
                  f"unusually deep for a base cabinet (over "
                  f"{BASE_CABINET_MAX_DEPTH:.0f}mm)", "DIM-007",
                  observed=float(spec.depth), limit=BASE_CABINET_MAX_DEPTH,
-                 units="mm")
+                 units="mm", direction="max")
 
     # --- shelf deflection / sag (STRUCT-020..022) ------------------------
     # Treat each shelf as a simply-supported beam spanning the interior width.
@@ -763,7 +783,7 @@ def _validate_cabinet(spec) -> list[Issue]:
                 "(span/360); shorten span, thicken, stiffen, or add support",
                 "STRUCT-020", fix="shorten span, thicken, stiffen, or add support",
                 observed=round(res.deflection, 1),
-                limit=round(res.engineering_limit, 1), units="mm",
+                limit=round(res.engineering_limit, 1), units="mm", direction="max",
                 doc_anchor="design-principles.md#33-shelf-sag--deflection")
         elif res.status == "visible":
             warn("shelves",
@@ -772,7 +792,7 @@ def _validate_cabinet(spec) -> list[Issue]:
                  "material, thicker shelf, or a center support", "STRUCT-021",
                  fix="use a stiffer material, a thicker shelf, or a center support",
                  observed=round(res.deflection, 1),
-                 limit=round(res.visible_limit, 1), units="mm",
+                 limit=round(res.visible_limit, 1), units="mm", direction="max",
                  doc_anchor="design-principles.md#33-shelf-sag--deflection")
 
     # --- tip-over stability (STRUCT-030/031, ASTM F2057) -----------------
@@ -785,11 +805,13 @@ def _validate_cabinet(spec) -> list[Issue]:
         tip = engineering.tip_safety_factor(spec.height, spec.depth)
         if tip < TIP_MIN_FACTOR:
             warn("depth",
-                 "tall and shallow: high tip-over risk; deepen the base, lower "
-                 "the centre of gravity, or require wall anchoring", "STRUCT-031",
+                 f"tall and shallow: high tip-over risk (depth/height {tip:.2f} < "
+                 f"{TIP_MIN_FACTOR:.2f}); deepen the base, lower the centre of "
+                 "gravity, or require wall anchoring", "STRUCT-031",
                  fix="deepen the base, lower the centre of gravity, or require "
                      "wall anchoring",
-                 observed=round(tip, 3), limit=TIP_MIN_FACTOR,
+                 observed=round(tip, 3), limit=TIP_MIN_FACTOR, units="ratio",
+                 direction="min",
                  doc_anchor="design-principles.md#34-stability--tip-over-regulated")
 
     # --- toe-kick minimum dimensions (STRUCT-042, KCMA A161.1) -----------
@@ -797,11 +819,17 @@ def _validate_cabinet(spec) -> list[Issue]:
         if spec.toe_kick.height < KCMA_TOE_MIN_HEIGHT:
             warn("toe_kick.height",
                  f"toe kick below the ~{KCMA_TOE_MIN_HEIGHT:.0f}mm (3in) KCMA "
-                 "minimum height", "STRUCT-042")
+                 "minimum height", "STRUCT-042",
+                 fix=f"raise the toe-kick height to ≥{KCMA_TOE_MIN_HEIGHT:.0f}mm",
+                 observed=round(float(spec.toe_kick.height), 1),
+                 limit=KCMA_TOE_MIN_HEIGHT, units="mm", direction="min")
         if spec.toe_kick.setback < KCMA_TOE_MIN_SETBACK:
             warn("toe_kick.setback",
                  f"toe space shallower than the ~{KCMA_TOE_MIN_SETBACK:.0f}mm "
-                 "(2in) KCMA minimum depth", "STRUCT-042")
+                 "(2in) KCMA minimum depth", "STRUCT-042",
+                 fix=f"increase the toe-kick setback to ≥{KCMA_TOE_MIN_SETBACK:.0f}mm",
+                 observed=round(float(spec.toe_kick.setback), 1),
+                 limit=KCMA_TOE_MIN_SETBACK, units="mm", direction="min")
 
     # --- carcass joinery vs. load (STRUCT-010/014) -----------------------
     if spec.joinery == Joinery.BUTT:

@@ -65,6 +65,8 @@ def _issue_dict(i: Any) -> dict:
         out["limit"] = i.limit
     if getattr(i, "units", ""):
         out["units"] = i.units
+    if getattr(i, "direction", ""):
+        out["direction"] = i.direction
     if getattr(i, "doc_anchor", ""):
         out["doc_anchor"] = i.doc_anchor
     return out
