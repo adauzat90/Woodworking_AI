@@ -24,8 +24,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Callable, Iterable
 
-from .validator import ValidationResult
-from .agents.critic import CritiqueResult
+from .validator import ValidationResult, validate
+from .agents.critic import CritiqueResult, critique
 
 
 # --------------------------------------------------------------------------- #
@@ -745,3 +745,181 @@ def run_eval(cases: Iterable[EvalCase] | None = None, *,
             continue
         results.append(score_design(case, dr))
     return EvalReport(results)
+
+
+# --------------------------------------------------------------------------- #
+# Refusal suite — does the system FLAG an infeasible request, or silently      #
+# accept it? This is a property of the deterministic validator/critic, not the #
+# LLM, so it is hand-built and needs no API key. A case passes when the system #
+# meets the expected minimum severity for a *faithful* encoding of the request:#
+#   expect="error"   -> must hard-block (validation/critic error, or it refuses #
+#                       the spec at construction).                              #
+#   expect="flagged" -> must at least warn (dubious-but-possible: a shop could  #
+#                       seam an oversize panel, so a warning is defensible).    #
+# A case FAILS only if the system is SILENT (clean, no error, no warning) — it  #
+# would build something physically wrong without telling anyone.               #
+# --------------------------------------------------------------------------- #
+
+from .dsl import CabinetSpec, Drawer, ToeKick  # noqa: E402  (kept with the suite)
+
+
+@dataclass(frozen=True)
+class RefusalCase:
+    name: str
+    prompt: str                       # the infeasible request, human-facing
+    build: Callable[[], object]       # a faithful spec (may raise -> counts as refused)
+    expect: str                       # "error" | "flagged"
+    concern: str                      # what should be flagged
+
+
+def _ref_cab(**kw):
+    base = dict(name="refusal", width=600, height=720, depth=560)
+    base.update(kw)
+    return CabinetSpec(**base)
+
+
+REFUSAL_CASES: tuple[RefusalCase, ...] = (
+    RefusalCase("negative_width", "a base cabinet minus 300 mm wide",
+                lambda: _ref_cab(width=-300), "error", "non-positive dimension"),
+    RefusalCase("zero_height", "a cabinet with zero height",
+                lambda: _ref_cab(height=0), "error", "non-positive dimension"),
+    RefusalCase("over_max_dimension", "a cabinet 7 metres wide",
+                lambda: _ref_cab(width=7000), "error", "beyond the practical maximum"),
+    RefusalCase("too_many_shelves", "a bookcase with 60 shelves",
+                lambda: _ref_cab(cabinet_type="bookcase", height=2000, doors=0,
+                                 shelves=60), "error", "shelf count out of range"),
+    RefusalCase("drawer_taller_than_box",
+                "a 400 mm tall base with a single 600 mm drawer front",
+                lambda: _ref_cab(height=400, doors=0, drawers=[Drawer(600)]),
+                "error", "drawer taller than the opening"),
+    RefusalCase("ten_drawers_in_720",
+                "a 720 mm tall drawer base with ten 120 mm drawers",
+                lambda: _ref_cab(height=720, doors=0, drawers=[Drawer(120)] * 10),
+                "error", "drawers cannot fit the opening"),
+    RefusalCase("five_shelves_in_200",
+                "a 200 mm tall cabinet with five adjustable shelves",
+                lambda: _ref_cab(height=200, shelves=5), "flagged",
+                "shelves cannot fit / no room to drill pins"),
+    RefusalCase("three_metre_single_cabinet",
+                "a single base cabinet 3 metres wide",
+                lambda: _ref_cab(width=3000, shelves=0, doors=2), "flagged",
+                "a part exceeds standard sheet stock"),
+    RefusalCase("wall_cabinet_with_toe_kick",
+                "a wall cabinet with a toe kick",
+                lambda: _ref_cab(cabinet_type="wall", depth=320,
+                                 toe_kick=ToeKick(height=100, setback=50)),
+                "flagged", "wall cabinets have no toe kick"),
+    RefusalCase("two_metre_deep_base", "a base cabinet 2 metres deep",
+                lambda: _ref_cab(depth=2000, shelves=0, doors=2), "flagged",
+                "an absurd cabinet depth"),
+)
+
+
+@dataclass
+class RefusalResult:
+    name: str
+    prompt: str
+    expect: str
+    severity: str          # "error" | "warning" | "silent" | "parse-error"
+    passed: bool
+    concern: str
+    detail: str = ""
+
+    def to_dict(self) -> dict:
+        return {
+            "name": self.name, "prompt": self.prompt, "expect": self.expect,
+            "severity": self.severity, "passed": self.passed,
+            "concern": self.concern, "detail": self.detail,
+        }
+
+
+def _spec_severity(spec) -> tuple[str, str]:
+    """Highest severity the validator + critic raise for *spec*, with a message."""
+    v = validate(spec)
+    try:
+        cerr, cwarn = list(critique(spec).errors), list(critique(spec).warnings)
+    except Exception:
+        cerr, cwarn = [], []
+    if (not v.ok) or cerr:
+        return "error", str((v.errors + cerr)[0])
+    if v.warnings or cwarn:
+        return "warning", str((v.warnings + cwarn)[0])
+    return "silent", ""
+
+
+def score_refusal(case: RefusalCase) -> RefusalResult:
+    """Score one refusal case against a faithful encoding of the request."""
+    try:
+        spec = case.build()
+    except Exception as exc:  # rejected at construction — the strongest refusal
+        return RefusalResult(case.name, case.prompt, case.expect, "parse-error",
+                             True, case.concern,
+                             f"rejected at construction: {type(exc).__name__}: {exc}")
+    sev, msg = _spec_severity(spec)
+    hard = sev in ("error", "parse-error")
+    flagged = sev in ("error", "warning", "parse-error")
+    passed = hard if case.expect == "error" else flagged
+    return RefusalResult(case.name, case.prompt, case.expect, sev, passed,
+                         case.concern, msg)
+
+
+@dataclass
+class RefusalReport:
+    results: list[RefusalResult]
+
+    @property
+    def total(self) -> int:
+        return len(self.results)
+
+    @property
+    def pass_rate(self) -> float:
+        return sum(r.passed for r in self.results) / self.total if self.results else 0.0
+
+    @property
+    def flag_rate(self) -> float:
+        """Fraction flagged at all (error or warning) — i.e., not silent."""
+        if not self.results:
+            return 0.0
+        return sum(r.severity != "silent" for r in self.results) / self.total
+
+    @property
+    def hard_block_rate(self) -> float:
+        """Fraction hard-blocked with an error (or refused at construction)."""
+        if not self.results:
+            return 0.0
+        return sum(r.severity in ("error", "parse-error")
+                   for r in self.results) / self.total
+
+    def to_dict(self) -> dict:
+        return {
+            "pass_rate": round(self.pass_rate, 3),
+            "flag_rate": round(self.flag_rate, 3),
+            "hard_block_rate": round(self.hard_block_rate, 3),
+            "total": self.total,
+            "passed": sum(r.passed for r in self.results),
+            "cases": [r.to_dict() for r in self.results],
+        }
+
+    def format(self) -> str:
+        lines = ["Refusal suite — does the system flag infeasible requests?",
+                 "=" * 62]
+        for r in self.results:
+            mark = "PASS" if r.passed else "FAIL"
+            lines.append(f"[{mark}] {r.name}  expect>={r.expect}  got={r.severity}")
+            lines.append(f"        request: {r.prompt}")
+            if r.detail:
+                lines.append(f"        flagged: {r.detail}")
+            elif r.severity == "silent":
+                lines.append(f"        SILENT — should flag: {r.concern}")
+        lines.append("-" * 62)
+        lines.append(
+            f"pass {self.pass_rate:.0%}  ·  flagged {self.flag_rate:.0%}  ·  "
+            f"hard-blocked {self.hard_block_rate:.0%}  "
+            f"({sum(r.passed for r in self.results)}/{self.total})")
+        return "\n".join(lines)
+
+
+def run_refusal_eval(cases: Iterable[RefusalCase] | None = None) -> RefusalReport:
+    """Deterministic refusal evaluation — no agent, no API key."""
+    cases = list(cases) if cases is not None else list(REFUSAL_CASES)
+    return RefusalReport([score_refusal(c) for c in cases])

@@ -1,0 +1,101 @@
+{
+  "generated": "2026-06-28",
+  "method": "Deterministic: each infeasible request is faithfully encoded as a spec, then validate()+critique() are run. A case passes if the system meets the expected minimum severity (error vs at-least-warning); it fails only if the system is SILENT. No agent, no key.",
+  "pass_rate": 1.0,
+  "flag_rate": 1.0,
+  "hard_block_rate": 0.7,
+  "total": 10,
+  "passed": 10,
+  "cases": [
+    {
+      "name": "negative_width",
+      "prompt": "a base cabinet minus 300 mm wide",
+      "expect": "error",
+      "severity": "error",
+      "passed": true,
+      "concern": "non-positive dimension",
+      "detail": "[error] width: must be a positive, finite number, got -300"
+    },
+    {
+      "name": "zero_height",
+      "prompt": "a cabinet with zero height",
+      "expect": "error",
+      "severity": "error",
+      "passed": true,
+      "concern": "non-positive dimension",
+      "detail": "[error] height: must be a positive, finite number, got 0"
+    },
+    {
+      "name": "over_max_dimension",
+      "prompt": "a cabinet 7 metres wide",
+      "expect": "error",
+      "severity": "error",
+      "passed": true,
+      "concern": "beyond the practical maximum",
+      "detail": "[error] width: exceeds the practical maximum of 6000mm"
+    },
+    {
+      "name": "too_many_shelves",
+      "prompt": "a bookcase with 60 shelves",
+      "expect": "error",
+      "severity": "error",
+      "passed": true,
+      "concern": "shelf count out of range",
+      "detail": "[error] shelves: must be an integer 0\u201350, got 60"
+    },
+    {
+      "name": "drawer_taller_than_box",
+      "prompt": "a 400 mm tall base with a single 600 mm drawer front",
+      "expect": "error",
+      "severity": "error",
+      "passed": true,
+      "concern": "drawer taller than the opening",
+      "detail": "[error] drawers: drawer fronts are taller than the available opening"
+    },
+    {
+      "name": "ten_drawers_in_720",
+      "prompt": "a 720 mm tall drawer base with ten 120 mm drawers",
+      "expect": "error",
+      "severity": "error",
+      "passed": true,
+      "concern": "drawers cannot fit the opening",
+      "detail": "[error] drawers: drawer fronts are taller than the available opening"
+    },
+    {
+      "name": "five_shelves_in_200",
+      "prompt": "a 200 mm tall cabinet with five adjustable shelves",
+      "expect": "flagged",
+      "severity": "error",
+      "passed": true,
+      "concern": "shelves cannot fit / no room to drill pins",
+      "detail": "[error] interference: 'Shelf 1' and 'Shelf 2' overlap (~2193.0 cm\u00b3) \u2014 they would not fit"
+    },
+    {
+      "name": "three_metre_single_cabinet",
+      "prompt": "a single base cabinet 3 metres wide",
+      "expect": "flagged",
+      "severity": "warning",
+      "passed": true,
+      "concern": "a part exceeds standard sheet stock",
+      "detail": "[warning] width: a 620\u00d72964mm panel exceeds a standard 2440\u00d71220 sheet; seam, use an oversize sheet, or resize"
+    },
+    {
+      "name": "wall_cabinet_with_toe_kick",
+      "prompt": "a wall cabinet with a toe kick",
+      "expect": "flagged",
+      "severity": "warning",
+      "passed": true,
+      "concern": "wall cabinets have no toe kick",
+      "detail": "[warning] toe_kick: wall cabinets hang on the wall and have no toe kick"
+    },
+    {
+      "name": "two_metre_deep_base",
+      "prompt": "a base cabinet 2 metres deep",
+      "expect": "flagged",
+      "severity": "warning",
+      "passed": true,
+      "concern": "an absurd cabinet depth",
+      "detail": "[warning] depth: unusually deep for a base cabinet"
+    }
+  ]
+}

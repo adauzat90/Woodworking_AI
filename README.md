@@ -321,9 +321,18 @@ woodai eval --suite adversarial      # unit traps, inferred type, missing dims�
 woodai eval --suite stress           # strict: fractional inches, enums, per-drawer attrs
 woodai eval --suite ambiguous        # no single right answer — scored on a defensible envelope
 woodai eval --suite projects         # multi-cabinet runs (incl. an L-shape)
+woodai eval --suite refusal          # infeasible requests — must be flagged (no API key needed)
 woodai eval --suite all --json eval.json
 woodai eval --min-pass 0.8           # exit nonzero if pass rate < 80% (CI gate)
 ```
+
+There is also a **refusal** suite — does the system *flag* an infeasible request
+(negative size, a 3 m single cabinet, a drawer taller than its box) rather than
+silently build something wrong? It tests the deterministic validator/critic, so
+it needs no API key: it flags **10/10** (70% hard errors, 30% warnings) — nothing
+is silently accepted. Run end-to-end, the designer reinterprets the impossible
+sensibly too (a "3 m cabinet" becomes a four-cabinet run). Details in
+[`evals/`](evals/).
 
 **Measured baseline:** the committed run scores **29/29 (100% pass · buildable ·
 intent)** across five suites — curated, adversarial, strict *stress*, *ambiguous*,

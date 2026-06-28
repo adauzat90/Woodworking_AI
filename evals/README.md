@@ -77,16 +77,66 @@ live `design_from_prompt` agent + repair loop.
 - This is a **proxy**, not the live pipeline. The authoritative number comes from
   `woodai eval` (needs `ANTHROPIC_API_KEY`), which uses the actual designer.
 
+## Refusal suite — does it flag the infeasible? (`refusal.json`)
+
+The suites above ask "does a *reasonable* request become the right spec?" The
+refusal suite asks the opposite: when a request is **infeasible or
+contradictory**, does the system flag it, or silently build something physically
+wrong? This is a property of the deterministic validator + critic (not the LLM),
+so it is hand-built and **needs no API key** (`woodai eval --suite refusal`).
+
+A case passes when the system meets the expected minimum severity for a
+*faithful* encoding of the request; it **fails only if the system is silent**.
+
+| Result (10 cases) | |
+|---|---|
+| flagged (not silently accepted) | **10/10 (100%)** |
+| hard-blocked with an error | **7/10 (70%)** |
+| warning only | 3/10 |
+
+Hard errors: negative / zero / >6000 mm dimensions, >50 shelves, a drawer taller
+than its opening, ten drawers that can't fit, and (via the critic) five shelves
+that overlap in a 200 mm box. Warning-only: a single 3 m cabinet (a part exceeds
+sheet stock), a wall cabinet with a toe kick, a 2 m-deep base.
+
+**Nothing is silently accepted** — worst case the system warns. The one
+defensible-but-debatable spot: a part larger than any standard sheet is a
+*warning*, not an error, even though you literally cannot cut it from one sheet
+(a shop can seam or order oversize stock, so it's a judgment call). Promoting
+that to an error for sheet-good construction is a one-line severity change if you
+want it hard-blocked.
+
+### End-to-end: what the *designer* does with an infeasible prompt
+
+Separately, three infeasible prompts were run through the live designer flow
+(subagents). It does not ask a clarifying question — but it does **reinterpret
+sensibly and explain**, which is better than silent compliance:
+
+- *"a single base cabinet 3 metres wide"* → it emitted a **project of four 750 mm
+  base cabinets** under one countertop, noting a 3 m carcass isn't buildable from
+  sheet goods. (Recognized the infeasibility and turned it into a run.)
+- *"a 400 mm base with a 600 mm drawer front"* → kept the explicit drawer and
+  **grew the cabinet to 760 mm**, stating which constraint it kept and why.
+- *"a wall cabinet with a toe kick"* → **omitted the toe kick**, explaining wall
+  cabinets don't have one.
+
+Residual UX gap: these resolutions happen in the spec; the live `woodai design`
+output explains them, but there is no structured "I changed your request
+because X" signal a UI could surface. That's the product decision worth making.
+
 ## Reproduce / extend
 
 ```bash
 # the real thing (needs a key)
 woodai eval --suite all --json evals/baseline.json
 
+# refusal suite is deterministic — no key
+woodai eval --suite refusal --json evals/refusal.json
+
 # guard the committed fixtures in CI (no key, deterministic)
-pytest tests/test_eval_baseline.py
+pytest tests/test_eval_baseline.py tests/test_refusal_suite.py
 ```
 
 Add prompts + intent checks in
 [`designer_eval.py`](../src/woodworking_ai/designer_eval.py)
-(`DEFAULT_CASES` / `ADVERSARIAL_CASES`).
+(`DEFAULT_CASES` / `ADVERSARIAL_CASES` / … / `REFUSAL_CASES`).

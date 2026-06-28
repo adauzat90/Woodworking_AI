@@ -256,6 +256,17 @@ def _write_outputs(spec, asm, args, unit: str, *, is_group: bool) -> None:
 
 def _run_eval(args) -> int:
     """``woodai eval`` — run the designer accuracy harness and print a report."""
+    if args.suite == "refusal":
+        # Deterministic: tests the validator/critic, not the agent — no key.
+        from .designer_eval import run_refusal_eval
+        report = run_refusal_eval()
+        print(report.format())
+        if args.json_out:
+            import json as _json
+            Path(args.json_out).write_text(
+                _json.dumps(report.to_dict(), indent=2), encoding="utf-8")
+            print(f"\nwrote {args.json_out}", file=sys.stderr)
+        return 0 if report.pass_rate >= args.min_pass else 1
     if not os.environ.get("ANTHROPIC_API_KEY"):
         print("error: eval calls the designer agent and needs ANTHROPIC_API_KEY",
               file=sys.stderr)
@@ -345,9 +356,10 @@ def main(argv: list[str] | None = None) -> int:
         "eval", help="measure designer accuracy on a prompt set (needs API key)")
     p_eval.add_argument("--suite",
                         choices=["default", "adversarial", "stress",
-                                 "ambiguous", "projects", "all"],
+                                 "ambiguous", "projects", "refusal", "all"],
                         default="default",
-                        help="which prompt set to run (default: the curated set)")
+                        help="which prompt set to run (default: the curated set; "
+                             "'refusal' is deterministic and needs no API key)")
     p_eval.add_argument("--model", help="override the Claude model id")
     p_eval.add_argument("--attempts", type=int, default=3,
                         help="max repair attempts per prompt")
