@@ -18,7 +18,7 @@ from .dsl import (
     CornerJoint, DovetailTails, SlideType, APPLIANCE_VOID_TOLERANCE,
     joinery_key,
 )
-from .dispatch import spec_kind, VOID, GROUP, TABLE, CABINET
+from .dispatch import spec_kind, VOID, GROUP, TABLE, BENCH, CABINET
 from . import engineering, stock, proportion, furniture
 from . import species as species_module
 from .hardware import longest_slide_for
@@ -94,6 +94,21 @@ STD_SHEET_LONG = 2440.0           # mm — standard sheet long side
 STD_SHEET_SHORT = 1220.0          # mm — standard sheet short side
 ONE_PERSON_LIFT_KG = 25.0         # a single part heavier than this wants two people
 WALL_CABINET_HANG_NOTE_KG = 15.0  # wall cabinet self-weight worth a hanging note
+
+# --- ergonomics (DIM-003/004/005/006). Heights in mm; in→mm at 25.4. --------
+DESK_HEIGHT_MIN = 680.0           # writing desks ~720–760mm (28–30in)
+DESK_HEIGHT_MAX = 800.0
+DESK_DEPTH_MIN = 500.0            # shallower than ~20in is cramped for a work surface
+SEAT_HEIGHT_MIN = 300.0          # benches ~400–460mm, stools ~600–760mm
+SEAT_HEIGHT_MAX = 800.0
+# Knee/thigh clearance: a sit-at surface's apron underside (height − top −
+# apron) must clear a seated user's thighs above a standard ~457mm seat.
+SIT_AT_HEIGHT_MIN = 680.0        # only check knee room on sit-at-height surfaces
+KNEE_UNDERSIDE_MIN = 600.0       # apron underside below this is tight for knees
+# DIM-004 seat↔top coupling: comfortable thigh gap is 9–13in (≈228–330mm).
+SEAT_TO_TOP_MIN = 228.0
+SEAT_TO_TOP_MAX = 330.0
+SEAT_TO_TOP_IDEAL = 280.0        # ~11in, the centre of the comfortable band
 
 
 @dataclass
@@ -218,6 +233,20 @@ def _validate_table(spec: TableSpec) -> ValidationResult:
              direction=("min" if spec.height < TABLE_HEIGHT_MIN else "max"),
              doc_anchor="design-principles.md#11-seating-and-work-surfaces")
 
+    # --- knee clearance under the apron (DIM-006, INFO) ------------------
+    # Only meaningful for a sit-at-height table; a coffee/side table isn't sat at.
+    if spec.height >= SIT_AT_HEIGHT_MIN:
+        underside = spec.height - spec.top_thickness - spec.apron_height
+        if underside < KNEE_UNDERSIDE_MIN:
+            info("apron_height",
+                 f"the apron underside sits {underside:.0f}mm off the floor — tight "
+                 f"knee room for a seated user (want ≥{KNEE_UNDERSIDE_MIN:.0f}mm above "
+                 "a ~457mm seat); use a shallower apron", "DIM-006",
+                 fix="use a shallower apron or raise the top",
+                 observed=round(underside), limit=KNEE_UNDERSIDE_MIN, units="mm",
+                 direction="min",
+                 doc_anchor="design-principles.md#11-seating-and-work-surfaces")
+
     # --- wood movement on a solid top (MOVE-001/002) ---------------------
     # The top's width (depth, Y) runs across the grain and moves seasonally.
     if getattr(spec, "solid_top", True):
@@ -333,6 +362,41 @@ def _validate_project(project: ComponentGroup) -> ValidationResult:
                     f"'{component_tag(comps[i], i + 1)}' and "
                     f"'{component_tag(comps[j], j + 1)}' overlap in plan; space "
                     "them or fit a corner unit / filler between the runs"))
+
+    # --- seat ↔ top thigh-clearance coupling (DIM-004) -------------------
+    # Pair each seat to the table whose top gives the most comfortable thigh gap,
+    # then warn only when even that best-matched table is ergonomically off.
+    # Best-fit pairing (not all-pairs) avoids cross-flagging a counter's stools
+    # against a dining table that share a project. WARN, not the catalog's ERROR:
+    # the DSL has no explicit "this seat pairs with that table" link, so the
+    # pairing is inferred — too uncertain to block a build on.
+    tables = [(i, c) for i, c in enumerate(comps, start=1)
+              if spec_kind(c.spec) == TABLE and _finite_positive(
+                  getattr(c.spec, "height", None))]
+    seats = [(i, c) for i, c in enumerate(comps, start=1)
+             if spec_kind(c.spec) == BENCH and _finite_positive(
+                 getattr(c.spec, "height", None))]
+    for si, seat in seats:
+        sh = seat.spec.height
+        best = None  # (distance-outside-band, gap, table_index, table_height)
+        for ti, table in tables:
+            gap = table.spec.height - sh
+            dist = max(SEAT_TO_TOP_MIN - gap, gap - SEAT_TO_TOP_MAX, 0.0)
+            if best is None or dist < best[0]:
+                best = (dist, gap, ti, table.spec.height)
+        if best is None or best[0] <= 0.0:
+            continue  # a comfortably-paired table exists for this seat
+        _, gap, ti, th = best
+        issues.append(Issue(
+            Severity.WARNING, f"{component_tag(seat, si)}.height",
+            f"the {sh:.0f}mm seat and the nearest top ({th:.0f}mm) leave a "
+            f"{gap:.0f}mm thigh gap — outside the comfortable "
+            f"{SEAT_TO_TOP_MIN:.0f}–{SEAT_TO_TOP_MAX:.0f}mm; raise the seat or "
+            "adjust the top height", "DIM-004",
+            fix=f"size the seat/top for a ~{SEAT_TO_TOP_IDEAL:.0f}mm gap",
+            observed=round(gap), limit=SEAT_TO_TOP_IDEAL, units="mm",
+            direction="target",
+            doc_anchor="design-principles.md#11-seating-and-work-surfaces"))
     return ValidationResult(issues)
 
 

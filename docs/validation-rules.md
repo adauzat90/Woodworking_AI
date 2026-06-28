@@ -188,6 +188,10 @@ backed by the calculators in `src/woodworking_ai/engineering.py`):
 | MAT-007 | `species` vs `shelf_species` | INFO when the piece is a solid wood but the sag check used the plywood default — prompts setting `shelf_species` so the two cooperate. |
 | HW-007 | heaviest single part (`mass.py`) | WARN when one part exceeds the ~25 kg one-person lift (weight from the cut list × species/sheet density); suggests knock-down joinery or a second person. New rule (not in the original catalog). |
 | STRUCT-043 | wall cabinet self-weight (`mass.py`) | INFO that a wall cabinet's estimated mass hangs on its fixing — screw a rail/cleat into studs and use a stout back (KCMA rates to ~270 kg). |
+| DIM-003 | bench/stool `height` | WARN when the seat height is outside the bench/stool range. (No seating sub-type in the DSL — covered by range; a chair-vs-stool mismatch is caught relationally by DIM-004.) |
+| DIM-004 | project: table top ↔ paired seat | WARN (not the catalog's ERROR) when a seat and its **best-matched** table in a project leave a thigh gap outside ~228–330 mm. Best-fit pairing avoids cross-flagging a counter's stools against a dining table. Softened to WARN because the DSL has no explicit seat↔table link, so the pairing is inferred. |
+| DIM-005 | desk `height` / `depth` | WARN when desk height is outside ~680–800 mm, or depth is under ~500 mm (cramped for a work surface). |
+| DIM-006 | table/desk apron underside | INFO when a sit-at surface's apron underside is below ~600 mm — tight knee room for a seated user. Only checked on sit-at-height pieces (a coffee table is exempt). |
 | DIM/STRUCT (existing) | `validate` | Dimensional bounds, opening fit, door/drawer fit, per-type sanity were already present pre-audit. |
 
 `info`-severity advisories never affect `ValidationResult.ok` (so they never
@@ -246,12 +250,19 @@ helpers. The structural calculators, the hardware/joinery feasibility checks, an
 the engineering rules in the "Implementation status" table above are implemented
 and tested (`tests/test_engineering.py`, `test_joinery_hardware.py`,
 `test_proportion.py`, `test_hinges.py`, `test_grid_dovetail.py`,
-`test_dsl_diagnostics.py`). **Not every catalogued rule has a runtime emitter
-yet** — the ergonomic `DIM-001..006` heights, the seat↔top coupling `DIM-004`,
-several `MOVE`/`GRAIN`/`STRUCT` enclosure rules, and the `STD-*` meta-rules are
-catalogued but not yet wired. See
-[`DSL_DIAGNOSTICS_REVIEW.md`](./DSL_DIAGNOSTICS_REVIEW.md) §4.3 for the gap list
-and the plan to close it.
+`test_dsl_diagnostics.py`, `test_mass.py`, `test_ergonomics.py`). **Not every
+catalogued rule has a runtime emitter yet.** Now wired (Tier 3): the seat↔top
+coupling `DIM-004`, seat/desk heights `DIM-003`/`DIM-005`, knee clearance
+`DIM-006`, weight/handling `HW-007`/`STRUCT-043`. Still open:
+- `DIM-001`/`DIM-002` (dining/counter/bar **table** heights) — **blocked**: the
+  DSL has no table sub-type, so a 450 mm coffee table can't be told from an
+  under-height dining table; flagging by absolute height would false-positive.
+  Needs a `table` sub-type field (a §5 DSL gap) before it can be wired.
+- several `MOVE`/`GRAIN`/`STRUCT` enclosure rules (need part-to-part joints) and
+  the `STD-*` meta-rules.
+
+See [`DSL_DIAGNOSTICS_REVIEW.md`](./DSL_DIAGNOSTICS_REVIEW.md) §4.3 / §5 for the
+remaining gap list and the schema work each needs.
 
 ## Implementation notes for the compiler
 
