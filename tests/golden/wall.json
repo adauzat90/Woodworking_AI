@@ -976,7 +976,9 @@
     "material_cost": 195.0,
     "spec_name": "Wall"
   },
-  "issues": [],
+  "issues": [
+    "info:this wall cabinet's ~23kg self-weight (plus contents) hangs on its fixing; screw a mounting rail/cleat into wall studs and use a back stout enough to carry the load (KCMA rates to ~270kg)"
+  ],
   "joinery": {
     "ops": [
       {

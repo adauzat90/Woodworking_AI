@@ -92,6 +92,8 @@ PAPERBACK_BAY_MIN = 200.0         # mm — clear shelf bay for paperbacks
 TIP_MIN_FACTOR = 0.40             # min depth/height tip-over screening factor
 STD_SHEET_LONG = 2440.0           # mm — standard sheet long side
 STD_SHEET_SHORT = 1220.0          # mm — standard sheet short side
+ONE_PERSON_LIFT_KG = 25.0         # a single part heavier than this wants two people
+WALL_CABINET_HANG_NOTE_KG = 15.0  # wall cabinet self-weight worth a hanging note
 
 
 @dataclass
@@ -447,10 +449,54 @@ def joinery_feasibility(spec) -> list[Issue]:
     return issues
 
 
+def _mass_advisories(spec) -> list[Issue]:
+    """Weight/handling advisories computed from the cut list (HW-007, STRUCT-043).
+
+    Mass is free once the cut list has sized the parts (the species DB carries
+    density). Only run on a structurally-sound spec — a broken one has no
+    meaningful cut list — and degrade silently if the estimate can't be built.
+    """
+    from . import mass
+    est = mass.estimate_mass(spec)
+    if est is None:
+        return []
+    issues: list[Issue] = []
+
+    # HW-007: a single part too heavy for one person to handle during the build.
+    if est.heaviest_part_kg > ONE_PERSON_LIFT_KG:
+        issues.append(Issue(
+            Severity.WARNING, "material",
+            f"the '{est.heaviest_part_name}' part weighs ~{est.heaviest_part_kg:.0f}kg "
+            f"— above the ~{ONE_PERSON_LIFT_KG:.0f}kg one-person lift; plan for a "
+            "second person or knock-down joinery for handling", "HW-007",
+            fix="split the part, use knock-down joinery, or plan a two-person lift",
+            observed=round(est.heaviest_part_kg, 1), limit=ONE_PERSON_LIFT_KG,
+            units="kg", direction="max"))
+
+    # STRUCT-043: a wall cabinet hangs entirely on its fixing; flag that the
+    # mount must carry the self-weight plus contents (KCMA tests to ~270kg).
+    if (spec_kind(spec) == CABINET
+            and getattr(spec, "cabinet_type", None) == CabinetType.WALL
+            and est.total_kg >= WALL_CABINET_HANG_NOTE_KG):
+        issues.append(Issue(
+            Severity.INFO, "back",
+            f"this wall cabinet's ~{est.total_kg:.0f}kg self-weight (plus contents) "
+            "hangs on its fixing; screw a mounting rail/cleat into wall studs and "
+            "use a back stout enough to carry the load (KCMA rates to ~270kg)",
+            "STRUCT-043",
+            observed=round(est.total_kg, 1), units="kg",
+            doc_anchor="design-principles.md#35-casework-performance-standard-cabinets"))
+    return issues
+
+
 def validate(spec, *, tooling=None) -> ValidationResult:
     """Validate *spec*; when a :class:`~tooling.ShopTooling` inventory is given,
     also flag any joinery the declared tools can't make (advisory)."""
     result = _validate_core(spec)
+    # Weight/handling advisories on a sound leaf spec (the cut list is meaningless
+    # for a broken spec or an aggregate group, whose parts are checked per-component).
+    if result.ok and spec_kind(spec) not in (VOID, GROUP):
+        result.issues.extend(_mass_advisories(spec))
     if tooling is not None:
         from .tooling import tooling_advisories
         for severity, field_, msg in tooling_advisories(spec, tooling):

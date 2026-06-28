@@ -186,6 +186,8 @@ backed by the calculators in `src/woodworking_ai/engineering.py`):
 | DIM-009 | shelves vs. 32mm system | Warns when the box is too short to drill a 32mm-system pin column, or too shallow for two pin rows; `grid_violations()` verifies a schedule against the 32mm grid. |
 | MAT-006 | `shelf_species` not in the stiffness DB | Warns when a shelf species name resolves to neither the wood database nor the sheet-goods map, so the sag check fell back to plywood silently. |
 | MAT-007 | `species` vs `shelf_species` | INFO when the piece is a solid wood but the sag check used the plywood default — prompts setting `shelf_species` so the two cooperate. |
+| HW-007 | heaviest single part (`mass.py`) | WARN when one part exceeds the ~25 kg one-person lift (weight from the cut list × species/sheet density); suggests knock-down joinery or a second person. New rule (not in the original catalog). |
+| STRUCT-043 | wall cabinet self-weight (`mass.py`) | INFO that a wall cabinet's estimated mass hangs on its fixing — screw a rail/cleat into studs and use a stout back (KCMA rates to ~270 kg). |
 | DIM/STRUCT (existing) | `validate` | Dimensional bounds, opening fit, door/drawer fit, per-type sanity were already present pre-audit. |
 
 `info`-severity advisories never affect `ValidationResult.ok` (so they never
