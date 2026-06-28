@@ -247,6 +247,41 @@ def test_every_structured_numeric_issue_declares_a_direction():
             f"{i.rule_id or i.field} has observed/limit but no direction"
 
 
+# --- Tier 3 #10: near-miss advisories (pass-side) --------------------------
+
+def test_tip_over_near_miss_is_an_info_when_it_only_just_clears():
+    # depth/height ≈ 0.41 passes the 0.40 screen but only barely.
+    r = validate(_cab(cabinet_type="tall", width=600, height=1500, depth=620,
+                      shelves=2, anti_tip=True,
+                      toe_kick={"height": 80, "setback": 60}))
+    near = [i for i in r.by_rule("STRUCT-031") if i.severity == "info"]
+    assert len(near) == 1
+    assert near[0].observed >= near[0].limit       # it passed (>= the min)
+    assert "just clears" in near[0].message
+    # ...and it does NOT also raise the STRUCT-031 warning.
+    assert [i for i in r.by_rule("STRUCT-031") if i.severity == "warning"] == []
+
+
+def test_no_tip_near_miss_with_a_comfortable_base():
+    r = validate(_cab(cabinet_type="tall", width=600, height=1500, depth=900,
+                      shelves=2, anti_tip=True,
+                      toe_kick={"height": 80, "setback": 60}))
+    assert r.by_rule("STRUCT-031") == []           # neither warn nor near-miss
+
+
+def test_shelf_sag_near_miss_info_below_the_visible_limit():
+    # A passing shelf at ~95% of the visible-sag limit gets a pass-side INFO.
+    r = validate(_cab(width=1080, height=800, depth=300, shelves=2,
+                      shelf_species="plywood", material={"shelf": 18},
+                      shelf_load_kg_per_m=23))
+    near = [i for i in r.by_rule("STRUCT-021") if i.severity == "info"]
+    assert len(near) == 1
+    assert near[0].observed < near[0].limit        # still under the limit (passed)
+    assert near[0].observed > 0.9 * near[0].limit  # but within 10%
+    # No visible-sag WARNING — the near-miss replaces it, never doubles it.
+    assert [i for i in r.by_rule("STRUCT-021") if i.severity == "warning"] == []
+
+
 # --- Tier 2 follow-up: doc_anchor deep-links must resolve (drift guard) ------
 
 def test_emitted_doc_anchors_resolve_to_real_headings():

@@ -94,6 +94,11 @@ STD_SHEET_LONG = 2440.0           # mm — standard sheet long side
 STD_SHEET_SHORT = 1220.0          # mm — standard sheet short side
 ONE_PERSON_LIFT_KG = 25.0         # a single part heavier than this wants two people
 WALL_CABINET_HANG_NOTE_KG = 15.0  # wall cabinet self-weight worth a hanging note
+# A passing check whose measured value is within this fraction of its limit is a
+# "near miss" — surfaced as INFO so the repair loop knows it's borderline and a
+# small load/size change would tip it over (gives the agent a reason to stop, or
+# to add margin). Pass-side only, so it never double-signals an existing warning.
+NEAR_MISS_FRACTION = 0.90
 
 # --- ergonomics (DIM-003/004/005/006). Heights in mm; in→mm at 25.4. --------
 DESK_HEIGHT_MIN = 680.0           # writing desks ~720–760mm (28–30in)
@@ -904,6 +909,16 @@ def _validate_cabinet(spec) -> list[Issue]:
                  observed=round(res.deflection, 1),
                  limit=round(res.visible_limit, 1), units="mm", direction="max",
                  doc_anchor="design-principles.md#33-shelf-sag--deflection")
+        elif (res.status == "ok" and res.visible_limit > 0
+              and res.deflection > NEAR_MISS_FRACTION * res.visible_limit):
+            pct = res.deflection / res.visible_limit * 100.0
+            info("shelves",
+                 f"shelf sag {res.deflection:.1f}mm is {pct:.0f}% of the "
+                 f"{res.visible_limit:.1f}mm visible-sag limit — it passes, but a "
+                 "small load or span increase will make it noticeable", "STRUCT-021",
+                 observed=round(res.deflection, 1),
+                 limit=round(res.visible_limit, 1), units="mm", direction="max",
+                 doc_anchor="design-principles.md#33-shelf-sag--deflection")
 
     # --- tip-over stability (STRUCT-030/031, ASTM F2057) -----------------
     if spec.cabinet_type in (CabinetType.DRESSER, CabinetType.TALL):
@@ -920,6 +935,14 @@ def _validate_cabinet(spec) -> list[Issue]:
                  "gravity, or require wall anchoring", "STRUCT-031",
                  fix="deepen the base, lower the centre of gravity, or require "
                      "wall anchoring",
+                 observed=round(tip, 3), limit=TIP_MIN_FACTOR, units="ratio",
+                 direction="min",
+                 doc_anchor="design-principles.md#34-stability--tip-over-regulated")
+        elif tip < TIP_MIN_FACTOR / NEAR_MISS_FRACTION:
+            info("depth",
+                 f"depth/height {tip:.2f} only just clears the {TIP_MIN_FACTOR:.2f} "
+                 "tip-over screen; a deeper base or wall anchoring adds margin",
+                 "STRUCT-031",
                  observed=round(tip, 3), limit=TIP_MIN_FACTOR, units="ratio",
                  direction="min",
                  doc_anchor="design-principles.md#34-stability--tip-over-regulated")

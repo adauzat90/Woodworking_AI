@@ -194,6 +194,13 @@ backed by the calculators in `src/woodworking_ai/engineering.py`):
 | DIM-006 | table/desk apron underside | INFO when a sit-at surface's apron underside is below ~600 mm — tight knee room for a seated user. Only checked on sit-at-height pieces (a coffee table is exempt). |
 | DIM/STRUCT (existing) | `validate` | Dimensional bounds, opening fit, door/drawer fit, per-type sanity were already present pre-audit. |
 
+**Near-miss advisories.** A *passing* structural check whose measured value is
+within 10% of its limit also emits a pass-side INFO (shelf sag approaching the
+visible limit → `STRUCT-021` INFO; tip factor only just clearing the screen →
+`STRUCT-031` INFO). It reuses the parent rule id at INFO severity, fires only on
+the pass side (never doubling an existing warning), and gives the repair loop a
+reason to add margin — or to stop, knowing a check passed comfortably.
+
 `info`-severity advisories never affect `ValidationResult.ok` (so they never
 trigger the designer's repair loop) and are surfaced separately via
 `ValidationResult.infos` and the API's `advisories` field.

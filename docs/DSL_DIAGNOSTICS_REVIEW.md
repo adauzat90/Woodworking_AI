@@ -355,14 +355,40 @@ asserts every emitted anchor resolves, so a heading rename can't silently break
 the deep links.
 
 **Tier 3 — coverage:**
-7. **DIM-004 seat↔top coupling** (the missing coupled-dimension ERROR) + the
-   ergonomic DIM heights (§4.3), on the assembly pass the catalog already
-   specifies.
-8. **Weight/liftability + hanging load** (§4.2) — free from the density DB.
-9. **The remaining catalogued-but-unimplemented MOVE/GRAIN/STRUCT/STD rules**
-   (§4.3), several of which need the DSL gaps in §5 closed first.
-10. **Positive confirmations + near-miss advisories** (§4.4) to calm the repair
-    loop.
+
+*The unblocked cluster (no schema change needed) is ✅ DONE:*
+
+7. ✅ **DIM-004 seat↔top coupling + the unblocked ergonomic heights** (§4.3) —
+   `DIM-004` (WARN) runs on the project pass, pairing each seat to its **best-fit**
+   table and flagging only a genuinely uncomfortable thigh gap (best-fit avoids
+   cross-flagging a counter's stools against a dining table). `DIM-005` (desk
+   height/depth), `DIM-003` (bench/stool seat height) and `DIM-006` (knee
+   clearance under an apron) are wired too. **`DIM-001`/`DIM-002`
+   (dining/counter/bar table heights) are deliberately deferred** — with no table
+   sub-type a coffee table can't be told from an under-height dining table, so an
+   absolute-height check would false-positive; it needs a `table` sub-type field
+   (a §5 gap) first. `DIM-004` is softened from the catalog's ERROR to WARN
+   because, with no explicit seat↔table link in the DSL, the pairing is inferred.
+8. ✅ **Weight/liftability + hanging load** (§4.2) — new `mass.py` estimates part
+   and assembly weight from the cut list × density (solid-wood density from the
+   species DB; a sheet-goods table for plywood/MDF/…). `HW-007` (WARN) flags a
+   single part past the ~25 kg one-person lift; `STRUCT-043` (INFO) notes a wall
+   cabinet's self-weight hangs on its fixing. (`HW-008` door-weight→3rd-hinge is
+   deferred — it needs reliable per-door density resolution.)
+10. ✅ **Near-miss advisories** (§4.4) — a passing structural check within 10% of
+    its limit now emits a pass-side INFO (shelf sag approaching the visible limit;
+    tip factor only just clearing the screen), giving the repair loop a reason to
+    add margin or stop. Pass-side only, so it never double-signals an existing
+    warning. (Always-on positive confirmations were left out as noise — the INFO
+    near-miss is the actionable half, and Tier 2's `observed`/`limit` make a UI
+    margin gauge free without emitting on every pass.)
+
+*Still blocked (need a §5 schema PR each):*
+
+9. **The remaining catalogued MOVE/GRAIN/STRUCT/STD rules** (§4.3) — most need
+   part-to-part `joints`, per-part grain, or a richer load model (§5) before they
+   can check anything. `DIM-001`/`DIM-002` need a table sub-type. These should
+   sequence behind a small DSL-schema PR each.
 
 Tiers 1–2 are behavior-preserving except the two explicit additions and should
 land with drift-guard tests keyed by the new `rule_id`. Tier 3 items that depend
