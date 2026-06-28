@@ -184,16 +184,31 @@ backed by the calculators in `src/woodworking_ai/engineering.py`):
 | PROP-003 | drawer bank | INFO when 3+ drawer heights are neither uniform nor graduated. |
 | STRUCT-012 | drawer `dovetail_tails` | Errors when a front dovetail's tails aren't on the drawer sides (the front could pull off). |
 | DIM-009 | shelves vs. 32mm system | Warns when the box is too short to drill a 32mm-system pin column, or too shallow for two pin rows; `grid_violations()` verifies a schedule against the 32mm grid. |
+| MAT-006 | `shelf_species` not in the stiffness DB | Warns when a shelf species name resolves to neither the wood database nor the sheet-goods map, so the sag check fell back to plywood silently. |
+| MAT-007 | `species` vs `shelf_species` | INFO when the piece is a solid wood but the sag check used the plywood default — prompts setting `shelf_species` so the two cooperate. |
 | DIM/STRUCT (existing) | `validate` | Dimensional bounds, opening fit, door/drawer fit, per-type sanity were already present pre-audit. |
 
 `info`-severity advisories never affect `ValidationResult.ok` (so they never
 trigger the designer's repair loop) and are surfaced separately via
 `ValidationResult.infos` and the API's `advisories` field.
 
+**Rule IDs are now attached to emitted diagnostics** (`Issue.rule_id`), not just
+to these tables — query them with `ValidationResult.by_rule("STRUCT-020")` for
+suppression/audit by stable ID. The rendered feedback string is unchanged (the ID
+is programmatic only). The high-value structural / hardware / movement / material
+/ proportion / dimensional rules are tagged; bare type/bound checks have no ID.
+
 Backed by the `stock.py`, `proportion.py`, and `drilling.grid_violations`
-helpers. **Every rule in this catalog is now implemented** — see the test
-suite (`tests/test_engineering.py`, `test_joinery_hardware.py`,
-`test_proportion.py`, `test_hinges.py`, `test_grid_dovetail.py`) for coverage.
+helpers. The structural calculators, the hardware/joinery feasibility checks, and
+the engineering rules in the "Implementation status" table above are implemented
+and tested (`tests/test_engineering.py`, `test_joinery_hardware.py`,
+`test_proportion.py`, `test_hinges.py`, `test_grid_dovetail.py`,
+`test_dsl_diagnostics.py`). **Not every catalogued rule has a runtime emitter
+yet** — the ergonomic `DIM-001..006` heights, the seat↔top coupling `DIM-004`,
+several `MOVE`/`GRAIN`/`STRUCT` enclosure rules, and the `STD-*` meta-rules are
+catalogued but not yet wired. See
+[`DSL_DIAGNOSTICS_REVIEW.md`](./DSL_DIAGNOSTICS_REVIEW.md) §4.3 for the gap list
+and the plan to close it.
 
 ## Implementation notes for the compiler
 

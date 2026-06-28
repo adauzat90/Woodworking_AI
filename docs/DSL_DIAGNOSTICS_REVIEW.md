@@ -285,13 +285,23 @@ panel) rather than silently picking a default and validating against it.
 
 ## 6. Suggested order of attack
 
-**Tier 1 — correctness & leverage (small, high value):**
-1. **Species-fallback warning** (`MAT-006/007`, §4.1) — converts a silent
-   safety-relevant failure into a visible one. A few lines.
-2. **`rule_id` + `Severity` enum on `Issue`** (§2) — mechanical (IDs already in
-   comments), unlocks suppression, audit, per-ID tests, doc links.
-3. **Delete the dead `shelves < 0` check; fix the `HW-003` mislabel & missing
-   sheet unit** (§3.3).
+**Tier 1 — correctness & leverage (small, high value): ✅ DONE**
+1. ✅ **Species-fallback warning** (`MAT-006/007`, §4.1) — `engineering.
+   resolve_modulus` now reports whether a name resolved; the cabinet sag check
+   warns (`MAT-006`) when it falls back to plywood and INFOs (`MAT-007`) when a
+   solid-wood piece left `shelf_species` at the plywood default. Converts a
+   silent safety-relevant failure into a visible one.
+2. ✅ **`rule_id` + `Severity` enum on `Issue`** (§2) — `Issue.rule_id` is
+   populated for the structural/hardware/movement/material/proportion/dimensional
+   rules; `Severity` is a `StrEnum` (compares equal to the legacy strings);
+   `ValidationResult.by_rule(id)` queries by stable ID. Rendered output is
+   unchanged (ID is programmatic only), so no prose tests moved.
+3. ✅ **Deleted the dead `shelves < 0` check; fixed the `HW-003` mislabel** (now
+   `HW-006`) **& the missing `2440×1220mm` sheet unit** (§3.3).
+
+Covered by `tests/test_dsl_diagnostics.py`. The remaining structured-diagnostic
+work (`observed`/`limit`/`units`, splitting `fix` from `message`, unifying
+`Issue`/`LintIssue`) is Tier 2.
 
 **Tier 2 — structure:**
 4. **Add `observed/limit/units` + split `fix` from `message`** (§2) — makes the
