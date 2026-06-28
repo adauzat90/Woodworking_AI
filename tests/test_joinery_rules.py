@@ -62,6 +62,13 @@ def test_struct014_needs_a_shelf():
     assert validate(_cab(shelves=0, shelf_joint="screw")).by_rule("STRUCT-014") == []
 
 
+def test_struct014_respects_the_load_shelf_qualifier():
+    # The catalog scopes the rule to a *load* shelf; an explicit zero-load shelf
+    # opts out, so a screw joint there isn't flagged.
+    assert validate(_cab(shelf_joint="screw", shelf_load_kg_per_m=0)).by_rule(
+        "STRUCT-014") == []
+
+
 def test_dado_shelf_emits_a_housing_op():
     ops = joinery_schedule(_cab(shelf_joint="dado")).ops
     assert any("dado for fixed shelf" == o.operation for o in ops)
@@ -92,6 +99,21 @@ def test_move003_flags_a_solid_flat_panel():
 def test_move003_quiet_for_a_plywood_shaker_panel():
     # The default sheet-good flat panel doesn't move — no float gap needed.
     assert validate(_cab(doors=2, door_style="shaker")).by_rule("MOVE-003") == []
+
+
+def test_move003_reads_the_resolved_door_panel_make_up():
+    # MOVE-003 must agree with the part the cut list actually builds, which
+    # resolves the door panel's make-up through a stock["door_panel"] override —
+    # not the global material_form.
+    # A solid panel set only via the override still fires (no false negative)...
+    solid_override = _cab(doors=2, door_style="shaker",
+                          stock={"door_panel": {"form": "solid", "species": "oak"}})
+    assert len(validate(solid_override).by_rule("MOVE-003")) == 1
+    # ...and a global-solid piece whose panel is overridden to plywood stays
+    # quiet (no false positive).
+    ply_override = _cab(doors=2, door_style="shaker", material_form="solid",
+                        stock={"door_panel": {"form": "plywood", "species": "birch"}})
+    assert ply_override and validate(ply_override).by_rule("MOVE-003") == []
 
 
 def test_move003_quiet_for_a_slab_door():

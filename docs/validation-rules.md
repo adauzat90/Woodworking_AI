@@ -272,11 +272,13 @@ coupling `DIM-004`, seat/desk heights `DIM-003`/`DIM-005`, knee clearance
   mixed sawn in a glue-up) — **blocked** on a per-part/per-stave grain model
   (today grain is one top-level enum); `MOVE-004` (breadboard slotting) needs a
   breadboard-end feature.
-- `STRUCT-040`/`STRUCT-041` (full-enclosure) and `GRAIN-003` (over-wide single
-  board) are **moot** under today's DSL: `BackStyle` has no open/none option (a
-  cabinet always has a back, sides, bottom, and top), and the cut list already
-  auto-glues-up any solid panel wider than a board — so neither defect is
-  expressible, and emitting them would be dead code.
+- `STRUCT-040`/`STRUCT-041` (full-enclosure) are **moot** under today's DSL:
+  `BackStyle` has no open/none option, so a cabinet always has a back, sides,
+  bottom, and top — the defect isn't expressible and emitting it would be dead
+  code. `GRAIN-003` (over-wide single board) is **mostly covered for free** — the
+  cut list auto-glues-up wide solid carcass panels and table tops, so they never
+  surface as a single over-wide board; the residual case (a wide solid door
+  panel) overlaps `MOVE-003` and is deferred rather than moot.
 - the `STD-*` meta-rules.
 
 See [`DSL_DIAGNOSTICS_REVIEW.md`](./DSL_DIAGNOSTICS_REVIEW.md) §4.3 / §5 for the

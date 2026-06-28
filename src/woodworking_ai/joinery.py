@@ -191,7 +191,12 @@ def _cabinet_joinery(spec: CabinetSpec, cl) -> list[JoineryOp]:
 
     # Fixed shelves housed into the sides. Adjustable shelves (the default) ride
     # on pins and need no cut; screw/butt shelves aren't housed either (the
-    # STRUCT-014 advisory flags those), so only dado/cleat add a setup op.
+    # STRUCT-014 advisory flags those), so only dado/cleat add a setup op. The op
+    # is a setup-sheet line (the shop cuts one housing per shelf height); its
+    # "at each shelf height" reference classifies as OTHER, which the B-Rep
+    # builder draws as a single representative housing rather than N at exact
+    # heights — a known limitation of the reference-text geometry, shared by every
+    # OTHER-classified op.
     sj = str(getattr(spec, "shelf_joint", ShelfJoint.PINS)).lower()
     if spec.shelves and sj == ShelfJoint.DADO:
         ops.append(JoineryOp(

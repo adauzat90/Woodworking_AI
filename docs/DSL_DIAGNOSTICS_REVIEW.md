@@ -397,12 +397,16 @@ the deep links.
     to fill the groove with no expansion allowance); it stays quiet on the common
     plywood shaker panel, which doesn't move.
 
-    While scoping this, two of the §4.3 batch turned out **moot** under today's
-    DSL and were deliberately *not* emitted (faking them would be dead code):
-    `STRUCT-040`/`STRUCT-041` (full-enclosure) — `BackStyle` has no open/none
-    option, so a cabinet always has a back/sides/bottom/top; and `GRAIN-003`
-    (over-wide single board) — the cut list already auto-glues-up any solid panel
-    wider than a board, so the defect can't arise.
+    While scoping this, `STRUCT-040`/`STRUCT-041` (full-enclosure) turned out
+    **moot** under today's DSL and were deliberately *not* emitted (faking them
+    would be dead code): `BackStyle` has no open/none option, so a cabinet always
+    has a back/sides/bottom/top. `GRAIN-003` (over-wide single board) is **mostly**
+    covered for free — the cut list auto-glues-up wide solid carcass panels
+    (`_expand_glue_ups`, gated on a solid carcass) and wide solid table tops
+    (`solid_top`), so those never surface as a single over-wide board. The one
+    residual case it doesn't auto-split is a wide *solid door panel*, which
+    overlaps `MOVE-003`'s solid-panel movement warning; emitting a separate
+    `GRAIN-003` there is low-value and deferred rather than claimed as moot.
 
 *Still blocked (need a §5 schema PR each):*
 

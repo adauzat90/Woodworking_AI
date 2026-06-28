@@ -19,7 +19,7 @@ from .dsl import (
     joinery_key,
 )
 from .dispatch import spec_kind, VOID, GROUP, TABLE, BENCH, CABINET
-from . import engineering, stock, proportion, furniture
+from . import engineering, stock, proportion, furniture, materials
 from . import species as species_module
 from .hardware import longest_slide_for
 from .geometry import front_plan, footprints_overlap, component_tag
@@ -803,13 +803,16 @@ def _validate_cabinet(spec) -> list[Issue]:
 
     # MOVE-003: a solid floating door panel sized to fill the groove (the cut list
     # sizes it opening + 2×groove, with no allowance) can't expand and cracks
-    # across the grain. A raised panel is always solid; a flat shaker/cope panel
-    # is solid only when the make-up is solid wood — a plywood flat panel doesn't
-    # move, so it stays quiet there.
+    # across the grain. A raised panel is always solid (the cut list builds it
+    # that way regardless of make-up); a flat shaker/cope panel is solid only when
+    # its *resolved* make-up is solid wood — a plywood flat panel doesn't move.
+    # Read the resolved door-panel form (honoring a stock["door_panel"] override)
+    # so this agrees with the part the cut list actually builds.
     door_style = str(getattr(spec, "door_style", "slab")).lower()
+    panel_form, _ = materials.resolve(spec, "door_panel")
     panel_is_solid = door_style == "raised_panel" or (
         door_style in ("shaker", "cope_stick")
-        and str(getattr(spec, "material_form", "")).lower() == "solid")
+        and materials.is_solid_form(panel_form))
     if spec.doors and panel_is_solid:
         warn("door_style",
              "a solid floating panel sized to fill the groove can't expand and "
@@ -877,11 +880,15 @@ def _validate_cabinet(spec) -> list[Issue]:
                  observed=float(spec.depth), limit=BASE_CABINET_MAX_DEPTH,
                  units="mm", direction="max")
 
-    # STRUCT-014: a load shelf screwed or butt-glued to the side drives the
+    # STRUCT-014: a *load* shelf screwed or butt-glued to the side drives the
     # fastener/glue into end grain and works loose under load. Adjustable pins
-    # (the default) and a housed dado/cleat are fine; flag only screw/butt.
+    # (the default) and a housed dado/cleat are fine; flag only screw/butt, and
+    # only when the shelf actually carries load (the catalog's "load shelf"
+    # qualifier — an author who sets shelf_load_kg_per_m=0 opts out).
     shelf_joint = str(getattr(spec, "shelf_joint", "pins")).lower()
-    if spec.shelves > 0 and shelf_joint in ("screw", "butt"):
+    shelf_load = getattr(spec, "shelf_load_kg_per_m", 25.0)
+    if (spec.shelves > 0 and shelf_joint in ("screw", "butt")
+            and _finite_positive(shelf_load)):
         warn("shelf_joint",
              f"a load shelf attached by {shelf_joint} relies on end-grain holding "
              "and works loose under load; house it in a dado/rabbet or hang it on "
