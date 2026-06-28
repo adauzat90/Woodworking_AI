@@ -106,6 +106,13 @@ def test_dim004_best_fit_avoids_cross_flagging_in_a_mixed_project():
     assert validate(proj).by_rule("DIM-004") == []
 
 
+def test_dim004_ignores_a_coffee_table_as_a_pairing_target():
+    # A coffee/side table (below sit-at height) isn't sat at, so a bench beside
+    # one in a living-room layout isn't an ergonomic mismatch.
+    proj = _project(_table(height=450, apron_height=60), _bench(height=450))
+    assert validate(proj).by_rule("DIM-004") == []
+
+
 def test_dim004_needs_both_a_table_and_a_seat():
     assert validate(_project(_table(height=740), _table(height=900))) \
         .by_rule("DIM-004") == []

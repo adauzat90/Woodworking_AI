@@ -375,9 +375,15 @@ def _validate_project(project: ComponentGroup) -> ValidationResult:
     # against a dining table that share a project. WARN, not the catalog's ERROR:
     # the DSL has no explicit "this seat pairs with that table" link, so the
     # pairing is inferred — too uncertain to block a build on.
+    #
+    # Only *sit-at-height* tables are pairing targets: a coffee/side table below
+    # SIT_AT_HEIGHT_MIN is never sat at, so a bench beside one isn't a mismatch.
+    # (Limitation: if a seat's true partner — e.g. a counter for a bar stool —
+    # simply isn't modelled, the seat may still be matched to another table.)
     tables = [(i, c) for i, c in enumerate(comps, start=1)
-              if spec_kind(c.spec) == TABLE and _finite_positive(
-                  getattr(c.spec, "height", None))]
+              if spec_kind(c.spec) == TABLE
+              and _finite_positive(getattr(c.spec, "height", None))
+              and c.spec.height >= SIT_AT_HEIGHT_MIN]
     seats = [(i, c) for i, c in enumerate(comps, start=1)
              if spec_kind(c.spec) == BENCH and _finite_positive(
                  getattr(c.spec, "height", None))]

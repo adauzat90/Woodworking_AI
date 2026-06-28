@@ -50,6 +50,19 @@ def test_hw007_fires_on_a_heavy_single_panel():
     assert hw[0].units == "kg" and hw[0].direction == "max"
 
 
+def test_hw007_catches_a_heavy_glued_up_solid_top():
+    # The cut list explodes a wide solid top into light edge-glue staves; HW-007
+    # must still see the heavy ASSEMBLED panel a person actually lifts, not the
+    # ~8kg stave.
+    spec = spec_from_dict(dict(kind="table", width=2200, depth=1100, height=740,
+                               top_thickness=40, leg=80, apron_height=100,
+                               apron_thickness=25, leg_inset=50, species="oak",
+                               material_form="solid", solid_top=True))
+    hw = validate(spec).by_rule("HW-007")
+    assert len(hw) == 1
+    assert hw[0].observed > 25.0 and "Top" in hw[0].message
+
+
 def test_hw007_quiet_for_normal_stock():
     # A modest base cabinet has no part near the lift limit.
     spec = spec_from_dict(dict(kind="cabinet", cabinet_type="base", width=600,

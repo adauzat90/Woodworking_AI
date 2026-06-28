@@ -11,9 +11,18 @@ no CAD. Everything is SI: lengths in mm, density in kg/m^3, mass in kg.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 
 from . import species as _species
+
+# A solid panel wider than a board is exploded into edge-glue staves by the cut
+# list, each stamped with a note carrying the board count: cabinets say
+# "glue-up: N boards/panel" (cutlist._expand_glue_ups), tables/benches say
+# "edge-glued top: N boards". The *assembled* panel — not one light stave — is
+# what a person actually lifts, so the lift check (HW-007) reconstructs the panel
+# mass by multiplying a stave back up by the count.
+_GLUEUP_BOARDS = re.compile(r"(\d+)\s+boards\b")
 
 # Sheet-goods densities (kg/m^3). Not woods, so not in the species DB; typical
 # air-dry values for a 3/4in panel — real stock varies by core and glue.
@@ -60,9 +69,25 @@ def piece_mass_kg(length_mm: float, width_mm: float, thickness_mm: float,
 class MassEstimate:
     """The weight breakdown of a piece. All masses in kg."""
     total_kg: float                       # summed over every part × qty
-    heaviest_part_kg: float               # the single heaviest *one* part
+    heaviest_part_kg: float               # the single heaviest *assembled* part
     heaviest_part_name: str
     parts: list[tuple[str, float]] = field(default_factory=list)  # (name, per-unit kg)
+
+
+def _assembled_unit_mass(part) -> tuple[float, str]:
+    """The mass (kg) and display name of one *assembled* unit of *part*.
+
+    A glue-up stave's assembled unit is the whole panel (N staves), so the heavy
+    solid top a person lifts isn't hidden behind its light individual boards.
+    """
+    per_stave = piece_mass_kg(part.length, part.width, part.thickness,
+                              part.form, part.species)
+    m = _GLUEUP_BOARDS.search(getattr(part, "notes", "") or "")
+    if m:
+        n = int(m.group(1))
+        name = part.name[:-6] if part.name.endswith(" board") else part.name
+        return per_stave * n, name
+    return per_stave, part.name
 
 
 def estimate_mass(spec) -> MassEstimate | None:
@@ -84,6 +109,9 @@ def estimate_mass(spec) -> MassEstimate | None:
         per_unit = piece_mass_kg(p.length, p.width, p.thickness, p.form, p.species)
         total += per_unit * max(p.qty, 0)
         parts.append((p.name, per_unit))
-        if per_unit > heaviest:
-            heaviest, heaviest_name = per_unit, p.name
+        # Compare on the assembled-unit mass so a glued-up panel isn't hidden
+        # behind its light staves (total is unaffected — staves sum to the panel).
+        assembled, name = _assembled_unit_mass(p)
+        if assembled > heaviest:
+            heaviest, heaviest_name = assembled, name
     return MassEstimate(total, heaviest, heaviest_name, parts)

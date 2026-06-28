@@ -307,6 +307,9 @@ def test_emitted_doc_anchors_resolve_to_real_headings():
         _cab(width=1400, depth=300, shelves=2, material={"shelf": 12}),
         _cab(cabinet_type="tall", width=600, height=2000, depth=300, shelves=3),
         _cab(material={"door": 14}, doors=2, width=800),
+        # a passing wall cabinet → exercises STRUCT-043's #35 anchor
+        _cab(cabinet_type="wall", width=800, height=720, depth=320, shelves=1,
+             doors=2),
         spec_from_dict(dict(kind="table", width=1600, depth=900, height=2000,
                             top_thickness=25, leg=60, apron_height=80,
                             apron_thickness=20, leg_inset=40, top_fixing="fixed")),
