@@ -1,0 +1,32 @@
+{
+  "kind": "cabinet",
+  "cabinet_type": "base",
+  "name": "Kitchen Base Cabinet",
+  "units": "mm",
+  "width": 600,
+  "height": 870,
+  "depth": 560,
+  "construction": "frameless",
+  "door_style": "shaker",
+  "back": "rabbeted",
+  "joinery": "dado",
+  "toe_kick": {
+    "height": 100,
+    "setback": 50
+  },
+  "shelves": 1,
+  "doors": 2,
+  "reveal": 3,
+  "edge_banding": true,
+  "material_form": "plywood",
+  "species": "birch",
+  "stock": {
+    "front": {
+      "form": "solid",
+      "species": "maple"
+    }
+  },
+  "hardware_brand": "blum",
+  "hinge_overlay": "overlay",
+  "finish": "paint"
+}

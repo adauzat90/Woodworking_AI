@@ -104,6 +104,60 @@ def all_drawers_attr(attr: str, value: str) -> Callable[[object], bool]:
     return check
 
 
+def cabinet_type_in(names) -> Callable[[object], bool]:
+    """The cabinet type is one of *names* — for prompts with several defensible
+    readings, where the test is sanity, not an exact answer."""
+    want = {n.lower() for n in names}
+    return lambda s: _enum_str(getattr(s, "cabinet_type", "")) in want
+
+
+def has_storage() -> Callable[[object], bool]:
+    """The piece actually stores something — a shelf, a door, or a drawer."""
+    def check(s):
+        return (int(getattr(s, "shelves", 0) or 0) > 0
+                or int(getattr(s, "doors", 0) or 0) > 0
+                or len(getattr(s, "drawers", []) or []) > 0)
+    return check
+
+
+# --- project (multi-cabinet) predicates ------------------------------------- #
+
+def is_project() -> Callable[[object], bool]:
+    return lambda s: type(s).__name__ == "Project"
+
+
+def _component_specs(s):
+    return [c.spec for c in (getattr(s, "components", []) or [])
+            if getattr(c, "spec", None) is not None]
+
+
+def component_count(n: int) -> Callable[[object], bool]:
+    return lambda s: len(getattr(s, "components", []) or []) == n
+
+
+def component_widths_include(values, tol: float = 10.0) -> Callable[[object], bool]:
+    """Each named component width is matched by some component (greedy, order-free)."""
+    want = [float(v) for v in values]
+
+    def check(s):
+        pool = [float(getattr(sp, "width", 0) or 0) for sp in _component_specs(s)]
+        for w in want:
+            m = next((g for g in pool if abs(g - w) <= tol), None)
+            if m is None:
+                return False
+            pool.remove(m)
+        return True
+    return check
+
+
+def all_components_type(name: str) -> Callable[[object], bool]:
+    def check(s):
+        specs = _component_specs(s)
+        return bool(specs) and all(
+            _enum_str(getattr(sp, "cabinet_type", "")) == name for sp in specs)
+    return check
+
+
 def door_style_is(name: str) -> Callable[[object], bool]:
     return lambda s: _enum_str(getattr(s, "door_style", "")) == name
 
@@ -399,12 +453,104 @@ STRESS_CASES: tuple[EvalCase, ...] = (
 )
 
 
+# Ambiguous set — prompts with no single right answer. The model can't ask a
+# clarifying question (the agent always emits a spec), so the test is whether it
+# lands inside a *defensible envelope* rather than on one answer: a sane type, a
+# real storage function, proportions a human would accept. A failure here means
+# it produced something absurd or unbuildable, not merely a different valid call.
+AMBIGUOUS_CASES: tuple[EvalCase, ...] = (
+    EvalCase(
+        "ambiguous_kitchen_cabinet",
+        "a cabinet for my kitchen",
+        (
+            IntentCheck("some kitchen cabinet type",
+                        cabinet_type_in(["base", "wall", "tall", "corner_blind",
+                                         "corner_diagonal", "dresser"])),
+            IntentCheck("a sane cabinet width (250-1300 mm)",
+                        dim_between("width", 250, 1300)),
+        ),
+    ),
+    EvalCase(
+        "ambiguous_shoe_storage",
+        "somewhere to store shoes by the front door",
+        (
+            IntentCheck("actually stores things", has_storage()),
+            IntentCheck("a sane footprint width (300-1300 mm)",
+                        dim_between("width", 300, 1300)),
+        ),
+    ),
+    EvalCase(
+        "ambiguous_metre_tall",
+        "a piece of furniture about a metre tall",
+        (
+            # The only firm thing the prompt says is the height — hold it there.
+            IntentCheck("about a metre tall (850-1150 mm)",
+                        dim_between("height", 850, 1150)),
+        ),
+    ),
+    EvalCase(
+        "ambiguous_nightstand",
+        "a nightstand",
+        (
+            IntentCheck("bedside height (400-750 mm)",
+                        dim_between("height", 400, 750)),
+            IntentCheck("small footprint width (300-650 mm)",
+                        dim_between("width", 300, 650)),
+        ),
+    ),
+)
+
+
+# Project set — the multi-cabinet path (kind: "project"), which every other suite
+# leaves untested. Scores that the result is a Project with the right components
+# AND that it builds — buildable here includes the placement / footprint-overlap
+# check, so a run whose cabinets collide fails.
+PROJECT_CASES: tuple[EvalCase, ...] = (
+    EvalCase(
+        "project_three_base_run",
+        "a small kitchen run of three base cabinets in a row: 900 wide, 600 "
+        "wide and 450 wide",
+        (
+            IntentCheck("is a project", is_project()),
+            IntentCheck("three components", component_count(3)),
+            IntentCheck("all base cabinets", all_components_type("base")),
+            IntentCheck("widths 900/600/450 present",
+                        component_widths_include([900, 600, 450])),
+        ),
+    ),
+    EvalCase(
+        "project_two_wall_builtin",
+        "a built-in of two 600 mm wall cabinets side by side",
+        (
+            IntentCheck("is a project", is_project()),
+            IntentCheck("two components", component_count(2)),
+            IntentCheck("all wall cabinets", all_components_type("wall")),
+            IntentCheck("both 600 wide", component_widths_include([600, 600])),
+        ),
+    ),
+    EvalCase(
+        "project_l_shaped_run",
+        "an L-shaped kitchen: two 600 mm base cabinets along one wall and one "
+        "600 mm base cabinet on the perpendicular return",
+        (
+            IntentCheck("is a project", is_project()),
+            IntentCheck("three components", component_count(3)),
+            IntentCheck("all base cabinets", all_components_type("base")),
+            # buildable (scored separately) covers the inner-corner collision.
+        ),
+    ),
+)
+
+
 # Named suites for the runner / CLI.
 SUITES: dict[str, tuple[EvalCase, ...]] = {
     "default": DEFAULT_CASES,
     "adversarial": ADVERSARIAL_CASES,
     "stress": STRESS_CASES,
-    "all": DEFAULT_CASES + ADVERSARIAL_CASES + STRESS_CASES,
+    "ambiguous": AMBIGUOUS_CASES,
+    "projects": PROJECT_CASES,
+    "all": (DEFAULT_CASES + ADVERSARIAL_CASES + STRESS_CASES
+            + AMBIGUOUS_CASES + PROJECT_CASES),
 }
 
 

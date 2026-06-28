@@ -21,7 +21,7 @@ EVALS = pathlib.Path(__file__).resolve().parent.parent / "evals"
 SPECS = EVALS / "specs"
 
 
-BASELINE_SUITES = ("default", "adversarial", "stress")
+BASELINE_SUITES = ("default", "adversarial", "stress", "ambiguous", "projects")
 
 
 def _cases():

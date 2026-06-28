@@ -17,9 +17,13 @@ from woodworking_ai.designer_eval import (
     cabinet_type_is, is_table, dim_near, doors_eq, drawers_eq, drawers_at_least,
     shelves_at_least, dim_between, door_style_is, construction_is,
     no_toe_kick, drawer_front_heights, all_drawers_attr,
+    cabinet_type_in, has_storage, is_project, component_count,
+    component_widths_include, all_components_type,
     score_spec, _failure_result,
-    DEFAULT_CASES, ADVERSARIAL_CASES, STRESS_CASES, SUITES,
+    DEFAULT_CASES, ADVERSARIAL_CASES, STRESS_CASES,
+    AMBIGUOUS_CASES, PROJECT_CASES, SUITES,
 )
+from woodworking_ai import Project, place_run
 
 
 # --- predicates are robust to the wrong spec type (return False, never raise) --
@@ -172,22 +176,55 @@ def test_failure_result_records_error_and_fails():
 
 # --- the shipped dataset is well-formed --------------------------------------
 
-@pytest.mark.parametrize("cases", [DEFAULT_CASES, ADVERSARIAL_CASES, STRESS_CASES])
+@pytest.mark.parametrize("cases", [DEFAULT_CASES, ADVERSARIAL_CASES, STRESS_CASES,
+                                   AMBIGUOUS_CASES, PROJECT_CASES])
 def test_cases_are_well_formed(cases):
     names = [c.name for c in cases]
     assert len(names) == len(set(names))          # unique names
-    assert len(cases) >= 5
+    assert len(cases) >= 3
     for c in cases:
         assert c.prompt and c.intents
         assert any(ic.required for ic in c.intents)
 
 
 def test_suites_registry():
-    assert set(SUITES) == {"default", "adversarial", "stress", "all"}
-    assert SUITES["all"] == DEFAULT_CASES + ADVERSARIAL_CASES + STRESS_CASES
+    assert set(SUITES) == {"default", "adversarial", "stress",
+                           "ambiguous", "projects", "all"}
+    assert SUITES["all"] == (DEFAULT_CASES + ADVERSARIAL_CASES + STRESS_CASES
+                             + AMBIGUOUS_CASES + PROJECT_CASES)
     # every case name is globally unique across suites
     names = [c.name for c in SUITES["all"]]
     assert len(names) == len(set(names))
+
+
+def test_ambiguous_predicates():
+    cab = CabinetSpec(name="c", width=600, height=720, depth=560,
+                      cabinet_type="wall", shelves=2)
+    assert cabinet_type_in(["base", "wall", "tall"])(cab) is True
+    assert cabinet_type_in(["base", "tall"])(cab) is False
+    assert has_storage()(cab) is True
+    bare = CabinetSpec(name="x", width=600, height=720, depth=560,
+                       doors=0, shelves=0)
+    assert has_storage()(bare) is False
+
+
+def test_project_predicates():
+    proj = Project(name="run", components=place_run(
+        [CabinetSpec(width=900, cabinet_type="base"),
+         CabinetSpec(width=600, cabinet_type="base"),
+         CabinetSpec(width=450, cabinet_type="base")], start=(0, 0), angle=0))
+    cab = CabinetSpec(name="c", width=600, height=720, depth=560)
+    assert is_project()(proj) is True
+    assert is_project()(cab) is False
+    assert component_count(3)(proj) is True
+    assert component_count(2)(proj) is False
+    assert all_components_type("base")(proj) is True
+    assert all_components_type("wall")(proj) is False
+    assert component_widths_include([900, 600, 450])(proj) is True
+    assert component_widths_include([900, 900])(proj) is False  # only one 900
+    # predicates return False (not raise) on a non-project spec
+    assert component_count(1)(cab) is False
+    assert all_components_type("base")(cab) is False
 
 
 def test_stress_predicates():

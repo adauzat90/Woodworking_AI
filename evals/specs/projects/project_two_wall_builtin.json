@@ -1,0 +1,45 @@
+{
+  "kind": "project",
+  "name": "Two-Cabinet Wall Built-In",
+  "units": "mm",
+  "runs": [
+    {
+      "start": [
+        0,
+        0
+      ],
+      "angle": 0,
+      "gap": 0,
+      "items": [
+        {
+          "spec": {
+            "kind": "cabinet",
+            "cabinet_type": "wall",
+            "name": "W1",
+            "width": 600,
+            "height": 720,
+            "depth": 350,
+            "doors": 1,
+            "shelves": 2,
+            "toe_kick": null
+          },
+          "label": "W1"
+        },
+        {
+          "spec": {
+            "kind": "cabinet",
+            "cabinet_type": "wall",
+            "name": "W2",
+            "width": 600,
+            "height": 720,
+            "depth": 350,
+            "doors": 1,
+            "shelves": 2,
+            "toe_kick": null
+          },
+          "label": "W2"
+        }
+      ]
+    }
+  ]
+}

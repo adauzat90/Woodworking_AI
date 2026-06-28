@@ -1,0 +1,71 @@
+{
+  "kind": "project",
+  "name": "L-Shaped Kitchen",
+  "units": "mm",
+  "countertop": {
+    "material": "butcher_block",
+    "thickness": 38,
+    "overhang": 25
+  },
+  "runs": [
+    {
+      "start": [
+        0,
+        0
+      ],
+      "angle": 0,
+      "gap": 0,
+      "items": [
+        {
+          "spec": {
+            "kind": "cabinet",
+            "cabinet_type": "base",
+            "name": "B1",
+            "width": 600,
+            "height": 720,
+            "depth": 560,
+            "doors": 2,
+            "shelves": 1
+          },
+          "label": "B1"
+        },
+        {
+          "spec": {
+            "kind": "cabinet",
+            "cabinet_type": "base",
+            "name": "B2",
+            "width": 600,
+            "height": 720,
+            "depth": 560,
+            "doors": 2,
+            "shelves": 1
+          },
+          "label": "B2"
+        }
+      ]
+    },
+    {
+      "start": [
+        1200,
+        560
+      ],
+      "angle": 90,
+      "gap": 0,
+      "items": [
+        {
+          "spec": {
+            "kind": "cabinet",
+            "cabinet_type": "base",
+            "name": "B3",
+            "width": 600,
+            "height": 720,
+            "depth": 560,
+            "doors": 2,
+            "shelves": 1
+          },
+          "label": "B3"
+        }
+      ]
+    }
+  ]
+}

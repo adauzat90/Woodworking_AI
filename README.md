@@ -319,21 +319,25 @@ export ANTHROPIC_API_KEY=sk-...
 woodai eval                          # the curated set
 woodai eval --suite adversarial      # unit traps, inferred type, missing dims…
 woodai eval --suite stress           # strict: fractional inches, enums, per-drawer attrs
+woodai eval --suite ambiguous        # no single right answer — scored on a defensible envelope
+woodai eval --suite projects         # multi-cabinet runs (incl. an L-shape)
 woodai eval --suite all --json eval.json
 woodai eval --min-pass 0.8           # exit nonzero if pass rate < 80% (CI gate)
 ```
 
-**Measured baseline:** the committed run scores **22/22 (100% pass · buildable ·
-intent)** across the curated, adversarial, and strict *stress* suites — see
-[`evals/`](evals/) for the full report and the exact specs the designer produced.
-We pushed hard to find the failure boundary: the strict stress suite (fractional
-inches like `37 3/8″`, odd metric held to ±3 mm, specific enums, per-drawer
-`undermount`/`dovetail`, exact drawer-height multisets, exclusions) was run on
-**Haiku** — the cheapest model — and still scored **6/6**; the adversarial suite
-on Haiku scored 8/8 too (**30/30** across both model tiers). The boundary wasn't
-reached: the structured DSL + schema hint + repair loop carry even a small model.
-Not yet tested — ambiguous intent with no right answer, and multi-cabinet
-projects — is where failures most likely live.
+**Measured baseline:** the committed run scores **29/29 (100% pass · buildable ·
+intent)** across five suites — curated, adversarial, strict *stress*, *ambiguous*,
+and multi-cabinet *projects* — see [`evals/`](evals/) for the full report and the
+exact specs the designer produced. We pushed hard to find the failure boundary:
+the strict stress suite (fractional inches like `37 3/8″`, odd metric held to
+±3 mm, specific enums, per-drawer `undermount`/`dovetail`, exclusions) ran on
+**Haiku**, the cheapest model, and still scored 6/6; adversarial on Haiku was 8/8
+too (**37/37** across both tiers). The multi-cabinet path works end to end,
+including an **L-shaped run** with no inner-corner collision. The one real
+limitation the *ambiguous* suite surfaced: the designer **never asks a clarifying
+question** — it always commits to a sane default (fine here, a UX risk for
+high-stakes ambiguity). Still untested: prompts that *should* be refused or
+flagged infeasible.
 
 The scoring is pure and deterministic — it runs headless in CI against
 hand-built specs (`tests/test_designer_eval.py`) and re-scores the committed

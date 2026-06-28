@@ -1,0 +1,27 @@
+{
+  "kind": "cabinet",
+  "cabinet_type": "base",
+  "name": "Entryway Shoe Cabinet",
+  "units": "mm",
+  "width": 800,
+  "height": 820,
+  "depth": 350,
+  "construction": "frameless",
+  "door_style": "shaker",
+  "back": "rabbeted",
+  "joinery": "dado",
+  "toe_kick": {
+    "height": 100,
+    "setback": 50
+  },
+  "shelves": 3,
+  "doors": 2,
+  "shelf_species": "plywood",
+  "shelf_load_kg_per_m": 25,
+  "hinge_overlay": "overlay",
+  "hardware_brand": "blum",
+  "material_form": "plywood",
+  "species": "birch",
+  "edge_banding": true,
+  "finish": "clear"
+}

@@ -2,13 +2,13 @@
   "generated": "2026-06-27",
   "method": "Each prompt was handed to a Claude subagent acting as the Designer agent through the project's real SYSTEM_PROMPT + DSL schema hint, with no knowledge of the intent checks. Each agent self-repaired its spec to buildability against the validator + geometry critic; the spec was then scored by designer_eval.score_spec. An API-key-free proxy for `woodai eval` (subagents stand in for the live agent + repair loop).",
   "scored_by": "woodworking_ai.designer_eval.score_spec",
-  "findings": "30/30 across runs. default+adversarial produced by an Opus-class model (16/16); the strict stress suite by Haiku (6/6); the adversarial suite was ALSO run on Haiku and scored 8/8 (those specs not committed here). The failure boundary was not reached even with a cheaper model and strict checks (fractional-inch / odd-metric conversion, specific enums, per-drawer attributes, exact multiset, exclusions) -- the structured DSL + schema hint + repair loop carries it. Untested: genuinely ambiguous intent with no single right answer, and multi-cabinet projects.",
+  "findings": "29/29 committed cases pass across five suites. The boundary was not reached even with a cheaper model (Haiku ran stress 6/6 and adversarial 8/8) and strict checks. The multi-cabinet project path works end to end (incl. an L-shaped run with no inner-corner collision). Real limitation surfaced by the ambiguous suite: the designer never asks a clarifying question -- it always commits to a defensible default. Its guesses here were all sane, but for high-stakes ambiguity (dimensions that matter) silent guessing is a UX risk worth a product decision. Still untested: prompts that SHOULD be refused or flagged as infeasible.",
   "aggregate": {
     "pass_rate": 1.0,
     "buildable_rate": 1.0,
     "intent_rate": 1.0,
-    "passed": 22,
-    "total": 22
+    "passed": 29,
+    "total": 29
   },
   "suites": {
     "default": {
@@ -370,6 +370,131 @@
         }
       ],
       "produced_by": "claude-haiku"
+    },
+    "ambiguous": {
+      "pass_rate": 1.0,
+      "buildable_rate": 1.0,
+      "intent_rate": 1.0,
+      "total": 4,
+      "passed": 4,
+      "cases": [
+        {
+          "name": "ambiguous_kitchen_cabinet",
+          "prompt": "a cabinet for my kitchen",
+          "passed": true,
+          "buildable": true,
+          "intent_score": 1.0,
+          "intents_passed": 2,
+          "intents_total": 2,
+          "required_missed": [],
+          "optional_missed": [],
+          "validation_errors": [],
+          "critic_errors": [],
+          "attempts": null,
+          "error": null
+        },
+        {
+          "name": "ambiguous_shoe_storage",
+          "prompt": "somewhere to store shoes by the front door",
+          "passed": true,
+          "buildable": true,
+          "intent_score": 1.0,
+          "intents_passed": 2,
+          "intents_total": 2,
+          "required_missed": [],
+          "optional_missed": [],
+          "validation_errors": [],
+          "critic_errors": [],
+          "attempts": null,
+          "error": null
+        },
+        {
+          "name": "ambiguous_metre_tall",
+          "prompt": "a piece of furniture about a metre tall",
+          "passed": true,
+          "buildable": true,
+          "intent_score": 1.0,
+          "intents_passed": 1,
+          "intents_total": 1,
+          "required_missed": [],
+          "optional_missed": [],
+          "validation_errors": [],
+          "critic_errors": [],
+          "attempts": null,
+          "error": null
+        },
+        {
+          "name": "ambiguous_nightstand",
+          "prompt": "a nightstand",
+          "passed": true,
+          "buildable": true,
+          "intent_score": 1.0,
+          "intents_passed": 2,
+          "intents_total": 2,
+          "required_missed": [],
+          "optional_missed": [],
+          "validation_errors": [],
+          "critic_errors": [],
+          "attempts": null,
+          "error": null
+        }
+      ],
+      "produced_by": "claude-opus"
+    },
+    "projects": {
+      "pass_rate": 1.0,
+      "buildable_rate": 1.0,
+      "intent_rate": 1.0,
+      "total": 3,
+      "passed": 3,
+      "cases": [
+        {
+          "name": "project_three_base_run",
+          "prompt": "a small kitchen run of three base cabinets in a row: 900 wide, 600 wide and 450 wide",
+          "passed": true,
+          "buildable": true,
+          "intent_score": 1.0,
+          "intents_passed": 4,
+          "intents_total": 4,
+          "required_missed": [],
+          "optional_missed": [],
+          "validation_errors": [],
+          "critic_errors": [],
+          "attempts": null,
+          "error": null
+        },
+        {
+          "name": "project_two_wall_builtin",
+          "prompt": "a built-in of two 600 mm wall cabinets side by side",
+          "passed": true,
+          "buildable": true,
+          "intent_score": 1.0,
+          "intents_passed": 4,
+          "intents_total": 4,
+          "required_missed": [],
+          "optional_missed": [],
+          "validation_errors": [],
+          "critic_errors": [],
+          "attempts": null,
+          "error": null
+        },
+        {
+          "name": "project_l_shaped_run",
+          "prompt": "an L-shaped kitchen: two 600 mm base cabinets along one wall and one 600 mm base cabinet on the perpendicular return",
+          "passed": true,
+          "buildable": true,
+          "intent_score": 1.0,
+          "intents_passed": 3,
+          "intents_total": 3,
+          "required_missed": [],
+          "optional_missed": [],
+          "validation_errors": [],
+          "critic_errors": [],
+          "attempts": null,
+          "error": null
+        }
+      ],
+      "produced_by": "claude-opus"
     }
   }
 }

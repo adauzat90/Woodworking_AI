@@ -1,0 +1,25 @@
+{
+  "kind": "cabinet",
+  "cabinet_type": "bookcase",
+  "name": "Metre-Tall Bookcase",
+  "units": "mm",
+  "width": 800,
+  "height": 1000,
+  "depth": 300,
+  "construction": "frameless",
+  "back": "rabbeted",
+  "joinery": "dado",
+  "toe_kick": {
+    "height": 100,
+    "setback": 50
+  },
+  "doors": 0,
+  "shelves": 2,
+  "shelf_species": "plywood",
+  "shelf_load_kg_per_m": 30,
+  "anti_tip": true,
+  "material_form": "plywood",
+  "species": "birch",
+  "edge_banding": true,
+  "finish": "clear"
+}
