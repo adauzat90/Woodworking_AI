@@ -85,3 +85,36 @@ def test_designer_accepts_imperial_output(monkeypatch):
     assert isinstance(res.spec, CabinetSpec)
     assert abs(res.spec.width - 609.6) < 0.1     # normalized to mm
     assert res.spec.units == "mm"
+
+
+def test_designer_captures_design_notes(monkeypatch):
+    # The agent may add a top-level "design_notes" array describing assumptions /
+    # changes; it is captured into DesignResult.notes and stripped from the spec.
+    _stub(monkeypatch, {
+        "cabinet_type": "base", "name": "Sink", "width": 600, "height": 720,
+        "depth": 560, "doors": 2,
+        "design_notes": ["Assumed frameless construction (most common).",
+                         "Picked 18mm birch ply for the carcass."],
+    })
+    res = designer.design_from_prompt("a sink base", run_critic=False)
+    assert res.notes == ["Assumed frameless construction (most common).",
+                         "Picked 18mm birch ply for the carcass."]
+    # The metadata key never reaches the spec, and was not flagged as a dropped
+    # field (so the agent isn't asked to "repair" it) — accepted on attempt 1.
+    assert not hasattr(res.spec, "design_notes")
+    assert res.validation.ok and res.attempts == 1
+
+
+def test_design_notes_default_empty(monkeypatch):
+    _stub(monkeypatch, {"cabinet_type": "base", "name": "Sink", "width": 600,
+                        "height": 720, "depth": 560, "doors": 2})
+    res = designer.design_from_prompt("a sink base", run_critic=False)
+    assert res.notes == []
+
+
+def test_design_notes_string_is_coerced(monkeypatch):
+    _stub(monkeypatch, {"cabinet_type": "base", "name": "S", "width": 600,
+                        "height": 720, "depth": 560, "doors": 2,
+                        "design_notes": "Split nothing; followed the request."})
+    res = designer.design_from_prompt("a sink base", run_critic=False)
+    assert res.notes == ["Split nothing; followed the request."]

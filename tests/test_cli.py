@@ -251,3 +251,30 @@ def test_joinery_prints_for_a_project(capsys):
         assert "Joinery setup" in capsys.readouterr().out
     finally:
         os.unlink(path)
+
+
+def test_print_design_notes_surfaces_assumptions_and_warnings(capsys):
+    """The design command echoes the agent's assumptions and any warnings."""
+    from woodworking_ai import CabinetSpec
+    from woodworking_ai.validator import validate
+    from woodworking_ai.agents.designer import DesignResult
+    from woodworking_ai.cli import _print_design_notes
+
+    spec = CabinetSpec(name="S", width=600, height=720, depth=560, doors=2)
+    res = DesignResult(spec, validate(spec), ["raw"], 1, None,
+                       ["Assumed frameless construction (most common)."])
+    _print_design_notes(res)
+    out = capsys.readouterr().out
+    assert "assumptions / changes" in out
+    assert "Assumed frameless construction" in out
+
+
+def test_print_design_notes_silent_when_nothing_to_say(capsys):
+    from woodworking_ai import CabinetSpec
+    from woodworking_ai.validator import validate
+    from woodworking_ai.agents.designer import DesignResult
+    from woodworking_ai.cli import _print_design_notes
+
+    spec = CabinetSpec(name="S", width=600, height=720, depth=560, doors=2)
+    _print_design_notes(DesignResult(spec, validate(spec), [], 1, None, []))
+    assert capsys.readouterr().out == ""

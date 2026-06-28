@@ -306,6 +306,11 @@ def api_design(body: DesignRequest) -> JSONResponse:
                           tooling=tooling, combine_sheet_stock=_combine_stock(body),
                           boards=body.boards or None)
     bundle["attempts"] = res.attempts
+    # Structured "we changed/assumed X" signal for the UI. The buildable-but-
+    # notable warnings are already in bundle["warnings"] (from build_result);
+    # this adds the agent's own account of the assumptions and reinterpretations
+    # it made — which a clean, resolved spec no longer carries as a warning.
+    bundle["notes"] = list(res.notes)
     return JSONResponse(bundle)
 
 

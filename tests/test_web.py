@@ -197,6 +197,25 @@ def test_design_empty_prompt_400():
     assert client.post("/api/design", json={"prompt": "  "}).status_code == 400
 
 
+def test_design_response_carries_agent_notes(monkeypatch):
+    """/api/design surfaces the agent's assumptions/changes as bundle['notes']."""
+    from woodworking_ai import CabinetSpec, agents
+    from woodworking_ai.validator import validate
+    from woodworking_ai.agents.designer import DesignResult
+    import woodworking_ai.web as web
+
+    note = ("Split a 3m cabinet into a 4-cabinet run — not buildable from sheet "
+            "goods as one carcass.")
+    spec = CabinetSpec(name="S", width=600, height=720, depth=560, doors=2)
+    fake = DesignResult(spec, validate(spec), ["raw"], 1, None, [note])
+    monkeypatch.setattr(web, "_live_capabilities",
+                        lambda: {"render": True, "glb": False, "llm": True})
+    monkeypatch.setattr(agents, "design_from_prompt", lambda *a, **k: fake)
+
+    d = client.post("/api/design", json={"prompt": "a 3 metre cabinet"}).json()
+    assert d["notes"] == [note]
+
+
 # --- exports -------------------------------------------------------------
 
 def test_export_cutlist_csv():

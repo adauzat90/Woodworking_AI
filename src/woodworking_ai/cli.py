@@ -254,6 +254,24 @@ def _write_outputs(spec, asm, args, unit: str, *, is_group: bool) -> None:
             print(f"Wrote {base}.dae")
 
 
+def _print_design_notes(res) -> None:
+    """Surface the agent's assumptions/changes and any buildable-but-notable
+    warnings, so a change to what was asked for never goes unnoticed."""
+    if res.notes:
+        print("The agent made these assumptions / changes to your request:")
+        for n in res.notes:
+            print(f"  • {n}")
+        print()
+    warns = list(res.validation.warnings)
+    if res.critique is not None:
+        warns += list(res.critique.warnings)
+    if warns:
+        print("Buildable, but worth a look:")
+        for w in warns:
+            print(f"  ! {w}")
+        print()
+
+
 def _run_eval(args) -> int:
     """``woodai eval`` — run the designer accuracy harness and print a report."""
     if args.suite == "refusal":
@@ -383,6 +401,7 @@ def main(argv: list[str] | None = None) -> int:
         res = design_from_prompt(args.prompt, max_attempts=args.attempts,
                                  model=args.model, tooling=tooling)
         print(f"(agent converged in {res.attempts} attempt(s))\n")
+        _print_design_notes(res)
         return _emit(res.spec, args, tooling=tooling)
 
     if args.cmd == "build":

@@ -228,6 +228,7 @@
   .ok { background:var(--ok-bg); color:var(--ok); }
   .bad { background:var(--bad-bg); color:var(--bad); }
   .warn { background:var(--warn-bg); color:var(--warn); }
+  .note { background:rgba(106,160,255,.14); color:var(--accent, #6aa0ff); }
 
   /* ---- design notes / checks panel ---- */
   .checks { padding:12px 18px; border-bottom:1px solid var(--line);
@@ -244,6 +245,7 @@
   .checks li.pass .ic { color:var(--ok); }
   .checks li.warnrow .ic { color:var(--warn); }
   .checks li.errrow .ic { color:var(--bad); }
+  .checks li.noterow .ic { color:var(--accent, #6aa0ff); }
   .checks li .fld { color:var(--muted); font-family:var(--font-mono); font-size:11px; }
   .status .pill.clickable { cursor:pointer; }
   .status .pill.clickable:hover { filter:brightness(1.12); }
@@ -1154,11 +1156,14 @@ function render(d) {
   // status — the confident "money line": badges left, total right.
   const e = d.estimate, cr = d.critique;
   const hasNotes = (d.warnings && d.warnings.length) || (d.errors && d.errors.length)
+    || (d.notes && d.notes.length)
     || (cr && cr.report && Object.keys(cr.report).length);
   const clk = hasNotes ? " clickable" : "";
   const bits = [];
   bits.push(`<span class="pill ${d.valid?'ok':'bad'}${clk}">${d.valid?'valid':'invalid'}</span>`);
   if (cr) bits.push(`<span class="pill ${cr.ok?'ok':'warn'}${clk}">geometry ${cr.ok?'verified':'check'}</span>`);
+  if (d.notes && d.notes.length)
+    bits.push(`<span class="pill note${clk}">${d.notes.length} AI change${d.notes.length>1?'s':''}</span>`);
   if (d.warnings && d.warnings.length)
     bits.push(`<span class="pill warn${clk}">${d.warnings.length} note${d.warnings.length>1?'s':''}</span>`);
   if (d.attempts) bits.push(`<span class="muted">AI · ${d.attempts} attempt${d.attempts>1?'s':''}</span>`);
@@ -1213,6 +1218,11 @@ function buildChecks(d) {
     (field ? ` <span class="fld">${esc(field)}</span>` : "") + `</span></li>`;
 
   let html = "";
+  // The AI's own account of what it assumed or changed about the request — the
+  // "we changed what you asked for, because X" signal. Shown first so a silent
+  // reinterpretation (e.g. a 3m cabinet split into a run) never goes unnoticed.
+  if (d.notes && d.notes.length)
+    html += sec("What the AI assumed or changed", d.notes.map(t => row("noterow", "✎", t)));
   if (d.errors && d.errors.length)
     html += sec("Problems to fix", d.errors.map(x => row("errrow", "✗", x.message, x.field)));
   if (d.warnings && d.warnings.length)
@@ -1225,7 +1235,8 @@ function buildChecks(d) {
   // Watch-outs (sag, wood movement, unmakeable joints, problems to fix) open
   // automatically so the advice is seen; an all-clear stays collapsed behind the
   // green pill to keep the result tidy.
-  const hasIssues = (d.errors && d.errors.length) || (d.warnings && d.warnings.length);
+  const hasIssues = (d.errors && d.errors.length) || (d.warnings && d.warnings.length)
+    || (d.notes && d.notes.length);
   box.style.display = hasIssues ? "block" : "none";
 }
 

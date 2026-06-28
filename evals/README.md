@@ -120,9 +120,13 @@ sensibly and explain**, which is better than silent compliance:
 - *"a wall cabinet with a toe kick"* → **omitted the toe kick**, explaining wall
   cabinets don't have one.
 
-Residual UX gap: these resolutions happen in the spec; the live `woodai design`
-output explains them, but there is no structured "I changed your request
-because X" signal a UI could surface. That's the product decision worth making.
+These resolutions used to happen silently in the spec. They are now surfaced as
+a structured **`design_notes`** signal: the agent reports each assumption and
+each reinterpretation (with the reason), captured on `DesignResult.notes`,
+returned as `notes` from `POST /api/design`, printed by `woodai design`, and
+shown in the web UI as a *"What the AI assumed or changed"* panel with an
+*"N AI changes"* pill — so a silent reinterpretation (a 3 m cabinet becoming a
+run) never goes unnoticed.
 
 ## Reproduce / extend
 
