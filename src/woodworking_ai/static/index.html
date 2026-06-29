@@ -40,7 +40,7 @@
     /* Text */
     --text:  #f2ebe0;
     --muted: #b3a896;
-    --faint: #80776a;
+    --faint: #8d8475;   /* lightened so hint text clears WCAG AA (~4.9:1 on --bg) */
 
     /* Semantic */
     --ok:#7fcf91;  --ok-bg:#1d3a26;
@@ -69,7 +69,7 @@
       --stage-1:#efe4d1; --stage-2:#d9c9ad;
       --wood:#a9651f; --wood-deep:#8a4e16; --accent:#b56a2c; --accent-hi:#a25d23;
       --accent-ink:#fff; --accent-soft:rgba(181,106,44,.12);
-      --text:#2a2118; --muted:#6b5f4f; --faint:#9a8d79;
+      --text:#2a2118; --muted:#6b5f4f; --faint:#7e7159;
       --ok:#2f8a4d; --ok-bg:#dcefe0; --bad:#bb4a3c; --bad-bg:#f6dcd7;
       --warn:#9a7a16; --warn-bg:#f4ead0;
       --sh-1:0 1px 2px rgba(60,40,20,.08); --sh-2:0 6px 18px rgba(60,40,20,.12);
@@ -82,7 +82,7 @@
       --stage-1:#efe4d1; --stage-2:#d9c9ad;
       --wood:#a9651f; --wood-deep:#8a4e16; --accent:#b56a2c; --accent-hi:#a25d23;
       --accent-ink:#fff; --accent-soft:rgba(181,106,44,.12);
-      --text:#2a2118; --muted:#6b5f4f; --faint:#9a8d79;
+      --text:#2a2118; --muted:#6b5f4f; --faint:#7e7159;
       --ok:#2f8a4d; --ok-bg:#dcefe0; --bad:#bb4a3c; --bad-bg:#f6dcd7;
       --warn:#9a7a16; --warn-bg:#f4ead0;
       --sh-1:0 1px 2px rgba(60,40,20,.08); --sh-2:0 6px 18px rgba(60,40,20,.12);
@@ -114,8 +114,15 @@
   /* ---- layout ---- */
   .wrap { display:grid; grid-template-columns:360px 1fr; gap:0;
           height:calc(100vh - 55px); }
-  .controls { padding:18px; overflow-y:auto; background:var(--panel);
-              border-right:1px solid var(--line); }
+  /* Controls split into a scroll region + a pinned footer so the primary
+     "Build design" action is always reachable without scrolling. */
+  .controls { background:var(--panel); border-right:1px solid var(--line);
+              display:flex; flex-direction:column; overflow:hidden; min-height:0; }
+  .controls-scroll { flex:1 1 auto; overflow-y:auto; padding:18px; min-height:0; }
+  .controls-foot { flex:0 0 auto; padding:12px 18px; background:var(--panel);
+              border-top:1px solid var(--line); box-shadow:0 -6px 16px rgba(0,0,0,.16); }
+  .controls-foot #buildBtn { margin-top:0; }
+  .controls-foot .check { margin-top:8px; }
   .preview { display:flex; flex-direction:column; min-width:0; background:var(--bg); }
   .stage { flex:1; display:flex; align-items:center; justify-content:center;
            min-height:240px; position:relative; overflow:hidden;
@@ -259,6 +266,28 @@
   .downloads button.share { background:var(--accent); color:var(--accent-ink);
     border-color:transparent; margin-left:auto; font-weight:600; }
   .downloads button.share:hover { background:var(--accent-hi); }
+  /* The build-package PDF is the hero download — make it read as primary. */
+  .downloads button.primary-dl { background:var(--accent); color:var(--accent-ink);
+    border-color:transparent; font-weight:600; }
+  .downloads button.primary-dl:hover { background:var(--accent-hi); }
+  /* CAD / 3D formats collapsed into a single menu to cut the bar's clutter. */
+  .dropdown { position:relative; display:inline-block; }
+  .dd-toggle { width:auto; margin:0; padding:5px 11px; font-size:12px;
+    background:var(--surface); color:var(--text); border:1px solid var(--line);
+    font-weight:500; box-shadow:none; }
+  .dd-toggle:hover { background:var(--surface-2); border-color:var(--wood); transform:none; }
+  .dd-list { position:absolute; bottom:calc(100% + 6px); left:0; z-index:20;
+    display:none; flex-direction:column; gap:2px; min-width:150px; padding:6px;
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--r-md);
+    box-shadow:var(--sh-2); }
+  .dropdown.open .dd-list { display:flex; }
+  .dd-list button { width:100%; margin:0; text-align:left; justify-content:flex-start;
+    padding:7px 10px; font-size:12.5px; background:transparent; color:var(--text);
+    border:1px solid transparent; box-shadow:none; font-weight:500; }
+  .dd-list button:hover { background:var(--accent-soft); border-color:var(--line);
+    transform:none; }
+  .dd-list .dd-head { color:var(--muted); font-size:10px; text-transform:uppercase;
+    letter-spacing:.05em; padding:4px 10px 2px; }
 
   /* ---- tabs ---- */
   .tabs { display:flex; gap:2px; padding:8px 14px 0; align-items:center;
@@ -411,6 +440,23 @@
     color:var(--muted); }
   .stage .building .spinner { width:34px; height:34px; border-radius:50%;
     border:3px solid var(--line); border-top-color:var(--accent); animation:spin .8s linear infinite; }
+  /* Non-blocking "updating" badge: a live-update rebuild keeps the current
+     model on screen instead of flashing it away to a full-stage spinner. */
+  .working-badge { position:absolute; top:12px; left:12px; z-index:4;
+    display:flex; align-items:center; gap:8px; padding:6px 12px; font-size:12px;
+    color:var(--text); background:rgba(20,16,12,.82); border:1px solid var(--line);
+    border-radius:var(--r-pill); backdrop-filter:blur(8px); box-shadow:var(--sh-1);
+    animation:fadeIn .15s ease; }
+  :root[data-theme="light"] .working-badge,
+  :root:not([data-theme="dark"]) .working-badge { background:rgba(255,253,248,.88); }
+  .working-badge .spinner-sm { width:14px; height:14px; border-radius:50%;
+    border:2px solid var(--line); border-top-color:var(--accent);
+    animation:spin .8s linear infinite; }
+  /* Non-destructive error: keep the last good preview, surface a banner over it. */
+  .err-banner { position:absolute; left:12px; right:12px; bottom:12px; z-index:6;
+    padding:10px 14px; font-size:12.5px; color:var(--bad); background:var(--bad-bg);
+    border:1px solid var(--bad); border-radius:var(--r-md); box-shadow:var(--sh-2);
+    animation:fadeIn .15s ease; }
 
   @media (prefers-reduced-motion: reduce) {
     * { transition:none !important; animation:none !important; }
@@ -419,13 +465,23 @@
   /* --- Responsive: stack the sidebar above the preview on phone/tablet --- */
   @media (max-width: 860px) {
     .wrap { grid-template-columns:1fr; height:auto; min-height:calc(100vh - 55px); }
-    .controls { border-right:none; border-bottom:1px solid var(--line); max-height:none; }
+    /* Sidebar flows with the page on small screens; the build footer sticks to
+       the bottom of the viewport so the CTA stays reachable. */
+    .controls { border-right:none; border-bottom:1px solid var(--line);
+                max-height:none; overflow:visible; display:block; }
+    .controls-scroll { overflow:visible; padding:18px; }
+    .controls-foot { position:sticky; bottom:0; z-index:3; }
     .preview { min-height:72vh; }
     .stage { min-height:46vh; }
     .results { height:auto; }
     .tabs { flex-wrap:wrap; }
     .gallery { grid-template-columns:1fr; }
     header .tag { display:none; }
+    /* Comfortable touch targets (≈44px) for the denser interactive bits. */
+    .tabs button { padding:11px 14px; }
+    .downloads button, .dd-toggle { padding:10px 13px; }
+    .dim-chip { padding:7px 11px; }
+    .offcut-row .rm { width:38px; height:38px; }
   }
   @media (max-width: 480px) {
     .row { flex-wrap:wrap; }
@@ -498,6 +554,7 @@
 </div>
 <div class="wrap">
   <div class="controls">
+    <div class="controls-scroll">
     <details id="galleryWrap" open>
       <summary class="gallery-summary">Start from a project</summary>
       <p class="muted" style="font-size:11px;margin:6px 0">
@@ -639,8 +696,6 @@
       <div id="wallPlan" class="muted" style="font-size:11.5px;margin-top:6px"></div>
     </fieldset>
     </div><!-- /projectFields -->
-    <button id="buildBtn">Build design</button>
-    <div class="check"><input id="auto" type="checkbox" /><label for="auto" style="margin:0">Live update as I change values</label></div>
     <fieldset style="margin-top:14px">
       <legend>Shop standards</legend>
       <details id="standardsDetails">
@@ -769,6 +824,11 @@
       </div>
       <div id="revNote" class="muted" style="font-size:11px;margin-top:6px"></div>
     </fieldset>
+    </div><!-- /controls-scroll -->
+    <div class="controls-foot">
+      <button id="buildBtn">Build design</button>
+      <div class="check"><input id="auto" type="checkbox" /><label for="auto" style="margin:0">Live update as I change values</label></div>
+    </div>
   </div>
 
   <div class="preview">
@@ -800,16 +860,26 @@
       <div class="checks" id="checks" style="display:none"></div>
       <div class="downloads" id="downloads" style="display:none">
         <span class="dl-label">Download:</span>
-        <button data-f="package" title="Everything in one printable PDF: drawings, cut list, hardware, steps">Build package PDF</button>
+        <button data-f="package" class="primary-dl" title="Everything in one printable PDF: drawings, cut list, hardware, steps">Build package PDF</button>
         <button data-f="drawings">Drawings</button>
         <button data-f="cutlist">Cut list</button>
         <button data-f="purchase_order" title="A shopping list of sheets, lumber and hardware to buy">Shopping list</button>
         <button data-f="drilling">Drilling</button>
         <button data-f="template" title="Full-size 1:1 printable template of the largest part (tape, glue, cut to the line)">1:1 template</button>
         <button id="printBtn" type="button" title="Print the current report (cut list, drilling, steps…)">Print</button>
-        <span class="dl-label" title="CAD / 3D interchange formats for SketchUp, Fusion, etc.">CAD:</span>
-        <button data-f="step">STEP</button><button data-f="stl">STL</button>
-        <button data-f="glb">GLB</button><button data-f="dae" title="Collada — imports into SketchUp">DAE</button><button data-f="dxf" title="2D cut layout">DXF</button>
+        <div class="dropdown" id="cadMenu">
+          <button type="button" class="dd-toggle" id="cadToggle" aria-haspopup="true"
+            aria-expanded="false" aria-controls="cadList"
+            title="CAD / 3D interchange formats for SketchUp, Fusion, etc.">CAD / 3D ▾</button>
+          <div class="dd-list" id="cadList" role="menu" aria-label="CAD and 3D export formats">
+            <div class="dd-head">CAD / 3D formats</div>
+            <button data-f="step" role="menuitem">STEP</button>
+            <button data-f="stl" role="menuitem">STL</button>
+            <button data-f="glb" role="menuitem">GLB</button>
+            <button data-f="dae" role="menuitem" title="Collada — imports into SketchUp">DAE — Collada</button>
+            <button data-f="dxf" role="menuitem" title="2D cut layout">DXF — 2D layout</button>
+          </div>
+        </div>
         <button id="shareBtn" class="share">🔗 Share</button>
       </div>
       <div class="tabs" id="tabs" role="tablist" aria-label="Result views">
@@ -1157,10 +1227,32 @@ function specFromForm() {
   };
 }
 
+// True when the stage already shows a built result we can keep on screen.
+function hasPreview() {
+  const s = $("stage");
+  return !!(last && s && s.querySelector("model-viewer, img"));
+}
 function setBusy(b) {
   $("buildBtn").disabled = b; $("designBtn").disabled = b;
-  if (b) $("stage").innerHTML =
-    '<div class="building"><div class="spinner"></div><div>Building your design…</div></div>';
+  const stage = $("stage");
+  if (b) {
+    const bn = $("errBanner"); if (bn) bn.remove();   // clear stale error
+    if (hasPreview()) {
+      // A rebuild (esp. live-update) keeps the current model visible and shows
+      // a small non-blocking badge instead of flashing to a full-stage spinner.
+      if (!$("workingBadge")) {
+        const w = document.createElement("div");
+        w.id = "workingBadge"; w.className = "working-badge";
+        w.innerHTML = '<span class="spinner-sm" aria-hidden="true"></span> Updating…';
+        stage.appendChild(w);
+      }
+    } else {
+      stage.innerHTML =
+        '<div class="building"><div class="spinner"></div><div>Building your design…</div></div>';
+    }
+  } else {
+    const w = $("workingBadge"); if (w) w.remove();
+  }
 }
 async function post(url, body) {
   const r = await fetch(url, {method:"POST", headers:{"Content-Type":"application/json"},
@@ -1215,9 +1307,21 @@ function syncForm(s) {
 }
 function showError(msg) {
   // msg is API error text (may echo user spec data) — keep it as text, not HTML.
-  $("stage").innerHTML = '<div class="ph">⚠ ' + esc(msg) + '</div>';
   $("status").innerHTML =
     '<span class="pill bad">error</span><span>' + esc(msg) + '</span>';
+  const stage = $("stage");
+  const w = $("workingBadge"); if (w) w.remove();
+  if (hasPreview()) {
+    // Keep the last good preview; surface the error as a dismissible banner + toast
+    // rather than wiping the model the user was looking at.
+    let bn = $("errBanner");
+    if (!bn) { bn = document.createElement("div"); bn.id = "errBanner";
+      bn.className = "err-banner"; bn.setAttribute("role", "alert"); stage.appendChild(bn); }
+    bn.textContent = "⚠ " + msg;
+    toast(msg, "bad");
+  } else {
+    stage.innerHTML = '<div class="ph">⚠ ' + esc(msg) + '</div>';
+  }
 }
 
 function render(d) {
@@ -1523,7 +1627,30 @@ async function download(fmt) {
   toast("Downloaded " + (m ? m[1] : fmt), "ok");
 }
 $("downloads").querySelectorAll("button[data-f]").forEach(b =>
-  b.onclick = () => download(b.dataset.f));
+  b.onclick = () => { download(b.dataset.f); closeCadMenu(); });
+
+// --- CAD/3D export dropdown: toggle, outside-click + Esc to close ------------
+function closeCadMenu() {
+  const dd = $("cadMenu"); if (!dd) return;
+  dd.classList.remove("open");
+  $("cadToggle").setAttribute("aria-expanded", "false");
+}
+if ($("cadToggle")) {
+  $("cadToggle").onclick = e => {
+    e.stopPropagation();
+    const dd = $("cadMenu"), open = dd.classList.toggle("open");
+    $("cadToggle").setAttribute("aria-expanded", open ? "true" : "false");
+    if (open) { const first = dd.querySelector(".dd-list button"); if (first) first.focus(); }
+  };
+  document.addEventListener("click", e => {
+    if ($("cadMenu") && !$("cadMenu").contains(e.target)) closeCadMenu();
+  });
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && $("cadMenu") && $("cadMenu").classList.contains("open")) {
+      closeCadMenu(); $("cadToggle").focus();
+    }
+  });
+}
 
 $("shareBtn").onclick = async () => {
   if (!last) return;
@@ -2045,7 +2172,13 @@ function selectTab(b) {
   });
 })();
 // Switching units converts the form inputs and reformats the loaded bundle.
-$("units").onchange = applyUnitChange;
+// Mirror the choice back to the Shop-standards default so the two unit controls
+// (this toggle + "Default units") always agree, rather than drifting apart.
+$("units").onchange = () => {
+  applyUnitChange();
+  const su = $("std_units");
+  if (su) { su.value = unit() === "imperial" ? "in" : "mm"; saveStandards(); }
+};
 
 // --- Pricing editor ----------------------------------------------------------
 // Tune the shop's price book + sheet size. Defaults come from the server; edits
