@@ -4,6 +4,10 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Woodworking AI — Cabinet Designer</title>
+<meta name="description" content="Describe a piece in plain English and get an interactive 3D model, a labelled cut list, a shopping list, shop drawings and a real cost estimate you can build from." />
+<meta name="theme-color" content="#16130f" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#fbf7ef" media="(prefers-color-scheme: light)" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='5' fill='%23c47a3d'/><g fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M4 20h16'/><path d='M6 20V9l6-4 6 4v11'/><path d='M10 20v-5h4v5'/></g></svg>" />
 <!--CONVEX_URL-->
 <script type="module"
   src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
@@ -40,7 +44,7 @@
     /* Text */
     --text:  #f2ebe0;
     --muted: #b3a896;
-    --faint: #80776a;
+    --faint: #8d8475;   /* lightened so hint text clears WCAG AA (~4.9:1 on --bg) */
 
     /* Semantic */
     --ok:#7fcf91;  --ok-bg:#1d3a26;
@@ -69,7 +73,7 @@
       --stage-1:#efe4d1; --stage-2:#d9c9ad;
       --wood:#a9651f; --wood-deep:#8a4e16; --accent:#b56a2c; --accent-hi:#a25d23;
       --accent-ink:#fff; --accent-soft:rgba(181,106,44,.12);
-      --text:#2a2118; --muted:#6b5f4f; --faint:#9a8d79;
+      --text:#2a2118; --muted:#6b5f4f; --faint:#7e7159;
       --ok:#2f8a4d; --ok-bg:#dcefe0; --bad:#bb4a3c; --bad-bg:#f6dcd7;
       --warn:#9a7a16; --warn-bg:#f4ead0;
       --sh-1:0 1px 2px rgba(60,40,20,.08); --sh-2:0 6px 18px rgba(60,40,20,.12);
@@ -82,7 +86,7 @@
       --stage-1:#efe4d1; --stage-2:#d9c9ad;
       --wood:#a9651f; --wood-deep:#8a4e16; --accent:#b56a2c; --accent-hi:#a25d23;
       --accent-ink:#fff; --accent-soft:rgba(181,106,44,.12);
-      --text:#2a2118; --muted:#6b5f4f; --faint:#9a8d79;
+      --text:#2a2118; --muted:#6b5f4f; --faint:#7e7159;
       --ok:#2f8a4d; --ok-bg:#dcefe0; --bad:#bb4a3c; --bad-bg:#f6dcd7;
       --warn:#9a7a16; --warn-bg:#f4ead0;
       --sh-1:0 1px 2px rgba(60,40,20,.08); --sh-2:0 6px 18px rgba(60,40,20,.12);
@@ -93,6 +97,19 @@
   html, body { height:100%; }
   body { margin:0; font:14px/1.55 var(--font-sans); background:var(--bg);
          color:var(--text); -webkit-font-smoothing:antialiased; }
+
+  /* Keyboard skip link: hidden until focused, then slides into the top-left. */
+  .skip-link { position:fixed; left:8px; top:-48px; z-index:100; padding:8px 14px;
+    background:var(--accent); color:var(--accent-ink); border-radius:var(--r-sm);
+    font-weight:600; text-decoration:none; box-shadow:var(--sh-2);
+    transition:top .15s ease; }
+  .skip-link:focus { top:8px; outline:none; box-shadow:0 0 0 3px var(--accent-soft); }
+  .wrap:focus { outline:none; }
+
+  /* Inline icons: stroke-based, currentColor — one visual language with the
+     header mark, instead of cross-platform colour emoji. */
+  .ic-svg { width:15px; height:15px; flex:0 0 auto; }
+  .ic-eye { width:12px; height:12px; vertical-align:-2px; }
 
   /* ---- header / app bar ---- */
   header { padding:12px 20px; background:var(--panel);
@@ -114,8 +131,15 @@
   /* ---- layout ---- */
   .wrap { display:grid; grid-template-columns:360px 1fr; gap:0;
           height:calc(100vh - 55px); }
-  .controls { padding:18px; overflow-y:auto; background:var(--panel);
-              border-right:1px solid var(--line); }
+  /* Controls split into a scroll region + a pinned footer so the primary
+     "Build design" action is always reachable without scrolling. */
+  .controls { background:var(--panel); border-right:1px solid var(--line);
+              display:flex; flex-direction:column; overflow:hidden; min-height:0; }
+  .controls-scroll { flex:1 1 auto; overflow-y:auto; padding:18px; min-height:0; }
+  .controls-foot { flex:0 0 auto; padding:12px 18px; background:var(--panel);
+              border-top:1px solid var(--line); box-shadow:0 -6px 16px rgba(0,0,0,.16); }
+  .controls-foot #buildBtn { margin-top:0; }
+  .controls-foot .check { margin-top:8px; }
   .preview { display:flex; flex-direction:column; min-width:0; background:var(--bg); }
   .stage { flex:1; display:flex; align-items:center; justify-content:center;
            min-height:240px; position:relative; overflow:hidden;
@@ -259,6 +283,28 @@
   .downloads button.share { background:var(--accent); color:var(--accent-ink);
     border-color:transparent; margin-left:auto; font-weight:600; }
   .downloads button.share:hover { background:var(--accent-hi); }
+  /* The build-package PDF is the hero download — make it read as primary. */
+  .downloads button.primary-dl { background:var(--accent); color:var(--accent-ink);
+    border-color:transparent; font-weight:600; }
+  .downloads button.primary-dl:hover { background:var(--accent-hi); }
+  /* CAD / 3D formats collapsed into a single menu to cut the bar's clutter. */
+  .dropdown { position:relative; display:inline-block; }
+  .dd-toggle { width:auto; margin:0; padding:5px 11px; font-size:12px;
+    background:var(--surface); color:var(--text); border:1px solid var(--line);
+    font-weight:500; box-shadow:none; }
+  .dd-toggle:hover { background:var(--surface-2); border-color:var(--wood); transform:none; }
+  .dd-list { position:absolute; bottom:calc(100% + 6px); left:0; z-index:20;
+    display:none; flex-direction:column; gap:2px; min-width:150px; padding:6px;
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--r-md);
+    box-shadow:var(--sh-2); }
+  .dropdown.open .dd-list { display:flex; }
+  .dd-list button { width:100%; margin:0; text-align:left; justify-content:flex-start;
+    padding:7px 10px; font-size:12.5px; background:transparent; color:var(--text);
+    border:1px solid transparent; box-shadow:none; font-weight:500; }
+  .dd-list button:hover { background:var(--accent-soft); border-color:var(--line);
+    transform:none; }
+  .dd-list .dd-head { color:var(--muted); font-size:10px; text-transform:uppercase;
+    letter-spacing:.05em; padding:4px 10px 2px; }
 
   /* ---- tabs ---- */
   .tabs { display:flex; gap:2px; padding:8px 14px 0; align-items:center;
@@ -411,6 +457,23 @@
     color:var(--muted); }
   .stage .building .spinner { width:34px; height:34px; border-radius:50%;
     border:3px solid var(--line); border-top-color:var(--accent); animation:spin .8s linear infinite; }
+  /* Non-blocking "updating" badge: a live-update rebuild keeps the current
+     model on screen instead of flashing it away to a full-stage spinner. */
+  .working-badge { position:absolute; top:12px; left:12px; z-index:4;
+    display:flex; align-items:center; gap:8px; padding:6px 12px; font-size:12px;
+    color:var(--text); background:rgba(20,16,12,.82); border:1px solid var(--line);
+    border-radius:var(--r-pill); backdrop-filter:blur(8px); box-shadow:var(--sh-1);
+    animation:fadeIn .15s ease; }
+  :root[data-theme="light"] .working-badge,
+  :root:not([data-theme="dark"]) .working-badge { background:rgba(255,253,248,.88); }
+  .working-badge .spinner-sm { width:14px; height:14px; border-radius:50%;
+    border:2px solid var(--line); border-top-color:var(--accent);
+    animation:spin .8s linear infinite; }
+  /* Non-destructive error: keep the last good preview, surface a banner over it. */
+  .err-banner { position:absolute; left:12px; right:12px; bottom:12px; z-index:6;
+    padding:10px 14px; font-size:12.5px; color:var(--bad); background:var(--bad-bg);
+    border:1px solid var(--bad); border-radius:var(--r-md); box-shadow:var(--sh-2);
+    animation:fadeIn .15s ease; }
 
   @media (prefers-reduced-motion: reduce) {
     * { transition:none !important; animation:none !important; }
@@ -419,13 +482,23 @@
   /* --- Responsive: stack the sidebar above the preview on phone/tablet --- */
   @media (max-width: 860px) {
     .wrap { grid-template-columns:1fr; height:auto; min-height:calc(100vh - 55px); }
-    .controls { border-right:none; border-bottom:1px solid var(--line); max-height:none; }
+    /* Sidebar flows with the page on small screens; the build footer sticks to
+       the bottom of the viewport so the CTA stays reachable. */
+    .controls { border-right:none; border-bottom:1px solid var(--line);
+                max-height:none; overflow:visible; display:block; }
+    .controls-scroll { overflow:visible; padding:18px; }
+    .controls-foot { position:sticky; bottom:0; z-index:3; }
     .preview { min-height:72vh; }
     .stage { min-height:46vh; }
     .results { height:auto; }
     .tabs { flex-wrap:wrap; }
     .gallery { grid-template-columns:1fr; }
     header .tag { display:none; }
+    /* Comfortable touch targets (≈44px) for the denser interactive bits. */
+    .tabs button { padding:11px 14px; }
+    .downloads button, .dd-toggle { padding:10px 13px; }
+    .dim-chip { padding:7px 11px; }
+    .offcut-row .rm { width:38px; height:38px; }
   }
   @media (max-width: 480px) {
     .row { flex-wrap:wrap; }
@@ -453,6 +526,7 @@
 </style>
 </head>
 <body>
+<a href="#mainContent" class="skip-link">Skip to content</a>
 <header>
   <div class="brand">
     <span class="mark" aria-hidden="true">
@@ -469,9 +543,8 @@
     aria-label="Show the quick start guide">
     <span aria-hidden="true">?</span> Guide
   </button>
-  <button id="themeBtn" class="hdr-btn" type="button" title="Switch light / dark theme"
-    aria-label="Switch light or dark theme">
-    <span id="themeIcon" aria-hidden="true">◐</span> Theme
+  <button id="themeBtn" class="hdr-btn" type="button" title="Theme: System">
+    <span id="themeIcon" aria-hidden="true">◐</span> <span id="themeLabel">System</span>
   </button>
 </header>
 <div id="toasts" aria-live="polite"></div>
@@ -496,8 +569,9 @@
     <button id="welcomeStart" type="button">Start designing</button>
   </div>
 </div>
-<div class="wrap">
+<div class="wrap" id="mainContent" tabindex="-1">
   <div class="controls">
+    <div class="controls-scroll">
     <details id="galleryWrap" open>
       <summary class="gallery-summary">Start from a project</summary>
       <p class="muted" style="font-size:11px;margin:6px 0">
@@ -506,12 +580,12 @@
     </details>
     <fieldset>
       <legend>Describe it</legend>
-      <textarea id="prompt" placeholder="e.g. 36 inch sink base, two shaker doors, soft-close, one shelf — or &quot;a 4-foot oak bookcase, 5 shelves&quot;"></textarea>
+      <textarea id="prompt" aria-label="Describe the piece in plain English" placeholder="e.g. 36 inch sink base, two shaker doors, soft-close, one shelf — or &quot;a 4-foot oak bookcase, 5 shelves&quot;"></textarea>
       <button id="designBtn" class="secondary">Design with AI</button>
       <div id="llmNote" class="muted" style="font-size:11px;margin-top:6px"></div>
     </fieldset>
     <div class="or">— or build from parameters —</div>
-    <label>Furniture</label>
+    <label for="furniture">Furniture</label>
     <select id="furniture">
       <option value="cabinet">Cabinet</option>
       <option value="table">Table</option>
@@ -520,9 +594,9 @@
     <div id="cabinetFields">
     <fieldset>
       <legend>Cabinet</legend>
-      <label>Name</label><input id="name" value="My Cabinet" />
+      <label for="name">Name</label><input id="name" value="My Cabinet" />
       <div class="row">
-        <div><label>Type</label>
+        <div><label for="cabinet_type">Type</label>
           <select id="cabinet_type">
             <option value="base">Base</option>
             <option value="wall">Wall</option>
@@ -532,32 +606,31 @@
             <option value="corner_blind">Corner — blind</option>
             <option value="corner_diagonal">Corner — diagonal</option>
           </select></div>
-        <div><label>Construction</label>
+        <div><label for="construction">Construction</label>
           <select id="construction">
             <option value="frameless">Frameless</option>
             <option value="face_frame">Face frame</option>
           </select></div>
       </div>
       <div class="row">
-        <div><label>Width (<span class="ulen">mm</span>)</label><input id="width" type="number" value="600" /></div>
-        <div><label>Height (<span class="ulen">mm</span>)</label><input id="height" type="number" value="720" /></div>
-        <div><label>Depth (<span class="ulen">mm</span>)</label><input id="depth" type="number" value="560" /></div>
+        <div><label for="width">Width (<span class="ulen">mm</span>)</label><input id="width" type="number" value="600" /></div>
+        <div><label for="height">Height (<span class="ulen">mm</span>)</label><input id="height" type="number" value="720" /></div>
+        <div><label for="depth">Depth (<span class="ulen">mm</span>)</label><input id="depth" type="number" value="560" /></div>
       </div>
     </fieldset>
     <fieldset>
       <legend>Fronts</legend>
       <div class="row">
-        <div><label>Doors</label>
-          <select id="doors"><option>0</option><option>1</option><option selected>2</option></select></div>
-        <div><label>Drawers</label><input id="drawers" type="number" value="0" min="0" /></div>
-        <div><label>Shelves</label><input id="shelves" type="number" value="1" min="0" /></div>
+        <div><label for="doors">Doors</label><input id="doors" type="number" value="2" min="0" max="4" /></div>
+        <div><label for="drawers">Drawers</label><input id="drawers" type="number" value="0" min="0" /></div>
+        <div><label for="shelves">Shelves</label><input id="shelves" type="number" value="1" min="0" /></div>
       </div>
       <div class="row">
-        <div><label>Reveal (<span class="ulen">mm</span>)</label><input id="reveal" type="number" value="3" /></div>
-        <div><label>Toe kick (<span class="ulen">mm</span>, 0=none)</label><input id="toe" type="number" value="100" /></div>
+        <div><label for="reveal">Reveal (<span class="ulen">mm</span>)</label><input id="reveal" type="number" value="3" /></div>
+        <div><label for="toe">Toe kick (<span class="ulen">mm</span>, 0=none)</label><input id="toe" type="number" value="100" /></div>
       </div>
       <div class="row">
-        <div><label>Door style</label>
+        <div><label for="door_style">Door style</label>
           <select id="door_style">
             <option value="slab">Slab</option>
             <option value="shaker">Shaker (5-piece)</option>
@@ -566,7 +639,7 @@
           </select></div>
       </div>
       <div class="row">
-        <div><label>Finish</label>
+        <div><label for="finish">Finish</label>
           <select id="finish">
             <option value="none">Unfinished</option>
             <option value="oil">Oil / hardwax</option>
@@ -575,28 +648,28 @@
             <option value="paint">Paint</option>
           </select></div>
       </div>
-      <div class="check"><input id="mullion" type="checkbox" /><label style="margin:0">Center mullion</label></div>
-      <div id="blindWrap" style="display:none"><label>Blind width (<span class="ulen">mm</span>)</label><input id="blind_width" type="number" value="350" /></div>
-      <div id="diagWrap" style="display:none"><label>Corner cut (<span class="ulen">mm</span>)</label><input id="corner_cut" type="number" value="450" /></div>
+      <div class="check"><input id="mullion" type="checkbox" /><label for="mullion" style="margin:0">Center mullion</label></div>
+      <div id="blindWrap" style="display:none"><label for="blind_width">Blind width (<span class="ulen">mm</span>)</label><input id="blind_width" type="number" value="350" /></div>
+      <div id="diagWrap" style="display:none"><label for="corner_cut">Corner cut (<span class="ulen">mm</span>)</label><input id="corner_cut" type="number" value="450" /></div>
     </fieldset>
     </div><!-- /cabinetFields -->
     <div id="tableFields" style="display:none">
     <fieldset>
       <legend>Table</legend>
-      <label>Name</label><input id="t_name" value="My Table" />
+      <label for="t_name">Name</label><input id="t_name" value="My Table" />
       <div class="row">
-        <div><label>Length (<span class="ulen">mm</span>)</label><input id="t_width" type="number" value="1400" /></div>
-        <div><label>Depth (<span class="ulen">mm</span>)</label><input id="t_depth" type="number" value="800" /></div>
-        <div><label>Height (<span class="ulen">mm</span>)</label><input id="t_height" type="number" value="740" /></div>
+        <div><label for="t_width">Length (<span class="ulen">mm</span>)</label><input id="t_width" type="number" value="1400" /></div>
+        <div><label for="t_depth">Depth (<span class="ulen">mm</span>)</label><input id="t_depth" type="number" value="800" /></div>
+        <div><label for="t_height">Height (<span class="ulen">mm</span>)</label><input id="t_height" type="number" value="740" /></div>
       </div>
       <div class="row">
-        <div><label>Top thk (<span class="ulen">mm</span>)</label><input id="t_top" type="number" value="25" /></div>
-        <div><label>Leg sq (<span class="ulen">mm</span>)</label><input id="t_leg" type="number" value="60" /></div>
-        <div><label>Leg inset (<span class="ulen">mm</span>)</label><input id="t_inset" type="number" value="40" /></div>
+        <div><label for="t_top">Top thk (<span class="ulen">mm</span>)</label><input id="t_top" type="number" value="25" /></div>
+        <div><label for="t_leg">Leg sq (<span class="ulen">mm</span>)</label><input id="t_leg" type="number" value="60" /></div>
+        <div><label for="t_inset">Leg inset (<span class="ulen">mm</span>)</label><input id="t_inset" type="number" value="40" /></div>
       </div>
       <div class="row">
-        <div><label>Apron ht (<span class="ulen">mm</span>)</label><input id="t_apronh" type="number" value="90" /></div>
-        <div><label>Apron thk (<span class="ulen">mm</span>)</label><input id="t_apront" type="number" value="20" /></div>
+        <div><label for="t_apronh">Apron ht (<span class="ulen">mm</span>)</label><input id="t_apronh" type="number" value="90" /></div>
+        <div><label for="t_apront">Apron thk (<span class="ulen">mm</span>)</label><input id="t_apront" type="number" value="20" /></div>
       </div>
     </fieldset>
     </div><!-- /tableFields -->
@@ -613,7 +686,7 @@
         Build to get one combined cut list, quote, drilling schedule, and an
         assembled view.</p>
       <div class="row" style="align-items:end">
-        <div><label>Load example</label>
+        <div><label for="projectSample">Load example</label>
           <select id="projectSample">
             <option value="run">L-kitchen run</option>
             <option value="reuse">Reuse a sub-assembly (definitions + ref)</option>
@@ -622,7 +695,7 @@
         <div style="flex:0 0 auto"><button id="formatJson" class="secondary"
           type="button" style="white-space:nowrap">↵ Format</button></div>
       </div>
-      <textarea id="projectJson"
+      <textarea id="projectJson" aria-label="Project and sub-assembly JSON"
         style="height:220px;font-family:ui-monospace,Menlo,monospace;font-size:11px"></textarea>
     </fieldset>
     <fieldset>
@@ -631,16 +704,14 @@
         Fit this run to a real wall: get the filler width and scribe notes for an
         out-of-square / out-of-level room.</p>
       <div class="row">
-        <div><label>Wall length (mm)</label><input id="wall_len" type="number" value="3658" /></div>
-        <div><label>Floor drop (mm)</label><input id="floor_drop" type="number" value="0" /></div>
-        <div><label>Out of square (mm)</label><input id="out_sq" type="number" value="0" /></div>
+        <div><label for="wall_len">Wall length (mm)</label><input id="wall_len" type="number" value="3658" /></div>
+        <div><label for="floor_drop">Floor drop (mm)</label><input id="floor_drop" type="number" value="0" /></div>
+        <div><label for="out_sq">Out of square (mm)</label><input id="out_sq" type="number" value="0" /></div>
       </div>
-      <button id="planWallBtn" class="secondary" type="button">📐 Plan run to wall</button>
+      <button id="planWallBtn" class="secondary" type="button"><svg class="ic-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.3 8.7 8.7 21.3a1 1 0 0 1-1.4 0l-4.6-4.6a1 1 0 0 1 0-1.4L15.3 2.7a1 1 0 0 1 1.4 0l4.6 4.6a1 1 0 0 1 0 1.4Z"/><path d="m7.5 10.5 2 2"/><path d="m10.5 7.5 2 2"/><path d="m13.5 4.5 2 2"/><path d="m4.5 13.5 2 2"/></svg> Plan run to wall</button>
       <div id="wallPlan" class="muted" style="font-size:11.5px;margin-top:6px"></div>
     </fieldset>
     </div><!-- /projectFields -->
-    <button id="buildBtn">Build design</button>
-    <div class="check"><input id="auto" type="checkbox" /><label style="margin:0">Live update as I change values</label></div>
     <fieldset style="margin-top:14px">
       <legend>Shop standards</legend>
       <details id="standardsDetails">
@@ -649,12 +720,12 @@
           Applied to any field a design leaves unset (AI, project JSON, or API),
           so work comes out in your standards. Saved in this browser.</p>
         <div class="row">
-          <div><label>Construction</label>
+          <div><label for="std_construction">Construction</label>
             <select id="std_construction">
               <option value="frameless">Frameless</option>
               <option value="face_frame">Face frame</option>
             </select></div>
-          <div><label>Hardware brand</label>
+          <div><label for="std_hardware_brand">Hardware brand</label>
             <select id="std_hardware_brand">
               <option value="generic">Generic</option>
               <option value="blum">Blum</option>
@@ -663,13 +734,13 @@
             </select></div>
         </div>
         <div class="row">
-          <div><label>Back</label>
+          <div><label for="std_back">Back</label>
             <select id="std_back">
               <option value="rabbeted">Rabbeted</option>
               <option value="applied">Applied</option>
               <option value="grooved">Grooved</option>
             </select></div>
-          <div><label>Joinery</label>
+          <div><label for="std_joinery">Joinery</label>
             <select id="std_joinery">
               <option value="dado">Dado</option>
               <option value="rabbet">Rabbet</option>
@@ -680,11 +751,11 @@
             </select></div>
         </div>
         <div class="row">
-          <div><label>Reveal (mm)</label><input id="std_reveal" type="number" value="3" step="0.5" /></div>
-          <div><label>Carcass thk (mm)</label><input id="std_carcass" type="number" value="18" step="1" /></div>
+          <div><label for="std_reveal">Reveal (mm)</label><input id="std_reveal" type="number" value="3" step="0.5" /></div>
+          <div><label for="std_carcass">Carcass thk (mm)</label><input id="std_carcass" type="number" value="18" step="1" /></div>
         </div>
         <div class="row">
-          <div><label>Default units</label>
+          <div><label for="std_units">Default units</label>
             <select id="std_units" title="The display unit cut lists & reports open in (the engine stays millimetre-native)">
               <option value="mm">Millimetres</option>
               <option value="in">Inches (fractional)</option>
@@ -692,7 +763,7 @@
           <div></div>
         </div>
         <div class="check"><input id="std_combine" type="checkbox" checked />
-          <label style="margin:0" title="Nest all same-thickness parts onto shared sheets, instead of a separate sheet per product">One grade of sheet stock — nest same-thickness parts together</label></div>
+          <label for="std_combine" style="margin:0" title="Nest all same-thickness parts onto shared sheets, instead of a separate sheet per product">One grade of sheet stock — nest same-thickness parts together</label></div>
         <p class="muted" style="font-size:11px;margin:6px 0 0">
           On: buy one grade of ply for the whole build, so carcass, backs and
           fronts of the same thickness share sheets (fewer sheets, fuller). Off:
@@ -708,9 +779,9 @@
           unmakeable joint is flagged with a substitute you <em>can</em> make.
           See the <b>Tools</b> tab for the checklist. Saved in this browser.</p>
         <div class="check"><input id="tool_enable" type="checkbox" />
-          <label style="margin:0">Only design with tools I own</label></div>
+          <label for="tool_enable" style="margin:0">Only design with tools I own</label></div>
         <div id="toolingBody" style="margin-top:8px">
-          <label>Start from a preset</label>
+          <label for="tool_preset">Start from a preset</label>
           <select id="tool_preset">
             <option value="">Custom</option>
             <option value="hand">Hand tools only</option>
@@ -753,15 +824,15 @@
     </fieldset>
     <fieldset style="margin-top:14px">
       <legend>Library</legend>
-      <button id="saveBtn" class="secondary">💾 Save current design</button>
-      <label>Saved designs</label>
+      <button id="saveBtn" class="secondary"><svg class="ic-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save current design</button>
+      <label for="savedList">Saved designs</label>
       <select id="savedList"><option value="">— none —</option></select>
       <div class="row" style="margin-top:8px">
         <div><button id="loadBtn" class="secondary">Load</button></div>
         <div><button id="delBtn" class="secondary">Delete</button></div>
       </div>
       <div id="storeNote" class="muted" style="font-size:11px;margin-top:6px"></div>
-      <label style="margin-top:10px">Revisions (this design)</label>
+      <label for="revList" style="margin-top:10px">Revisions (this design)</label>
       <select id="revList"><option value="">— none —</option></select>
       <div class="row" style="margin-top:8px">
         <div><button id="revLoadBtn" class="secondary">Load revision</button></div>
@@ -769,6 +840,11 @@
       </div>
       <div id="revNote" class="muted" style="font-size:11px;margin-top:6px"></div>
     </fieldset>
+    </div><!-- /controls-scroll -->
+    <div class="controls-foot">
+      <button id="buildBtn">Build design</button>
+      <div class="check"><input id="auto" type="checkbox" /><label for="auto" style="margin:0">Live update as I change values</label></div>
+    </div>
   </div>
 
   <div class="preview">
@@ -800,19 +876,29 @@
       <div class="checks" id="checks" style="display:none"></div>
       <div class="downloads" id="downloads" style="display:none">
         <span class="dl-label">Download:</span>
-        <button data-f="package" title="Everything in one printable PDF: drawings, cut list, hardware, steps">Build package PDF</button>
+        <button data-f="package" class="primary-dl" title="Everything in one printable PDF: drawings, cut list, hardware, steps">Build package PDF</button>
         <button data-f="drawings">Drawings</button>
         <button data-f="cutlist">Cut list</button>
         <button data-f="purchase_order" title="A shopping list of sheets, lumber and hardware to buy">Shopping list</button>
         <button data-f="drilling">Drilling</button>
         <button data-f="template" title="Full-size 1:1 printable template of the largest part (tape, glue, cut to the line)">1:1 template</button>
         <button id="printBtn" type="button" title="Print the current report (cut list, drilling, steps…)">Print</button>
-        <span class="dl-label" title="CAD / 3D interchange formats for SketchUp, Fusion, etc.">CAD:</span>
-        <button data-f="step">STEP</button><button data-f="stl">STL</button>
-        <button data-f="glb">GLB</button><button data-f="dae" title="Collada — imports into SketchUp">DAE</button><button data-f="dxf" title="2D cut layout">DXF</button>
-        <button id="shareBtn" class="share">🔗 Share</button>
+        <div class="dropdown" id="cadMenu">
+          <button type="button" class="dd-toggle" id="cadToggle" aria-haspopup="true"
+            aria-expanded="false" aria-controls="cadList"
+            title="CAD / 3D interchange formats for SketchUp, Fusion, etc.">CAD / 3D ▾</button>
+          <div class="dd-list" id="cadList" role="menu" aria-label="CAD and 3D export formats">
+            <div class="dd-head">CAD / 3D formats</div>
+            <button data-f="step" role="menuitem">STEP</button>
+            <button data-f="stl" role="menuitem">STL</button>
+            <button data-f="glb" role="menuitem">GLB</button>
+            <button data-f="dae" role="menuitem" title="Collada — imports into SketchUp">DAE — Collada</button>
+            <button data-f="dxf" role="menuitem" title="2D cut layout">DXF — 2D layout</button>
+          </div>
+        </div>
+        <button id="shareBtn" class="share"><svg class="ic-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" y1="12" x2="16" y2="12"/></svg> <span id="shareLabel">Share</span></button>
       </div>
-      <div class="tabs" id="tabs">
+      <div class="tabs" id="tabs" role="tablist" aria-label="Result views">
         <button data-t="cutlist" class="active">Cut list</button>
         <button data-t="drawings">Drawings</button>
         <button data-t="steps">Build steps</button>
@@ -847,6 +933,12 @@ function esc(s) {
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 let last = null, tab = "cutlist";
+// Stroke "eye" icon (matches the header mark's visual language) for the
+// in-pane "Show in 3D" affordance, instead of a cross-platform colour emoji.
+const ICON_EYE = '<svg class="ic-eye" viewBox="0 0 24 24" fill="none" ' +
+  'stroke="currentColor" stroke-width="2" stroke-linecap="round" ' +
+  'stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 ' +
+  '7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
 let _walkTimer = null;   // assembly-walkthrough auto-advance timer (G2a)
 
 // --- toasts: brief, non-blocking confirmation for downloads/saves/errors -----
@@ -860,6 +952,83 @@ function toast(msg, kind) {
     setTimeout(() => el.remove(), 300); }, 2600);
 }
 
+// --- accessible modal dialogs (replace native prompt()/confirm()) -----------
+// Promise-based dialogs reusing the .modal styling, with a focus trap and focus
+// restore — so naming a design, editing a dimension, confirming a delete, or
+// showing a share link stay inside the app's visual + accessibility language
+// instead of dropping to an unstyled, hard-to-reach native browser dialog.
+function focusablesIn(el) {
+  return el.querySelectorAll(
+    'a[href],button:not([disabled]),input:not([disabled]),' +
+    'select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])');
+}
+function trapTab(e, container) {
+  if (e.key !== "Tab" || !container) return;
+  const f = focusablesIn(container); if (!f.length) return;
+  const first = f[0], lastEl = f[f.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); lastEl.focus(); }
+  else if (!e.shiftKey && document.activeElement === lastEl) { e.preventDefault(); first.focus(); }
+}
+function openModal(contentEl, { initialFocus } = {}) {
+  const prev = document.activeElement;          // restore focus to the trigger on close
+  const backdrop = document.createElement("div");
+  backdrop.className = "modal-backdrop";
+  backdrop.setAttribute("role", "dialog");
+  backdrop.setAttribute("aria-modal", "true");
+  backdrop.appendChild(contentEl);
+  document.body.appendChild(backdrop);
+  backdrop.addEventListener("keydown", e => trapTab(e, contentEl));
+  const close = () => { backdrop.remove(); if (prev && prev.focus) prev.focus(); };
+  (initialFocus || focusablesIn(contentEl)[0] || backdrop).focus();
+  return { backdrop, close };
+}
+function uiPrompt(message, value = "") {
+  return new Promise(resolve => {
+    const box = document.createElement("div");
+    box.className = "modal";
+    box.innerHTML =
+      `<h2 id="dlgTitle" style="font-size:17px">${esc(message)}</h2>` +
+      `<input id="dlgInput" style="margin:4px 0 16px" />` +
+      `<div style="display:flex;gap:8px;justify-content:flex-end">` +
+        `<button class="secondary" data-act="cancel" style="width:auto">Cancel</button>` +
+        `<button data-act="ok" style="width:auto">OK</button></div>`;
+    const input = box.querySelector("#dlgInput");
+    const { backdrop, close } = openModal(box, { initialFocus: input });
+    backdrop.setAttribute("aria-labelledby", "dlgTitle");
+    input.value = value == null ? "" : value;
+    input.select();
+    const done = v => { close(); resolve(v); };
+    box.querySelector('[data-act="ok"]').onclick = () => done(input.value);
+    box.querySelector('[data-act="cancel"]').onclick = () => done(null);
+    backdrop.addEventListener("click", e => { if (e.target === backdrop) done(null); });
+    backdrop.addEventListener("keydown", e => {
+      if (e.key === "Escape") done(null);
+      else if (e.key === "Enter" && document.activeElement === input) done(input.value);
+    });
+  });
+}
+function uiConfirm(title, message) {
+  return new Promise(resolve => {
+    const box = document.createElement("div");
+    box.className = "modal";
+    box.innerHTML =
+      `<h2 id="dlgTitle" style="font-size:17px">${esc(title)}</h2>` +
+      (message ? `<p class="modal-sub">${esc(message)}</p>` : "") +
+      `<div style="display:flex;gap:8px;justify-content:flex-end">` +
+        `<button class="secondary" data-act="cancel" style="width:auto">Cancel</button>` +
+        `<button data-act="ok" style="width:auto">OK</button></div>`;
+    const cancelBtn = box.querySelector('[data-act="cancel"]');
+    // Focus Cancel by default — this guards destructive actions (e.g. delete).
+    const { backdrop, close } = openModal(box, { initialFocus: cancelBtn });
+    backdrop.setAttribute("aria-labelledby", "dlgTitle");
+    const done = v => { close(); resolve(v); };
+    box.querySelector('[data-act="ok"]').onclick = () => done(true);
+    cancelBtn.onclick = () => done(false);
+    backdrop.addEventListener("click", e => { if (e.target === backdrop) done(false); });
+    backdrop.addEventListener("keydown", e => { if (e.key === "Escape") done(false); });
+  });
+}
+
 // --- light / dark theme toggle (system default, overridable, remembered) -----
 const THEME_LS = "woodai_theme";
 function applyTheme(t) {
@@ -868,6 +1037,16 @@ function applyTheme(t) {
   else root.removeAttribute("data-theme");
   const icon = $("themeIcon");
   if (icon) icon.textContent = t === "light" ? "☀" : t === "dark" ? "☾" : "◐";
+  // Make the current mode legible (icon alone doesn't say which of three it is)
+  // and name the next mode in the cycle (system → dark → light → system).
+  const cur = t === "light" ? "Light" : t === "dark" ? "Dark" : "System";
+  const next = t === "" ? "Dark" : t === "dark" ? "Light" : "System";
+  const lbl = $("themeLabel"); if (lbl) lbl.textContent = cur;
+  const btn = $("themeBtn");
+  if (btn) {
+    btn.title = `Theme: ${cur} — switch to ${next}`;
+    btn.setAttribute("aria-label", `Theme: ${cur}. Switch to ${next}.`);
+  }
 }
 (function initTheme() {
   applyTheme(localStorage.getItem(THEME_LS) || "");
@@ -882,9 +1061,12 @@ if ($("themeBtn")) $("themeBtn").onclick = () => {
 
 // --- first-run guide: show once, reopenable from the header, Esc to close ----
 const WELCOME_LS = "woodai_welcome_seen";
+let _welcomePrev = null;
 function showWelcome() { const w = $("welcome"); if (!w) return;
+  _welcomePrev = document.activeElement;            // restore focus to opener on close
   w.style.display = "flex"; const b = $("welcomeStart"); if (b) b.focus(); }
 function hideWelcome() { const w = $("welcome"); if (w) w.style.display = "none";
+  if (_welcomePrev && _welcomePrev.focus) _welcomePrev.focus();
   try { localStorage.setItem(WELCOME_LS, "1"); } catch (e) {} }
 if ($("welcomeStart")) $("welcomeStart").onclick = hideWelcome;
 if ($("welcomeClose")) $("welcomeClose").onclick = hideWelcome;
@@ -893,8 +1075,10 @@ if ($("welcome")) $("welcome").addEventListener("click", e => {
   if (e.target === $("welcome")) hideWelcome();   // click backdrop to dismiss
 });
 document.addEventListener("keydown", e => {
-  if (e.key === "Escape" && $("welcome") && $("welcome").style.display !== "none")
-    hideWelcome();
+  const w = $("welcome");
+  if (!w || w.style.display === "none") return;
+  if (e.key === "Escape") hideWelcome();
+  else trapTab(e, w.querySelector(".modal"));      // keep Tab inside the dialog
 });
 try { if (!localStorage.getItem(WELCOME_LS)) showWelcome(); } catch (e) {}
 
@@ -1075,10 +1259,32 @@ function specFromForm() {
   };
 }
 
+// True when the stage already shows a built result we can keep on screen.
+function hasPreview() {
+  const s = $("stage");
+  return !!(last && s && s.querySelector("model-viewer, img"));
+}
 function setBusy(b) {
   $("buildBtn").disabled = b; $("designBtn").disabled = b;
-  if (b) $("stage").innerHTML =
-    '<div class="building"><div class="spinner"></div><div>Building your design…</div></div>';
+  const stage = $("stage");
+  if (b) {
+    const bn = $("errBanner"); if (bn) bn.remove();   // clear stale error
+    if (hasPreview()) {
+      // A rebuild (esp. live-update) keeps the current model visible and shows
+      // a small non-blocking badge instead of flashing to a full-stage spinner.
+      if (!$("workingBadge")) {
+        const w = document.createElement("div");
+        w.id = "workingBadge"; w.className = "working-badge";
+        w.innerHTML = '<span class="spinner-sm" aria-hidden="true"></span> Updating…';
+        stage.appendChild(w);
+      }
+    } else {
+      stage.innerHTML =
+        '<div class="building"><div class="spinner"></div><div>Building your design…</div></div>';
+    }
+  } else {
+    const w = $("workingBadge"); if (w) w.remove();
+  }
 }
 async function post(url, body) {
   const r = await fetch(url, {method:"POST", headers:{"Content-Type":"application/json"},
@@ -1133,9 +1339,21 @@ function syncForm(s) {
 }
 function showError(msg) {
   // msg is API error text (may echo user spec data) — keep it as text, not HTML.
-  $("stage").innerHTML = '<div class="ph">⚠ ' + esc(msg) + '</div>';
   $("status").innerHTML =
     '<span class="pill bad">error</span><span>' + esc(msg) + '</span>';
+  const stage = $("stage");
+  const w = $("workingBadge"); if (w) w.remove();
+  if (hasPreview()) {
+    // Keep the last good preview; surface the error as a dismissible banner + toast
+    // rather than wiping the model the user was looking at.
+    let bn = $("errBanner");
+    if (!bn) { bn = document.createElement("div"); bn.id = "errBanner";
+      bn.className = "err-banner"; bn.setAttribute("role", "alert"); stage.appendChild(bn); }
+    bn.textContent = "⚠ " + msg;
+    toast(msg, "bad");
+  } else {
+    stage.innerHTML = '<div class="ph">⚠ ' + esc(msg) + '</div>';
+  }
 }
 
 function render(d) {
@@ -1345,13 +1563,17 @@ function addDimOverlay(d) {
     chips.join("") + `<span class="dim-unit muted">${unitLabel()}</span>`;
   stage.appendChild(el);
   el.querySelectorAll(".dim-chip").forEach(chip => {
+    chip.setAttribute("role", "button");
+    chip.tabIndex = 0;
     chip.onclick = () => editDimension(chip.dataset.key);
+    chip.onkeydown = e => { if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault(); editDimension(chip.dataset.key); } };
   });
 }
 async function editDimension(key) {
   if (!last || !last.spec || typeof last.spec[key] !== "number") return;
   const cur = roundDisp(dispFromMM(last.spec[key]));
-  const ans = prompt(`New ${key} (${unitLabel()}):`, cur);
+  const ans = await uiPrompt(`New ${key} (${unitLabel()}):`, cur);
   if (ans == null) return;
   const v = parseFloat(ans);
   if (!isFinite(v) || v <= 0) { showError("Enter a positive number."); return; }
@@ -1437,15 +1659,39 @@ async function download(fmt) {
   toast("Downloaded " + (m ? m[1] : fmt), "ok");
 }
 $("downloads").querySelectorAll("button[data-f]").forEach(b =>
-  b.onclick = () => download(b.dataset.f));
+  b.onclick = () => { download(b.dataset.f); closeCadMenu(); });
+
+// --- CAD/3D export dropdown: toggle, outside-click + Esc to close ------------
+function closeCadMenu() {
+  const dd = $("cadMenu"); if (!dd) return;
+  dd.classList.remove("open");
+  $("cadToggle").setAttribute("aria-expanded", "false");
+}
+if ($("cadToggle")) {
+  $("cadToggle").onclick = e => {
+    e.stopPropagation();
+    const dd = $("cadMenu"), open = dd.classList.toggle("open");
+    $("cadToggle").setAttribute("aria-expanded", open ? "true" : "false");
+    if (open) { const first = dd.querySelector(".dd-list button"); if (first) first.focus(); }
+  };
+  document.addEventListener("click", e => {
+    if ($("cadMenu") && !$("cadMenu").contains(e.target)) closeCadMenu();
+  });
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && $("cadMenu") && $("cadMenu").classList.contains("open")) {
+      closeCadMenu(); $("cadToggle").focus();
+    }
+  });
+}
 
 $("shareBtn").onclick = async () => {
   if (!last) return;
   const enc = btoa(unescape(encodeURIComponent(JSON.stringify(last.spec))));
   const url = location.origin + location.pathname + "#spec=" + enc;
-  try { await navigator.clipboard.writeText(url); $("shareBtn").textContent = "✓ Copied"; }
-  catch { prompt("Share link:", url); }
-  setTimeout(() => $("shareBtn").textContent = "🔗 Share", 1500);
+  const lbl = $("shareLabel");
+  try { await navigator.clipboard.writeText(url); if (lbl) lbl.textContent = "Copied"; }
+  catch { uiPrompt("Copy this share link:", url); }
+  setTimeout(() => { if (lbl) lbl.textContent = "Share"; }, 1500);
   history.replaceState(null, "", "#spec=" + enc);
 };
 // Print the active report (the print stylesheet hides the app chrome + 3D).
@@ -1552,12 +1798,12 @@ function paint() {
     const sections = d.model_sections || [];
     h = subs.length ? `<p class="muted" style="font-size:11.5px;margin:0 0 8px">
         Build each sub-assembly, then bring them together in Final assembly.${
-          sections.length > 1 ? ' Click <b>👁 Show in 3D</b> to isolate a sub-assembly in the preview.' : ''}</p>` +
+          sections.length > 1 ? ` Click <b>${ICON_EYE} Show in 3D</b> to isolate a sub-assembly in the preview.` : ''}</p>` +
       subs.map(sub => {
         const sids = (sub.part_ids||[]).length ? ` <span class="muted" style="font-size:11px">[${esc(sub.part_ids.join(", "))}]</span>` : "";
         const canShow = sections.some(s => s.toLowerCase() === (sub.name||"").toLowerCase());
-        const show = canShow ? ` <span class="step-show muted" style="font-size:11px"
-          onclick="showSectionInModel('${esc((sub.name||'').replace(/'/g,"\\'"))}')">👁 Show in 3D</span>` : "";
+        const show = canShow ? ` <span class="step-show muted" role="button" tabindex="0" style="font-size:11px"
+          onclick="showSectionInModel('${esc((sub.name||'').replace(/'/g,"\\'"))}')">${ICON_EYE} Show in 3D</span>` : "";
         const steps = (sub.steps||[]).map(s => {
           const ids = (s.part_ids||[]).length ? ` <span class="muted">[${esc(s.part_ids.join(", "))}]</span>` : "";
           const hw = (s.hardware||[]).length ? `<div class="muted" style="font-size:11px">↳ ${esc(s.hardware.join(", "))}</div>` : "";
@@ -1911,13 +2157,61 @@ function table(cols, rows) {
   }).join("") + "</tr>").join("");
   return `<table><thead><tr>${th}</tr></thead><tbody>${body}</tbody></table>`;
 }
-$("tabs").querySelectorAll("button").forEach(b => b.onclick = () => {
+// Tabs as an ARIA tablist: roving tabindex, aria-selected, and arrow-key nav.
+function selectTab(b) {
   tab = b.dataset.t;
-  $("tabs").querySelectorAll("button").forEach(x=>x.classList.toggle("active", x===b));
+  $("tabs").querySelectorAll("button[data-t]").forEach(x => {
+    const on = x === b;
+    x.classList.toggle("active", on);
+    x.setAttribute("aria-selected", on ? "true" : "false");
+    x.tabIndex = on ? 0 : -1;
+  });
+  $("pane").setAttribute("aria-labelledby", b.id);
   paint();
-});
+}
+(function initTabs() {
+  const tabsList = $("tabs").querySelectorAll("button[data-t]");
+  tabsList.forEach(b => {
+    b.setAttribute("role", "tab");
+    b.id = "tab-" + b.dataset.t;
+    b.setAttribute("aria-controls", "pane");
+    const on = b.classList.contains("active");
+    b.setAttribute("aria-selected", on ? "true" : "false");
+    b.tabIndex = on ? 0 : -1;
+    b.onclick = () => selectTab(b);
+  });
+  const pane = $("pane");
+  pane.setAttribute("role", "tabpanel");
+  pane.setAttribute("tabindex", "0");
+  const active = $("tabs").querySelector('button[data-t].active');
+  if (active) pane.setAttribute("aria-labelledby", active.id);
+  $("tabs").addEventListener("keydown", e => {
+    if (!["ArrowRight", "ArrowLeft", "Home", "End"].includes(e.key)) return;
+    const arr = [...$("tabs").querySelectorAll("button[data-t]")];
+    let i = arr.indexOf(document.activeElement);
+    if (i < 0) return;
+    e.preventDefault();
+    if (e.key === "ArrowRight") i = (i + 1) % arr.length;
+    else if (e.key === "ArrowLeft") i = (i - 1 + arr.length) % arr.length;
+    else if (e.key === "Home") i = 0;
+    else i = arr.length - 1;
+    arr[i].focus(); selectTab(arr[i]);
+  });
+  // Keyboard activation for the "Show in 3D" spans rendered into the pane.
+  pane.addEventListener("keydown", e => {
+    const t = e.target;
+    if (t && t.classList && t.classList.contains("step-show") &&
+        (e.key === "Enter" || e.key === " ")) { e.preventDefault(); t.click(); }
+  });
+})();
 // Switching units converts the form inputs and reformats the loaded bundle.
-$("units").onchange = applyUnitChange;
+// Mirror the choice back to the Shop-standards default so the two unit controls
+// (this toggle + "Default units") always agree, rather than drifting apart.
+$("units").onchange = () => {
+  applyUnitChange();
+  const su = $("std_units");
+  if (su) { su.value = unit() === "imperial" ? "in" : "mm"; saveStandards(); }
+};
 
 // --- Pricing editor ----------------------------------------------------------
 // Tune the shop's price book + sheet size. Defaults come from the server; edits
@@ -2264,7 +2558,7 @@ async function refreshSaved() {
 }
 $("saveBtn").onclick = async () => {
   const spec = last ? last.spec : specFromForm();
-  const name = prompt("Name this design:", spec.name || "Cabinet");
+  const name = await uiPrompt("Name this design:", spec.name || "Cabinet");
   if (!name) return;
   await store.save(name, spec);
   pushRevision(name, spec);     // every save also snapshots a revision
@@ -2325,7 +2619,12 @@ $("loadBtn").onclick = async () => {
 };
 $("delBtn").onclick = async () => {
   const id = $("savedList").value;
-  if (id) { await store.remove(id); refreshSaved(); }
+  if (!id) return;
+  const d = savedCache.find(x => x._id === id);
+  const name = d ? d.name : "this design";
+  if (!await uiConfirm(`Delete “${name}”?`,
+      "This permanently removes the saved design.")) return;
+  await store.remove(id); refreshSaved();
 };
 
 // Live update: debounced rebuild when a parameter changes.
