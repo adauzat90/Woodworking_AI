@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 from .dsl import (CabinetSpec, TableSpec, ComponentGroup, BackStyle,
-                  Joinery, joinery_key)
+                  Joinery, ShelfJoint, joinery_key)
 from .dispatch import spec_kind, VOID, GROUP, TABLE, CABINET
 from . import furniture
 from .cutlist import generate_cutlist
@@ -188,6 +188,29 @@ def _cabinet_joinery(spec: CabinetSpec, cl) -> list[JoineryOp]:
             depth=round(m.carcass * HOUSED_DEPTH_FRACTION, 1),
             reference=f"{GROOVE_BACK_INSET:.0f}mm in from the rear edge",
             part_id=pid("Side"), note="back captured in the groove"))
+
+    # Fixed shelves housed into the sides. Adjustable shelves (the default) ride
+    # on pins and need no cut; screw/butt shelves aren't housed either (the
+    # STRUCT-014 advisory flags those), so only dado/cleat add a setup op. The op
+    # is a setup-sheet line (the shop cuts one housing per shelf height); its
+    # "at each shelf height" reference classifies as OTHER, which the B-Rep
+    # builder draws as a single representative housing rather than N at exact
+    # heights — a known limitation of the reference-text geometry, shared by every
+    # OTHER-classified op.
+    sj = str(getattr(spec, "shelf_joint", ShelfJoint.PINS)).lower()
+    if spec.shelves and sj == ShelfJoint.DADO:
+        ops.append(JoineryOp(
+            part="Side L / R", operation="dado for fixed shelf",
+            tool="dado stack / straight bit", width=round(m.shelf, 1),
+            depth=round(m.carcass * HOUSED_DEPTH_FRACTION, 1),
+            reference="at each shelf height", part_id=pid("Side"),
+            note=f"{spec.shelves} housed shelf/shelves — captured in shear"))
+    elif spec.shelves and sj == ShelfJoint.CLEAT:
+        ops.append(JoineryOp(
+            part="Side L / R", operation="cleat for fixed shelf",
+            tool="drill / glue", width=0.0, depth=0.0,
+            reference="at each shelf height", part_id=pid("Side"),
+            note=f"{spec.shelves} shelf/shelves rest on screwed-and-glued ledgers"))
 
     # Five-piece doors are coped-and-sticked with a panel groove.
     style = str(getattr(spec, "door_style", "slab")).lower()

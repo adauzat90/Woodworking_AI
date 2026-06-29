@@ -47,21 +47,38 @@ DEFLECTION_VISIBLE = (1.0 / 32.0 * 25.4) / 304.8  # ≈ 0.00260 (stricter)
 GRAVITY = 9.80665  # m/s^2
 
 
-def modulus_for(species: str | None) -> float:
-    """Young's modulus (MPa) for a named material, defaulting to plywood.
+def resolve_modulus(species: str | None) -> tuple[float, bool]:
+    """``(E in MPa, resolved)`` for a named material.
 
     Prefers the wood-species database (:mod:`species`) when the name is a known
     wood, so the value tracks the one real table; falls back to the local
     :data:`MODULUS_MPA` map (which also covers sheet goods like plywood/MDF that
     aren't woods), and finally to plywood.
+
+    ``resolved`` is ``False`` only when *species* is a **non-blank name that
+    matched neither table**, so the plywood default was substituted silently — the
+    caller can then surface a warning instead of validating a real wood as
+    plywood. A blank/``None`` species reports ``resolved=True`` (using the default
+    is the documented behaviour, not a typo).
     """
-    if not species:
-        return DEFAULT_MODULUS
+    if not species or not str(species).strip():
+        return DEFAULT_MODULUS, True
     from . import species as _species
     e = _species.modulus(species)
     if e is not None:
-        return e
-    return MODULUS_MPA.get(str(species).strip().lower(), DEFAULT_MODULUS)
+        return e, True
+    key = str(species).strip().lower()
+    if key in MODULUS_MPA:
+        return MODULUS_MPA[key], True
+    return DEFAULT_MODULUS, False
+
+
+def modulus_for(species: str | None) -> float:
+    """Young's modulus (MPa) for a named material, defaulting to plywood.
+
+    Thin wrapper over :func:`resolve_modulus` for callers that only want E.
+    """
+    return resolve_modulus(species)[0]
 
 
 @dataclass
@@ -71,6 +88,8 @@ class ShelfResult:
     span: float            # unsupported span (mm)
     engineering_limit: float  # span/360 (mm)
     visible_limit: float      # visible-sag threshold (mm)
+    modulus: float = DEFAULT_MODULUS  # E (MPa) used for the calculation
+    species_resolved: bool = True     # False -> species name unknown, plywood used
 
     @property
     def status(self) -> str:
@@ -111,7 +130,7 @@ def evaluate_shelf(
     `load_kg_per_m` is the distributed load along the shelf length (a fully
     loaded bookshelf is ~20–40 kg/m of books).
     """
-    modulus = modulus_for(species)
+    modulus, resolved = resolve_modulus(species)
     # kg/m -> N/mm:  (kg/m · g) gives N/m; /1000 gives N/mm.
     load_per_length = max(load_kg_per_m, 0.0) * GRAVITY / 1000.0
     deflection = shelf_deflection(span, depth, thickness, load_per_length, modulus)
@@ -120,6 +139,8 @@ def evaluate_shelf(
         span=span,
         engineering_limit=span * DEFLECTION_ENGINEERING,
         visible_limit=span * DEFLECTION_VISIBLE,
+        modulus=modulus,
+        species_resolved=resolved,
     )
 
 

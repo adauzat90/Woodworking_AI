@@ -184,16 +184,105 @@ backed by the calculators in `src/woodworking_ai/engineering.py`):
 | PROP-003 | drawer bank | INFO when 3+ drawer heights are neither uniform nor graduated. |
 | STRUCT-012 | drawer `dovetail_tails` | Errors when a front dovetail's tails aren't on the drawer sides (the front could pull off). |
 | DIM-009 | shelves vs. 32mm system | Warns when the box is too short to drill a 32mm-system pin column, or too shallow for two pin rows; `grid_violations()` verifies a schedule against the 32mm grid. |
+| MAT-006 | `shelf_species` not in the stiffness DB | Warns when a shelf species name resolves to neither the wood database nor the sheet-goods map, so the sag check fell back to plywood silently. |
+| MAT-007 | `species` vs `shelf_species` | INFO when the piece is a solid wood but the sag check used the plywood default — prompts setting `shelf_species` so the two cooperate. |
+| HW-007 | heaviest single part (`mass.py`) | WARN when one **assembled** part exceeds the ~25 kg one-person lift (weight from the cut list × species/sheet density; glue-up staves are summed back to the panel so a heavy solid top isn't hidden behind its boards); suggests knock-down joinery or a second person. New rule (not in the original catalog). |
+| STRUCT-043 | wall cabinet self-weight (`mass.py`) | INFO that a wall cabinet's estimated mass hangs on its fixing — screw a rail/cleat into studs and use a stout back (KCMA rates to ~270 kg). |
+| DIM-003 | bench/stool `height` | WARN when the seat height is outside the bench/stool range. (No seating sub-type in the DSL — covered by range; a chair-vs-stool mismatch is caught relationally by DIM-004.) |
+| DIM-004 | project: table top ↔ paired seat | WARN (not the catalog's ERROR) when a seat and its **best-matched** table in a project leave a thigh gap outside ~228–330 mm. Only sit-at-height tables are pairing targets (a coffee/side table beside a bench isn't a mismatch); best-fit pairing avoids cross-flagging a counter's stools against a dining table. Softened to WARN because the DSL has no explicit seat↔table link, so the pairing is inferred — and a seat whose true partner isn't modelled may still be matched to another table. |
+| DIM-005 | desk `height` / `depth` | WARN when desk height is outside ~680–800 mm, or depth is under ~500 mm (cramped for a work surface). |
+| DIM-006 | table/desk apron underside | INFO when a sit-at surface's apron underside is below ~600 mm — tight knee room for a seated user. Only checked on sit-at-height pieces (a coffee table is exempt). |
+| STRUCT-014 | cabinet `shelf_joint` | WARN when a load shelf is `screw`/`butt` — both drive the fastener/glue into end grain and work loose. Pins (default), dado, and cleat stay quiet. A new `ShelfJoint` field carries the attachment; a fixed dado/cleat shelf also adds a housing op to the joinery schedule. |
+| MOVE-003 | cabinet `door_style` | WARN when a **solid** floating door panel is used (a `raised_panel`, or a `shaker`/`cope_stick` flat panel with a solid make-up). The cut list sizes the panel to fill the groove with no allowance, so it can't expand — leave a float gap. A plywood flat panel doesn't move and stays quiet. |
 | DIM/STRUCT (existing) | `validate` | Dimensional bounds, opening fit, door/drawer fit, per-type sanity were already present pre-audit. |
+
+**Near-miss advisories.** A *passing* structural check whose measured value is
+within 10% of its limit also emits a pass-side INFO (shelf sag approaching the
+visible limit → `STRUCT-021` INFO; tip factor only just clearing the screen →
+`STRUCT-031` INFO). It reuses the parent rule id at INFO severity, fires only on
+the pass side (never doubling an existing warning), and gives the repair loop a
+reason to add margin — or to stop, knowing a check passed comfortably.
 
 `info`-severity advisories never affect `ValidationResult.ok` (so they never
 trigger the designer's repair loop) and are surfaced separately via
 `ValidationResult.infos` and the API's `advisories` field.
 
+**Rule IDs are now attached to emitted diagnostics** (`Issue.rule_id`), not just
+to these tables — query them with `ValidationResult.by_rule("STRUCT-020")` for
+suppression/audit by stable ID. The rendered feedback string is unchanged (the ID
+is programmatic only). The high-value structural / hardware / movement / material
+/ proportion / dimensional rules are tagged; bare type/bound checks have no ID.
+
+**Numeric rules are also machine-actionable.** Beyond the prose `message`, a
+computed rule carries a structured record so the repair loop can compute the exact
+edit instead of regex-parsing English, and a UI can render a gauge or an
+action-button:
+
+| Field | Meaning | Example |
+|---|---|---|
+| `observed` | the measured value the rule judged | `3.4` |
+| `limit` | the threshold it was judged against | `2.5` |
+| `units` | unit of `observed`/`limit` | `"mm"` |
+| `direction` | which way `observed` violated `limit`, so the loop knows how to converge without rule knowledge | `"max"` |
+| `fix` | the imperative remedy, split out of the prose | `"thicken or shorten the span"` |
+| `doc_anchor` | deep link into `design-principles.md` for the rule | `"design-principles.md#33-shelf-sag--deflection"` |
+
+`direction` disambiguates rules where *bigger* is worse (sag) from rules where
+*smaller* is worse (tip-over stability) — without it, `(observed, limit)` alone
+can't tell a repair loop which way to edit:
+
+- `"max"` — `observed` must end `<= limit`; **reduce** observed (e.g. sag).
+- `"min"` — `observed` must end `>= limit`; **increase** observed (e.g. tip
+  factor, door backing, toe-kick height).
+- `"target"` — drive `observed` **toward** `limit`, a nominal/band (e.g.
+  side-mount slide clearance).
+- `""` — `limit` is an informational trigger, not a convergence target (e.g.
+  MOVE-002's absolute "a rigidly fixed top will crack"), so don't optimise it.
+
+These are populated on the numeric rules (STRUCT-020/021, STRUCT-031, MOVE-001/002,
+HW-001/002/005, DIM-007/008/010, MAT-002, single-door width) and left empty on
+bare type/range checks, so a consumer can tell a *computed* rule from a plain
+bound. The web `build_result` bundle serialises every populated field; empty ones
+are omitted so unstructured issues stay compact.
+
+**One diagnostic shape across layers.** `validator.Issue` and `dsl_lint.LintIssue`
+now both satisfy the `diagnostics.Diagnostic` protocol (`severity`, `field`,
+`message`, `rule_id`), so the designer loop can fold parse-time lint and
+validation issues into one stream and filter by stable ID. A dropped-key lint
+reports `severity="warning"` and `rule_id="LINT-001"`; `Severity` itself moved to
+the shared `diagnostics` module (still re-exported from `validator`).
+
+| LINT-001 | WARN | any spec | a key the tolerant loader will silently drop (typo'd field) | Unknown field ignored; surfaced with a "did you mean" suggestion. |
+
 Backed by the `stock.py`, `proportion.py`, and `drilling.grid_violations`
-helpers. **Every rule in this catalog is now implemented** — see the test
-suite (`tests/test_engineering.py`, `test_joinery_hardware.py`,
-`test_proportion.py`, `test_hinges.py`, `test_grid_dovetail.py`) for coverage.
+helpers. The structural calculators, the hardware/joinery feasibility checks, and
+the engineering rules in the "Implementation status" table above are implemented
+and tested (`tests/test_engineering.py`, `test_joinery_hardware.py`,
+`test_proportion.py`, `test_hinges.py`, `test_grid_dovetail.py`,
+`test_dsl_diagnostics.py`, `test_mass.py`, `test_ergonomics.py`). **Not every
+catalogued rule has a runtime emitter yet.** Now wired (Tier 3): the seat↔top
+coupling `DIM-004`, seat/desk heights `DIM-003`/`DIM-005`, knee clearance
+`DIM-006`, weight/handling `HW-007`/`STRUCT-043`, the shelf-to-side joint
+`STRUCT-014`, and the solid frame-and-panel float gap `MOVE-003`. Still open:
+- `DIM-001`/`DIM-002` (dining/counter/bar **table** heights) — **blocked**: the
+  DSL has no table sub-type, so a 450 mm coffee table can't be told from an
+  under-height dining table; flagging by absolute height would false-positive.
+  Needs a `table` sub-type field (a §5 DSL gap) before it can be wired.
+- `MOVE-005` (cross-grain glue), `GRAIN-002`/`GRAIN-004` (grain orientation /
+  mixed sawn in a glue-up) — **blocked** on a per-part/per-stave grain model
+  (today grain is one top-level enum); `MOVE-004` (breadboard slotting) needs a
+  breadboard-end feature.
+- `STRUCT-040`/`STRUCT-041` (full-enclosure) are **moot** under today's DSL:
+  `BackStyle` has no open/none option, so a cabinet always has a back, sides,
+  bottom, and top — the defect isn't expressible and emitting it would be dead
+  code. `GRAIN-003` (over-wide single board) is **mostly covered for free** — the
+  cut list auto-glues-up wide solid carcass panels and table tops, so they never
+  surface as a single over-wide board; the residual case (a wide solid door
+  panel) overlaps `MOVE-003` and is deferred rather than moot.
+- the `STD-*` meta-rules.
+
+See [`DSL_DIAGNOSTICS_REVIEW.md`](./DSL_DIAGNOSTICS_REVIEW.md) §4.3 / §5 for the
+remaining gap list and the schema work each needs.
 
 ## Implementation notes for the compiler
 

@@ -50,7 +50,10 @@ from .materials import (
     MAT_TOP, MAT_LEG, MAT_APRON, MAT_SOLID, MAT_SOLID_PANEL,
     MAT_DOOR_FRONT, MAT_DRAWER_BOX,
 )
-from .validator import Issue
+from .validator import (
+    Issue, SEAT_HEIGHT_MIN, SEAT_HEIGHT_MAX, DESK_HEIGHT_MIN, DESK_HEIGHT_MAX,
+    DESK_DEPTH_MIN, SIT_AT_HEIGHT_MIN, KNEE_UNDERSIDE_MIN,
+)
 from .joinery import JoineryOp
 from .assembly_steps import SubAssembly, step
 from . import engineering
@@ -539,8 +542,8 @@ def _bench_validate(spec: BenchSpec) -> list[Issue]:
     def err(f, m):
         issues.append(Issue("error", f, m))
 
-    def warn(f, m):
-        issues.append(Issue("warning", f, m))
+    def warn(f, m, rule="", **kw):
+        issues.append(Issue("warning", f, m, rule, **kw))
 
     for name in ("width", "depth", "height", "top_thickness", "leg",
                  "apron_height", "apron_thickness", "leg_inset"):
@@ -553,8 +556,19 @@ def _bench_validate(spec: BenchSpec) -> list[Issue]:
         err("height", "too short for the seat plus an apron")
     if 2 * spec.leg_inset + spec.leg >= min(spec.width, spec.depth):
         err("leg_inset", "legs do not fit within the seat with this inset")
-    if spec.height < 300 or spec.height > 800:
-        warn("height", "unusual seat height (benches ~400-460mm, stools ~600-760mm)")
+    if spec.height < SEAT_HEIGHT_MIN or spec.height > SEAT_HEIGHT_MAX:
+        # DIM-003: seat height outside the bench/stool range. Covers bench and
+        # stool by range (the DSL has no seating sub-type); a chair-vs-stool
+        # mismatch is checked relationally by DIM-004 in a project.
+        warn("height",
+             f"unusual seat height (outside {SEAT_HEIGHT_MIN:.0f}–"
+             f"{SEAT_HEIGHT_MAX:.0f}mm; benches ~400-460mm, stools ~600-760mm)",
+             "DIM-003", observed=float(spec.height),
+             limit=(SEAT_HEIGHT_MIN if spec.height < SEAT_HEIGHT_MIN
+                    else SEAT_HEIGHT_MAX),
+             units="mm",
+             direction=("min" if spec.height < SEAT_HEIGHT_MIN else "max"),
+             doc_anchor="design-principles.md#11-seating-and-work-surfaces")
 
     # Leg-to-apron joinery vs. racking — a seat takes a real load.
     joint = joinery_key(spec)
@@ -1890,11 +1904,39 @@ def _desk_validate(spec: DeskSpec) -> list[Issue]:
                            "apron_height", "apron_thickness", "leg_inset")):
         return issues
 
-    def warn(f, m):
-        issues.append(Issue("warning", f, m))
+    def warn(f, m, rule="", **kw):
+        issues.append(Issue("warning", f, m, rule, **kw))
 
-    if spec.height < 680 or spec.height > 800:
-        warn("height", "unusual desk height (writing desks are ~720-760mm)")
+    def info(f, m, rule="", **kw):
+        issues.append(Issue("info", f, m, rule, **kw))
+
+    if spec.height < DESK_HEIGHT_MIN or spec.height > DESK_HEIGHT_MAX:
+        warn("height",
+             f"unusual desk height (outside {DESK_HEIGHT_MIN:.0f}–"
+             f"{DESK_HEIGHT_MAX:.0f}mm; writing desks are ~720-760mm)", "DIM-005",
+             observed=float(spec.height),
+             limit=(DESK_HEIGHT_MIN if spec.height < DESK_HEIGHT_MIN
+                    else DESK_HEIGHT_MAX),
+             units="mm",
+             direction=("min" if spec.height < DESK_HEIGHT_MIN else "max"),
+             doc_anchor="design-principles.md#11-seating-and-work-surfaces")
+    if spec.depth < DESK_DEPTH_MIN:
+        warn("depth",
+             f"a {spec.depth:.0f}mm-deep desk is shallow for a work surface "
+             f"(want ≥{DESK_DEPTH_MIN:.0f}mm for a monitor and keyboard)", "DIM-005",
+             observed=float(spec.depth), limit=DESK_DEPTH_MIN, units="mm",
+             direction="min",
+             doc_anchor="design-principles.md#11-seating-and-work-surfaces")
+    # DIM-006: knee clearance under the apron for a seated user.
+    underside = spec.height - spec.top_thickness - spec.apron_height
+    if spec.height >= SIT_AT_HEIGHT_MIN and underside < KNEE_UNDERSIDE_MIN:
+        info("apron_height",
+             f"the apron underside sits {underside:.0f}mm off the floor — tight "
+             f"knee room for a seated user (want ≥{KNEE_UNDERSIDE_MIN:.0f}mm); use "
+             "a shallower apron", "DIM-006",
+             observed=round(underside), limit=KNEE_UNDERSIDE_MIN, units="mm",
+             direction="min",
+             doc_anchor="design-principles.md#11-seating-and-work-surfaces")
     n = _desk_drawer_count(spec)
     if n:
         lx, _ = _legged_offsets(spec.width, spec.depth, spec.leg_inset, spec.leg)

@@ -10,15 +10,17 @@ No CAD dependency — runs anywhere, instantly.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
+from .diagnostics import Severity, Diagnostic  # noqa: F401 (re-exported)
 from .dsl import (
     TableSpec, ComponentGroup, CabinetType, Joinery, ApplianceVoid,
     CornerJoint, DovetailTails, SlideType, APPLIANCE_VOID_TOLERANCE,
     joinery_key,
 )
-from .dispatch import spec_kind, VOID, GROUP, TABLE, CABINET
-from . import engineering, stock, proportion, furniture
+from .dispatch import spec_kind, VOID, GROUP, TABLE, BENCH, CABINET
+from . import engineering, stock, proportion, furniture, materials
+from . import species as species_module
 from .hardware import longest_slide_for
 from .geometry import front_plan, footprints_overlap, component_tag
 from .constants import (
@@ -68,14 +70,94 @@ MAX_DIMENSION = 6000.0   # mm — larger than any real cabinet/pantry
 MAX_SHELVES = 50
 MAX_DRAWERS = 20
 
+# --- named diagnostic thresholds -----------------------------------------
+# Per the catalog's own directive (validation-rules.md: "numeric thresholds
+# belong in a data table, not code"), the soft-warning limits live here as named
+# constants and are interpolated into their messages so the prose can't drift
+# from the condition it describes.
+TABLE_HEIGHT_MIN = 350.0          # mm — below this is unusual for a table
+TABLE_HEIGHT_MAX = 1200.0         # mm — above this is unusual for a table
+TOP_MOVEMENT_WARN_MM = 6.0        # seasonal movement worth a floating-gap note
+LEG_SPINDLY_FACTOR = 0.06         # suggested leg ≈ 6% of height (sturdier)
+LEG_HEAVY_FACTOR = 0.08           # suggested leg ≈ 8% of height (lighter)
+SIDE_MOUNT_CLEARANCE_MIN = 10.0   # mm — side-mount slide per-side clearance band
+SIDE_MOUNT_CLEARANCE_MAX = 14.0
+MIN_DOOR_STOCK = 16.0             # mm — door stock for a 35mm concealed hinge
+SINGLE_DOOR_MAX_WIDTH = 600.0     # mm — a single door wider than this tends to sag
+WALL_CABINET_MAX_DEPTH = 450.0    # mm — deeper than typical for a wall cabinet
+TALL_CABINET_MIN_HEIGHT = 1500.0  # mm — shorter than typical for a tall/pantry
+BASE_CABINET_MAX_DEPTH = 700.0    # mm — deeper than typical for a base cabinet
+HARDBACK_BAY_MIN = 300.0          # mm — clear shelf bay for hardbacks
+PAPERBACK_BAY_MIN = 200.0         # mm — clear shelf bay for paperbacks
+TIP_MIN_FACTOR = 0.40             # min depth/height tip-over screening factor
+STD_SHEET_LONG = 2440.0           # mm — standard sheet long side
+STD_SHEET_SHORT = 1220.0          # mm — standard sheet short side
+ONE_PERSON_LIFT_KG = 25.0         # a single part heavier than this wants two people
+WALL_CABINET_HANG_NOTE_KG = 15.0  # wall cabinet self-weight worth a hanging note
+# A passing check whose measured value is within this fraction of its limit is a
+# "near miss" — surfaced as INFO so the repair loop knows it's borderline and a
+# small load/size change would tip it over (gives the agent a reason to stop, or
+# to add margin). Pass-side only, so it never double-signals an existing warning.
+NEAR_MISS_FRACTION = 0.90
+
+# --- ergonomics (DIM-003/004/005/006). Heights in mm; in→mm at 25.4. --------
+DESK_HEIGHT_MIN = 680.0           # writing desks ~720–760mm (28–30in)
+DESK_HEIGHT_MAX = 800.0
+DESK_DEPTH_MIN = 500.0            # shallower than ~20in is cramped for a work surface
+SEAT_HEIGHT_MIN = 300.0          # benches ~400–460mm, stools ~600–760mm
+SEAT_HEIGHT_MAX = 800.0
+# Knee/thigh clearance: a sit-at surface's apron underside (height − top −
+# apron) must clear a seated user's thighs above a standard ~457mm seat.
+SIT_AT_HEIGHT_MIN = 680.0        # only check knee room on sit-at-height surfaces
+KNEE_UNDERSIDE_MIN = 600.0       # apron underside below this is tight for knees
+# DIM-004 seat↔top coupling: comfortable thigh gap is 9–13in (≈228–330mm).
+SEAT_TO_TOP_MIN = 228.0
+SEAT_TO_TOP_MAX = 330.0
+SEAT_TO_TOP_IDEAL = 280.0        # ~11in, the centre of the comfortable band
+
 
 @dataclass
 class Issue:
-    severity: str   # "error" | "warning" | "info"
+    """One diagnostic. Satisfies the :class:`~.diagnostics.Diagnostic` protocol.
+
+    Beyond the rendered ``message``, numeric rules also carry a machine-actionable
+    record so the repair loop can compute the exact edit (``thicken until
+    ``limit >= observed``) instead of regex-parsing prose, and the UI can render a
+    gauge / link to the explanation:
+
+    * ``fix`` — the imperative remedy, lifted out of the prose so it can be shown
+      as an action and can't drift from the observation. The prose ``message``
+      still contains it (rendering is unchanged), so this is purely additive.
+    * ``observed`` / ``limit`` / ``units`` — the measured value, the threshold it
+      is judged against, and their unit (e.g. ``3.4`` / ``2.5`` / ``"mm"``).
+    * ``direction`` — which way ``observed`` violated ``limit``, so a repair loop
+      can act on ``(observed, limit)`` *without* knowing the rule (the whole point
+      of the structured record). It disambiguates rules where bigger is worse
+      (sag) from rules where smaller is worse (tip stability):
+
+        - ``"max"``   — ``observed`` must end ``<= limit``; **reduce** observed.
+        - ``"min"``   — ``observed`` must end ``>= limit``; **increase** observed.
+        - ``"target"``— drive ``observed`` **toward** ``limit`` (a band/nominal).
+        - ``""``      — ``limit`` is an informational trigger, not a convergence
+          target (e.g. an absolute "this will crack" error); don't optimise it.
+
+    * ``doc_anchor`` — a deep link into the principles doc for the rule.
+    """
+    severity: str   # Severity / "error" | "warning" | "info"
     field: str
     message: str
+    rule_id: str = ""   # stable catalog ID (e.g. "STRUCT-020"); "" when unlabeled
+    fix: str = ""                    # imperative remedy, separated from the prose
+    observed: float | None = None    # the measured value the rule judged
+    limit: float | None = None       # the threshold it was judged against
+    units: str = ""                  # unit of observed/limit (e.g. "mm")
+    direction: str = ""              # "max" | "min" | "target" | "" — see above
+    doc_anchor: str = ""             # deep link, e.g. "design-principles.md#33-..."
 
     def __str__(self) -> str:
+        # Rendering is intentionally unchanged (the structured fields are
+        # programmatic only) so the agent feedback / CLI output and the
+        # prose-based tests don't move.
         return f"[{self.severity}] {self.field}: {self.message}"
 
 
@@ -100,6 +182,10 @@ class ValidationResult:
         """Advisory notes (proportion, comfort) — never block a build."""
         return [i for i in self.issues if i.severity == "info"]
 
+    def by_rule(self, rule_id: str) -> list[Issue]:
+        """Every issue carrying *rule_id* — for suppression/audit by stable ID."""
+        return [i for i in self.issues if i.rule_id == rule_id]
+
     def as_feedback(self) -> str:
         """Human/agent-readable summary used to prompt a repair."""
         if not self.issues:
@@ -114,14 +200,14 @@ def _finite_positive(val: object) -> bool:
 def _validate_table(spec: TableSpec) -> ValidationResult:
     issues: list[Issue] = []
 
-    def err(f, m):
-        issues.append(Issue("error", f, m))
+    def err(f, m, rule="", **kw):
+        issues.append(Issue(Severity.ERROR, f, m, rule, **kw))
 
-    def warn(f, m):
-        issues.append(Issue("warning", f, m))
+    def warn(f, m, rule="", **kw):
+        issues.append(Issue(Severity.WARNING, f, m, rule, **kw))
 
-    def info(f, m):
-        issues.append(Issue("info", f, m))
+    def info(f, m, rule="", **kw):
+        issues.append(Issue(Severity.INFO, f, m, rule, **kw))
 
     for name in ("width", "depth", "height", "top_thickness", "leg",
                  "apron_height", "apron_thickness", "leg_inset"):
@@ -139,8 +225,32 @@ def _validate_table(spec: TableSpec) -> ValidationResult:
         err("leg_inset", "legs do not fit within the top with this inset")
     if spec.apron_thickness >= spec.leg:
         warn("apron_thickness", "apron is as thick as the leg; unusual")
-    if spec.height < 350 or spec.height > 1200:
-        warn("height", "unusual table height (typical 700–760mm)")
+    if spec.height < TABLE_HEIGHT_MIN or spec.height > TABLE_HEIGHT_MAX:
+        # Broad sanity bound, not the DIM-001 dining-height standard — left
+        # untagged on purpose (a specific DIM id here would mislabel it).
+        warn("height",
+             f"unusual table height (outside {TABLE_HEIGHT_MIN:.0f}–"
+             f"{TABLE_HEIGHT_MAX:.0f}mm; typical 700–760mm)",
+             observed=float(spec.height),
+             limit=(TABLE_HEIGHT_MIN if spec.height < TABLE_HEIGHT_MIN
+                    else TABLE_HEIGHT_MAX),
+             units="mm",
+             direction=("min" if spec.height < TABLE_HEIGHT_MIN else "max"),
+             doc_anchor="design-principles.md#11-seating-and-work-surfaces")
+
+    # --- knee clearance under the apron (DIM-006, INFO) ------------------
+    # Only meaningful for a sit-at-height table; a coffee/side table isn't sat at.
+    if spec.height >= SIT_AT_HEIGHT_MIN:
+        underside = spec.height - spec.top_thickness - spec.apron_height
+        if underside < KNEE_UNDERSIDE_MIN:
+            info("apron_height",
+                 f"the apron underside sits {underside:.0f}mm off the floor — tight "
+                 f"knee room for a seated user (want ≥{KNEE_UNDERSIDE_MIN:.0f}mm above "
+                 "a ~457mm seat); use a shallower apron", "DIM-006",
+                 fix="use a shallower apron or raise the top",
+                 observed=round(underside), limit=KNEE_UNDERSIDE_MIN, units="mm",
+                 direction="min",
+                 doc_anchor="design-principles.md#11-seating-and-work-surfaces")
 
     # --- wood movement on a solid top (MOVE-001/002) ---------------------
     # The top's width (depth, Y) runs across the grain and moves seasonally.
@@ -153,12 +263,19 @@ def _validate_table(spec: TableSpec) -> ValidationResult:
                 f"a solid top {spec.depth:.0f}mm across the grain moves about "
                 f"{move:.1f}mm seasonally; fixing it rigidly will crack it. Use "
                 "floating attachment (figure-8 fasteners, Z-clips, or slotted "
-                "cleats)")
-        elif move >= 6.0:
+                "cleats)", "MOVE-002",
+                fix="use floating attachment (figure-8 fasteners, Z-clips, or "
+                    "slotted cleats)",
+                observed=round(move, 1), units="mm",
+                doc_anchor="design-principles.md#41-wood-movement-seasonal-expansioncontraction")
+        elif move >= TOP_MOVEMENT_WARN_MM:
             warn("top_fixing",
                  f"allow ~{move:.1f}mm of seasonal movement across the "
                  f"{spec.depth:.0f}mm top; ensure the floating attachment has "
-                 "room to slide")
+                 "room to slide", "MOVE-001",
+                 fix="ensure the floating attachment has room to slide",
+                 observed=round(move, 1), limit=TOP_MOVEMENT_WARN_MM, units="mm",
+                 doc_anchor="design-principles.md#41-wood-movement-seasonal-expansioncontraction")
 
     # --- leg-to-apron joinery vs. racking (STRUCT-002) -------------------
     joint = joinery_key(spec, "mortise_tenon")
@@ -166,7 +283,7 @@ def _validate_table(spec: TableSpec) -> ValidationResult:
         warn("joinery",
              f"a {joint.replace('_', ' ')} leg-to-apron joint resists racking "
              "poorly; prefer mortise & tenon, domino, or dowels (with corner "
-             "blocks)")
+             "blocks)", "STRUCT-002")
 
     # --- solid top buildable from real stock (MAT-003) -------------------
     if getattr(spec, "solid_top", True):
@@ -174,7 +291,7 @@ def _validate_table(spec: TableSpec) -> ValidationResult:
         if q is None:
             warn("top_thickness",
                  f"a {spec.top_thickness:.0f}mm solid top is thicker than 12/4 "
-                 "stock surfaces to; laminate two boards or thin the top")
+                 "stock surfaces to; laminate two boards or thin the top", "MAT-003")
 
     # --- proportion advisories (PROP-001/002, INFO) ----------------------
     top = proportion.ratio_of(spec.width, spec.depth)
@@ -184,16 +301,18 @@ def _validate_table(spec: TableSpec) -> ValidationResult:
         info("proportion",
              f"top {spec.width:.0f}×{spec.depth:.0f}mm reads as {top:.2f}:1; "
              f"a golden-ratio top (≈{longer:.0f}×{short_target:.0f}mm) is more "
-             "pleasing")
+             "pleasing", "PROP-001")
     slim = proportion.slenderness(spec.leg, spec.height)
     if slim < proportion.LEG_MIN_RATIO:
         info("leg", f"a {spec.leg:.0f}mm leg looks spindly under a "
-                    f"{spec.height:.0f}mm-tall table; ~{spec.height*0.06:.0f}mm "
-                    "reads sturdier")
+                    f"{spec.height:.0f}mm-tall table; "
+                    f"~{spec.height*LEG_SPINDLY_FACTOR:.0f}mm "
+                    "reads sturdier", "PROP-002")
     elif slim > proportion.LEG_MAX_RATIO:
         info("leg", f"a {spec.leg:.0f}mm leg looks heavy for a "
-                    f"{spec.height:.0f}mm table; ~{spec.height*0.08:.0f}mm is "
-                    "lighter")
+                    f"{spec.height:.0f}mm table; "
+                    f"~{spec.height*LEG_HEAVY_FACTOR:.0f}mm is "
+                    "lighter", "PROP-002")
     return ValidationResult(issues)
 
 
@@ -233,7 +352,10 @@ def _validate_project(project: ComponentGroup) -> ValidationResult:
     for i, comp in enumerate(comps, start=1):
         tag = component_tag(comp, i)
         for issue in validate(comp.spec).issues:
-            issues.append(Issue(issue.severity, f"{tag}.{issue.field}", issue.message))
+            # Re-path the field to the component, preserving the structured fields
+            # (rule_id/fix/observed/limit/units/doc_anchor) so a project's repair
+            # loop sees the same machine-actionable data a standalone spec does.
+            issues.append(replace(issue, field=f"{tag}.{issue.field}"))
     # Oriented 2D footprint overlap — components that share floor space would
     # collide. Works for any rotation, so it catches the inner-corner collision
     # where two perpendicular runs of an L/U layout meet.
@@ -245,6 +367,47 @@ def _validate_project(project: ComponentGroup) -> ValidationResult:
                     f"'{component_tag(comps[i], i + 1)}' and "
                     f"'{component_tag(comps[j], j + 1)}' overlap in plan; space "
                     "them or fit a corner unit / filler between the runs"))
+
+    # --- seat ↔ top thigh-clearance coupling (DIM-004) -------------------
+    # Pair each seat to the table whose top gives the most comfortable thigh gap,
+    # then warn only when even that best-matched table is ergonomically off.
+    # Best-fit pairing (not all-pairs) avoids cross-flagging a counter's stools
+    # against a dining table that share a project. WARN, not the catalog's ERROR:
+    # the DSL has no explicit "this seat pairs with that table" link, so the
+    # pairing is inferred — too uncertain to block a build on.
+    #
+    # Only *sit-at-height* tables are pairing targets: a coffee/side table below
+    # SIT_AT_HEIGHT_MIN is never sat at, so a bench beside one isn't a mismatch.
+    # (Limitation: if a seat's true partner — e.g. a counter for a bar stool —
+    # simply isn't modelled, the seat may still be matched to another table.)
+    tables = [(i, c) for i, c in enumerate(comps, start=1)
+              if spec_kind(c.spec) == TABLE
+              and _finite_positive(getattr(c.spec, "height", None))
+              and c.spec.height >= SIT_AT_HEIGHT_MIN]
+    seats = [(i, c) for i, c in enumerate(comps, start=1)
+             if spec_kind(c.spec) == BENCH and _finite_positive(
+                 getattr(c.spec, "height", None))]
+    for si, seat in seats:
+        sh = seat.spec.height
+        best = None  # (distance-outside-band, gap, table_index, table_height)
+        for ti, table in tables:
+            gap = table.spec.height - sh
+            dist = max(SEAT_TO_TOP_MIN - gap, gap - SEAT_TO_TOP_MAX, 0.0)
+            if best is None or dist < best[0]:
+                best = (dist, gap, ti, table.spec.height)
+        if best is None or best[0] <= 0.0:
+            continue  # a comfortably-paired table exists for this seat
+        _, gap, ti, th = best
+        issues.append(Issue(
+            Severity.WARNING, f"{component_tag(seat, si)}.height",
+            f"the {sh:.0f}mm seat and the nearest top ({th:.0f}mm) leave a "
+            f"{gap:.0f}mm thigh gap — outside the comfortable "
+            f"{SEAT_TO_TOP_MIN:.0f}–{SEAT_TO_TOP_MAX:.0f}mm; raise the seat or "
+            "adjust the top height", "DIM-004",
+            fix=f"size the seat/top for a ~{SEAT_TO_TOP_IDEAL:.0f}mm gap",
+            observed=round(gap), limit=SEAT_TO_TOP_IDEAL, units="mm",
+            direction="target",
+            doc_anchor="design-principles.md#11-seating-and-work-surfaces"))
     return ValidationResult(issues)
 
 
@@ -361,10 +524,54 @@ def joinery_feasibility(spec) -> list[Issue]:
     return issues
 
 
+def _mass_advisories(spec) -> list[Issue]:
+    """Weight/handling advisories computed from the cut list (HW-007, STRUCT-043).
+
+    Mass is free once the cut list has sized the parts (the species DB carries
+    density). Only run on a structurally-sound spec — a broken one has no
+    meaningful cut list — and degrade silently if the estimate can't be built.
+    """
+    from . import mass
+    est = mass.estimate_mass(spec)
+    if est is None:
+        return []
+    issues: list[Issue] = []
+
+    # HW-007: a single part too heavy for one person to handle during the build.
+    if est.heaviest_part_kg > ONE_PERSON_LIFT_KG:
+        issues.append(Issue(
+            Severity.WARNING, "material",
+            f"the '{est.heaviest_part_name}' part weighs ~{est.heaviest_part_kg:.0f}kg "
+            f"— above the ~{ONE_PERSON_LIFT_KG:.0f}kg one-person lift; plan for a "
+            "second person or knock-down joinery for handling", "HW-007",
+            fix="split the part, use knock-down joinery, or plan a two-person lift",
+            observed=round(est.heaviest_part_kg, 1), limit=ONE_PERSON_LIFT_KG,
+            units="kg", direction="max"))
+
+    # STRUCT-043: a wall cabinet hangs entirely on its fixing; flag that the
+    # mount must carry the self-weight plus contents (KCMA tests to ~270kg).
+    if (spec_kind(spec) == CABINET
+            and getattr(spec, "cabinet_type", None) == CabinetType.WALL
+            and est.total_kg >= WALL_CABINET_HANG_NOTE_KG):
+        issues.append(Issue(
+            Severity.INFO, "back",
+            f"this wall cabinet's ~{est.total_kg:.0f}kg self-weight (plus contents) "
+            "hangs on its fixing; screw a mounting rail/cleat into wall studs and "
+            "use a back stout enough to carry the load (KCMA rates to ~270kg)",
+            "STRUCT-043",
+            observed=round(est.total_kg, 1), units="kg",
+            doc_anchor="design-principles.md#35-casework-performance-standard-cabinets"))
+    return issues
+
+
 def validate(spec, *, tooling=None) -> ValidationResult:
     """Validate *spec*; when a :class:`~tooling.ShopTooling` inventory is given,
     also flag any joinery the declared tools can't make (advisory)."""
     result = _validate_core(spec)
+    # Weight/handling advisories on a sound leaf spec (the cut list is meaningless
+    # for a broken spec or an aggregate group, whose parts are checked per-component).
+    if result.ok and spec_kind(spec) not in (VOID, GROUP):
+        result.issues.extend(_mass_advisories(spec))
     if tooling is not None:
         from .tooling import tooling_advisories
         for severity, field_, msg in tooling_advisories(spec, tooling):
@@ -392,11 +599,11 @@ def _check_cabinet_drawers_and_hinges(spec) -> list[Issue]:
     issues: list[Issue] = []
     m = spec.material
 
-    def err(fieldname: str, msg: str) -> None:
-        issues.append(Issue("error", fieldname, msg))
+    def err(fieldname: str, msg: str, rule: str = "", **kw) -> None:
+        issues.append(Issue(Severity.ERROR, fieldname, msg, rule, **kw))
 
-    def warn(fieldname: str, msg: str) -> None:
-        issues.append(Issue("warning", fieldname, msg))
+    def warn(fieldname: str, msg: str, rule: str = "", **kw) -> None:
+        issues.append(Issue(Severity.WARNING, fieldname, msg, rule, **kw))
 
     # Shared front layout (single source of truth for door/drawer sizing).
     plan = front_plan(spec)
@@ -413,11 +620,11 @@ def _check_cabinet_drawers_and_hinges(spec) -> list[Issue]:
                 warn("drawers",
                      "drawer corners use a butt joint (end-grain glue, weak and "
                      "pulls apart when opened); use dovetail, box, or a locking "
-                     "rabbet")
+                     "rabbet", "STRUCT-011")
             elif cj not in STRONG_DRAWER_JOINTS:
                 warn("drawers",
                      f"drawer corner '{cj}' is weak for the pull-open load; "
-                     "prefer dovetail, box joint, or a locking rabbet")
+                     "prefer dovetail, box joint, or a locking rabbet", "STRUCT-011")
 
         # STRUCT-012: a front dovetail must have its tails on the drawer SIDES
         # so the interlock resists the front being pulled off when opened.
@@ -427,34 +634,45 @@ def _check_cabinet_drawers_and_hinges(spec) -> list[Issue]:
                 err("drawers",
                     f"dovetail tails are on the '{tails}'; put the tails on the "
                     "drawer sides (pins on the front) so the front can't pull "
-                    "off when the drawer is opened")
+                    "off when the drawer is opened", "STRUCT-012")
 
         # Side-mount slide clearance (HW-001) + resulting box width.
         for clr in {round(d.slide_clearance, 2) for d in boxed
                     if d.slide_type == SlideType.SIDE_MOUNT}:
-            if not (10.0 <= clr <= 14.0):
+            if not (SIDE_MOUNT_CLEARANCE_MIN <= clr <= SIDE_MOUNT_CLEARANCE_MAX):
                 warn("drawers",
                      f"side-mount slides need ~{SIDE_MOUNT_CLEARANCE:.1f}mm "
-                     f"(½in) per side; got {clr:.1f}mm — drawer will bind or rattle")
+                     f"(½in) per side; got {clr:.1f}mm — drawer will bind or rattle",
+                     "HW-001", fix=f"set slide clearance to ~{SIDE_MOUNT_CLEARANCE:.1f}mm "
+                     "per side",
+                     observed=clr, limit=SIDE_MOUNT_CLEARANCE, units="mm",
+                     direction="target")  # nominal: drive clearance toward the ½in target
             box_w = opening_w - 2 * clr
             if box_w <= 0:
                 err("drawers",
-                    "opening is too narrow for side-mount slides plus a box")
+                    "opening is too narrow for side-mount slides plus a box",
+                    "HW-001")
             elif box_w < MIN_DRAWER_BOX_WIDTH:
                 warn("drawers",
                      f"drawer box only {box_w:.0f}mm wide after slide clearance; "
-                     "barely usable")
+                     "barely usable", "HW-001")
 
         # Slide length vs. cabinet depth (HW-002).
         for sl in {round(d.slide_length, 1) for d in boxed if d.slide_length > 0}:
             if sl > interior_depth:
                 err("drawers",
                     f"drawer slide length {sl:.0f}mm exceeds the {interior_depth:.0f}mm "
-                    "interior depth; it won't fit")
+                    "interior depth; it won't fit", "HW-002",
+                    fix="use a shorter slide or a deeper cabinet",
+                    observed=sl, limit=round(interior_depth, 1), units="mm",
+                    direction="max",
+                    doc_anchor="design-principles.md#51-drawers--slides")
 
-        # HW-003: depth that wastes a slide size. When the box is auto-sized to
-        # the longest standard slide that fits, a deep cabinet may leave enough
-        # room for the next 50mm size up — flag it so the depth isn't wasted.
+        # HW-006 (extension/slide selection): depth that wastes a slide size.
+        # When the box is auto-sized to the longest standard slide that fits, a
+        # deep cabinet may leave enough room for the next 50mm size up — flag it
+        # so the depth isn't wasted. (NB: the catalog's HW-003 is the unrelated
+        # inset-depth rule; this is closest to HW-006's access/extension class.)
         if any(d.slide_length <= 0 for d in boxed):
             usable = interior_depth - DRAWER_BOX_DEPTH_GAP
             fit = longest_slide_for(usable)
@@ -462,7 +680,8 @@ def _check_cabinet_drawers_and_hinges(spec) -> list[Issue]:
                 warn("depth",
                      f"interior depth allows only a {fit:.0f}mm slide but leaves "
                      f"~{usable - fit:.0f}mm unused; a slightly deeper cabinet "
-                     "would take the next standard slide size and a deeper box")
+                     "would take the next standard slide size and a deeper box",
+                     "HW-006")
 
     # --- concealed hinge bore vs. door (HW-005) --------------------------
     has_door = spec.doors > 0 or spec.cabinet_type == CabinetType.CORNER_DIAGONAL
@@ -475,14 +694,22 @@ def _check_cabinet_drawers_and_hinges(spec) -> list[Issue]:
             err("material.door",
                 f"a {m.door:.0f}mm door leaves only {max(backing, 0.0):.1f}mm behind "
                 f"a {HINGE_CUP_DEPTH:.1f}mm hinge cup (need ≥{HINGE_MIN_DOOR_BACKING:.0f}"
-                "mm) — the 35mm cup blows through the face; use ≥16mm door stock or a "
-                "shallower hinge")
-        elif m.door < 16.0:
+                f"mm) — the 35mm cup blows through the face; use ≥{MIN_DOOR_STOCK:.0f}mm "
+                "door stock or a shallower hinge", "HW-005",
+                fix=f"use ≥{MIN_DOOR_STOCK:.0f}mm door stock or a shallower hinge",
+                observed=round(max(backing, 0.0), 1), limit=HINGE_MIN_DOOR_BACKING,
+                units="mm", direction="min",
+                doc_anchor="design-principles.md#52-doors")
+        elif m.door < MIN_DOOR_STOCK:
             # Hosts the cup with the minimum backing, but thin stock telegraphs
             # the cup and offers little screw purchase — buildable, worth a note.
             warn("material.door",
                  f"only {backing:.1f}mm of material behind a {HINGE_CUP_DEPTH:.1f}mm "
-                 "hinge cup; use ≥16mm door stock for a 35mm concealed hinge")
+                 f"hinge cup; use ≥{MIN_DOOR_STOCK:.0f}mm door stock for a 35mm "
+                 "concealed hinge", "HW-005",
+                 fix=f"use ≥{MIN_DOOR_STOCK:.0f}mm door stock",
+                 observed=round(m.door, 1), limit=MIN_DOOR_STOCK, units="mm",
+                 direction="min", doc_anchor="design-principles.md#52-doors")
 
     if spec.doors > 0 and not spec.is_corner and plan.doors:
         door_w = min(d.width for d in plan.doors)  # narrowest leaf
@@ -490,11 +717,11 @@ def _check_cabinet_drawers_and_hinges(spec) -> list[Issue]:
             err("doors",
                 f"each door is only {door_w:.0f}mm wide — too narrow for a 35mm "
                 f"hinge cup (needs ≥{HINGE_MIN_DOOR_WIDTH:.0f}mm); use one door, "
-                "drop the center mullion, or fit a compact hinge")
+                "drop the center mullion, or fit a compact hinge", "HW-005")
         elif door_w < HINGE_MIN_DOOR_WIDTH + 10.0:
             warn("doors",
                  f"each door is {door_w:.0f}mm wide — tight for a 35mm hinge cup; "
-                 "consider a wider door or a compact hinge")
+                 "consider a wider door or a compact hinge", "HW-005")
     return issues
 
 
@@ -502,14 +729,14 @@ def _validate_cabinet(spec) -> list[Issue]:
     """Sanity checks for a cabinet (every CabinetType variant)."""
     issues: list[Issue] = []
 
-    def err(fieldname: str, msg: str) -> None:
-        issues.append(Issue("error", fieldname, msg))
+    def err(fieldname: str, msg: str, rule: str = "", **kw) -> None:
+        issues.append(Issue(Severity.ERROR, fieldname, msg, rule, **kw))
 
-    def warn(fieldname: str, msg: str) -> None:
-        issues.append(Issue("warning", fieldname, msg))
+    def warn(fieldname: str, msg: str, rule: str = "", **kw) -> None:
+        issues.append(Issue(Severity.WARNING, fieldname, msg, rule, **kw))
 
-    def info(fieldname: str, msg: str) -> None:
-        issues.append(Issue("info", fieldname, msg))
+    def info(fieldname: str, msg: str, rule: str = "", **kw) -> None:
+        issues.append(Issue(Severity.INFO, fieldname, msg, rule, **kw))
 
     # --- basic positive, finite, sane dimensions -------------------------
     for name in ("width", "height", "depth"):
@@ -553,8 +780,6 @@ def _validate_cabinet(spec) -> list[Issue]:
     # --- counts ----------------------------------------------------------
     if spec.doors not in (0, 1, 2):
         err("doors", f"prototype supports 0, 1 or 2 doors, got {spec.doors}")
-    if spec.shelves < 0:
-        err("shelves", "shelf count cannot be negative")
     if spec.reveal < 0:
         err("reveal", "reveal (gap) cannot be negative")
 
@@ -565,12 +790,36 @@ def _validate_cabinet(spec) -> list[Issue]:
         err("drawers", "drawer fronts are taller than the available opening")
 
     # --- soft warnings (buildable, but worth flagging) -------------------
-    if spec.doors == 1 and spec.width > 600:
-        warn("doors", "a single door wider than 600mm tends to sag; consider two")
+    if spec.doors == 1 and spec.width > SINGLE_DOOR_MAX_WIDTH:
+        warn("doors",
+             f"a single door wider than {SINGLE_DOOR_MAX_WIDTH:.0f}mm tends to "
+             "sag; consider two", fix="split into two doors",
+             observed=float(spec.width), limit=SINGLE_DOOR_MAX_WIDTH, units="mm",
+             direction="max")
     if spec.shelves > 0 and spec.drawers:
         warn("shelves", "shelves above a drawer bank may be obstructed by the box")
     if spec.center_mullion and spec.doors != 2:
         warn("center_mullion", "a center mullion only applies to a pair of doors")
+
+    # MOVE-003: a solid floating door panel sized to fill the groove (the cut list
+    # sizes it opening + 2×groove, with no allowance) can't expand and cracks
+    # across the grain. A raised panel is always solid (the cut list builds it
+    # that way regardless of make-up); a flat shaker/cope panel is solid only when
+    # its *resolved* make-up is solid wood — a plywood flat panel doesn't move.
+    # Read the resolved door-panel form (honoring a stock["door_panel"] override)
+    # so this agrees with the part the cut list actually builds.
+    door_style = str(getattr(spec, "door_style", "slab")).lower()
+    panel_form, _ = materials.resolve(spec, "door_panel")
+    panel_is_solid = door_style == "raised_panel" or (
+        door_style in ("shaker", "cope_stick")
+        and materials.is_solid_form(panel_form))
+    if spec.doors and panel_is_solid:
+        warn("door_style",
+             "a solid floating panel sized to fill the groove can't expand and "
+             "will crack across the grain; leave a float gap (~¼in per 12in of "
+             "panel width, flatsawn) when sizing it", "MOVE-003",
+             fix="undersize the panel for a seasonal float gap",
+             doc_anchor="design-principles.md#41-wood-movement-seasonal-expansioncontraction")
 
     # --- per cabinet type ------------------------------------------------
     if spec.cabinet_type == CabinetType.WALL:
@@ -578,13 +827,19 @@ def _validate_cabinet(spec) -> list[Issue]:
             warn("toe_kick", "wall cabinets hang on the wall and have no toe kick")
         if spec.drawers:
             warn("drawers", "drawers are unusual in a wall cabinet")
-        if spec.depth > 450:
-            warn("depth", "wall cabinets are typically 300-400mm deep")
+        if spec.depth > WALL_CABINET_MAX_DEPTH:
+            warn("depth", "wall cabinets are typically 300-400mm deep", "DIM-008",
+                 observed=float(spec.depth), limit=WALL_CABINET_MAX_DEPTH,
+                 units="mm", direction="max")
     elif spec.cabinet_type == CabinetType.TALL:
         if spec.toe_kick is None:
             warn("toe_kick", "tall/pantry cabinets usually sit on a toe kick")
-        if spec.height < 1500:
-            warn("height", "unusually short for a tall/pantry cabinet")
+        if spec.height < TALL_CABINET_MIN_HEIGHT:
+            warn("height",
+                 f"unusually short for a tall/pantry cabinet (under "
+                 f"{TALL_CABINET_MIN_HEIGHT:.0f}mm)",
+                 observed=float(spec.height), limit=TALL_CABINET_MIN_HEIGHT,
+                 units="mm", direction="min")
     elif spec.cabinet_type == CabinetType.CORNER_BLIND:
         if spec.blind_width <= 0:
             err("blind_width", "a blind corner needs a positive blind_width")
@@ -606,40 +861,106 @@ def _validate_cabinet(spec) -> list[Issue]:
             bays = spec.shelves + 1
             bay_clear = (spec.box_height - 2 * m.carcass
                          - spec.shelves * m.shelf) / bays
-            if bay_clear < 300:
+            if bay_clear < HARDBACK_BAY_MIN:
                 warn("shelves",
                      f"~{bay_clear:.0f}mm clear per shelf bay is tight for "
-                     "hardbacks (~300mm); use fewer shelves or a taller box "
-                     "(paperbacks need ~200mm)")
+                     f"hardbacks (~{HARDBACK_BAY_MIN:.0f}mm); use fewer shelves or "
+                     f"a taller box (paperbacks need ~{PAPERBACK_BAY_MIN:.0f}mm)",
+                     "DIM-010", fix="use fewer shelves or a taller box",
+                     observed=round(bay_clear), limit=HARDBACK_BAY_MIN, units="mm",
+                     direction="min")
     elif spec.cabinet_type == CabinetType.DRESSER:
         if not spec.drawers:
             warn("drawers", "a dresser is a drawer bank; add some drawers")
     else:  # BASE
-        if spec.depth > 700:
-            warn("depth", "unusually deep for a base cabinet")
+        if spec.depth > BASE_CABINET_MAX_DEPTH:
+            warn("depth",
+                 f"unusually deep for a base cabinet (over "
+                 f"{BASE_CABINET_MAX_DEPTH:.0f}mm)", "DIM-007",
+                 observed=float(spec.depth), limit=BASE_CABINET_MAX_DEPTH,
+                 units="mm", direction="max")
+
+    # STRUCT-014: a *load* shelf screwed or butt-glued to the side drives the
+    # fastener/glue into end grain and works loose under load. Adjustable pins
+    # (the default) and a housed dado/cleat are fine; flag only screw/butt, and
+    # only when the shelf actually carries load (the catalog's "load shelf"
+    # qualifier — an author who sets shelf_load_kg_per_m=0 opts out).
+    shelf_joint = str(getattr(spec, "shelf_joint", "pins")).lower()
+    shelf_load = getattr(spec, "shelf_load_kg_per_m", 25.0)
+    if (spec.shelves > 0 and shelf_joint in ("screw", "butt")
+            and _finite_positive(shelf_load)):
+        warn("shelf_joint",
+             f"a load shelf attached by {shelf_joint} relies on end-grain holding "
+             "and works loose under load; house it in a dado/rabbet or hang it on "
+             "shelf pins", "STRUCT-014",
+             fix="house the shelf in a dado (or use adjustable shelf pins)",
+             doc_anchor="design-principles.md#32-joint-selection-by-load-strength-hierarchy")
 
     # --- shelf deflection / sag (STRUCT-020..022) ------------------------
     # Treat each shelf as a simply-supported beam spanning the interior width.
     if spec.shelves > 0:
         span = spec.width - 2 * m.carcass
         shelf_depth = max(spec.depth - 30.0, 1.0)  # back/clearance setback
+        shelf_species = getattr(spec, "shelf_species", "plywood")
         res = engineering.evaluate_shelf(
             span=span,
             depth=shelf_depth,
             thickness=m.shelf,
             load_kg_per_m=getattr(spec, "shelf_load_kg_per_m", 25.0),
-            species=getattr(spec, "shelf_species", "plywood"),
+            species=shelf_species,
         )
+        # MAT-006: the sag result drives a structural ERROR, so a species name the
+        # stiffness DB doesn't recognize (a typo, or an unlisted wood) silently
+        # computing as plywood is a safety hole — surface it instead of hiding it.
+        if not res.species_resolved:
+            warn("shelf_species",
+                 f"shelf species '{shelf_species}' isn't in the stiffness "
+                 f"database; sag was computed using plywood (E≈{res.modulus:.0f} "
+                 "MPa). Pick a known species so the sag check is accurate.",
+                 "MAT-006")
+        # MAT-007: the sag check used a sheet-goods stiffness but the piece is
+        # made of a solid wood — if the shelves are that wood too, say so so the
+        # two fields cooperate instead of silently diverging.
+        else:
+            piece = str(getattr(spec, "species", "") or "").strip()
+            if (piece and species_module.known(piece)
+                    and engineering.modulus_for(shelf_species)
+                    == engineering.DEFAULT_MODULUS
+                    and engineering.modulus_for(piece)
+                    != engineering.DEFAULT_MODULUS):
+                info("shelf_species",
+                     f"sag assumed plywood shelves, but the piece species is "
+                     f"'{piece}'; if the shelves are solid {piece} set "
+                     f"shelf_species to match for an accurate sag check.",
+                     "MAT-007")
         if res.status == "fail":
             err("shelves",
                 f"shelf will sag {res.deflection:.1f}mm over a {span:.0f}mm span, "
                 f"past the {res.engineering_limit:.1f}mm structural limit "
-                "(span/360); shorten span, thicken, stiffen, or add support")
+                "(span/360); shorten span, thicken, stiffen, or add support",
+                "STRUCT-020", fix="shorten span, thicken, stiffen, or add support",
+                observed=round(res.deflection, 1),
+                limit=round(res.engineering_limit, 1), units="mm", direction="max",
+                doc_anchor="design-principles.md#33-shelf-sag--deflection")
         elif res.status == "visible":
             warn("shelves",
                  f"shelf sag {res.deflection:.1f}mm over {span:.0f}mm will be "
                  f"visible (> {res.visible_limit:.1f}mm); consider a stiffer "
-                 "material, thicker shelf, or a center support")
+                 "material, thicker shelf, or a center support", "STRUCT-021",
+                 fix="use a stiffer material, a thicker shelf, or a center support",
+                 observed=round(res.deflection, 1),
+                 limit=round(res.visible_limit, 1), units="mm", direction="max",
+                 doc_anchor="design-principles.md#33-shelf-sag--deflection")
+        elif (res.status == "ok" and res.visible_limit > 0
+              and res.deflection > NEAR_MISS_FRACTION * res.visible_limit):
+            pct = res.deflection / res.visible_limit * 100.0
+            info("shelves",
+                 f"shelf sag {res.deflection:.1f}mm is {pct:.0f}% of the "
+                 f"{res.visible_limit:.1f}mm visible-sag limit — it passes, but a "
+                 "small load or span increase will make it noticeable", "STRUCT-021",
+                 observed=round(res.deflection, 1),
+                 limit=round(res.visible_limit, 1), units="mm", direction="max",
+                 doc_anchor="design-principles.md#33-shelf-sag--deflection")
 
     # --- tip-over stability (STRUCT-030/031, ASTM F2057) -----------------
     if spec.cabinet_type in (CabinetType.DRESSER, CabinetType.TALL):
@@ -647,28 +968,50 @@ def _validate_cabinet(spec) -> list[Issue]:
             warn("anti_tip",
                  "tall storage unit is in scope for the ASTM F2057 tip-over "
                  "standard; provide an anti-tip restraint and a marked "
-                 "wall-attachment point (set anti_tip=true)")
-        if engineering.tip_safety_factor(spec.height, spec.depth) < 0.40:
+                 "wall-attachment point (set anti_tip=true)", "STRUCT-030")
+        tip = engineering.tip_safety_factor(spec.height, spec.depth)
+        if tip < TIP_MIN_FACTOR:
             warn("depth",
-                 "tall and shallow: high tip-over risk; deepen the base, lower "
-                 "the centre of gravity, or require wall anchoring")
+                 f"tall and shallow: high tip-over risk (depth/height {tip:.2f} < "
+                 f"{TIP_MIN_FACTOR:.2f}); deepen the base, lower the centre of "
+                 "gravity, or require wall anchoring", "STRUCT-031",
+                 fix="deepen the base, lower the centre of gravity, or require "
+                     "wall anchoring",
+                 observed=round(tip, 3), limit=TIP_MIN_FACTOR, units="ratio",
+                 direction="min",
+                 doc_anchor="design-principles.md#34-stability--tip-over-regulated")
+        elif tip < TIP_MIN_FACTOR / NEAR_MISS_FRACTION:
+            info("depth",
+                 f"depth/height {tip:.2f} only just clears the {TIP_MIN_FACTOR:.2f} "
+                 "tip-over screen; a deeper base or wall anchoring adds margin",
+                 "STRUCT-031",
+                 observed=round(tip, 3), limit=TIP_MIN_FACTOR, units="ratio",
+                 direction="min",
+                 doc_anchor="design-principles.md#34-stability--tip-over-regulated")
 
     # --- toe-kick minimum dimensions (STRUCT-042, KCMA A161.1) -----------
     if spec.toe_kick is not None:
         if spec.toe_kick.height < KCMA_TOE_MIN_HEIGHT:
             warn("toe_kick.height",
                  f"toe kick below the ~{KCMA_TOE_MIN_HEIGHT:.0f}mm (3in) KCMA "
-                 "minimum height")
+                 "minimum height", "STRUCT-042",
+                 fix=f"raise the toe-kick height to ≥{KCMA_TOE_MIN_HEIGHT:.0f}mm",
+                 observed=round(float(spec.toe_kick.height), 1),
+                 limit=KCMA_TOE_MIN_HEIGHT, units="mm", direction="min")
         if spec.toe_kick.setback < KCMA_TOE_MIN_SETBACK:
             warn("toe_kick.setback",
                  f"toe space shallower than the ~{KCMA_TOE_MIN_SETBACK:.0f}mm "
-                 "(2in) KCMA minimum depth")
+                 "(2in) KCMA minimum depth", "STRUCT-042",
+                 fix=f"increase the toe-kick setback to ≥{KCMA_TOE_MIN_SETBACK:.0f}mm",
+                 observed=round(float(spec.toe_kick.setback), 1),
+                 limit=KCMA_TOE_MIN_SETBACK, units="mm", direction="min")
 
     # --- carcass joinery vs. load (STRUCT-010/014) -----------------------
     if spec.joinery == Joinery.BUTT:
         warn("joinery",
              "a glued butt joint is weak in tension/shear for a carcass; use "
-             "dado/rabbet/dowel/domino so panels are mechanically captured")
+             "dado/rabbet/dowel/domino so panels are mechanically captured",
+             "STRUCT-010")
 
     issues += _check_cabinet_drawers_and_hinges(spec)
 
@@ -680,11 +1023,13 @@ def _validate_cabinet(spec) -> list[Issue]:
         if not stock.is_standard_sheet_thickness(t):
             warn(f"material.{name}",
                  f"{t:.1f}mm is not a stocked sheet thickness; nearest is "
-                 f"{stock.nearest_sheet_thickness(t):.0f}mm")
+                 f"{stock.nearest_sheet_thickness(t):.0f}mm", "MAT-001")
     if not stock.fits_standard_sheet(box_h, max(spec.depth, interior_w)):
         warn("width",
              f"a {box_h:.0f}×{max(spec.depth, interior_w):.0f}mm panel exceeds a "
-             "standard 2440×1220 sheet; seam, use an oversize sheet, or resize")
+             f"standard {STD_SHEET_LONG:.0f}×{STD_SHEET_SHORT:.0f}mm sheet; seam, "
+             "use an oversize sheet, or resize", "MAT-002",
+             fix="seam the panel, use an oversize sheet, or resize")
 
     # --- 32mm system shelf-pin drilling feasibility (DIM-009) ------------
     if spec.shelves > 0:
@@ -694,11 +1039,12 @@ def _validate_cabinet(spec) -> list[Issue]:
             warn("shelves",
                  f"interior is too short to drill a 32mm-system shelf-pin column "
                  f"({positions} pin position(s)); adjustable shelves need a taller "
-                 "box or a tighter end margin")
+                 "box or a tighter end margin", "DIM-009")
         if spec.depth < 2 * ROW_SETBACK + 10.0:
             warn("depth",
                  "too shallow for two 32mm-system shelf-pin rows "
-                 f"(need >~{2 * ROW_SETBACK:.0f}mm of depth); the rows would collide")
+                 f"(need >~{2 * ROW_SETBACK:.0f}mm of depth); the rows would collide",
+                 "DIM-009")
 
     # --- proportion advisories (PROP-001/003, INFO) ----------------------
     # Front face: how the piece reads head-on. Corner cabinets have an
@@ -712,13 +1058,13 @@ def _validate_cabinet(spec) -> list[Issue]:
                  f"front face {spec.width:.0f}×{box_h:.0f}mm reads as {face:.2f}:1; "
                  f"the golden ratio (1.62:1) is more balanced — e.g. shorten the "
                  f"long side to {short_target:.0f}mm or extend the short side to "
-                 f"{tall_target:.0f}mm")
+                 f"{tall_target:.0f}mm", "PROP-001")
     drawer_heights = [d.front_height for d in spec.drawers]
     if len(drawer_heights) >= 3 and not proportion.is_well_graduated(drawer_heights):
         info("drawers",
              "drawer heights are irregular; a uniform or graduated bank "
              "(shorter drawers on top, taller toward the bottom) looks more "
-             "intentional")
+             "intentional", "PROP-003")
 
     # --- A3 joinery / machining feasibility (analytic, no CAD) -----------
     issues.extend(joinery_feasibility(spec))
