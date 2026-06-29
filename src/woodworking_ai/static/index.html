@@ -4,6 +4,10 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Woodworking AI — Cabinet Designer</title>
+<meta name="description" content="Describe a piece in plain English and get an interactive 3D model, a labelled cut list, a shopping list, shop drawings and a real cost estimate you can build from." />
+<meta name="theme-color" content="#16130f" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#fbf7ef" media="(prefers-color-scheme: light)" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='5' fill='%23c47a3d'/><g fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M4 20h16'/><path d='M6 20V9l6-4 6 4v11'/><path d='M10 20v-5h4v5'/></g></svg>" />
 <!--CONVEX_URL-->
 <script type="module"
   src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
@@ -93,6 +97,19 @@
   html, body { height:100%; }
   body { margin:0; font:14px/1.55 var(--font-sans); background:var(--bg);
          color:var(--text); -webkit-font-smoothing:antialiased; }
+
+  /* Keyboard skip link: hidden until focused, then slides into the top-left. */
+  .skip-link { position:fixed; left:8px; top:-48px; z-index:100; padding:8px 14px;
+    background:var(--accent); color:var(--accent-ink); border-radius:var(--r-sm);
+    font-weight:600; text-decoration:none; box-shadow:var(--sh-2);
+    transition:top .15s ease; }
+  .skip-link:focus { top:8px; outline:none; box-shadow:0 0 0 3px var(--accent-soft); }
+  .wrap:focus { outline:none; }
+
+  /* Inline icons: stroke-based, currentColor — one visual language with the
+     header mark, instead of cross-platform colour emoji. */
+  .ic-svg { width:15px; height:15px; flex:0 0 auto; }
+  .ic-eye { width:12px; height:12px; vertical-align:-2px; }
 
   /* ---- header / app bar ---- */
   header { padding:12px 20px; background:var(--panel);
@@ -509,6 +526,7 @@
 </style>
 </head>
 <body>
+<a href="#mainContent" class="skip-link">Skip to content</a>
 <header>
   <div class="brand">
     <span class="mark" aria-hidden="true">
@@ -525,9 +543,8 @@
     aria-label="Show the quick start guide">
     <span aria-hidden="true">?</span> Guide
   </button>
-  <button id="themeBtn" class="hdr-btn" type="button" title="Switch light / dark theme"
-    aria-label="Switch light or dark theme">
-    <span id="themeIcon" aria-hidden="true">◐</span> Theme
+  <button id="themeBtn" class="hdr-btn" type="button" title="Theme: System">
+    <span id="themeIcon" aria-hidden="true">◐</span> <span id="themeLabel">System</span>
   </button>
 </header>
 <div id="toasts" aria-live="polite"></div>
@@ -552,7 +569,7 @@
     <button id="welcomeStart" type="button">Start designing</button>
   </div>
 </div>
-<div class="wrap">
+<div class="wrap" id="mainContent" tabindex="-1">
   <div class="controls">
     <div class="controls-scroll">
     <details id="galleryWrap" open>
@@ -604,8 +621,7 @@
     <fieldset>
       <legend>Fronts</legend>
       <div class="row">
-        <div><label for="doors">Doors</label>
-          <select id="doors"><option>0</option><option>1</option><option selected>2</option></select></div>
+        <div><label for="doors">Doors</label><input id="doors" type="number" value="2" min="0" max="4" /></div>
         <div><label for="drawers">Drawers</label><input id="drawers" type="number" value="0" min="0" /></div>
         <div><label for="shelves">Shelves</label><input id="shelves" type="number" value="1" min="0" /></div>
       </div>
@@ -692,7 +708,7 @@
         <div><label for="floor_drop">Floor drop (mm)</label><input id="floor_drop" type="number" value="0" /></div>
         <div><label for="out_sq">Out of square (mm)</label><input id="out_sq" type="number" value="0" /></div>
       </div>
-      <button id="planWallBtn" class="secondary" type="button">📐 Plan run to wall</button>
+      <button id="planWallBtn" class="secondary" type="button"><svg class="ic-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.3 8.7 8.7 21.3a1 1 0 0 1-1.4 0l-4.6-4.6a1 1 0 0 1 0-1.4L15.3 2.7a1 1 0 0 1 1.4 0l4.6 4.6a1 1 0 0 1 0 1.4Z"/><path d="m7.5 10.5 2 2"/><path d="m10.5 7.5 2 2"/><path d="m13.5 4.5 2 2"/><path d="m4.5 13.5 2 2"/></svg> Plan run to wall</button>
       <div id="wallPlan" class="muted" style="font-size:11.5px;margin-top:6px"></div>
     </fieldset>
     </div><!-- /projectFields -->
@@ -808,7 +824,7 @@
     </fieldset>
     <fieldset style="margin-top:14px">
       <legend>Library</legend>
-      <button id="saveBtn" class="secondary">💾 Save current design</button>
+      <button id="saveBtn" class="secondary"><svg class="ic-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save current design</button>
       <label for="savedList">Saved designs</label>
       <select id="savedList"><option value="">— none —</option></select>
       <div class="row" style="margin-top:8px">
@@ -880,7 +896,7 @@
             <button data-f="dxf" role="menuitem" title="2D cut layout">DXF — 2D layout</button>
           </div>
         </div>
-        <button id="shareBtn" class="share">🔗 Share</button>
+        <button id="shareBtn" class="share"><svg class="ic-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" y1="12" x2="16" y2="12"/></svg> <span id="shareLabel">Share</span></button>
       </div>
       <div class="tabs" id="tabs" role="tablist" aria-label="Result views">
         <button data-t="cutlist" class="active">Cut list</button>
@@ -917,6 +933,12 @@ function esc(s) {
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 let last = null, tab = "cutlist";
+// Stroke "eye" icon (matches the header mark's visual language) for the
+// in-pane "Show in 3D" affordance, instead of a cross-platform colour emoji.
+const ICON_EYE = '<svg class="ic-eye" viewBox="0 0 24 24" fill="none" ' +
+  'stroke="currentColor" stroke-width="2" stroke-linecap="round" ' +
+  'stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 ' +
+  '7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
 let _walkTimer = null;   // assembly-walkthrough auto-advance timer (G2a)
 
 // --- toasts: brief, non-blocking confirmation for downloads/saves/errors -----
@@ -1015,6 +1037,16 @@ function applyTheme(t) {
   else root.removeAttribute("data-theme");
   const icon = $("themeIcon");
   if (icon) icon.textContent = t === "light" ? "☀" : t === "dark" ? "☾" : "◐";
+  // Make the current mode legible (icon alone doesn't say which of three it is)
+  // and name the next mode in the cycle (system → dark → light → system).
+  const cur = t === "light" ? "Light" : t === "dark" ? "Dark" : "System";
+  const next = t === "" ? "Dark" : t === "dark" ? "Light" : "System";
+  const lbl = $("themeLabel"); if (lbl) lbl.textContent = cur;
+  const btn = $("themeBtn");
+  if (btn) {
+    btn.title = `Theme: ${cur} — switch to ${next}`;
+    btn.setAttribute("aria-label", `Theme: ${cur}. Switch to ${next}.`);
+  }
 }
 (function initTheme() {
   applyTheme(localStorage.getItem(THEME_LS) || "");
@@ -1656,9 +1688,10 @@ $("shareBtn").onclick = async () => {
   if (!last) return;
   const enc = btoa(unescape(encodeURIComponent(JSON.stringify(last.spec))));
   const url = location.origin + location.pathname + "#spec=" + enc;
-  try { await navigator.clipboard.writeText(url); $("shareBtn").textContent = "✓ Copied"; }
+  const lbl = $("shareLabel");
+  try { await navigator.clipboard.writeText(url); if (lbl) lbl.textContent = "Copied"; }
   catch { uiPrompt("Copy this share link:", url); }
-  setTimeout(() => $("shareBtn").textContent = "🔗 Share", 1500);
+  setTimeout(() => { if (lbl) lbl.textContent = "Share"; }, 1500);
   history.replaceState(null, "", "#spec=" + enc);
 };
 // Print the active report (the print stylesheet hides the app chrome + 3D).
@@ -1765,12 +1798,12 @@ function paint() {
     const sections = d.model_sections || [];
     h = subs.length ? `<p class="muted" style="font-size:11.5px;margin:0 0 8px">
         Build each sub-assembly, then bring them together in Final assembly.${
-          sections.length > 1 ? ' Click <b>👁 Show in 3D</b> to isolate a sub-assembly in the preview.' : ''}</p>` +
+          sections.length > 1 ? ` Click <b>${ICON_EYE} Show in 3D</b> to isolate a sub-assembly in the preview.` : ''}</p>` +
       subs.map(sub => {
         const sids = (sub.part_ids||[]).length ? ` <span class="muted" style="font-size:11px">[${esc(sub.part_ids.join(", "))}]</span>` : "";
         const canShow = sections.some(s => s.toLowerCase() === (sub.name||"").toLowerCase());
         const show = canShow ? ` <span class="step-show muted" role="button" tabindex="0" style="font-size:11px"
-          onclick="showSectionInModel('${esc((sub.name||'').replace(/'/g,"\\'"))}')">👁 Show in 3D</span>` : "";
+          onclick="showSectionInModel('${esc((sub.name||'').replace(/'/g,"\\'"))}')">${ICON_EYE} Show in 3D</span>` : "";
         const steps = (sub.steps||[]).map(s => {
           const ids = (s.part_ids||[]).length ? ` <span class="muted">[${esc(s.part_ids.join(", "))}]</span>` : "";
           const hw = (s.hardware||[]).length ? `<div class="muted" style="font-size:11px">↳ ${esc(s.hardware.join(", "))}</div>` : "";
@@ -2164,7 +2197,7 @@ function selectTab(b) {
     else i = arr.length - 1;
     arr[i].focus(); selectTab(arr[i]);
   });
-  // Keyboard activation for the "👁 Show in 3D" spans rendered into the pane.
+  // Keyboard activation for the "Show in 3D" spans rendered into the pane.
   pane.addEventListener("keydown", e => {
     const t = e.target;
     if (t && t.classList && t.classList.contains("step-show") &&
