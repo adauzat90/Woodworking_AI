@@ -164,6 +164,73 @@ def seasonal_movement(width: float, grain: str = "flatsawn",
     return max(width, 0.0) * coeff
 
 
+# Stiffness (Young's modulus E, MPa) of engineered beam products that aren't a
+# named wood species. Built-up / solid sawn beams use softwood framing lumber;
+# LVL and glulam are stiffer manufactured members. Customary US figures
+# (1e6 psi = 6894.76 MPa).
+ENGINEERED_MODULUS_MPA: dict[str, float] = {
+    "built_up": MODULUS_MPA["softwood"],     # plies of SPF/SYP dimensional lumber
+    "solid_timber": MODULUS_MPA["softwood"],  # a solid sawn timber
+    "glulam": 12400.0,                       # ~1.8e6 psi
+    "lvl": 13800.0,                          # ~2.0e6 psi
+}
+
+
+def beam_modulus(material: str | None, species: str | None = None) -> float:
+    """Young's modulus (MPa) for a beam of *material*, or its *species* if named.
+
+    A declared wood species wins (resolved through the species table, exactly like
+    a shelf); otherwise the engineered-product table maps built_up / solid_timber
+    / lvl / glulam to a stiffness, defaulting to softwood framing lumber.
+    """
+    if species and str(species).strip():
+        return resolve_modulus(species)[0]
+    key = str(material or "").strip().lower()
+    return ENGINEERED_MODULUS_MPA.get(key, MODULUS_MPA["softwood"])
+
+
+def max_beam_span(
+    width: float,
+    depth: float,
+    modulus: float,
+    load_per_length: float,
+    deflection_ratio: float = 1.0 / DEFLECTION_ENGINEERING,
+) -> float:
+    """Greatest clear span (mm) a rectangular beam carries within a sag limit.
+
+    Inverts the simply-supported, uniformly loaded deflection δ = 5·w·L⁴/(384·E·I)
+    at the acceptance limit δ = L / ``deflection_ratio`` (e.g. L/240), giving a
+    closed form  L = (384·E·I / (5·w·R))**(1/3)  with section I = b·h³/12.
+    ``load_per_length`` is the line load on the beam in N/mm (its tributary area
+    load times the spacing). Returns 0 for a degenerate section/load.
+    """
+    if width <= 0 or depth <= 0 or modulus <= 0 or load_per_length <= 0 \
+            or deflection_ratio <= 0:
+        return 0.0
+    moment_of_inertia = width * depth ** 3 / 12.0
+    return (384.0 * modulus * moment_of_inertia
+            / (5.0 * load_per_length * deflection_ratio)) ** (1.0 / 3.0)
+
+
+def beam_deflection_ratio(
+    span: float,
+    width: float,
+    depth: float,
+    modulus: float,
+    load_per_length: float,
+) -> float:
+    """Span-to-deflection ratio (L/δ) of a loaded beam — bigger is stiffer.
+
+    The inverse view of :func:`max_beam_span`: given an actual clear *span*, how
+    stiff is the beam? Returns ``inf`` for no load/deflection. Compare against an
+    acceptance ratio (240 typical for a floor/ceiling beam) to judge a layout.
+    """
+    deflection = shelf_deflection(span, width, depth, load_per_length, modulus)
+    if deflection <= 0:
+        return float("inf")
+    return span / deflection
+
+
 def tip_safety_factor(height: float, depth: float) -> float:
     """Crude static tip-over proxy: footprint depth relative to height.
 

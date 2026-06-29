@@ -31,6 +31,9 @@ CATEGORY_COLORS = {
     "filler": "#8a6a47",
     "endpanel": "#9c6b43",
     "molding": "#7a5230",
+    # building / barndominium structural frame
+    "beam": "#8a6238",          # carrying girders — a strong structural tone
+    "post": "#5e4327",          # support columns — darker still
 }
 CATEGORY_ALPHA = {"front": 0.92, "counter": 0.97}
 

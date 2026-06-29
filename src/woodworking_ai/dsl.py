@@ -197,6 +197,39 @@ class BedConnector(StrEnum):
     HOOK_PLATE = "hook_plate"       # interlocking bed-rail hook brackets
 
 
+class BeamMaterial(StrEnum):
+    """What a building's main carrying beam (girder) is made of.
+
+    Drives the beam's stiffness (and so the safe span the auto-placer allows) and
+    how the cut list describes it. A barndominium's main beams are usually a
+    built-up girder — several plies of dimensional lumber nailed/bolted together —
+    for short-to-medium bays, stepping up to an engineered LVL or glulam beam for
+    a long clear span.
+    """
+    BUILT_UP = "built_up"          # N plies of dimensional lumber laminated up
+    LVL = "lvl"                    # laminated veneer lumber — stiff, long spans
+    GLULAM = "glulam"             # glued-laminated timber
+    SOLID_TIMBER = "solid_timber"  # one solid sawn timber
+
+
+class PostMaterial(StrEnum):
+    """What a building's support post / column is made of."""
+    SOLID_TIMBER = "solid_timber"  # a solid (usually treated) timber, e.g. a 6x6
+    BUILT_UP = "built_up"          # a nailed-up laminated column (plies of 2x)
+    GLULAM = "glulam"
+
+
+class SpanDirection(StrEnum):
+    """Which building axis the carrying beams run along.
+
+    ``length`` (default): beams run the long way; parallel beam lines repeat
+    across the width. ``width``: beams run across the building; lines repeat along
+    the length.
+    """
+    LENGTH = "length"
+    WIDTH = "width"
+
+
 class GrainStyle(StrEnum):
     """Glue-up grain orientation for a cutting / charcuterie board."""
     EDGE_GRAIN = "edge_grain"       # strips on edge — the everyday board
@@ -1899,6 +1932,109 @@ def place_run(specs, *, start: tuple[float, float] = (0.0, 0.0),
     return out
 
 
+@dataclass
+class BuildingFrameSpec:
+    """A building / barndominium structural frame: carrying beams on posts.
+
+    The customer gives the building envelope (length × width × wall height) plus a
+    beam/post make-up, and the engine **automatically places** the main carrying
+    beams and the posts that support them: it lays a set of parallel beam lines
+    across the building and, along each beam, drops in support posts — choosing
+    the post (bay) spacing so no beam clear-spans further than it can safely carry
+    the declared load. Give ``beam_spacing`` / ``post_spacing`` to pin a layout,
+    or leave them ``0`` and the placer derives them.
+
+    This type deliberately models only the **primary skeleton** (beams + posts):
+    roof trusses, rafters, purlins, wall girts, sheathing and foundations are out
+    of scope. It is the structural counterpart to the furniture leaves and flows
+    through the same validate / cut-list / geometry / cost pipeline.
+
+    Coordinates use the shared frame with the footprint centred on the origin:
+    X = ``width`` (centred), Y = ``length`` (centred), Z = height (floor at 0).
+    Posts run from the floor to the underside of the beams, which sit on top so a
+    beam's top face is at ``wall_height``. The outer posts' faces sit on the
+    footprint lines, so the overall envelope is exactly ``width × length ×
+    wall_height`` — which the ``depth``/``height`` aliases below report so a
+    building drops through the generic envelope critic like any other leaf.
+    """
+
+    kind: str = "building"
+    units: str = "mm"
+    name: str = "Barndominium frame"
+
+    # --- building envelope ----------------------------------------------------
+    length: float = 12192.0      # long dimension, X (≈ 40 ft)
+    width: float = 9144.0        # short dimension, Y (≈ 30 ft)
+    wall_height: float = 3658.0  # floor to the top of the beams, Z (≈ 12 ft)
+
+    # --- carrying beams -------------------------------------------------------
+    span_direction: SpanDirection = SpanDirection.LENGTH
+    beam_spacing: float = 0.0    # c/c spacing of parallel beam lines; 0 = auto
+    beam_material: BeamMaterial = BeamMaterial.BUILT_UP
+    beam_width: float = 114.0    # beam face thickness, b (3-ply 2x ≈ 114mm)
+    beam_depth: float = 286.0    # beam height, h — drives stiffness (a 2x12)
+    beam_plies: int = 3          # built_up only: plies laminated into each girder
+
+    # --- support posts --------------------------------------------------------
+    post_material: PostMaterial = PostMaterial.SOLID_TIMBER
+    post_size: float = 140.0     # square post side (a treated 6x6 ≈ 140mm)
+    post_spacing: float = 0.0    # c/c bay spacing of posts along a beam; 0 = auto
+
+    # --- loading / limits -----------------------------------------------------
+    design_load: float = 245.0      # supported area load, kg/m² (≈ 50 psf floor)
+    deflection_ratio: float = 240.0  # allowable beam sag = clear span / this
+    max_span: float = 0.0           # explicit clear-span cap, mm; 0 = from calc
+
+    # --- finishing / material -------------------------------------------------
+    species: str = ""            # e.g. "pine" / "douglas_fir" (treated posts)
+    finish: str = "none"
+    finish_sheen: str = "satin"
+    material_form: str = "solid"
+
+    def __post_init__(self) -> None:
+        self.span_direction = _coerce_enum(SpanDirection, self.span_direction)
+        self.beam_material = _coerce_enum(BeamMaterial, self.beam_material)
+        self.post_material = _coerce_enum(PostMaterial, self.post_material)
+        self.beam_plies = _as_count(self.beam_plies, 1) or 1
+
+    # Envelope aliases so a building reads like any other leaf to the generic
+    # critic (which checks the geometry bbox against width/depth/height). ``width``
+    # is the X span; ``length`` is the Y span (``depth``); ``wall_height`` is Z.
+    @property
+    def depth(self) -> float:
+        return self.length
+
+    @property
+    def height(self) -> float:
+        return self.wall_height
+
+    def to_dict(self) -> dict[str, Any]:
+        d = asdict(self)
+        for k in ("span_direction", "beam_material", "post_material"):
+            if isinstance(getattr(self, k), Enum):
+                d[k] = getattr(self, k).value
+        d["schema_version"] = SCHEMA_VERSION
+        return d
+
+    def to_json(self, indent: int = 2) -> str:
+        return json.dumps(self.to_dict(), indent=indent)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "BuildingFrameSpec":
+        data = dict(data)
+        if normalize_unit(data.get("units")) == IMPERIAL:
+            _to_mm(data, ("length", "width", "wall_height", "beam_spacing",
+                          "beam_width", "beam_depth", "post_size", "post_spacing",
+                          "max_span"))
+            data["units"] = "mm"
+        known = {f for f in cls.__dataclass_fields__}
+        return cls(**{k: v for k, v in data.items() if k in known})
+
+    @classmethod
+    def from_json(cls, text: str) -> "BuildingFrameSpec":
+        return cls.from_dict(json.loads(text))
+
+
 # --- the one furniture taxonomy --------------------------------------------
 # Every "what kind of thing is this spec" decision in the pipeline derives from
 # this single table, so adding a furniture type is one new row here (plus the
@@ -1923,6 +2059,7 @@ LEAF_SPEC_TYPES: tuple[tuple[str, type, tuple[str, ...]], ...] = (
     ("nightstand", NightstandSpec, ()),
     ("desk", DeskSpec, ()),
     ("workbench", WorkbenchSpec, ()),
+    ("building", BuildingFrameSpec, ("barndominium", "building_frame")),
     ("cabinet", CabinetSpec, ()),
 )
 
@@ -2057,6 +2194,7 @@ STEP 1 — choose the "kind" first, then fill in that type's fields below:
   "nightstand"  a small legged cabinet with a drawer + lower shelf
   "desk"        a writing desk (legs + apron drawer + modesty panel)
   "workbench"   a heavy bench: thick top, stretchers, dog holes, a vise
+  "building"    a building/barndominium frame: auto-placed beams + posts
   "project"     more than one piece — a run / built-in (place components)
 
 STEP 2 — copy the matching MINIMAL example, then adjust. Every field not shown
@@ -2093,6 +2231,9 @@ to override a default.
 -- minimal workbench -----------------------------------------------------------
 {{"kind": "workbench", "name": "Workbench", "width": 1500, "depth": 600,
  "height": 900, "vise": true}}
+-- minimal building / barndominium frame ---------------------------------------
+{{"kind": "building", "name": "Barndo frame", "length": 12192, "width": 9144,
+ "wall_height": 3658}}
 -- minimal project (a row of two cabinets via a declarative run) ----------------
 {{"kind": "project", "name": "Run", "runs": [
   {{"start": [0, 0], "angle": 0, "gap": 0, "items": [
@@ -2384,6 +2525,38 @@ row of bench-dog holes, an optional vise, and a tool shelf.
 }}
 A bench wants hard, tough wood (beech/maple/ash), draw-bored or pinned M&T joints
 that won't rack under planing, and a thick top laminated from strips on edge.
+
+== BUILDING / BARNDOMINIUM (auto-placed beams + posts) ==
+A building's primary structural skeleton: the engine AUTO-PLACES the main
+carrying beams and the support posts under them. Give the envelope and the
+beam/post make-up; leave "beam_spacing"/"post_spacing" at 0 and the placer lays
+parallel beam lines across the building and drops posts along each beam so no
+clear span exceeds what the beam can safely carry the declared load. Models the
+beams + posts ONLY (no trusses/rafters/purlins/girts/foundation).
+{{
+  "kind": "building",
+  "name": "Barndo frame",
+  "units": "mm",
+  "length": <long dimension X, e.g. 12192 = 40 ft>,
+  "width": <short dimension Y, e.g. 9144 = 30 ft>,
+  "wall_height": <floor to top of beams Z, e.g. 3658 = 12 ft>,
+  "span_direction": {_opts(SpanDirection)},   // which way the beams run
+  "beam_spacing": <c/c of beam lines, mm; 0 = auto>,
+  "beam_material": {_opts(BeamMaterial)},
+  "beam_width": <beam face thickness b, e.g. 114 (3-ply 2x)>,
+  "beam_depth": <beam height h, e.g. 286 (a 2x12) — drives stiffness>,
+  "beam_plies": <built_up only: plies per girder, e.g. 3>,
+  "post_material": {_opts(PostMaterial)},
+  "post_size": <square post side, e.g. 140 (a 6x6)>,
+  "post_spacing": <c/c bay spacing of posts, mm; 0 = auto from the span limit>,
+  "design_load": <supported area load kg/m², e.g. 245 (~50 psf)>,
+  "deflection_ratio": <allowable sag = clear span / this, e.g. 240>,
+  "max_span": <explicit clear-span cap mm; 0 = computed from the section + load>,
+  "species": "pine" | "douglas_fir" | ..., "finish": "none"
+}}
+A barndominium frame typically uses built-up dimensional-lumber girders (or LVL /
+glulam for a long clear span) carried on treated solid-timber posts; deepen the
+beam, add plies, or close up the post spacing to clear a longer span.
 
 == PROJECT / ASSEMBLY (multi-part) ==
 For anything with more than one piece — a kitchen run, a built-in, a wall of

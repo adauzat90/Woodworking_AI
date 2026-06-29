@@ -66,6 +66,7 @@ The DSL, validator, and cut list have **zero CAD dependencies** and run anywhere
 
 ```bash
 python examples/base_cabinet.py
+python examples/barndominium_frame.py   # auto-places a building's beams + posts
 ```
 
 **Natural language → design (needs `ANTHROPIC_API_KEY`):**
@@ -223,6 +224,14 @@ front end.
   shelving), `dresser` (drawer bank).
 - **Tables:** a `table` furniture type — top, four legs, and aprons, with the
   same critique / cut list / cost / render / STEP-export pipeline.
+- **Buildings / barndominiums:** a `building` type that **automatically places**
+  the primary structural frame — the main carrying beams and the support posts
+  under them. Give the envelope (length × width × wall height) and a beam/post
+  make-up, and the engine lays parallel beam lines across the building and drops
+  posts along each beam so no beam clear-spans further than it can safely carry
+  the load (built-up dimensional girders, or LVL / glulam for a longer span, on
+  treated timber posts). It models the beams + posts only — not trusses, rafters,
+  purlins, or foundations.
 - **Construction:** `frameless` (Euro, overlay doors) and `face_frame`
   (hardwood stiles/rails + inset doors); sheet-good or **solid-wood glue-up**
   carcasses (panels broken into edge-glued boards, priced by the board foot).
@@ -274,6 +283,7 @@ front end.
 | Path | What |
 |---|---|
 | `src/woodworking_ai/dsl.py` | The furniture language (typed spec + JSON) |
+| `src/woodworking_ai/building.py` | `building` leaf: auto-places beams + posts for a barndominium frame |
 | `src/woodworking_ai/validator.py` | Type/range + woodworking sanity rules |
 | `src/woodworking_ai/cutlist.py` | Spec → parts + hardware (pure math) |
 | `src/woodworking_ai/geometry.py` | `panel_layout()` — single source of panel placement |

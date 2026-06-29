@@ -41,6 +41,13 @@ The historical plans are essentially complete. Highlights, by workstream:
   starter-project gallery (`templates.py`, `/api/templates`); consumables +
   sourcing in the PO (`sources.py`); responsive layout + print stylesheet.
 
+**Buildings (✅ shipped):** a `building` / barndominium leaf
+(`building.py`) that **auto-places** the primary structural frame — the main
+carrying beams and the support posts beneath them — sizing the post (bay) spacing
+to the safe span for the section + load (`engineering.max_beam_span`). Flows
+through the same validate / cut-list / geometry / cost pipeline as the furniture
+leaves; models beams + posts only (no trusses/rafters/purlins/foundation).
+
 **DSL (`DSL_*` — ✅ acted on):** parse-time lint for unknown fields/kinds,
 generated-and-guarded schema hint, `Project`/`Assembly` + `definitions`/`ref`
 composition, the `ApplianceVoid` placeholder, and the verify-repair feedback path.

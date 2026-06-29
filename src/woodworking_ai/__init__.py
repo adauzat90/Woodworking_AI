@@ -8,6 +8,7 @@ from .dsl import (
     BedSpec, BedSize, BedConnector,
     CuttingBoardSpec, GrainStyle,
     NightstandSpec, DeskSpec, WorkbenchSpec,
+    BuildingFrameSpec, BeamMaterial, PostMaterial, SpanDirection,
     ShelfFixing, spec_from_dict, Material, ToeKick,
     Drawer, Construction, BackStyle, Joinery,
     CornerJoint, DovetailTails, SlideType, Grain, TopFixing,
@@ -26,6 +27,8 @@ from .purchasing import purchase_order, PurchaseOrder, POLine
 # Importing this registers the H1 leaf furniture types (wall_shelf, box) into
 # the furniture registry — must come after the stage modules it builds on.
 from . import furniture_types  # noqa: F401  (import for side effects)
+# Registers the building/barndominium frame leaf (auto-placed beams + posts).
+from . import building  # noqa: F401  (import for side effects)
 
 __version__ = "0.1.0"
 
@@ -48,6 +51,10 @@ __all__ = [
     "NightstandSpec",
     "DeskSpec",
     "WorkbenchSpec",
+    "BuildingFrameSpec",
+    "BeamMaterial",
+    "PostMaterial",
+    "SpanDirection",
     "ShelfFixing",
     "furniture",
     "spec_from_dict",
