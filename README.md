@@ -215,6 +215,16 @@ front end.
 > container or VM, not a size-limited serverless function. Run `service.py`
 > without `build123d` for a lighter render-only deployment.
 
+## Fusion 360 add-in
+
+Import a spec straight into Fusion 360 as **native geometry** (plus cut list and
+drilling schedule) with **no build123d/OpenCascade** — the
+[`geometry.panel_layout()`](src/woodworking_ai/geometry.py) boxes are emitted via
+Fusion's own API instead. The zero-dependency DSL, validator, cut list, and
+drilling pipeline are reused verbatim. See [`fusion360/`](fusion360/) to install
+the add-in and [`docs/FUSION360.md`](docs/FUSION360.md) for the feasibility
+analysis and phase plan.
+
 ## What it can model
 
 - **Cabinet types:** `base` (toe kick + open top), `wall` (hung, enclosed top,

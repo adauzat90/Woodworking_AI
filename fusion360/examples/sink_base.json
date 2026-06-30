@@ -1,0 +1,10 @@
+{
+    "cabinet_type": "base",
+    "name": "Sink Base",
+    "width": 900,
+    "height": 720,
+    "depth": 560,
+    "doors": 2,
+    "shelves": 1,
+    "joinery": "dado"
+}
