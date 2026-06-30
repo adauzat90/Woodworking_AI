@@ -1,8 +1,10 @@
 # Bringing Woodworking AI into Fusion 360
 
-**Verdict: yes, and the architecture makes it a clean fit.** A working Phase-1
-add-in lives in [`fusion360/`](../fusion360/). This document records *why* it
-fits, what carries over for free, the real caveats, and the phase plan.
+**Verdict: yes, and the architecture makes it a clean fit.** A working add-in
+lives in [`fusion360/`](../fusion360/) (Phase 2: native geometry, machined
+joinery + bores, per-subassembly components, user parameters). This document
+records *why* it fits, what carries over for free, the real caveats, and the
+phase plan.
 
 ## The key insight
 
@@ -79,14 +81,27 @@ JSON, validates it, builds native Fusion bodies via the adapter, and writes the
 cut list + drilling CSV. Zero external dependencies; reuses the project's
 pure-Python pipeline verbatim.
 
-**Phase 2 — parametric + machined.**
-- Map DSL fields (width/height/depth/reveal/material thicknesses…) to Fusion
-  **user parameters**, so the model re-drives when they change.
-- Cut real joinery into the solids (dados/rabbets/grooves/bores) by consuming
-  the existing joinery + drilling schedules — the analogue of `builder.py`'s
-  opt-in `joinery_geometry`.
-- Emit each subassembly as its own component/occurrence for a richer browser
-  tree and assembly structure.
+**Phase 2 — machined + structured (done).**
+- **Machined joinery + bores.** Each panel is built in its centred local frame
+  and its dados/rabbets/grooves and bores are cut there — the exact geometry of
+  `builder.py`'s `_apply_joinery` / `_apply_bores`, fed by the same joinery +
+  drilling schedules as the setup sheets — before the body is rotated and
+  translated into place. Degrade-safe per panel (a bad boolean falls back to the
+  plain slab), and toggleable in the import dialog.
+- **Per-subassembly components.** Each buildable unit (Carcass, Doors, Drawer
+  box, Countertop…) becomes its own Fusion component/occurrence for a real
+  assembly tree.
+- **User parameters.** The spec's primary dimensions (width/height/depth, sheet
+  thicknesses) are written as Fusion user parameters.
+
+> **On "parametric".** True bidirectional parametric — drag a Fusion dimension
+> and the model re-solves — isn't achievable here, and that's by design: the
+> geometry is computed by the project's Python `panel_layout()`, not by Fusion's
+> constraint solver. The **DSL spec is the parametric model** (the project's
+> whole thesis). So the user parameters are reference documentation; to change
+> the design you edit the spec — the single, diffable source of truth — and
+> re-import. This is the honest and consistent model, not a limitation worked
+> around.
 
 **Phase 3 — the AI designer inside Fusion.** A natural-language box that calls
 the Claude designer over a pure-Python HTTPS client (no native deps), runs the

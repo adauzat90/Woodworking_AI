@@ -1,4 +1,4 @@
-# Woodworking AI — Fusion 360 add-in (Phase 1)
+# Woodworking AI — Fusion 360 add-in (Phase 2)
 
 Import a Woodworking AI spec (the same JSON the CLI and web app use) into
 Fusion 360 as **native geometry**, plus a cut list and a 32 mm drilling
@@ -17,13 +17,30 @@ schedule — with **no build123d / OpenCascade** inside Fusion.
 ## What it does
 
 1. Adds an **Import Woodworking AI Spec** button to the **Solid → Create** panel.
-2. You pick a spec `.json` file.
+2. A dialog lets you pick a spec `.json` and choose options (all default on):
+   - **Cut joinery & bores** — machine-honest dados/rabbets/grooves and bores,
+     cut from the project's own joinery + drilling schedules (the same numbers
+     as the setup sheets), instead of plain slabs.
+   - **Component per subassembly** — each buildable unit (Carcass, Doors, Drawer
+     box, Countertop…) becomes its own Fusion component for a real assembly tree.
+   - **Write cut list + drilling CSV**.
 3. It validates the spec with the project's own validator (errors are shown; you
    can build anyway).
 4. It compiles the spec to native Fusion bodies — one named `BRepBody` per panel
-   (labelled `Subassembly · Panel`), grouped in a new component named after the
-   spec, built inside a single `BaseFeature` timeline entry.
-5. It writes `<spec>_cutlist.csv` and `<spec>_drilling.csv` next to the spec.
+   (labelled `Subassembly · Panel`), built inside a single `BaseFeature` timeline
+   entry per component.
+5. It writes the spec's primary dimensions (width/height/depth, sheet
+   thicknesses) as Fusion **user parameters** (reference — see below).
+6. It writes `<spec>_cutlist.csv` and `<spec>_drilling.csv` next to the spec.
+
+### A note on parameters
+
+The geometry is computed by the project's Python layout (`panel_layout()`), not
+by Fusion's constraint solver — the **DSL spec is the parametric model**. So the
+user parameters are *reference documentation*: editing one won't re-drive the
+bodies. To change the design, edit the spec (or regenerate it with the CLI / web
+app) and re-import. This matches the whole project's philosophy: the text spec
+is the single, diffable source of truth.
 
 ## Install
 
@@ -62,14 +79,15 @@ Generate specs with the CLI or web app, or hand-write them — the format is the
 (multi-cabinet runs), tables, dressers, bookcases, and corner cabinets all work,
 because `panel_layout()` already handles them.
 
-## Scope (Phase 1)
+## Scope (Phase 2)
 
 - **In:** all spec kinds the layout supports; through cut-outs (sink/cooktop);
-  rotated panels (diagonal-corner door); validation; cut list + drilling export.
-- **Not yet:** Fusion *user parameters* driving the timeline (bodies are static
-  for now — Phase 2); machined joinery cuts (dados/rabbets/bores) in the solids
-  (the CLI's opt-in `joinery_geometry`); the AI designer agent (needs an HTTPS
-  client that works inside Fusion). See the phase plan in
+  rotated panels (diagonal-corner door); validation; **machined joinery + bores**
+  (dados/rabbets/grooves/bores, degrade-safe per panel); **per-subassembly
+  components**; spec dimensions as **user parameters**; cut list + drilling
+  export.
+- **Not yet (Phase 3):** the AI designer agent inside Fusion (needs a pure-Python
+  HTTPS client). See the phase plan in
   [`docs/FUSION360.md`](../docs/FUSION360.md).
 
 ## Files

@@ -1,10 +1,20 @@
-"""Woodworking AI -- Fusion 360 add-in (Phase 1).
+"""Woodworking AI -- Fusion 360 add-in (Phase 2).
 
-Adds a **Import Woodworking AI Spec** button to the Solid tab. It reads a
+Adds an **Import Woodworking AI Spec** button to the Solid tab. It reads a
 Woodworking AI spec (the same JSON the CLI and web app use), validates it with
 the project's own validator, compiles it to **native Fusion geometry** via
 :mod:`adapter` (no build123d / OpenCascade needed), and writes the cut list and
 32 mm drilling schedule next to the spec file.
+
+Phase 2 adds a dialog with options:
+
+* **Cut joinery & bores** -- machine-honest dados/rabbets/grooves and bores from
+  the project's own joinery + drilling schedules (the same numbers as the setup
+  sheets), instead of plain slabs.
+* **Component per subassembly** -- each buildable unit (Carcass, Doors, Drawer
+  box, Countertop…) becomes its own Fusion component for a real assembly tree.
+* The spec's primary dimensions are written as Fusion **user parameters** for
+  reference.
 
 The pure-Python ``woodworking_ai`` package (zero third-party deps) is reused
 verbatim -- only the geometry *backend* is swapped for Fusion's API. See
@@ -29,7 +39,8 @@ PANEL_ID = "SolidCreatePanel"
 
 _app = None
 _ui = None
-_handlers = []  # keep handler refs alive
+_handlers = []          # keep handler refs alive
+_state = {"spec_path": None}
 
 
 # ---------------------------------------------------------------------------
@@ -62,7 +73,7 @@ def _ensure_woodworking_ai_on_path():
 # Reports written beside the spec.
 # ---------------------------------------------------------------------------
 def _write_reports(spec, spec_path):
-    """Write ``<spec>_cutlist.csv`` and ``<spec>_drilling.csv``; return a note."""
+    """Write ``<spec>_cutlist.csv`` and ``<spec>_drilling.csv``; return notes."""
     from woodworking_ai.cutlist import generate_cutlist
 
     base, _ = os.path.splitext(spec_path)
@@ -86,7 +97,6 @@ def _write_reports(spec, spec_path):
             f"{sched.total_holes} holes -> {os.path.basename(drill_path)}"
         )
     except Exception:
-        # Drilling is a bonus; never let it block the import.
         notes.append("drilling schedule skipped (see Text Commands log)")
     return cutlist, notes
 
@@ -104,9 +114,9 @@ def _validation_blurb(result):
 
 
 # ---------------------------------------------------------------------------
-# The action.
+# The build, given a chosen spec + options.
 # ---------------------------------------------------------------------------
-def _run_import():
+def _do_build(spec_path, *, machined, by_subassembly, write_reports):
     root_path = _ensure_woodworking_ai_on_path()
     if not root_path:
         _ui.messageBox(
@@ -120,13 +130,6 @@ def _run_import():
     from woodworking_ai.dsl import spec_from_dict
     from woodworking_ai.validator import validate
     import adapter  # local module
-
-    dlg = _ui.createFileDialog()
-    dlg.title = "Select a Woodworking AI spec"
-    dlg.filter = "Woodworking AI spec (*.json);;All files (*.*)"
-    if dlg.showOpen() != adsk.core.DialogResults.DialogOK:
-        return
-    spec_path = dlg.filename
 
     try:
         with open(spec_path, "r", encoding="utf-8") as fh:
@@ -154,38 +157,112 @@ def _run_import():
         _ui.messageBox("Open or create a Fusion Design document first.", CMD_NAME)
         return
 
-    component, bodies = adapter.import_spec(spec, design)
-    _, notes = _write_reports(spec, spec_path)
+    component, bodies = adapter.import_spec(
+        spec, design, machined=machined, by_subassembly=by_subassembly
+    )
 
-    cam = _app.activeViewport
-    cam.fit()
+    notes = []
+    if write_reports:
+        _, notes = _write_reports(spec, spec_path)
+
+    _app.activeViewport.fit()
 
     summary = [
         f"Imported '{component.name}'.",
-        f"{len(bodies)} panels built as native Fusion bodies.",
-        "",
-        *notes,
+        f"{len(bodies)} panels built as native Fusion bodies"
+        + (" (machined)" if machined else "")
+        + (", grouped by subassembly." if by_subassembly else "."),
     ]
+    if notes:
+        summary += ["", *notes]
     if blurb:
         summary += ["", "Validation:", blurb]
     _ui.messageBox("\n".join(summary), CMD_NAME)
 
 
 # ---------------------------------------------------------------------------
-# Command plumbing.
+# Command dialog plumbing.
 # ---------------------------------------------------------------------------
-class _CommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
+def _pick_spec():
+    dlg = _ui.createFileDialog()
+    dlg.title = "Select a Woodworking AI spec"
+    dlg.filter = "Woodworking AI spec (*.json);;All files (*.*)"
+    if dlg.showOpen() == adsk.core.DialogResults.DialogOK:
+        return dlg.filename
+    return None
+
+
+class _InputChangedHandler(adsk.core.InputChangedEventHandler):
     def notify(self, args):
         try:
-            # No inputs needed -- this is an action button, so do the work as
-            # soon as the command is invoked and don't show an empty dialog.
-            _run_import()
+            if args.input.id != "browse":
+                return
+            path = _pick_spec()
+            if not path:
+                return
+            _state["spec_path"] = path
+            text = args.inputs.itemById("specPath")
+            if text:
+                text.text = os.path.basename(path)
+        except Exception:
+            if _ui:
+                _ui.messageBox(traceback.format_exc(), CMD_NAME)
+
+
+class _ExecuteHandler(adsk.core.CommandEventHandler):
+    def notify(self, args):
+        try:
+            inputs = args.command.commandInputs
+            path = _state.get("spec_path")
+            if not path:
+                _ui.messageBox("No spec selected — click Browse first.", CMD_NAME)
+                return
+            _do_build(
+                path,
+                machined=inputs.itemById("machined").value,
+                by_subassembly=inputs.itemById("bysub").value,
+                write_reports=inputs.itemById("reports").value,
+            )
         except Exception:
             if _ui:
                 _ui.messageBox(
                     "Woodworking AI import failed:\n" + traceback.format_exc(),
                     CMD_NAME,
                 )
+
+
+class _CommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
+    def notify(self, args):
+        try:
+            cmd = args.command
+            inputs = cmd.commandInputs
+
+            # Pick the spec up front so the dialog can show the chosen file.
+            _state["spec_path"] = _pick_spec()
+            shown = (os.path.basename(_state["spec_path"])
+                     if _state["spec_path"] else "<none — click Browse>")
+
+            text = inputs.addTextBoxCommandInput("specPath", "Spec file",
+                                                 shown, 1, True)
+            text.isFullWidth = True
+            inputs.addBoolValueInput("browse", "Browse…", False)
+            inputs.addBoolValueInput("machined", "Cut joinery & bores",
+                                     True, "", True)
+            inputs.addBoolValueInput("bysub", "Component per subassembly",
+                                     True, "", True)
+            inputs.addBoolValueInput("reports", "Write cut list + drilling CSV",
+                                     True, "", True)
+
+            on_changed = _InputChangedHandler()
+            cmd.inputChanged.add(on_changed)
+            _handlers.append(on_changed)
+
+            on_execute = _ExecuteHandler()
+            cmd.execute.add(on_execute)
+            _handlers.append(on_execute)
+        except Exception:
+            if _ui:
+                _ui.messageBox(traceback.format_exc(), CMD_NAME)
 
 
 def run(context):
