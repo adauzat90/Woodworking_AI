@@ -35,7 +35,16 @@ CMD_TOOLTIP = (
     "Import a Woodworking AI spec (JSON) as native Fusion geometry, with a "
     "cut list and 32 mm drilling schedule."
 )
+
+CMD_AI_ID = "WoodworkingAI_Design"
+CMD_AI_NAME = "Design with Woodworking AI"
+CMD_AI_TOOLTIP = (
+    "Describe furniture in plain language; Claude writes a validated spec and "
+    "it is built as native Fusion geometry. Needs an Anthropic API key."
+)
 PANEL_ID = "SolidCreatePanel"
+
+_PROMPT_EXAMPLE = "36 inch sink base, two shaker doors, soft-close, one shelf"
 
 _app = None
 _ui = None
@@ -101,6 +110,45 @@ def _write_reports(spec, spec_path):
     return cutlist, notes
 
 
+def _resolve_api_key():
+    """The Anthropic API key from the env or a key file, or ``None``.
+
+    Checked in order: ``ANTHROPIC_API_KEY``; ``anthropic_key.txt`` next to this
+    add-in; ``~/.woodai/anthropic_key``. A key file keeps the secret out of the
+    (unmasked) command dialog.
+    """
+    key = os.environ.get("ANTHROPIC_API_KEY")
+    if key and key.strip():
+        return key.strip()
+    here = os.path.dirname(os.path.realpath(__file__))
+    for path in (os.path.join(here, "anthropic_key.txt"),
+                 os.path.expanduser("~/.woodai/anthropic_key")):
+        try:
+            if os.path.isfile(path):
+                with open(path, "r", encoding="utf-8") as fh:
+                    text = fh.read().strip()
+                if text:
+                    return text
+        except Exception:
+            pass
+    return None
+
+
+def _place_spec(spec, *, machined, by_subassembly):
+    """Build *spec* into the active design; return ``(component, bodies)`` or None."""
+    design = adsk.fusion.Design.cast(_app.activeProduct)
+    if not design:
+        _ui.messageBox("Open or create a Fusion Design document first.", CMD_NAME)
+        return None
+    import adapter  # local module
+
+    component, bodies = adapter.import_spec(
+        spec, design, machined=machined, by_subassembly=by_subassembly
+    )
+    _app.activeViewport.fit()
+    return component, bodies
+
+
 def _validation_blurb(result):
     """A short human summary of validation errors/warnings, or '' if clean."""
     if result.ok and not result.warnings:
@@ -129,7 +177,6 @@ def _do_build(spec_path, *, machined, by_subassembly, write_reports):
 
     from woodworking_ai.dsl import spec_from_dict
     from woodworking_ai.validator import validate
-    import adapter  # local module
 
     try:
         with open(spec_path, "r", encoding="utf-8") as fh:
@@ -152,20 +199,14 @@ def _do_build(spec_path, *, machined, by_subassembly, write_reports):
         if proceed != adsk.core.DialogResults.DialogYes:
             return
 
-    design = adsk.fusion.Design.cast(_app.activeProduct)
-    if not design:
-        _ui.messageBox("Open or create a Fusion Design document first.", CMD_NAME)
+    placed = _place_spec(spec, machined=machined, by_subassembly=by_subassembly)
+    if not placed:
         return
-
-    component, bodies = adapter.import_spec(
-        spec, design, machined=machined, by_subassembly=by_subassembly
-    )
+    component, bodies = placed
 
     notes = []
     if write_reports:
         _, notes = _write_reports(spec, spec_path)
-
-    _app.activeViewport.fit()
 
     summary = [
         f"Imported '{component.name}'.",
@@ -178,6 +219,139 @@ def _do_build(spec_path, *, machined, by_subassembly, write_reports):
     if blurb:
         summary += ["", "Validation:", blurb]
     _ui.messageBox("\n".join(summary), CMD_NAME)
+
+
+# ---------------------------------------------------------------------------
+# The AI designer: natural language -> validated spec -> geometry.
+# ---------------------------------------------------------------------------
+def _do_design(prompt, *, model, machined, by_subassembly, run_critic,
+               save_spec):
+    root_path = _ensure_woodworking_ai_on_path()
+    if not root_path:
+        _ui.messageBox(
+            "Could not find the 'woodworking_ai' package — see the add-in "
+            "README for install steps.", CMD_AI_NAME,
+        )
+        return
+
+    api_key = _resolve_api_key()
+    if not api_key:
+        _ui.messageBox(
+            "No Anthropic API key found.\n\nSet the ANTHROPIC_API_KEY "
+            "environment variable, or put the key in 'anthropic_key.txt' next "
+            "to this add-in (or ~/.woodai/anthropic_key), then try again.",
+            CMD_AI_NAME,
+        )
+        return
+
+    from woodworking_ai.agents import llm
+    from woodworking_ai.agents.designer import design_from_prompt
+    from anthropic_client import AnthropicHTTPClient
+
+    llm.set_client(AnthropicHTTPClient(api_key))
+    try:
+        result = design_from_prompt(
+            prompt, model=(model or None), run_critic=run_critic
+        )
+    except Exception as exc:
+        _ui.messageBox(f"The AI designer failed:\n{exc}", CMD_AI_NAME)
+        return
+    finally:
+        llm.set_client(None)   # never leave the injected client behind
+
+    spec = result.spec
+    placed = _place_spec(spec, machined=machined, by_subassembly=by_subassembly)
+    if not placed:
+        return
+    component, bodies = placed
+
+    notes = []
+    if save_spec:
+        dlg = _ui.createFileDialog()
+        dlg.title = "Save the generated spec"
+        dlg.filter = "Woodworking AI spec (*.json)"
+        dlg.initialFilename = (getattr(spec, "name", None) or "design") + ".json"
+        if dlg.showSave() == adsk.core.DialogResults.DialogOK:
+            spec_path = dlg.filename
+            try:
+                with open(spec_path, "w", encoding="utf-8") as fh:
+                    fh.write(spec.to_json())
+                notes.append(f"spec -> {os.path.basename(spec_path)}")
+                _, report_notes = _write_reports(spec, spec_path)
+                notes += report_notes
+            except Exception as exc:
+                notes.append(f"could not save spec: {exc}")
+
+    crit_line = ""
+    if result.critique is not None:
+        crit_line = "geometry critic: " + ("passed" if result.critique.ok
+                                           else "flagged issues (see spec)")
+    summary = [
+        f"Designed '{component.name}' in {result.attempts} attempt(s).",
+        f"validation: {'passed' if result.validation.ok else 'has errors'}",
+    ]
+    if crit_line:
+        summary.append(crit_line)
+    summary.append(
+        f"{len(bodies)} panels built"
+        + (" (machined)" if machined else "")
+        + (", grouped by subassembly." if by_subassembly else ".")
+    )
+    if notes:
+        summary += ["", *notes]
+    _ui.messageBox("\n".join(summary), CMD_AI_NAME)
+
+
+class _DesignCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
+    def notify(self, args):
+        try:
+            cmd = args.command
+            inputs = cmd.commandInputs
+
+            prompt = inputs.addTextBoxCommandInput(
+                "prompt", "Describe the furniture", _PROMPT_EXAMPLE, 3, False
+            )
+            prompt.isFullWidth = True
+            inputs.addStringValueInput("model", "Model (blank = default)", "")
+            inputs.addBoolValueInput("machined", "Cut joinery & bores",
+                                     True, "", True)
+            inputs.addBoolValueInput("bysub", "Component per subassembly",
+                                     True, "", True)
+            inputs.addBoolValueInput("critic", "Run geometry critic",
+                                     True, "", True)
+            inputs.addBoolValueInput("savespec", "Save spec + cut list",
+                                     True, "", True)
+
+            on_execute = _DesignExecuteHandler()
+            cmd.execute.add(on_execute)
+            _handlers.append(on_execute)
+        except Exception:
+            if _ui:
+                _ui.messageBox(traceback.format_exc(), CMD_AI_NAME)
+
+
+class _DesignExecuteHandler(adsk.core.CommandEventHandler):
+    def notify(self, args):
+        try:
+            inputs = args.command.commandInputs
+            prompt = inputs.itemById("prompt").text.strip()
+            if not prompt:
+                _ui.messageBox("Describe the furniture first.", CMD_AI_NAME)
+                return
+            _do_design(
+                prompt,
+                model=inputs.itemById("model").value.strip(),
+                machined=inputs.itemById("machined").value,
+                by_subassembly=inputs.itemById("bysub").value,
+                run_critic=inputs.itemById("critic").value,
+                save_spec=inputs.itemById("savespec").value,
+            )
+        except Exception:
+            if _ui:
+                _ui.messageBox(
+                    "Woodworking AI design failed:\n" + traceback.format_exc(),
+                    CMD_AI_NAME,
+                )
 
 
 # ---------------------------------------------------------------------------
@@ -282,9 +456,21 @@ def run(context):
         cmd_def.commandCreated.add(handler)
         _handlers.append(handler)
 
+        ai_def = _ui.commandDefinitions.itemById(CMD_AI_ID)
+        if not ai_def:
+            ai_def = _ui.commandDefinitions.addButtonDefinition(
+                CMD_AI_ID, CMD_AI_NAME, CMD_AI_TOOLTIP
+            )
+        ai_handler = _DesignCommandCreatedHandler()
+        ai_def.commandCreated.add(ai_handler)
+        _handlers.append(ai_handler)
+
         panel = _ui.allToolbarPanels.itemById(PANEL_ID)
-        if panel and not panel.controls.itemById(CMD_ID):
-            panel.controls.addCommand(cmd_def)
+        if panel:
+            if not panel.controls.itemById(CMD_ID):
+                panel.controls.addCommand(cmd_def)
+            if not panel.controls.itemById(CMD_AI_ID):
+                panel.controls.addCommand(ai_def)
     except Exception:
         if _ui:
             _ui.messageBox("Add-in start failed:\n" + traceback.format_exc())
@@ -293,13 +479,14 @@ def run(context):
 def stop(context):
     try:
         panel = _ui.allToolbarPanels.itemById(PANEL_ID)
-        if panel:
-            ctrl = panel.controls.itemById(CMD_ID)
-            if ctrl:
-                ctrl.deleteMe()
-        cmd_def = _ui.commandDefinitions.itemById(CMD_ID)
-        if cmd_def:
-            cmd_def.deleteMe()
+        for cmd_id in (CMD_ID, CMD_AI_ID):
+            if panel:
+                ctrl = panel.controls.itemById(cmd_id)
+                if ctrl:
+                    ctrl.deleteMe()
+            cmd_def = _ui.commandDefinitions.itemById(cmd_id)
+            if cmd_def:
+                cmd_def.deleteMe()
         _handlers.clear()
     except Exception:
         if _ui:

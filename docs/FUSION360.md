@@ -1,10 +1,10 @@
 # Bringing Woodworking AI into Fusion 360
 
 **Verdict: yes, and the architecture makes it a clean fit.** A working add-in
-lives in [`fusion360/`](../fusion360/) (Phase 2: native geometry, machined
-joinery + bores, per-subassembly components, user parameters). This document
-records *why* it fits, what carries over for free, the real caveats, and the
-phase plan.
+lives in [`fusion360/`](../fusion360/) — native geometry, machined joinery +
+bores, per-subassembly components, user parameters, and an in-Fusion AI designer.
+This document records *why* it fits, what carries over for free, the real
+caveats, and the phase plan.
 
 ## The key insight
 
@@ -57,7 +57,7 @@ spec JSON ─▶ validator (as-is) ─▶ panel_layout() (as-is)
 | `panel_layout` geometry (boxes + openings + rotation) | **Drop-in** as data; one adapter module to Fusion bodies |
 | `builder.py` (build123d) | **Replaced** by the adapter — OpenCascade never loads in Fusion |
 | STEP / STL / GLB export | **Dropped** — Fusion exports natively once bodies exist |
-| Designer / Critic AI agents (`anthropic`) | Workable, but harder — needs an HTTPS client that runs inside Fusion (Phase 2) |
+| Designer / analytical Critic AI agents | **Reused** via a pure-`urllib` client injected with `llm.set_client()` — no SDK (Phase 3) |
 | Web app / FastAPI / matplotlib render | Not relevant — Fusion provides the viewport |
 
 ## The real caveats
@@ -67,8 +67,8 @@ spec JSON ─▶ validator (as-is) ─▶ panel_layout() (as-is)
   genuinely new module, plus the command/UI plumbing.
 - **Native wheels can't ride along.** build123d/OCP and `anthropic`'s native
   bits aren't installable into Fusion's interpreter. The geometry side dodges
-  this by design; the AI designer would need a pure-`urllib`/`http.client`
-  client to keep working.
+  this by design; the AI designer dodges it too, with a pure-`urllib` client
+  (Phase 3) in place of the SDK.
 - **Static bodies first.** Phase 1 produces real, editable bodies but not a
   parameter-driven timeline. True Fusion *user parameters* (dimensions that
   re-drive the model) is a larger effort — though a natural fit, since the DSL
@@ -103,10 +103,25 @@ pure-Python pipeline verbatim.
 > re-import. This is the honest and consistent model, not a limitation worked
 > around.
 
-**Phase 3 — the AI designer inside Fusion.** A natural-language box that calls
-the Claude designer over a pure-Python HTTPS client (no native deps), runs the
-same validate → repair loop, then builds — bringing the full
-language-to-geometry agent loop into Fusion.
+**Phase 3 — the AI designer inside Fusion (done).** A **Design with Woodworking
+AI** command takes a plain-language request and runs the project's existing
+`design_from_prompt` loop — Claude proposes a spec, the **validator** and the
+CAD-free **geometry critic** check it, and any problem is fed back for repair —
+then builds the result as native geometry and (optionally) saves the spec JSON.
+
+The one thing that couldn't come along is the `anthropic` SDK (native deps). So
+the transport is swapped for a **pure-`urllib` client**
+([`fusion360/anthropic_client.py`](../fusion360/anthropic_client.py)) that
+implements the exact slice `agents/llm.py` needs
+(`client.messages.create(...) -> .content` blocks) and is injected via the
+module's existing `llm.set_client(...)` seam. So, as with the geometry backend,
+**only the transport is replaced** — the entire NL→spec→validate→critique→repair
+loop is reused verbatim. This mirrors the whole project's design: swap one
+adapter at the edge, reuse the pure-Python core.
+
+The critic runs in its analytical (CAD-free) mode inside Fusion; its optional
+build123d B-Rep cross-check is skipped, exactly as it degrades on any host
+without OpenCascade.
 
 ## Verifying the adapter without Fusion
 
