@@ -1,0 +1,13 @@
+{
+    "autodeskProduct": "Fusion",
+    "type": "addin",
+    "id": "8c70175b-9d7d-430c-9782-32b04c6f859d",
+    "author": "Woodworking AI",
+    "description": {
+        "": "Import a Woodworking AI spec (JSON) as native Fusion 360 geometry — or describe furniture in plain language and let Claude design it — with a cut list and 32 mm drilling schedule."
+    },
+    "version": "0.1.0",
+    "runOnStartup": false,
+    "supportedOS": "windows|mac",
+    "editEnabled": true
+}

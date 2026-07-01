@@ -28,6 +28,8 @@ convex/_generated/
 # Secrets / env
 .env
 .env.*
+anthropic_key.txt
+fusion360/anthropic_key.txt
 
 # OS / editor
 .DS_Store
