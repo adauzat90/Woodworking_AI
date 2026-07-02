@@ -96,7 +96,9 @@ documented choice — see §5.
 | [out/cutlayout.dxf](out/cutlayout.dxf) | Sheet-nesting layout |
 | [out/cabinet.step](out/cabinet.step) / [.stl](out/cabinet.stl) / [.glb](out/cabinet.glb) | 3D models (CAD / print / web) |
 
-To rebuild or tweak: edit `spec.json`, then
+The `out/` folder is generated (gitignored, per repo convention) — `spec.json`
+is the source of truth. To (re)generate the packet or tweak the design: edit
+`spec.json`, then
 
 ```bash
 woodai build designs/base-cabinet-900/spec.json --estimate --drill \
