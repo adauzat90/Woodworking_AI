@@ -1,0 +1,25 @@
+{
+  "kind": "cabinet",
+  "cabinet_type": "base",
+  "name": "Oak Base Cabinet 900",
+  "units": "mm",
+  "width": 900,
+  "height": 820,
+  "depth": 560,
+  "toe_kick": { "height": 100, "setback": 60 },
+  "doors": 2,
+  "shelves": 1,
+  "drawers": [
+    { "front_height": 140 }
+  ],
+  "material_form": "plywood",
+  "species": "birch",
+  "stock": {
+    "front": { "form": "solid", "species": "oak" }
+  },
+  "hardware_brand": "blum",
+  "accessories": [
+    { "kind": "countertop", "material": "oak", "thickness": 38, "overhang": 30 }
+  ],
+  "finish": "clear"
+}
