@@ -1,0 +1,38 @@
+{
+  "kind": "project",
+  "name": "Workshop Center Island Bench",
+  "units": "mm",
+  "definitions": {
+    "bank": {
+      "kind": "nightstand",
+      "name": "Drawer bank",
+      "width": 610,
+      "depth": 590,
+      "height": 875,
+      "top_thickness": 18,
+      "solid_top": false,
+      "leg": 75,
+      "leg_inset": 25,
+      "apron_height": 90,
+      "apron_thickness": 22,
+      "drawers": 3,
+      "drawer_front_heights": [200, 250, 300],
+      "drawer_corner_joint": "dovetail",
+      "slide_type": "wood",
+      "shelf": false,
+      "joinery": "mortise_tenon",
+      "pull": "bar",
+      "species": "maple",
+      "material_form": "solid",
+      "finish": "oil"
+    }
+  },
+  "components": [
+    {"ref": "bank", "x": 0,    "y": 0,    "rotation": 0,   "label": "Front-L"},
+    {"ref": "bank", "x": 610,  "y": 0,    "rotation": 0,   "label": "Front-C"},
+    {"ref": "bank", "x": 1220, "y": 0,    "rotation": 0,   "label": "Front-R"},
+    {"ref": "bank", "x": 610,  "y": 1220, "rotation": 180, "label": "Back-L"},
+    {"ref": "bank", "x": 1220, "y": 1220, "rotation": 180, "label": "Back-C"},
+    {"ref": "bank", "x": 1830, "y": 1220, "rotation": 180, "label": "Back-R"}
+  ]
+}

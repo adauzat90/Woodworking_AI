@@ -1,0 +1,56 @@
+{
+  "kind": "project",
+  "name": "Pigeonhole cabinet 305mm deep",
+  "units": "mm",
+  "definitions": {
+    "col": {
+      "kind": "cabinet",
+      "cabinet_type": "bookcase",
+      "width": 305,
+      "height": 875,
+      "depth": 305,
+      "doors": 0,
+      "shelves": 3,
+      "shelf_joint": "dado",
+      "toe_kick": {
+        "height": 100,
+        "setback": 50
+      },
+      "material_form": "plywood",
+      "species": "birch",
+      "back": "rabbeted",
+      "edge_banding": true,
+      "finish": "oil"
+    }
+  },
+  "components": [
+    {
+      "ref": "col",
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "label": "C1"
+    },
+    {
+      "ref": "col",
+      "x": 305,
+      "y": 0,
+      "rotation": 0,
+      "label": "C2"
+    },
+    {
+      "ref": "col",
+      "x": 610,
+      "y": 0,
+      "rotation": 0,
+      "label": "C3"
+    },
+    {
+      "ref": "col",
+      "x": 915,
+      "y": 0,
+      "rotation": 0,
+      "label": "C4"
+    }
+  ]
+}

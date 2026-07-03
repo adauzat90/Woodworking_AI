@@ -1,0 +1,19 @@
+id,part,qty,length_mm,width_mm,thickness_mm,material,grain,notes
+T1,Top,1,610.0,590.0,18.0,top,length,solid or sheet top
+T2,Leg,4,857.0,75.0,75.0,leg,length,square stock
+T3,Apron side,2,390.0,90.0,22.0,apron,length,
+T4,Apron back,1,410.0,90.0,22.0,apron,length,
+T5,Front rail,1,410.0,30.0,22.0,apron,length,rail above the drawer
+D1,Drawer front 1,1,410.0,200.0,18.0,door/front,length,drawer face; dovetail box corners
+A1,Drawer side 1,2,525.0,160.0,12.0,drawer box,length,box side, grooved for the bottom; dovetail corners
+A2,Drawer end 1,2,360.6,160.0,12.0,drawer box,length,box front & back
+A3,Drawer bottom 1,1,360.6,513.0,6.0,drawer box,width,ply bottom in a groove
+D2,Drawer front 2,1,410.0,250.0,18.0,door/front,length,drawer face; dovetail box corners
+A4,Drawer side 2,2,525.0,210.0,12.0,drawer box,length,box side, grooved for the bottom; dovetail corners
+A5,Drawer end 2,2,360.6,210.0,12.0,drawer box,length,box front & back
+A6,Drawer bottom 2,1,360.6,513.0,6.0,drawer box,width,ply bottom in a groove
+D3,Drawer front 3,1,410.0,300.0,18.0,door/front,length,drawer face; dovetail box corners
+A7,Drawer side 3,2,525.0,260.0,12.0,drawer box,length,box side, grooved for the bottom; dovetail corners
+A8,Drawer end 3,2,360.6,260.0,12.0,drawer box,length,box front & back
+A9,Drawer bottom 3,1,360.6,513.0,6.0,drawer box,width,ply bottom in a groove
+A10,Drawer runner,6,525.0,18.0,12.0,solid,length,wooden side runner; drawer side grooved to ride it

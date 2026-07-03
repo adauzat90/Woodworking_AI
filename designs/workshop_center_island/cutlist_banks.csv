@@ -1,0 +1,109 @@
+id,part,qty,length_mm,width_mm,thickness_mm,material,grain,notes
+Front-L-T1,Front-L · Top,1,610.0,590.0,18.0,top,length,solid or sheet top
+Front-L-T2,Front-L · Leg,4,857.0,75.0,75.0,leg,length,square stock
+Front-L-T3,Front-L · Apron side,2,390.0,90.0,22.0,apron,length,
+Front-L-T4,Front-L · Apron back,1,410.0,90.0,22.0,apron,length,
+Front-L-T5,Front-L · Front rail,1,410.0,30.0,22.0,apron,length,rail above the drawer
+Front-L-D1,Front-L · Drawer front 1,1,410.0,200.0,18.0,door/front,length,drawer face; dovetail box corners
+Front-L-A1,Front-L · Drawer side 1,2,525.0,160.0,12.0,drawer box,length,box side, grooved for the bottom; dovetail corners
+Front-L-A2,Front-L · Drawer end 1,2,360.6,160.0,12.0,drawer box,length,box front & back
+Front-L-A3,Front-L · Drawer bottom 1,1,360.6,513.0,6.0,drawer box,width,ply bottom in a groove
+Front-L-D2,Front-L · Drawer front 2,1,410.0,250.0,18.0,door/front,length,drawer face; dovetail box corners
+Front-L-A4,Front-L · Drawer side 2,2,525.0,210.0,12.0,drawer box,length,box side, grooved for the bottom; dovetail corners
+Front-L-A5,Front-L · Drawer end 2,2,360.6,210.0,12.0,drawer box,length,box front & back
+Front-L-A6,Front-L · Drawer bottom 2,1,360.6,513.0,6.0,drawer box,width,ply bottom in a groove
+Front-L-D3,Front-L · Drawer front 3,1,410.0,300.0,18.0,door/front,length,drawer face; dovetail box corners
+Front-L-A7,Front-L · Drawer side 3,2,525.0,260.0,12.0,drawer box,length,box side, grooved for the bottom; dovetail corners
+Front-L-A8,Front-L · Drawer end 3,2,360.6,260.0,12.0,drawer box,length,box front & back
+Front-L-A9,Front-L · Drawer bottom 3,1,360.6,513.0,6.0,drawer box,width,ply bottom in a groove
+Front-L-A10,Front-L · Drawer runner,6,525.0,18.0,12.0,solid,length,wooden side runner; drawer side grooved to ride it
+Front-C-T1,Front-C · Top,1,610.0,590.0,18.0,top,length,solid or sheet top
+Front-C-T2,Front-C · Leg,4,857.0,75.0,75.0,leg,length,square stock
+Front-C-T3,Front-C · Apron side,2,390.0,90.0,22.0,apron,length,
+Front-C-T4,Front-C · Apron back,1,410.0,90.0,22.0,apron,length,
+Front-C-T5,Front-C · Front rail,1,410.0,30.0,22.0,apron,length,rail above the drawer
+Front-C-D1,Front-C · Drawer front 1,1,410.0,200.0,18.0,door/front,length,drawer face; dovetail box corners
+Front-C-A1,Front-C · Drawer side 1,2,525.0,160.0,12.0,drawer box,length,box side, grooved for the bottom; dovetail corners
+Front-C-A2,Front-C · Drawer end 1,2,360.6,160.0,12.0,drawer box,length,box front & back
+Front-C-A3,Front-C · Drawer bottom 1,1,360.6,513.0,6.0,drawer box,width,ply bottom in a groove
+Front-C-D2,Front-C · Drawer front 2,1,410.0,250.0,18.0,door/front,length,drawer face; dovetail box corners
+Front-C-A4,Front-C · Drawer side 2,2,525.0,210.0,12.0,drawer box,length,box side, grooved for the bottom; dovetail corners
+Front-C-A5,Front-C · Drawer end 2,2,360.6,210.0,12.0,drawer box,length,box front & back
+Front-C-A6,Front-C · Drawer bottom 2,1,360.6,513.0,6.0,drawer box,width,ply bottom in a groove
+Front-C-D3,Front-C · Drawer front 3,1,410.0,300.0,18.0,door/front,length,drawer face; dovetail box corners
+Front-C-A7,Front-C · Drawer side 3,2,525.0,260.0,12.0,drawer box,length,box side, grooved for the bottom; dovetail corners
+Front-C-A8,Front-C · Drawer end 3,2,360.6,260.0,12.0,drawer box,length,box front & back
+Front-C-A9,Front-C · Drawer bottom 3,1,360.6,513.0,6.0,drawer box,width,ply bottom in a groove
+Front-C-A10,Front-C · Drawer runner,6,525.0,18.0,12.0,solid,length,wooden side runner; drawer side grooved to ride it
+Front-R-T1,Front-R · Top,1,610.0,590.0,18.0,top,length,solid or sheet top
+Front-R-T2,Front-R · Leg,4,857.0,75.0,75.0,leg,length,square stock
+Front-R-T3,Front-R · Apron side,2,390.0,90.0,22.0,apron,length,
+Front-R-T4,Front-R · Apron back,1,410.0,90.0,22.0,apron,length,
+Front-R-T5,Front-R · Front rail,1,410.0,30.0,22.0,apron,length,rail above the drawer
+Front-R-D1,Front-R · Drawer front 1,1,410.0,200.0,18.0,door/front,length,drawer face; dovetail box corners
+Front-R-A1,Front-R · Drawer side 1,2,525.0,160.0,12.0,drawer box,length,box side, grooved for the bottom; dovetail corners
+Front-R-A2,Front-R · Drawer end 1,2,360.6,160.0,12.0,drawer box,length,box front & back
+Front-R-A3,Front-R · Drawer bottom 1,1,360.6,513.0,6.0,drawer box,width,ply bottom in a groove
+Front-R-D2,Front-R · Drawer front 2,1,410.0,250.0,18.0,door/front,length,drawer face; dovetail box corners
+Front-R-A4,Front-R · Drawer side 2,2,525.0,210.0,12.0,drawer box,length,box side, grooved for the bottom; dovetail corners
+Front-R-A5,Front-R · Drawer end 2,2,360.6,210.0,12.0,drawer box,length,box front & back
+Front-R-A6,Front-R · Drawer bottom 2,1,360.6,513.0,6.0,drawer box,width,ply bottom in a groove
+Front-R-D3,Front-R · Drawer front 3,1,410.0,300.0,18.0,door/front,length,drawer face; dovetail box corners
+Front-R-A7,Front-R · Drawer side 3,2,525.0,260.0,12.0,drawer box,length,box side, grooved for the bottom; dovetail corners
+Front-R-A8,Front-R · Drawer end 3,2,360.6,260.0,12.0,drawer box,length,box front & back
+Front-R-A9,Front-R · Drawer bottom 3,1,360.6,513.0,6.0,drawer box,width,ply bottom in a groove
+Front-R-A10,Front-R · Drawer runner,6,525.0,18.0,12.0,solid,length,wooden side runner; drawer side grooved to ride it
+Back-L-T1,Back-L · Top,1,610.0,590.0,18.0,top,length,solid or sheet top
+Back-L-T2,Back-L · Leg,4,857.0,75.0,75.0,leg,length,square stock
+Back-L-T3,Back-L · Apron side,2,390.0,90.0,22.0,apron,length,
+Back-L-T4,Back-L · Apron back,1,410.0,90.0,22.0,apron,length,
+Back-L-T5,Back-L · Front rail,1,410.0,30.0,22.0,apron,length,rail above the drawer
+Back-L-D1,Back-L · Drawer front 1,1,410.0,200.0,18.0,door/front,length,drawer face; dovetail box corners
+Back-L-A1,Back-L · Drawer side 1,2,525.0,160.0,12.0,drawer box,length,box side, grooved for the bottom; dovetail corners
+Back-L-A2,Back-L · Drawer end 1,2,360.6,160.0,12.0,drawer box,length,box front & back
+Back-L-A3,Back-L · Drawer bottom 1,1,360.6,513.0,6.0,drawer box,width,ply bottom in a groove
+Back-L-D2,Back-L · Drawer front 2,1,410.0,250.0,18.0,door/front,length,drawer face; dovetail box corners
+Back-L-A4,Back-L · Drawer side 2,2,525.0,210.0,12.0,drawer box,length,box side, grooved for the bottom; dovetail corners
+Back-L-A5,Back-L · Drawer end 2,2,360.6,210.0,12.0,drawer box,length,box front & back
+Back-L-A6,Back-L · Drawer bottom 2,1,360.6,513.0,6.0,drawer box,width,ply bottom in a groove
+Back-L-D3,Back-L · Drawer front 3,1,410.0,300.0,18.0,door/front,length,drawer face; dovetail box corners
+Back-L-A7,Back-L · Drawer side 3,2,525.0,260.0,12.0,drawer box,length,box side, grooved for the bottom; dovetail corners
+Back-L-A8,Back-L · Drawer end 3,2,360.6,260.0,12.0,drawer box,length,box front & back
+Back-L-A9,Back-L · Drawer bottom 3,1,360.6,513.0,6.0,drawer box,width,ply bottom in a groove
+Back-L-A10,Back-L · Drawer runner,6,525.0,18.0,12.0,solid,length,wooden side runner; drawer side grooved to ride it
+Back-C-T1,Back-C · Top,1,610.0,590.0,18.0,top,length,solid or sheet top
+Back-C-T2,Back-C · Leg,4,857.0,75.0,75.0,leg,length,square stock
+Back-C-T3,Back-C · Apron side,2,390.0,90.0,22.0,apron,length,
+Back-C-T4,Back-C · Apron back,1,410.0,90.0,22.0,apron,length,
+Back-C-T5,Back-C · Front rail,1,410.0,30.0,22.0,apron,length,rail above the drawer
+Back-C-D1,Back-C · Drawer front 1,1,410.0,200.0,18.0,door/front,length,drawer face; dovetail box corners
+Back-C-A1,Back-C · Drawer side 1,2,525.0,160.0,12.0,drawer box,length,box side, grooved for the bottom; dovetail corners
+Back-C-A2,Back-C · Drawer end 1,2,360.6,160.0,12.0,drawer box,length,box front & back
+Back-C-A3,Back-C · Drawer bottom 1,1,360.6,513.0,6.0,drawer box,width,ply bottom in a groove
+Back-C-D2,Back-C · Drawer front 2,1,410.0,250.0,18.0,door/front,length,drawer face; dovetail box corners
+Back-C-A4,Back-C · Drawer side 2,2,525.0,210.0,12.0,drawer box,length,box side, grooved for the bottom; dovetail corners
+Back-C-A5,Back-C · Drawer end 2,2,360.6,210.0,12.0,drawer box,length,box front & back
+Back-C-A6,Back-C · Drawer bottom 2,1,360.6,513.0,6.0,drawer box,width,ply bottom in a groove
+Back-C-D3,Back-C · Drawer front 3,1,410.0,300.0,18.0,door/front,length,drawer face; dovetail box corners
+Back-C-A7,Back-C · Drawer side 3,2,525.0,260.0,12.0,drawer box,length,box side, grooved for the bottom; dovetail corners
+Back-C-A8,Back-C · Drawer end 3,2,360.6,260.0,12.0,drawer box,length,box front & back
+Back-C-A9,Back-C · Drawer bottom 3,1,360.6,513.0,6.0,drawer box,width,ply bottom in a groove
+Back-C-A10,Back-C · Drawer runner,6,525.0,18.0,12.0,solid,length,wooden side runner; drawer side grooved to ride it
+Back-R-T1,Back-R · Top,1,610.0,590.0,18.0,top,length,solid or sheet top
+Back-R-T2,Back-R · Leg,4,857.0,75.0,75.0,leg,length,square stock
+Back-R-T3,Back-R · Apron side,2,390.0,90.0,22.0,apron,length,
+Back-R-T4,Back-R · Apron back,1,410.0,90.0,22.0,apron,length,
+Back-R-T5,Back-R · Front rail,1,410.0,30.0,22.0,apron,length,rail above the drawer
+Back-R-D1,Back-R · Drawer front 1,1,410.0,200.0,18.0,door/front,length,drawer face; dovetail box corners
+Back-R-A1,Back-R · Drawer side 1,2,525.0,160.0,12.0,drawer box,length,box side, grooved for the bottom; dovetail corners
+Back-R-A2,Back-R · Drawer end 1,2,360.6,160.0,12.0,drawer box,length,box front & back
+Back-R-A3,Back-R · Drawer bottom 1,1,360.6,513.0,6.0,drawer box,width,ply bottom in a groove
+Back-R-D2,Back-R · Drawer front 2,1,410.0,250.0,18.0,door/front,length,drawer face; dovetail box corners
+Back-R-A4,Back-R · Drawer side 2,2,525.0,210.0,12.0,drawer box,length,box side, grooved for the bottom; dovetail corners
+Back-R-A5,Back-R · Drawer end 2,2,360.6,210.0,12.0,drawer box,length,box front & back
+Back-R-A6,Back-R · Drawer bottom 2,1,360.6,513.0,6.0,drawer box,width,ply bottom in a groove
+Back-R-D3,Back-R · Drawer front 3,1,410.0,300.0,18.0,door/front,length,drawer face; dovetail box corners
+Back-R-A7,Back-R · Drawer side 3,2,525.0,260.0,12.0,drawer box,length,box side, grooved for the bottom; dovetail corners
+Back-R-A8,Back-R · Drawer end 3,2,360.6,260.0,12.0,drawer box,length,box front & back
+Back-R-A9,Back-R · Drawer bottom 3,1,360.6,513.0,6.0,drawer box,width,ply bottom in a groove
+Back-R-A10,Back-R · Drawer runner,6,525.0,18.0,12.0,solid,length,wooden side runner; drawer side grooved to ride it
