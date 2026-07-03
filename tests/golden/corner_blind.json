@@ -888,12 +888,18 @@
   },
   "panels": [
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         -441.0,
         280.0,
         410.0
       ],
+      "inner_sign": 1.0,
       "label": "Side L",
       "openings": [],
       "oversized": false,
@@ -906,12 +912,18 @@
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         441.0,
         280.0,
         410.0
       ],
+      "inner_sign": -1.0,
       "label": "Side R",
       "openings": [],
       "oversized": false,
@@ -924,30 +936,42 @@
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        9.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         0,
         277.0,
         109.0
       ],
+      "inner_sign": 1.0,
       "label": "Bottom",
       "openings": [],
       "oversized": false,
       "rot_z": 0.0,
       "size": [
-        864.0,
+        882.0,
         554.0,
         18.0
       ],
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         0,
         40.0,
         711.0
       ],
+      "inner_sign": 1.0,
       "label": "Stretcher front",
       "openings": [],
       "oversized": false,
@@ -960,12 +984,18 @@
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         0,
         514.0,
         711.0
       ],
+      "inner_sign": 1.0,
       "label": "Stretcher back",
       "openings": [],
       "oversized": false,
@@ -978,12 +1008,18 @@
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "back",
       "center": [
         0,
         557.0,
         410.0
       ],
+      "inner_sign": 1.0,
       "label": "Back",
       "openings": [],
       "oversized": false,
@@ -996,12 +1032,18 @@
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "shelf",
       "center": [
         0,
         273.0,
         410.0
       ],
+      "inner_sign": 1.0,
       "label": "Shelf 1",
       "openings": [],
       "oversized": false,
@@ -1014,12 +1056,18 @@
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "toe",
       "center": [
         0,
         59.0,
         50.0
       ],
+      "inner_sign": 1.0,
       "label": "Toe kick",
       "openings": [],
       "oversized": false,
@@ -1032,12 +1080,18 @@
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "front",
       "center": [
         -298.5,
         -9.0,
         410.0
       ],
+      "inner_sign": 1.0,
       "label": "Blind filler",
       "openings": [],
       "oversized": false,
@@ -1050,12 +1104,18 @@
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "front",
       "center": [
         150.0,
         -9.0,
         410.0
       ],
+      "inner_sign": 1.0,
       "label": "Door",
       "openings": [],
       "oversized": false,

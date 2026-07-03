@@ -156,12 +156,18 @@
   },
   "panels": [
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         0.0,
         225.0,
         9.0
       ],
+      "inner_sign": 1.0,
       "label": "Bottom",
       "openings": [],
       "oversized": false,
@@ -174,12 +180,18 @@
       "subassembly": "Box"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         0.0,
         9.0,
         225.0
       ],
+      "inner_sign": 1.0,
       "label": "Front",
       "openings": [],
       "oversized": false,
@@ -192,12 +204,18 @@
       "subassembly": "Box"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         0.0,
         441.0,
         225.0
       ],
+      "inner_sign": 1.0,
       "label": "Back",
       "openings": [],
       "oversized": false,
@@ -210,12 +228,18 @@
       "subassembly": "Box"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         -441.0,
         225.0,
         225.0
       ],
+      "inner_sign": 1.0,
       "label": "Side L",
       "openings": [],
       "oversized": false,
@@ -228,12 +252,18 @@
       "subassembly": "Box"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         441.0,
         225.0,
         225.0
       ],
+      "inner_sign": 1.0,
       "label": "Side R",
       "openings": [],
       "oversized": false,
@@ -246,12 +276,18 @@
       "subassembly": "Box"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         0.0,
         225.0,
         441.0
       ],
+      "inner_sign": 1.0,
       "label": "Lid",
       "openings": [],
       "oversized": false,

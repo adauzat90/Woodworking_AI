@@ -104,12 +104,18 @@
   },
   "panels": [
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "shelf",
       "center": [
         0.0,
         100.0,
         1387.5
       ],
+      "inner_sign": 1.0,
       "label": "Shelf",
       "openings": [],
       "oversized": false,
@@ -122,12 +128,18 @@
       "subassembly": "Shelf"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "cleat",
       "center": [
         0.0,
         187.5,
         1335.0
       ],
+      "inner_sign": 1.0,
       "label": "Cleat (wall)",
       "openings": [],
       "oversized": false,
@@ -140,12 +152,18 @@
       "subassembly": "Cleat"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "cleat",
       "center": [
         0.0,
         162.5,
         1335.0
       ],
+      "inner_sign": 1.0,
       "label": "Cleat (shelf)",
       "openings": [],
       "oversized": false,

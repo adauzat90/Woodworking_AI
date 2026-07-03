@@ -1862,12 +1862,18 @@
   },
   "panels": [
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         -391.0,
         150.0,
         940.0
       ],
+      "inner_sign": 1.0,
       "label": "Side L",
       "openings": [],
       "oversized": false,
@@ -1880,12 +1886,18 @@
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         391.0,
         150.0,
         940.0
       ],
+      "inner_sign": -1.0,
       "label": "Side R",
       "openings": [],
       "oversized": false,
@@ -1898,48 +1910,66 @@
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        9.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         0,
         147.0,
         89.0
       ],
+      "inner_sign": 1.0,
       "label": "Bottom",
       "openings": [],
       "oversized": false,
       "rot_z": 0.0,
       "size": [
-        764.0,
+        782.0,
         294.0,
         18.0
       ],
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        9.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         0,
         147.0,
         1791.0
       ],
+      "inner_sign": 1.0,
       "label": "Top",
       "openings": [],
       "oversized": false,
       "rot_z": 0.0,
       "size": [
-        764.0,
+        782.0,
         294.0,
         18.0
       ],
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "back",
       "center": [
         0,
         297.0,
         940.0
       ],
+      "inner_sign": 1.0,
       "label": "Back",
       "openings": [],
       "oversized": false,
@@ -1952,12 +1982,18 @@
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "shelf",
       "center": [
         0,
         143.0,
         434.8
       ],
+      "inner_sign": 1.0,
       "label": "Shelf 1",
       "openings": [],
       "oversized": false,
@@ -1970,12 +2006,18 @@
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "shelf",
       "center": [
         0,
         143.0,
         771.6
       ],
+      "inner_sign": 1.0,
       "label": "Shelf 2",
       "openings": [],
       "oversized": false,
@@ -1988,12 +2030,18 @@
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "shelf",
       "center": [
         0,
         143.0,
         1108.4
       ],
+      "inner_sign": 1.0,
       "label": "Shelf 3",
       "openings": [],
       "oversized": false,
@@ -2006,12 +2054,18 @@
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "shelf",
       "center": [
         0,
         143.0,
         1445.2
       ],
+      "inner_sign": 1.0,
       "label": "Shelf 4",
       "openings": [],
       "oversized": false,
@@ -2024,12 +2078,18 @@
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "toe",
       "center": [
         0,
         49.0,
         40.0
       ],
+      "inner_sign": 1.0,
       "label": "Toe kick",
       "openings": [],
       "oversized": false,

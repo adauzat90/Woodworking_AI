@@ -2430,12 +2430,18 @@
   },
   "panels": [
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         -291.0,
         290.0,
         1100.0
       ],
+      "inner_sign": 1.0,
       "label": "Side L",
       "openings": [],
       "oversized": false,
@@ -2448,12 +2454,18 @@
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         291.0,
         290.0,
         1100.0
       ],
+      "inner_sign": -1.0,
       "label": "Side R",
       "openings": [],
       "oversized": false,
@@ -2466,48 +2478,66 @@
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        9.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         0,
         287.0,
         109.0
       ],
+      "inner_sign": 1.0,
       "label": "Bottom",
       "openings": [],
       "oversized": false,
       "rot_z": 0.0,
       "size": [
-        564.0,
+        582.0,
         574.0,
         18.0
       ],
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        9.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         0,
         287.0,
         2091.0
       ],
+      "inner_sign": 1.0,
       "label": "Top",
       "openings": [],
       "oversized": false,
       "rot_z": 0.0,
       "size": [
-        564.0,
+        582.0,
         574.0,
         18.0
       ],
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "back",
       "center": [
         0,
         577.0,
         1100.0
       ],
+      "inner_sign": 1.0,
       "label": "Back",
       "openings": [],
       "oversized": false,
@@ -2520,12 +2550,18 @@
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "shelf",
       "center": [
         0,
         283.0,
         445.3333
       ],
+      "inner_sign": 1.0,
       "label": "Shelf 1",
       "openings": [],
       "oversized": false,
@@ -2538,12 +2574,18 @@
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "shelf",
       "center": [
         0,
         283.0,
         772.6667
       ],
+      "inner_sign": 1.0,
       "label": "Shelf 2",
       "openings": [],
       "oversized": false,
@@ -2556,12 +2598,18 @@
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "shelf",
       "center": [
         0,
         283.0,
         1100.0
       ],
+      "inner_sign": 1.0,
       "label": "Shelf 3",
       "openings": [],
       "oversized": false,
@@ -2574,12 +2622,18 @@
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "shelf",
       "center": [
         0,
         283.0,
         1427.3333
       ],
+      "inner_sign": 1.0,
       "label": "Shelf 4",
       "openings": [],
       "oversized": false,
@@ -2592,12 +2646,18 @@
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "shelf",
       "center": [
         0,
         283.0,
         1754.6667
       ],
+      "inner_sign": 1.0,
       "label": "Shelf 5",
       "openings": [],
       "oversized": false,
@@ -2610,12 +2670,18 @@
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "toe",
       "center": [
         0,
         59.0,
         50.0
       ],
+      "inner_sign": 1.0,
       "label": "Toe kick",
       "openings": [],
       "oversized": false,
@@ -2628,12 +2694,18 @@
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "front",
       "center": [
         -149.25,
         -9.0,
         1100.0
       ],
+      "inner_sign": 1.0,
       "label": "Door L",
       "openings": [],
       "oversized": false,
@@ -2646,12 +2718,18 @@
       "subassembly": "Door L"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "front",
       "center": [
         149.25,
         -9.0,
         1100.0
       ],
+      "inner_sign": 1.0,
       "label": "Door R",
       "openings": [],
       "oversized": false,
