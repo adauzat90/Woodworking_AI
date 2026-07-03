@@ -30,7 +30,7 @@ from .constants import (
 )
 from .hardware import (
     select_hinge, select_slide, select_pull, hinge_count,
-    longest_slide_for, CONFIRMAT, ASSEMBLY_SCREW,
+    longest_slide_for, is_metal_slide, CONFIRMAT, ASSEMBLY_SCREW,
 )
 from .materials import (
     MAT_BACK, MAT_DOOR_FRONT, MAT_DOOR_PANEL, MAT_DRAWER_BOX, MAT_COUNTERTOP,
@@ -43,6 +43,10 @@ SOLID_LUMBER_MATERIALS = frozenset(
     {MAT_FRAME, MAT_TOP, MAT_LEG, MAT_APRON, MAT_SOLID_PANEL})
 # One board foot is 144 cubic inches; expressed in mm³ for our mm-native parts.
 BOARD_FOOT_MM3 = 144.0 * (25.4 ** 3)   # ≈ 2_359_737.2 mm³
+
+# A traditional hardwood drawer runner strip (wood-on-wood, no metal slide).
+WOOD_RUNNER_WIDTH = 30.0       # face the drawer side rides on
+WOOD_RUNNER_THICKNESS = 18.0   # stout enough to screw to the carcass side
 
 
 @dataclass
@@ -418,13 +422,16 @@ def _expand_glue_ups(cl: "CutList", board_width: float = GLUE_UP_BOARD_WIDTH) ->
 
 def _add_drawer_box(cl: "CutList", spec: CabinetSpec, index: int,
                     opening_w: float, front_height: float,
-                    interior_depth: float, slide_length: float = 0.0) -> float:
+                    interior_depth: float, slide_length: float = 0.0,
+                    metal: bool = True) -> float:
     """Append the four box panels + bottom for one drawer.
 
-    When *slide_length* is 0 the box depth is snapped to the longest standard
-    slide that fits the interior depth (less the box/slide clearance), because a
-    shop buys a real slide length — not an arbitrary one. Returns the chosen
-    slide length (mm), or 0.0 when no fitting decision was made (an explicit
+    When *slide_length* is 0 **and** *metal* is true the box depth is snapped to
+    the longest standard slide that fits the interior depth (less the box/slide
+    clearance), because a shop buys a real slide length — not an arbitrary one.
+    A slideless drawer (*metal* false — wooden runners or a web frame) runs the
+    box to the full interior depth instead. Returns the chosen slide length
+    (mm), or 0.0 when no fitting decision was made (a slideless box, an explicit
     slide_length, or nothing standard fits).
     """
     m = spec.material
@@ -434,7 +441,9 @@ def _add_drawer_box(cl: "CutList", spec: CabinetSpec, index: int,
     box_w, box_h, box_d = drawer_box_dims(opening_w, front_height, interior_depth)
     side_note = "grooved for bottom"
     chosen = 0.0
-    if slide_length <= 0:
+    if not metal:
+        side_note = "grooved for bottom + a side groove to ride the wood runner"
+    elif slide_length <= 0:
         # Snap to a real slide: the longest standard length that fits the space.
         chosen = longest_slide_for(interior_depth - DRAWER_BOX_DEPTH_GAP)
         if chosen > 0:
@@ -552,24 +561,39 @@ def _add_front_parts(cl: "CutList", spec: CabinetSpec, is_ff: bool,
         if dr.false_front:
             continue  # fixed panel: no box, no slides
         sdr = spec.drawers[dr.index - 1] if dr.index - 1 < len(spec.drawers) else None
+        slide_type = str(getattr(sdr, "slide_type", "side_mount")).lower()
+        metal = is_metal_slide(slide_type)
         spec_slide_len = float(getattr(sdr, "slide_length", 0.0) or 0.0)
         # The drawer box itself, sized for slide and depth clearance. When no
-        # slide length is given, the box depth snaps to a real (orderable) slide.
+        # slide length is given, the box depth snaps to a real (orderable) slide;
+        # a slideless drawer runs the box the full interior depth instead.
         chosen = _add_drawer_box(cl, spec, dr.index, plan.opening_w, dr.height,
-                                 interior_depth, spec_slide_len)
-        slide_len = spec_slide_len or chosen
-        slide = select_slide(
-            brand, str(getattr(sdr, "slide_type", "side_mount")), slide_len)
-        slide_note = (f"{slide.name} — {slide.length:.0f}mm"
-                      if slide.length else slide.name)
-        cl.hardware.append(Hardware(
-            "Drawer slide (pair)", 1, slide_note, sku=slide.sku,
-            brand=slide.brand))
-        if slide.locking_holes:
+                                 interior_depth, spec_slide_len, metal=metal)
+        if metal:
+            slide_len = spec_slide_len or chosen
+            slide = select_slide(brand, slide_type, slide_len)
+            slide_note = (f"{slide.name} — {slide.length:.0f}mm"
+                          if slide.length else slide.name)
             cl.hardware.append(Hardware(
-                "Drawer slide locking device (pair)", 1,
-                f"{slide.rear_notch and 'box rear notch required' or ''}".strip(),
-                brand=slide.brand, category="connector"))
+                "Drawer slide (pair)", 1, slide_note, sku=slide.sku,
+                brand=slide.brand))
+            if slide.locking_holes:
+                cl.hardware.append(Hardware(
+                    "Drawer slide locking device (pair)", 1,
+                    f"{slide.rear_notch and 'box rear notch required' or ''}".strip(),
+                    brand=slide.brand, category="connector"))
+        elif slide_type == "wood":
+            # A hardwood runner strip screwed to each carcass side; the drawer
+            # side is grooved to ride it. Two strips per drawer (they double as
+            # the kicker for the drawer above). No metal, no slide holes.
+            runner_len = max(interior_depth - DRAWER_BOX_DEPTH_GAP, 100.0)
+            cl.parts.append(Part(
+                f"Drawer {dr.index} wood runner", 2, length=runner_len,
+                width=WOOD_RUNNER_WIDTH, thickness=WOOD_RUNNER_THICKNESS,
+                material=MAT_SOLID_PANEL, grain="length",
+                notes="hardwood side runner; screwed to carcass, drawer rides it",
+            ))
+        # slide_type == "none": rides on a web frame / case bottom — no part.
         pull = select_pull(brand)
         cl.hardware.append(Hardware(
             "Drawer pull", 1,

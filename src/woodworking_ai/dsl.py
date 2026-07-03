@@ -125,8 +125,22 @@ class DovetailTails(StrEnum):
 
 
 class SlideType(StrEnum):
-    SIDE_MOUNT = "side_mount"
-    UNDERMOUNT = "undermount"
+    SIDE_MOUNT = "side_mount"   # metal ball-bearing slide, screwed to the side
+    UNDERMOUNT = "undermount"   # metal undermount slide, box gets a rear notch
+    WOOD = "wood"               # traditional hardwood side runner — no metal
+    NONE = "none"               # rides on a web frame / case bottom — no runner
+
+
+# A metal slide needs hardware in the BOM + a screw/notch line in the drilling
+# schedule; a wooden runner or a bare web-frame drawer needs neither.
+METAL_SLIDES = (SlideType.SIDE_MOUNT, SlideType.UNDERMOUNT)
+
+# Aliases so a hand-written spec can say the natural thing for a slideless drawer.
+SLIDE_TYPE_ALIASES = {
+    "wooden": "wood", "runner": "wood", "runners": "wood",
+    "wood_runner": "wood", "wooden_runner": "wood", "side_runner": "wood",
+    "no": "none", "web": "none", "web_frame": "none", "slip": "none",
+}
 
 
 class Grain(StrEnum):
@@ -350,7 +364,8 @@ class Drawer:
         self.corner_joint = _coerce_enum(CornerJoint, self.corner_joint)
         self.dovetail_tails = _coerce_enum(
             DovetailTails, self.dovetail_tails, aliases={"side": "sides"})
-        self.slide_type = _coerce_enum(SlideType, self.slide_type)
+        self.slide_type = _coerce_enum(
+            SlideType, self.slide_type, aliases=SLIDE_TYPE_ALIASES)
 
 
 @dataclass

@@ -15,7 +15,7 @@ from dataclasses import dataclass, replace
 from .diagnostics import Severity, Diagnostic  # noqa: F401 (re-exported)
 from .dsl import (
     TableSpec, ComponentGroup, CabinetType, Joinery, ApplianceVoid,
-    CornerJoint, DovetailTails, SlideType, APPLIANCE_VOID_TOLERANCE,
+    CornerJoint, DovetailTails, SlideType, METAL_SLIDES, APPLIANCE_VOID_TOLERANCE,
     joinery_key,
 )
 from .dispatch import spec_kind, VOID, GROUP, TABLE, BENCH, CABINET
@@ -673,7 +673,8 @@ def _check_cabinet_drawers_and_hinges(spec) -> list[Issue]:
         # deep cabinet may leave enough room for the next 50mm size up — flag it
         # so the depth isn't wasted. (NB: the catalog's HW-003 is the unrelated
         # inset-depth rule; this is closest to HW-006's access/extension class.)
-        if any(d.slide_length <= 0 for d in boxed):
+        if any(d.slide_length <= 0 and d.slide_type in METAL_SLIDES
+               for d in boxed):
             usable = interior_depth - DRAWER_BOX_DEPTH_GAP
             fit = longest_slide_for(usable)
             if fit > 0 and usable - fit > SLIDE_DEPTH_WASTE_MM:

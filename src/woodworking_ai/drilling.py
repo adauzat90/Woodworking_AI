@@ -323,7 +323,22 @@ def _slide_ops(sides, drawer_fronts, brand, slide_types, pid) -> list[DrillOp]:
         for df in drawer_fronts:
             slide_v = df.center[2] - side_bottom        # height up the side
             idx = trailing_index(df.label)
-            slide = select_slide(brand, slide_types.get(idx, "side_mount"))
+            st = str(slide_types.get(idx, "side_mount")).lower()
+            if st == "none":
+                continue                # rides on a web frame / case bottom
+            if st == "wood":
+                # A hardwood runner screwed to the side at the drawer's height —
+                # no metal slide, just the runner's fixing screws.
+                op = DrillOp(
+                    part=side.label, operation=f"wood runner screws — {df.label}",
+                    note="fix hardwood side runner (drawer side grooved to ride it)",
+                    part_id=pid(side.label))
+                for d in SLIDE_SCREW_DEPTHS:
+                    u = depth / 2 if d is None else (d if d > 0 else depth + d)
+                    op.holes.append(Hole("runner screw", u, slide_v, 4.0, 12.0))
+                ops.append(op)
+                continue
+            slide = select_slide(brand, st)
             if slide.slide_type == "undermount":
                 op = DrillOp(
                     part=side.label, operation=f"undermount slide — {df.label}",
