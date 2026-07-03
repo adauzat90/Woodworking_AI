@@ -1,0 +1,230 @@
+
+Assembled run: 6 components, 145 panels, 0 interference(s)
+
+Combined cut list:
+id,part,qty,length_mm,width_mm,thickness_mm,material,grain,notes
+Front-L-A1,Front-L · Side,2,800.0,600.0,18.0,sheet,length,full-height gable
+Front-L-A2,Front-L · Bottom,1,624.0,594.0,18.0,sheet,none,between sides
+Front-L-A3,Front-L · Top stretcher,2,624.0,80.0,18.0,sheet,none,front & back top rail
+Front-L-B1,Front-L · Back,1,782.0,624.0,6.0,back panel,none,rabbeted back
+Front-L-D1,Front-L · Drawer front #1,1,654.0,160.0,18.0,door/front,length,overlay
+Front-L-E1,Front-L · Drawer 1 box side,2,569.0,120.0,12.0,drawer box,none,grooved for bottom + a side groove to ride the wood runner
+Front-L-E2,Front-L · Drawer 1 box front/back,2,610.6,120.0,12.0,drawer box,none,
+Front-L-E3,Front-L · Drawer 1 box bottom,1,634.6,569.0,6.0,back panel,none,captured in groove
+Front-L-A4,Front-L · Drawer 1 wood runner,2,569.0,30.0,18.0,solid panel,length,hardwood side runner; screwed to carcass, drawer rides it
+Front-L-D2,Front-L · Drawer front #2,1,654.0,230.0,18.0,door/front,length,overlay
+Front-L-E4,Front-L · Drawer 2 box side,2,569.0,190.0,12.0,drawer box,none,grooved for bottom + a side groove to ride the wood runner
+Front-L-E5,Front-L · Drawer 2 box front/back,2,610.6,190.0,12.0,drawer box,none,
+Front-L-E6,Front-L · Drawer 2 box bottom,1,634.6,569.0,6.0,back panel,none,captured in groove
+Front-L-A5,Front-L · Drawer 2 wood runner,2,569.0,30.0,18.0,solid panel,length,hardwood side runner; screwed to carcass, drawer rides it
+Front-L-D3,Front-L · Drawer front #3,1,654.0,300.0,18.0,door/front,length,overlay
+Front-L-E7,Front-L · Drawer 3 box side,2,569.0,260.0,12.0,drawer box,none,grooved for bottom + a side groove to ride the wood runner
+Front-L-E8,Front-L · Drawer 3 box front/back,2,610.6,260.0,12.0,drawer box,none,
+Front-L-E9,Front-L · Drawer 3 box bottom,1,634.6,569.0,6.0,back panel,none,captured in groove
+Front-L-A6,Front-L · Drawer 3 wood runner,2,569.0,30.0,18.0,solid panel,length,hardwood side runner; screwed to carcass, drawer rides it
+Front-M-A1,Front-M · Side,2,800.0,600.0,18.0,sheet,length,full-height gable
+Front-M-A2,Front-M · Bottom,1,473.0,594.0,18.0,sheet,none,between sides
+Front-M-A3,Front-M · Top stretcher,2,473.0,80.0,18.0,sheet,none,front & back top rail
+Front-M-B1,Front-M · Back,1,782.0,473.0,6.0,back panel,none,rabbeted back
+Front-M-D1,Front-M · Drawer front #1,1,503.0,190.0,18.0,door/front,length,overlay
+Front-M-E1,Front-M · Drawer 1 box side,2,569.0,150.0,12.0,drawer box,none,grooved for bottom + a side groove to ride the wood runner
+Front-M-E2,Front-M · Drawer 1 box front/back,2,459.6,150.0,12.0,drawer box,none,
+Front-M-E3,Front-M · Drawer 1 box bottom,1,483.6,569.0,6.0,back panel,none,captured in groove
+Front-M-A4,Front-M · Drawer 1 wood runner,2,569.0,30.0,18.0,solid panel,length,hardwood side runner; screwed to carcass, drawer rides it
+Front-M-D2,Front-M · Drawer front #2,1,503.0,250.0,18.0,door/front,length,overlay
+Front-M-E4,Front-M · Drawer 2 box side,2,569.0,210.0,12.0,drawer box,none,grooved for bottom + a side groove to ride the wood runner
+Front-M-E5,Front-M · Drawer 2 box front/back,2,459.6,210.0,12.0,drawer box,none,
+Front-M-E6,Front-M · Drawer 2 box bottom,1,483.6,569.0,6.0,back panel,none,captured in groove
+Front-M-A5,Front-M · Drawer 2 wood runner,2,569.0,30.0,18.0,solid panel,length,hardwood side runner; screwed to carcass, drawer rides it
+Front-M-D3,Front-M · Drawer front #3,1,503.0,260.0,18.0,door/front,length,overlay
+Front-M-E7,Front-M · Drawer 3 box side,2,569.0,220.0,12.0,drawer box,none,grooved for bottom + a side groove to ride the wood runner
+Front-M-E8,Front-M · Drawer 3 box front/back,2,459.6,220.0,12.0,drawer box,none,
+Front-M-E9,Front-M · Drawer 3 box bottom,1,483.6,569.0,6.0,back panel,none,captured in groove
+Front-M-A6,Front-M · Drawer 3 wood runner,2,569.0,30.0,18.0,solid panel,length,hardwood side runner; screwed to carcass, drawer rides it
+Front-R-A1,Front-R · Side,2,800.0,600.0,18.0,sheet,length,full-height gable
+Front-R-A2,Front-R · Bottom,1,624.0,594.0,18.0,sheet,none,between sides
+Front-R-A3,Front-R · Top stretcher,2,624.0,80.0,18.0,sheet,none,front & back top rail
+Front-R-B1,Front-R · Back,1,782.0,624.0,6.0,back panel,none,rabbeted back
+Front-R-D1,Front-R · Drawer front #1,1,654.0,150.0,18.0,door/front,length,overlay
+Front-R-E1,Front-R · Drawer 1 box side,2,569.0,110.0,12.0,drawer box,none,grooved for bottom + a side groove to ride the wood runner
+Front-R-E2,Front-R · Drawer 1 box front/back,2,610.6,110.0,12.0,drawer box,none,
+Front-R-E3,Front-R · Drawer 1 box bottom,1,634.6,569.0,6.0,back panel,none,captured in groove
+Front-R-A4,Front-R · Drawer 1 wood runner,2,569.0,30.0,18.0,solid panel,length,hardwood side runner; screwed to carcass, drawer rides it
+Front-R-D2,Front-R · Drawer front #2,1,654.0,220.0,18.0,door/front,length,overlay
+Front-R-E4,Front-R · Drawer 2 box side,2,569.0,180.0,12.0,drawer box,none,grooved for bottom + a side groove to ride the wood runner
+Front-R-E5,Front-R · Drawer 2 box front/back,2,610.6,180.0,12.0,drawer box,none,
+Front-R-E6,Front-R · Drawer 2 box bottom,1,634.6,569.0,6.0,back panel,none,captured in groove
+Front-R-A5,Front-R · Drawer 2 wood runner,2,569.0,30.0,18.0,solid panel,length,hardwood side runner; screwed to carcass, drawer rides it
+Front-R-D3,Front-R · Drawer front #3,1,654.0,320.0,18.0,door/front,length,overlay
+Front-R-E7,Front-R · Drawer 3 box side,2,569.0,280.0,12.0,drawer box,none,grooved for bottom + a side groove to ride the wood runner
+Front-R-E8,Front-R · Drawer 3 box front/back,2,610.6,280.0,12.0,drawer box,none,
+Front-R-E9,Front-R · Drawer 3 box bottom,1,634.6,569.0,6.0,back panel,none,captured in groove
+Front-R-A6,Front-R · Drawer 3 wood runner,2,569.0,30.0,18.0,solid panel,length,hardwood side runner; screwed to carcass, drawer rides it
+Back-R-A1,Back-R · Side,2,800.0,600.0,18.0,sheet,length,full-height gable
+Back-R-A2,Back-R · Bottom,1,574.0,594.0,18.0,sheet,none,between sides
+Back-R-A3,Back-R · Top stretcher,2,574.0,80.0,18.0,sheet,none,front & back top rail
+Back-R-B1,Back-R · Back,1,782.0,574.0,6.0,back panel,none,rabbeted back
+Back-R-D1,Back-R · Drawer front #1,1,604.0,200.0,18.0,door/front,length,overlay
+Back-R-E1,Back-R · Drawer 1 box side,2,569.0,160.0,12.0,drawer box,none,grooved for bottom + a side groove to ride the wood runner
+Back-R-E2,Back-R · Drawer 1 box front/back,2,560.6,160.0,12.0,drawer box,none,
+Back-R-E3,Back-R · Drawer 1 box bottom,1,584.6,569.0,6.0,back panel,none,captured in groove
+Back-R-A4,Back-R · Drawer 1 wood runner,2,569.0,30.0,18.0,solid panel,length,hardwood side runner; screwed to carcass, drawer rides it
+Back-R-D2,Back-R · Drawer front #2,1,604.0,240.0,18.0,door/front,length,overlay
+Back-R-E4,Back-R · Drawer 2 box side,2,569.0,200.0,12.0,drawer box,none,grooved for bottom + a side groove to ride the wood runner
+Back-R-E5,Back-R · Drawer 2 box front/back,2,560.6,200.0,12.0,drawer box,none,
+Back-R-E6,Back-R · Drawer 2 box bottom,1,584.6,569.0,6.0,back panel,none,captured in groove
+Back-R-A5,Back-R · Drawer 2 wood runner,2,569.0,30.0,18.0,solid panel,length,hardwood side runner; screwed to carcass, drawer rides it
+Back-R-D3,Back-R · Drawer front #3,1,604.0,250.0,18.0,door/front,length,overlay
+Back-R-E7,Back-R · Drawer 3 box side,2,569.0,210.0,12.0,drawer box,none,grooved for bottom + a side groove to ride the wood runner
+Back-R-E8,Back-R · Drawer 3 box front/back,2,560.6,210.0,12.0,drawer box,none,
+Back-R-E9,Back-R · Drawer 3 box bottom,1,584.6,569.0,6.0,back panel,none,captured in groove
+Back-R-A6,Back-R · Drawer 3 wood runner,2,569.0,30.0,18.0,solid panel,length,hardwood side runner; screwed to carcass, drawer rides it
+Back-M-A1,Back-M · Side,2,800.0,600.0,18.0,sheet,length,full-height gable
+Back-M-A2,Back-M · Bottom,1,573.0,594.0,18.0,sheet,none,between sides
+Back-M-A3,Back-M · Top stretcher,2,573.0,80.0,18.0,sheet,none,front & back top rail
+Back-M-B1,Back-M · Back,1,782.0,573.0,6.0,back panel,none,rabbeted back
+Back-M-D1,Back-M · Drawer front #1,1,603.0,150.0,18.0,door/front,length,overlay
+Back-M-E1,Back-M · Drawer 1 box side,2,569.0,110.0,12.0,drawer box,none,grooved for bottom + a side groove to ride the wood runner
+Back-M-E2,Back-M · Drawer 1 box front/back,2,559.6,110.0,12.0,drawer box,none,
+Back-M-E3,Back-M · Drawer 1 box bottom,1,583.6,569.0,6.0,back panel,none,captured in groove
+Back-M-A4,Back-M · Drawer 1 wood runner,2,569.0,30.0,18.0,solid panel,length,hardwood side runner; screwed to carcass, drawer rides it
+Back-M-D2,Back-M · Drawer front #2,1,603.0,210.0,18.0,door/front,length,overlay
+Back-M-E4,Back-M · Drawer 2 box side,2,569.0,170.0,12.0,drawer box,none,grooved for bottom + a side groove to ride the wood runner
+Back-M-E5,Back-M · Drawer 2 box front/back,2,559.6,170.0,12.0,drawer box,none,
+Back-M-E6,Back-M · Drawer 2 box bottom,1,583.6,569.0,6.0,back panel,none,captured in groove
+Back-M-A5,Back-M · Drawer 2 wood runner,2,569.0,30.0,18.0,solid panel,length,hardwood side runner; screwed to carcass, drawer rides it
+Back-M-D3,Back-M · Drawer front #3,1,603.0,330.0,18.0,door/front,length,overlay
+Back-M-E7,Back-M · Drawer 3 box side,2,569.0,290.0,12.0,drawer box,none,grooved for bottom + a side groove to ride the wood runner
+Back-M-E8,Back-M · Drawer 3 box front/back,2,559.6,290.0,12.0,drawer box,none,
+Back-M-E9,Back-M · Drawer 3 box bottom,1,583.6,569.0,6.0,back panel,none,captured in groove
+Back-M-A6,Back-M · Drawer 3 wood runner,2,569.0,30.0,18.0,solid panel,length,hardwood side runner; screwed to carcass, drawer rides it
+Back-L-A1,Back-L · Side,2,800.0,600.0,18.0,sheet,length,full-height gable
+Back-L-A2,Back-L · Bottom,1,574.0,594.0,18.0,sheet,none,between sides
+Back-L-A3,Back-L · Top stretcher,2,574.0,80.0,18.0,sheet,none,front & back top rail
+Back-L-B1,Back-L · Back,1,782.0,574.0,6.0,back panel,none,rabbeted back
+Back-L-D1,Back-L · Drawer front #1,1,604.0,180.0,18.0,door/front,length,overlay
+Back-L-E1,Back-L · Drawer 1 box side,2,569.0,140.0,12.0,drawer box,none,grooved for bottom + a side groove to ride the wood runner
+Back-L-E2,Back-L · Drawer 1 box front/back,2,560.6,140.0,12.0,drawer box,none,
+Back-L-E3,Back-L · Drawer 1 box bottom,1,584.6,569.0,6.0,back panel,none,captured in groove
+Back-L-A4,Back-L · Drawer 1 wood runner,2,569.0,30.0,18.0,solid panel,length,hardwood side runner; screwed to carcass, drawer rides it
+Back-L-D2,Back-L · Drawer front #2,1,604.0,240.0,18.0,door/front,length,overlay
+Back-L-E4,Back-L · Drawer 2 box side,2,569.0,200.0,12.0,drawer box,none,grooved for bottom + a side groove to ride the wood runner
+Back-L-E5,Back-L · Drawer 2 box front/back,2,560.6,200.0,12.0,drawer box,none,
+Back-L-E6,Back-L · Drawer 2 box bottom,1,584.6,569.0,6.0,back panel,none,captured in groove
+Back-L-A5,Back-L · Drawer 2 wood runner,2,569.0,30.0,18.0,solid panel,length,hardwood side runner; screwed to carcass, drawer rides it
+Back-L-D3,Back-L · Drawer front #3,1,604.0,270.0,18.0,door/front,length,overlay
+Back-L-E7,Back-L · Drawer 3 box side,2,569.0,230.0,12.0,drawer box,none,grooved for bottom + a side groove to ride the wood runner
+Back-L-E8,Back-L · Drawer 3 box front/back,2,560.6,230.0,12.0,drawer box,none,
+Back-L-E9,Back-L · Drawer 3 box bottom,1,584.6,569.0,6.0,back panel,none,captured in groove
+Back-L-A6,Back-L · Drawer 3 wood runner,2,569.0,30.0,18.0,solid panel,length,hardwood side runner; screwed to carcass, drawer rides it
+CT1,Run countertop,1,1829.0,1219.0,40.0,countertop,length,solid continuous worktop spanning the base footprint; 25mm overhang
+
+Hardware:
+item,qty,brand,sku,category,notes
+Front-L · Drawer pull,1,generic,,hardware,96mm CC
+Front-L · Drawer pull,1,generic,,hardware,96mm CC
+Front-L · Drawer pull,1,generic,,hardware,96mm CC
+Front-L · Assembly screw 4×35,4,,SCR-4x35,fastener,edge fixing + glue
+Front-L · Back panel screw 4×16,10,,,fastener,fix back to rear edges
+Front-L · Edge banding,1,,,hardware,match shown panel faces (see estimate for run)
+Front-M · Drawer pull,1,generic,,hardware,96mm CC
+Front-M · Drawer pull,1,generic,,hardware,96mm CC
+Front-M · Drawer pull,1,generic,,hardware,96mm CC
+Front-M · Assembly screw 4×35,4,,SCR-4x35,fastener,edge fixing + glue
+Front-M · Back panel screw 4×16,10,,,fastener,fix back to rear edges
+Front-M · Edge banding,1,,,hardware,match shown panel faces (see estimate for run)
+Front-R · Drawer pull,1,generic,,hardware,96mm CC
+Front-R · Drawer pull,1,generic,,hardware,96mm CC
+Front-R · Drawer pull,1,generic,,hardware,96mm CC
+Front-R · Assembly screw 4×35,4,,SCR-4x35,fastener,edge fixing + glue
+Front-R · Back panel screw 4×16,10,,,fastener,fix back to rear edges
+Front-R · Edge banding,1,,,hardware,match shown panel faces (see estimate for run)
+Back-R · Drawer pull,1,generic,,hardware,96mm CC
+Back-R · Drawer pull,1,generic,,hardware,96mm CC
+Back-R · Drawer pull,1,generic,,hardware,96mm CC
+Back-R · Assembly screw 4×35,4,,SCR-4x35,fastener,edge fixing + glue
+Back-R · Back panel screw 4×16,10,,,fastener,fix back to rear edges
+Back-R · Edge banding,1,,,hardware,match shown panel faces (see estimate for run)
+Back-M · Drawer pull,1,generic,,hardware,96mm CC
+Back-M · Drawer pull,1,generic,,hardware,96mm CC
+Back-M · Drawer pull,1,generic,,hardware,96mm CC
+Back-M · Assembly screw 4×35,4,,SCR-4x35,fastener,edge fixing + glue
+Back-M · Back panel screw 4×16,10,,,fastener,fix back to rear edges
+Back-M · Edge banding,1,,,hardware,match shown panel faces (see estimate for run)
+Back-L · Drawer pull,1,generic,,hardware,96mm CC
+Back-L · Drawer pull,1,generic,,hardware,96mm CC
+Back-L · Drawer pull,1,generic,,hardware,96mm CC
+Back-L · Assembly screw 4×35,4,,SCR-4x35,fastener,edge fixing + glue
+Back-L · Back panel screw 4×16,10,,,fastener,fix back to rear edges
+Back-L · Edge banding,1,,,hardware,match shown panel faces (see estimate for run)
+
+Mobile Storage Workbench: 181 panels (115 unique), 108 hardware items, ~30.12 m² sheet goods, 50.0 m edge banding
+
+Cost estimate — Mobile Storage Workbench
+  sheet goods:
+    sheet          6.0 mm  24 parts -> 6 sheet(s),   53% used
+    sheet         12.0 mm  72 parts -> 6 sheet(s),   45% used
+    sheet         18.0 mm  48 parts -> 6 sheet(s),   63% used
+  solid lumber:
+    solid panel   18.0 mm  36 parts ->   4.69 bd ft ($32.34)
+  material:        $ 1260.00 (18 sheets)
+  lumber:          $   32.34 (4.7 bd ft)
+  hardware:        $   65.40
+  edge banding:    $   74.94 (50.0 m)
+    sheet                  50.0 m
+  labour:          $ 1131.00 (17.4 h @ $65/h)
+  ------------------------------
+  TOTAL:           $ 2563.68
+
+Drilling schedule — Mobile Storage Workbench (108 holes)
+  Front-L · Side L: wood runner screws — Drawer front 1 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Front-L · Side L: wood runner screws — Drawer front 2 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Front-L · Side L: wood runner screws — Drawer front 3 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Front-L · Side R: wood runner screws — Drawer front 1 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Front-L · Side R: wood runner screws — Drawer front 2 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Front-L · Side R: wood runner screws — Drawer front 3 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Front-M · Side L: wood runner screws — Drawer front 1 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Front-M · Side L: wood runner screws — Drawer front 2 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Front-M · Side L: wood runner screws — Drawer front 3 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Front-M · Side R: wood runner screws — Drawer front 1 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Front-M · Side R: wood runner screws — Drawer front 2 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Front-M · Side R: wood runner screws — Drawer front 3 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Front-R · Side L: wood runner screws — Drawer front 1 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Front-R · Side L: wood runner screws — Drawer front 2 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Front-R · Side L: wood runner screws — Drawer front 3 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Front-R · Side R: wood runner screws — Drawer front 1 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Front-R · Side R: wood runner screws — Drawer front 2 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Front-R · Side R: wood runner screws — Drawer front 3 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Back-R · Side L: wood runner screws — Drawer front 1 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Back-R · Side L: wood runner screws — Drawer front 2 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Back-R · Side L: wood runner screws — Drawer front 3 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Back-R · Side R: wood runner screws — Drawer front 1 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Back-R · Side R: wood runner screws — Drawer front 2 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Back-R · Side R: wood runner screws — Drawer front 3 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Back-M · Side L: wood runner screws — Drawer front 1 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Back-M · Side L: wood runner screws — Drawer front 2 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Back-M · Side L: wood runner screws — Drawer front 3 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Back-M · Side R: wood runner screws — Drawer front 1 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Back-M · Side R: wood runner screws — Drawer front 2 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Back-M · Side R: wood runner screws — Drawer front 3 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Back-L · Side L: wood runner screws — Drawer front 1 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Back-L · Side L: wood runner screws — Drawer front 2 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Back-L · Side L: wood runner screws — Drawer front 3 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Back-L · Side R: wood runner screws — Drawer front 1 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Back-L · Side R: wood runner screws — Drawer front 2 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+  Back-L · Side R: wood runner screws — Drawer front 3 — 3 holes  (fix hardwood side runner (drawer side grooved to ride it))
+
+Build plan:
+  skill level: advanced
+    - dovetail joinery
+    - 181 parts (large build)
+    - 24 glue-ups
+    - 18 fronts to fit and align
+  estimated time: 33.4 h
+    mill        3.60 h
+    joinery    14.22 h
+    assembly   12.00 h
+    hardware    3.60 h
+    · joinery: 14.2 h
+    · assembly: 12.0 h
+    · mill: 3.6 h

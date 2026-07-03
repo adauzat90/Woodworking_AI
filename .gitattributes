@@ -1,0 +1,11 @@
+# Keep generated binaries byte-exact (no line-ending conversion on checkout).
+*.pdf   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.step  binary
+*.stp   binary
+*.stl   binary
+*.glb   binary
+*.ico   binary
