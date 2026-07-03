@@ -741,30 +741,36 @@ def _under_counter(comp) -> bool:
 def _add_run_countertop(cl: "CutList", project: ComponentGroup) -> None:
     """Append one continuous worktop spanning the run's base cabinets.
 
-    The kitchen-run counter a per-cabinet ``accessories`` top can't express:
-    sized from the X-extent of the under-counter components. Assumes a single
-    straight run (component rotation is not unwound), which covers the galley /
-    single-wall case; an L-run should add a countertop per leg."""
+    The kitchen-run counter a per-cabinet ``accessories`` top can't express. The
+    blank is sized from the true world-space footprint of the under-counter
+    components (via :func:`footprint_corners`), so it is correct for a straight
+    run, an L-run, and a back-to-back island alike — component rotation is fully
+    accounted for. ``depth`` may be overridden to force an exact slab (e.g. a
+    double-sided island whose worktop should be flush to the footprint)."""
     spec_ct = getattr(project, "countertop", None)
     if not isinstance(spec_ct, dict):
         return
-    spans = [(comp.x, comp.x + float(getattr(comp.spec, "width", 0.0) or 0.0),
-              float(getattr(comp.spec, "depth", 0.0) or 0.0))
-             for comp in project.components if _under_counter(comp)]
-    if not spans:
+    from .geometry import footprint_corners
+    unders = [comp for comp in project.components if _under_counter(comp)]
+    if not unders:
         return
-    left = min(s[0] for s in spans)
-    right = max(s[1] for s in spans)
-    run_depth = max(s[2] for s in spans)
-    overhang = float(spec_ct.get("overhang", 25.0) or 25.0)
-    thick = float(spec_ct.get("thickness", 38.0) or 38.0)
+    xs: list[float] = []
+    ys: list[float] = []
+    for comp in unders:
+        for (px, py) in footprint_corners(comp):
+            xs.append(px)
+            ys.append(py)
+    left, right = min(xs), max(xs)
+    front, back = min(ys), max(ys)
+    overhang = float(spec_ct.get("overhang") or 25.0)
+    thick = float(spec_ct.get("thickness") or 38.0)
     mat = str(spec_ct.get("material", "laminate"))
-    depth = float(spec_ct.get("depth", 0.0) or 0.0) or (run_depth + overhang)
+    depth = float(spec_ct.get("depth") or 0.0) or round((back - front) + overhang, 1)
     cl.parts.append(Part(
         "Run countertop", 1, length=round(right - left, 1), width=round(depth, 1),
         thickness=thick, material=MAT_COUNTERTOP, id="CT1", category="accessory",
-        notes=f"{mat} continuous worktop spanning the base run; "
-              f"{overhang:.0f}mm front overhang"))
+        notes=f"{mat} continuous worktop spanning the base footprint; "
+              f"{overhang:.0f}mm overhang"))
 
 
 def project_hardware(project: ComponentGroup) -> list["Hardware"]:

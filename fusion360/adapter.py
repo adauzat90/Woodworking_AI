@@ -74,8 +74,12 @@ def _plane_axis(size, normal):
     return next(i for i in (0, 1, 2) if i != normal and i != 2)
 
 
-def _apply_joinery(brep_mgr, solid, ops, size_cm):
-    """Subtract a dado/rabbet/groove box per housed joinery op (cm frame)."""
+def _apply_joinery(brep_mgr, solid, ops, size_cm, inner_sign=1.0):
+    """Subtract a dado/rabbet/groove box per housed joinery op (cm frame).
+
+    ``inner_sign`` (+1/-1) says which thickness face is the assembly interior, so
+    a mirrored right-hand panel gets its housing on the inner face, not outside.
+    """
     from woodworking_ai.joinery import classify_joinery_edge, JoineryEdge
 
     sx, sy, sz = size_cm
@@ -97,7 +101,7 @@ def _apply_joinery(brep_mgr, solid, ops, size_cm):
             dims[2] = sz * 2.0
             dims[normal] = depth * 2.0
             pos[plane] = half[plane] - width / 2.0   # park at the back edge
-            pos[normal] = half[normal]               # break the inner face
+            pos[normal] = inner_sign * half[normal]  # break the inner face
         else:
             # Horizontal dado across the panel for a bottom/top shelf.
             dims[plane] = span * 1.01
@@ -107,14 +111,17 @@ def _apply_joinery(brep_mgr, solid, ops, size_cm):
                 pos[2] = half[2] - width / 2.0
             else:                                    # bottom (default housed)
                 pos[2] = -half[2] + width / 2.0
-            pos[normal] = half[normal]
+            pos[normal] = inner_sign * half[normal]
         cutter = _local_box(brep_mgr, pos, dims)
         brep_mgr.booleanOperation(solid, cutter, _diff())
     return solid
 
 
-def _apply_bores(brep_mgr, solid, holes, size_cm):
-    """Subtract a cylinder per hole (through when as deep as the stock; cm)."""
+def _apply_bores(brep_mgr, solid, holes, size_cm, inner_sign=1.0):
+    """Subtract a cylinder per hole (through when as deep as the stock; cm).
+
+    ``inner_sign`` picks which thickness face a blind bore sinks in from, so a
+    right-hand panel's shelf-pin/runner holes are bored from its inner face."""
     sx, sy, sz = size_cm
     half = {0: sx / 2, 1: sy / 2, 2: sz / 2}
     normal = _normal_axis(size_cm)
@@ -133,8 +140,8 @@ def _apply_bores(brep_mgr, solid, holes, size_cm):
         if through:
             pos[normal] = 0.0
         else:
-            # Sink from the inner (+normal) face inward by ``depth``.
-            pos[normal] = half[normal] - depth / 2.0 + 0.1
+            # Sink from the inner face (±normal per ``inner_sign``) inward.
+            pos[normal] = inner_sign * (half[normal] - depth / 2.0 + 0.1)
         p1 = list(pos)
         p2 = list(pos)
         p1[normal] -= cut_len / 2.0
@@ -173,11 +180,12 @@ def panel_to_brep(brep_mgr, panel, machining=None):
         ops, holes = machining
         if ops or holes:
             try:
+                sign = float(getattr(panel, "inner_sign", 1.0) or 1.0)
                 work = brep_mgr.copy(solid)
                 if ops:
-                    _apply_joinery(brep_mgr, work, ops, size_cm)
+                    _apply_joinery(brep_mgr, work, ops, size_cm, sign)
                 if holes:
-                    _apply_bores(brep_mgr, work, holes, size_cm)
+                    _apply_bores(brep_mgr, work, holes, size_cm, sign)
                 solid = work
             except Exception:
                 pass   # degrade to the plain slab on any cutting failure

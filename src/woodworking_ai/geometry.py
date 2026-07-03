@@ -28,6 +28,7 @@ from .constants import (
     STRETCHER_WIDTH, SHELF_SIDE_CLEARANCE, SHELF_SETBACK,
     FRAME_WIDTH, FRAME_THICKNESS, MULLION_WIDTH,
     DOOR_STILE_WIDTH, DOOR_RAIL_WIDTH, MIN_DRAWER_BOX_WIDTH_3D,
+    HOUSED_DEPTH_FRACTION,
 )
 from .partmath import drawer_box_dims, door_panel_dims
 
@@ -87,6 +88,18 @@ class PanelBox:
     # for a countertop's sink/cooktop cut-out; the compiler subtracts a box (only
     # when build123d is present, so a CAD-free run is unaffected).
     openings: tuple = ()
+    # Which face is the assembly *interior*, along the panel's thickness (normal)
+    # axis: +1 = the +normal face (the default — e.g. a left side, whose inner
+    # face points +X), -1 = the -normal face (a right-hand panel — a right side or
+    # a right drawer-box wall — whose inner face points -X). Housings (dados/
+    # grooves/back rabbets) and bores are cut from this inner face, so a mirrored
+    # panel gets its groove on the correct side instead of the outside.
+    inner_sign: float = 1.0
+    # Half-extension (per axis, mm) by which this panel is grown to SEAT INTO the
+    # dado/groove that houses it (so a captured bottom/top/shelf reaches into its
+    # slot instead of floating short). The structural interference check subtracts
+    # this back out, because seating into a housing is a joint, not a collision.
+    capture_grow: tuple = (0.0, 0.0, 0.0)
 
     @property
     def role(self) -> "PanelRole":
@@ -365,8 +378,59 @@ def project_layout(project: ComponentGroup) -> list[PanelBox]:
                 label=f"{tag} · {p.label}", size=p.size, center=(wx, wy, cz),
                 category=p.category, rot_z=p.rot_z + comp.rotation,
                 oversized=p.oversized, subassembly=tag,
-                openings=p.openings))   # a run sections by cabinet
+                openings=p.openings,
+                # Carry the machining hints through so a mirrored side in a run
+                # still cuts its groove on the inside and a captured bottom still
+                # seats in its dado (else every project loses these).
+                inner_sign=p.inner_sign, capture_grow=p.capture_grow))
+    out += _run_countertop_panels(project)
     return out
+
+
+def _is_under_counter(spec) -> bool:
+    """A base cabinet a continuous worktop sits over (mirrors the cut list)."""
+    if spec_kind(spec) == CABINET:
+        ct = getattr(spec, "cabinet_type", None)
+        return str(getattr(ct, "value", ct)).lower() == "base"
+    return False
+
+
+def _run_countertop_panels(project) -> list[PanelBox]:
+    """One continuous worktop slab spanning the run's base cabinets, as a real
+    body — the geometry counterpart of the cut list's ``_add_run_countertop``.
+
+    Sized and placed from the true world-space footprint of the under-counter
+    components (via :func:`footprint_corners`), so it is correct for a straight
+    run, an L-run, or a back-to-back island. ``depth`` may be overridden to force
+    an exact slab (e.g. an island worktop flush to the footprint). Emitted in the
+    ``counter`` category so it never distorts the carcass envelope the Critic
+    measures, and as its own ``Worktop`` subassembly so it is one Fusion body."""
+    spec_ct = getattr(project, "countertop", None)
+    if not isinstance(spec_ct, dict):
+        return []
+    unders = [c for c in project.components if _is_under_counter(c.spec)]
+    if not unders:
+        return []
+    xs: list[float] = []
+    ys: list[float] = []
+    tops: list[float] = []
+    for comp in unders:
+        for (px, py) in footprint_corners(comp):
+            xs.append(px)
+            ys.append(py)
+        s = comp.spec
+        tops.append(float(getattr(s, "toe_kick_height", 0.0))
+                    + float(getattr(s, "box_height", 0.0)))
+    left, right = min(xs), max(xs)
+    front, back = min(ys), max(ys)
+    ct = float(spec_ct.get("thickness") or 38.0)
+    overhang = float(spec_ct.get("overhang") or 25.0)
+    depth = float(spec_ct.get("depth") or 0.0) or round((back - front) + overhang, 1)
+    z_top = max(tops)
+    return [PanelBox(
+        "Run countertop", (round(right - left, 1), round(depth, 1), ct),
+        ((left + right) / 2.0, (front + back) / 2.0, z_top + ct / 2.0),
+        "counter", subassembly="Worktop")]
 
 
 def panel_layout(spec) -> list[PanelBox]:
@@ -401,27 +465,39 @@ def _cabinet_layout(spec) -> list[PanelBox]:
 
     panels: list[PanelBox] = []
 
-    def add(label, size, center, category="carcass", rot_z=0.0, unit="Carcass"):
+    def add(label, size, center, category="carcass", rot_z=0.0, unit="Carcass",
+            inner_sign=1.0, capture_grow=(0.0, 0.0, 0.0)):
         panels.append(PanelBox(label, size, center, category, rot_z,
-                               subassembly=unit))
+                               subassembly=unit, inner_sign=inner_sign,
+                               capture_grow=capture_grow))
 
     z_box = toe_h + box_h / 2
     y_center = spec.depth / 2
 
+    # A dado/rabbet houses the bottom/top in a slot in the sides, so those panels
+    # run WIDER than the clear interior — into both slots. A butt/screw/dowel/
+    # domino carcass has no such slot, so they stay clear-interior.
+    grow = (m.carcass * HOUSED_DEPTH_FRACTION
+            if str(spec.joinery).lower() in ("dado", "rabbet") else 0.0)
+
     # --- sides -----------------------------------------------------------
+    # The right side is a mirror of the left: its interior face points -X, so its
+    # housings (back groove, shelf dados) and bores are cut from the -normal face.
     x_side = spec.width / 2 - m.carcass / 2
     add("Side L", (m.carcass, spec.depth, box_h), (-x_side, y_center, z_box))
-    add("Side R", (m.carcass, spec.depth, box_h), (x_side, y_center, z_box))
+    add("Side R", (m.carcass, spec.depth, box_h), (x_side, y_center, z_box),
+        inner_sign=-1.0)
 
     # --- bottom ----------------------------------------------------------
-    add("Bottom", (interior_w, interior_d, m.carcass),
-        (0, interior_d / 2, toe_h + m.carcass / 2))
+    add("Bottom", (interior_w + 2 * grow, interior_d, m.carcass),
+        (0, interior_d / 2, toe_h + m.carcass / 2),
+        capture_grow=(grow, 0.0, 0.0))
 
     # --- top: a full panel (wall/tall) or two rails (base) ---------------
     z_top = toe_h + box_h - m.carcass / 2
     if spec.has_full_top:
-        add("Top", (interior_w, interior_d, m.carcass),
-            (0, interior_d / 2, z_top))
+        add("Top", (interior_w + 2 * grow, interior_d, m.carcass),
+            (0, interior_d / 2, z_top), capture_grow=(grow, 0.0, 0.0))
     else:
         add("Stretcher front", (interior_w, STRETCHER_WIDTH, m.carcass),
             (0, STRETCHER_WIDTH / 2, z_top))
@@ -676,19 +752,27 @@ def _drawer_box_panels(it: "FrontItem", spec: CabinetSpec, plan) -> list[PanelBo
     cy = box_d / 2 + 8.0          # just behind the drawer front
     cz = it.z                     # aligned with the front's centre height
 
-    def db(lbl, size, center):
-        return PanelBox(lbl, size, center, "drawer_box", subassembly=unit)
+    def db(lbl, size, center, inner_sign=1.0):
+        return PanelBox(lbl, size, center, "drawer_box", subassembly=unit,
+                        inner_sign=inner_sign)
 
+    # The bottom is captured in a groove plowed in the two box sides (depth =
+    # drawer_box × HOUSED_DEPTH_FRACTION per side), so it runs WIDER than the
+    # clear interior — into both grooves — otherwise it floats short of them.
+    groove_depth = t * HOUSED_DEPTH_FRACTION
+    bottom_w = box_w - 2 * t + 2 * groove_depth      # into the side grooves
     return [
         db(f"Drawer {it.index} box side L", (t, box_d, box_h),
            (cx - box_w / 2 + t / 2, cy, cz)),
+        # The right box wall is a mirror: its interior face points -X, so its
+        # bottom groove is cut from the -normal face (not the outside).
         db(f"Drawer {it.index} box side R", (t, box_d, box_h),
-           (cx + box_w / 2 - t / 2, cy, cz)),
+           (cx + box_w / 2 - t / 2, cy, cz), inner_sign=-1.0),
         db(f"Drawer {it.index} box front", (box_w - 2 * t, t, box_h),
            (cx, cy - box_d / 2 + t / 2, cz)),
         db(f"Drawer {it.index} box back", (box_w - 2 * t, t, box_h),
            (cx, cy + box_d / 2 - t / 2, cz)),
-        db(f"Drawer {it.index} box bottom", (box_w - 2 * t, box_d - 2 * t, m.back),
+        db(f"Drawer {it.index} box bottom", (bottom_w, box_d - 2 * t, m.back),
            (cx, cy, cz - box_h / 2 + m.back / 2)),
     ]
 
