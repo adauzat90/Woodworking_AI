@@ -22,10 +22,10 @@ end and an 18″-deep one on the other**, all under one continuous benchtop.
 | **Drawers** | **18** — six banks of three graduated drawers, opening on **both** long sides |
 | **Pigeonholes** | **32** open cubbies — a 4×4 grid in each end cabinet, opening outward at the ends |
 | **Drawer motion** | **No metal slides** — traditional side-hung **wooden runners** |
-| **Primary wood** | Hard maple (banks/top); birch plywood (pigeonhole carcasses) |
+| **Primary wood** | Hard maple (drawer banks); **birch plywood** (benchtop core + pigeonhole carcasses) |
 | **Joinery** | M&T frames, **dovetailed** drawer boxes, **dadoed** cubby dividers/shelves |
-| **Est. cost** | ≈ **$4,890** — banks ≈ $2,530 + pigeonholes ≈ $1,710 + benchtop ≈ $650 |
-| **Est. shop time** | ≈ 120 h banks + ~35 h pigeonholes + ~15 h benchtop (advanced) |
+| **Est. cost** | ≈ **$4,840** — banks ≈ $2,530 + pigeonholes ≈ $1,710 + plywood benchtop ≈ $600 |
+| **Est. shop time** | ≈ 120 h banks + ~35 h pigeonholes + ~10 h benchtop (advanced) |
 
 ## Why this layout
 
@@ -73,13 +73,21 @@ ball-bearing slide.
   mm tenons) — the joint that resists the racking that kills legged furniture.
 - **Assembly:** banks are screwed to each other along their touching faces and
   lag-screwed up into the benchtop, so the island behaves as one heavy unit.
-- **Benchtop:** a **40 mm edge-grain laminated hard-maple slab**, now
-  **2592 × 1220 mm** so it runs unbroken over the drawer banks *and* both
-  pigeonhole ends (~32 strips of 38 mm stock, ~54 bd ft). It is fastened down
-  with **figure-8 / Z-clips** so the solid top can expand and contract across its
-  width without cracking. *(An 8.5-ft solid top is a big glue-up; if you'd rather,
-  keep the 1830 mm top over the banks and give each end cabinet its own flush
-  40 mm top — the seams fall at the ends where you work least.)*
+- **Benchtop:** a **shop-built plywood slab**, 2592 × 1220 mm, running unbroken
+  over the drawer banks *and* both pigeonhole ends. **Two layers of 18 mm birch
+  plywood** are glued and screwed into a **36 mm** core — lay the two butt seams
+  at **opposite ends so they stagger** and the top stays dead flat and stiff (it's
+  continuously supported by the cabinets, so it never spans unsupported). A
+  **40 mm solid-maple edge nosing** wraps and protects the plywood edges and gives
+  you something to clamp against. Screw it down to the bank/cabinet tops through
+  slotted holes (plywood is stable — no wood-movement worry like a solid top).
+  - **Optional replaceable skin:** a **6 mm tempered-hardboard** sacrificial
+    surface, **screwed (not glued)** on top so you can peel it off and swap it
+    when it gets chewed up. With the skin the surface sits ~917 mm (36″); without
+    it, ~911 mm — both "around 3 ft."
+
+  Plywood buys you a lighter, flatter, cheaper top than the solid-maple glue-up,
+  and the hardboard skin means the real work surface is a $25 consumable.
 
 ## End pigeonhole cabinets
 
@@ -108,20 +116,21 @@ edges (and swap to maple ply) if you want them to match the maple bench.
 
 ## Materials & wood movement
 
-Everything shown is **hard maple** — the right wood for a bench (hard, tough,
+The **drawer banks** are **hard maple** — the right wood for a bench (hard, tough,
 heavy) and specifically for wooden runners, which need a dense, stable species.
-Two deliberate movement decisions:
+The **benchtop and pigeonhole carcasses are plywood** (stable sheet goods).
+Movement decisions that matter:
 
-- The **benchtop floats** on figure-8 fasteners — never rigidly screwed across
-  its width.
+- The **plywood benchtop** doesn't move, so it's simply **screwed down** to the
+  cabinet tops (through slightly slotted holes) — no figure-8 float needed.
 - Drawer **bottoms are 6 mm plywood** (dimensionally stable) in a groove.
 
-**Cost / weight option:** an all-maple island is an heirloom (and heavy, which is
-a *feature* for a center table). To cut roughly a third of the cost and a lot of
-weight, build the **carcasses and drawer boxes from Baltic-birch plywood** and
-keep solid maple only for the legs, runners, drawer fronts, and benchtop. Wooden
-runners still work — just glue a solid-maple wear strip where the ply drawer side
-rides.
+**Further cost / weight option:** the drawer banks are still solid maple (an
+heirloom, and heavy — a *feature* for a center table). To cut roughly a third
+more cost and weight, build the **bank carcasses and drawer boxes from
+Baltic-birch plywood** too, keeping solid maple only for the legs, runners, and
+drawer fronts. Wooden runners still work — just glue a solid-maple wear strip
+where the ply drawer side rides.
 
 ## Per-bank cut list (×6 banks)
 
@@ -150,7 +159,7 @@ Full machine-readable lists: [`cutlist_one_bank.csv`](cutlist_one_bank.csv),
 ## Hardware
 
 - **18 × bar pulls** (one per drawer) — the *only* purchased hardware on the base.
-- **~40 × figure-8 / Z-clip** tabletop fasteners (benchtop attachment).
+- Benchtop: **wood screws** into the cabinet tops (plywood is stable — no clips).
 - Pigeonholes: assembly/back screws only — **no pins** (shelves are dadoed).
 - **No drawer slides. No slide screws. No hinges.**
 
@@ -166,10 +175,9 @@ The design is a parametric spec. From the repo root:
 woodai build designs/workshop_center_island/workshop_island.json  --estimate --joinery
 woodai build designs/workshop_center_island/pigeonhole_12in.json  --estimate
 woodai build designs/workshop_center_island/pigeonhole_18in.json  --estimate
-woodai build designs/workshop_center_island/benchtop.json         --estimate
 ```
 
-All four validate with **0 errors and 0 part interferences**. Edit the JSON
+All three validate with **0 errors and 0 part interferences**. Edit the JSON
 (drawer graduation, cubby grid, wood species, sizes) and rebuild to explore
 variations.
 
@@ -177,7 +185,9 @@ variations.
 
 The island is expressed as six drawer-bank modules (the DSL's `nightstand` type
 with `slide_type: "wood"`, which is the only drawer primitive that models
-slide-free wooden runners). The 40 mm benchtop that caps and unifies them is a
-separate glue-up (`benchtop.json`) — in the tool a single top can't span across
-independent modules, so it's specified and costed on its own. Physically it's one
-slab lagged down over all six banks.
+slide-free wooden runners) and the two pigeonhole cabinets as columns of open
+`bookcase` boxes. The **plywood benchtop** that caps and unifies everything isn't
+a parametric spec — it's just two laminated sheets and an edge, continuously
+supported by the cabinets, so it's given as a plain sheet-goods cut list
+([`cutlist_benchtop.csv`](cutlist_benchtop.csv)) rather than a `woodai` build.
+Physically it's one slab screwed down over all eight cabinets.

@@ -1,2 +1,9 @@
-id,part,qty,length_mm,width_mm,thickness_mm,material,grain,notes
-A1,Strip,32,2617.0,38.1,40.0,solid,length,edge-glued strip
+id,part,qty,length_mm,width_mm,thickness_mm,material,notes
+BT1,Core layer A - main field,1,2440,1220,18,birch_plywood,full sheet; seam toward one end
+BT2,Core layer A - filler,1,152,1220,18,birch_plywood,makes up to 2592; glue+screw to layer B
+BT3,Core layer B - main field,1,2440,1220,18,birch_plywood,full sheet; seam toward OTHER end (stagger vs layer A)
+BT4,Core layer B - filler,1,152,1220,18,birch_plywood,makes up to 2592
+BT5,Sacrificial skin - main (optional),1,2440,1220,6,tempered_hardboard,replaceable work surface; screw (no glue) so it lifts off
+BT6,Sacrificial skin - filler (optional),1,152,1220,6,tempered_hardboard,
+BT7,Edge nosing - long,2,2640,40,40,maple,hardwood lip; protects ply edge + takes clamps; mitered
+BT8,Edge nosing - short,2,1300,40,40,maple,mitered
