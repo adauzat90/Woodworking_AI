@@ -1,22 +1,31 @@
 # Workshop Center Island Bench
 
 A heavy, double-sided drawer island for the middle of a workshop — work from any
-side, store a shop's worth of tools in **18 slide-free drawers**.
+side, store a shop's worth of tools in **18 slide-free drawers** down the long
+sides and **32 open pigeonholes** capping the two ends.
 
 ![Island — front, side, isometric](island_render.png)
+
+## Full assembly — plan & elevation
+
+The 6 × 4 ft drawer island (below), plus a **12″-deep pigeonhole cabinet on one
+end and an 18″-deep one on the other**, all under one continuous benchtop.
+
+![Plan and elevation of the full assembly](assembly_plan.png)
 
 ## At a glance
 
 | | |
 |---|---|
-| **Footprint** | 1830 × 1220 mm (72″ × 48″ = **6 × 4 ft**) |
+| **Footprint** | 2592 × 1220 mm (**≈8.5 × 4 ft**) — 1830 mm drawer core + 305 mm (12″) + 457 mm (18″) end cabinets |
 | **Work-surface height** | 915 mm (**36″ = 3 ft**) |
-| **Drawers** | **18** total — six banks of three graduated drawers, opening on **both** long sides |
+| **Drawers** | **18** — six banks of three graduated drawers, opening on **both** long sides |
+| **Pigeonholes** | **32** open cubbies — a 4×4 grid in each end cabinet, opening outward at the ends |
 | **Drawer motion** | **No metal slides** — traditional side-hung **wooden runners** |
-| **Primary wood** | Hard maple (tough, heavy, holds a wooden runner well) |
-| **Joinery** | Mortise-and-tenon frames, hand/jig **dovetailed** drawer boxes |
-| **Est. cost (solid maple)** | ≈ **$3,030** (banks ≈ $2,530 + benchtop ≈ $500) |
-| **Est. shop time** | ≈ 120 h banks + ~15 h benchtop (advanced) |
+| **Primary wood** | Hard maple (banks/top); birch plywood (pigeonhole carcasses) |
+| **Joinery** | M&T frames, **dovetailed** drawer boxes, **dadoed** cubby dividers/shelves |
+| **Est. cost** | ≈ **$4,890** — banks ≈ $2,530 + pigeonholes ≈ $1,710 + benchtop ≈ $650 |
+| **Est. shop time** | ≈ 120 h banks + ~35 h pigeonholes + ~15 h benchtop (advanced) |
 
 ## Why this layout
 
@@ -64,9 +73,38 @@ ball-bearing slide.
   mm tenons) — the joint that resists the racking that kills legged furniture.
 - **Assembly:** banks are screwed to each other along their touching faces and
   lag-screwed up into the benchtop, so the island behaves as one heavy unit.
-- **Benchtop:** a **40 mm edge-grain laminated hard-maple slab**, 1830 × 1220 mm
-  (~32 strips of 38 mm stock). It is fastened down with **figure-8 / Z-clips** so
-  the solid top can expand and contract across its width without cracking.
+- **Benchtop:** a **40 mm edge-grain laminated hard-maple slab**, now
+  **2592 × 1220 mm** so it runs unbroken over the drawer banks *and* both
+  pigeonhole ends (~32 strips of 38 mm stock, ~54 bd ft). It is fastened down
+  with **figure-8 / Z-clips** so the solid top can expand and contract across its
+  width without cracking. *(An 8.5-ft solid top is a big glue-up; if you'd rather,
+  keep the 1830 mm top over the banks and give each end cabinet its own flush
+  40 mm top — the seams fall at the ends where you work least.)*
+
+## End pigeonhole cabinets
+
+![18″ pigeonhole cabinet](pigeonhole_18in_render.png)
+
+Two open cubby cabinets butt against the 4-ft ends and stand to the benchtop, so
+the top runs over them. One is **12″ (305 mm) deep**, the other **18″ (457 mm)
+deep** — shallow for small parts and hardware, deep for jigs, sanders, and boxes.
+
+- Each is a **4-column × 4-row grid = 16 open pigeonholes** (32 total), on a
+  100 mm **toe-kick base** so you can stand right up to the end.
+- Cubby opening ≈ **269 mm wide × ~180 mm tall**; depth is the full 12″/18″.
+- Built from **18 mm birch plywood**, carcass and dividers, with **dadoed
+  (housed) fixed shelves and dividers** — an egg-crate that needs no shelf pins
+  and can't sag. *(The auto-BOM still lists shelf pins; ignore them — the shelves
+  are captured in dadoes.)*
+- **How it's modeled:** each cabinet is expressed as four side-by-side plywood
+  **columns** (`pigeonhole_12in.json` / `pigeonhole_18in.json`), because a column
+  side *is* a pigeonhole divider and a one-cubby-wide shelf can't sag — which is
+  how the DSL sidesteps its lack of a vertical-divider field. Built for real as
+  one **egg-crate** the adjacent columns share a divider, so you can drop ~3
+  panels of the estimated material per cabinet.
+
+Wood note: birch ply keeps the cubbies light, stable, and cheap; band the front
+edges (and swap to maple ply) if you want them to match the maple bench.
 
 ## Materials & wood movement
 
@@ -111,8 +149,9 @@ Full machine-readable lists: [`cutlist_one_bank.csv`](cutlist_one_bank.csv),
 
 ## Hardware
 
-- **18 × bar pulls** (one per drawer) — the *only* purchased hardware.
-- **36 × figure-8 / Z-clip** tabletop fasteners (benchtop attachment).
+- **18 × bar pulls** (one per drawer) — the *only* purchased hardware on the base.
+- **~40 × figure-8 / Z-clip** tabletop fasteners (benchtop attachment).
+- Pigeonholes: assembly/back screws only — **no pins** (shelves are dadoed).
 - **No drawer slides. No slide screws. No hinges.**
 
 ## A single drawer bank
@@ -124,12 +163,15 @@ Full machine-readable lists: [`cutlist_one_bank.csv`](cutlist_one_bank.csv),
 The design is a parametric spec. From the repo root:
 
 ```bash
-woodai build designs/workshop_center_island/workshop_island.json --estimate --joinery
-woodai build designs/workshop_center_island/benchtop.json --estimate
+woodai build designs/workshop_center_island/workshop_island.json  --estimate --joinery
+woodai build designs/workshop_center_island/pigeonhole_12in.json  --estimate
+woodai build designs/workshop_center_island/pigeonhole_18in.json  --estimate
+woodai build designs/workshop_center_island/benchtop.json         --estimate
 ```
 
-Both validate with **0 errors and 0 part interferences**. Edit the JSON (drawer
-graduation, wood species, bank size) and rebuild to explore variations.
+All four validate with **0 errors and 0 part interferences**. Edit the JSON
+(drawer graduation, cubby grid, wood species, sizes) and rebuild to explore
+variations.
 
 ### Note on the model
 

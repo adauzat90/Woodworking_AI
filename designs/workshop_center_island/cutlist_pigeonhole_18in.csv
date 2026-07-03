@@ -1,0 +1,25 @@
+id,part,qty,length_mm,width_mm,thickness_mm,material,grain,notes
+C1-A1,C1 · Side,2,775.0,457.0,18.0,sheet,length,full-height gable
+C1-A2,C1 · Bottom,1,269.0,451.0,18.0,sheet,none,between sides
+C1-A3,C1 · Top,1,269.0,451.0,18.0,sheet,none,enclosed top
+C1-B1,C1 · Back,1,757.0,269.0,6.0,back panel,none,rabbeted back
+C1-C1,C1 · Adjustable shelf,3,265.0,431.0,18.0,sheet,none,on shelf pins
+C1-A4,C1 · Toe kick,1,305.0,100.0,18.0,sheet,none,set back 50mm
+C2-A1,C2 · Side,2,775.0,457.0,18.0,sheet,length,full-height gable
+C2-A2,C2 · Bottom,1,269.0,451.0,18.0,sheet,none,between sides
+C2-A3,C2 · Top,1,269.0,451.0,18.0,sheet,none,enclosed top
+C2-B1,C2 · Back,1,757.0,269.0,6.0,back panel,none,rabbeted back
+C2-C1,C2 · Adjustable shelf,3,265.0,431.0,18.0,sheet,none,on shelf pins
+C2-A4,C2 · Toe kick,1,305.0,100.0,18.0,sheet,none,set back 50mm
+C3-A1,C3 · Side,2,775.0,457.0,18.0,sheet,length,full-height gable
+C3-A2,C3 · Bottom,1,269.0,451.0,18.0,sheet,none,between sides
+C3-A3,C3 · Top,1,269.0,451.0,18.0,sheet,none,enclosed top
+C3-B1,C3 · Back,1,757.0,269.0,6.0,back panel,none,rabbeted back
+C3-C1,C3 · Adjustable shelf,3,265.0,431.0,18.0,sheet,none,on shelf pins
+C3-A4,C3 · Toe kick,1,305.0,100.0,18.0,sheet,none,set back 50mm
+C4-A1,C4 · Side,2,775.0,457.0,18.0,sheet,length,full-height gable
+C4-A2,C4 · Bottom,1,269.0,451.0,18.0,sheet,none,between sides
+C4-A3,C4 · Top,1,269.0,451.0,18.0,sheet,none,enclosed top
+C4-B1,C4 · Back,1,757.0,269.0,6.0,back panel,none,rabbeted back
+C4-C1,C4 · Adjustable shelf,3,265.0,431.0,18.0,sheet,none,on shelf pins
+C4-A4,C4 · Toe kick,1,305.0,100.0,18.0,sheet,none,set back 50mm
