@@ -42,6 +42,14 @@ CMD_AI_TOOLTIP = (
     "Describe furniture in plain language; Claude writes a validated spec and "
     "it is built as native Fusion geometry. Needs an Anthropic API key."
 )
+
+CMD_BRIDGE_ID = "WoodworkingAI_Bridge"
+CMD_BRIDGE_NAME = "Woodworking AI: Auto-build bridge"
+CMD_BRIDGE_TOOLTIP = (
+    "Start/stop a watched folder. Drop a spec (or design request) .json into "
+    "its inbox and it is built here automatically — lets a script or agent "
+    "drive this add-in with no network port."
+)
 PANEL_ID = "SolidCreatePanel"
 
 _PROMPT_EXAMPLE = "36 inch sink base, two shaker doors, soft-close, one shelf"
@@ -50,6 +58,7 @@ _app = None
 _ui = None
 _handlers = []          # keep handler refs alive
 _state = {"spec_path": None}
+_watcher = None         # the folder-bridge DropWatcher, when running
 
 
 # ---------------------------------------------------------------------------
@@ -63,6 +72,11 @@ def _ensure_woodworking_ai_on_path():
     or ``src/`` next to this file).
     """
     here = os.path.dirname(os.path.realpath(__file__))
+    # Also make the add-in's OWN folder importable so sibling modules (adapter,
+    # bridge, bridge_core, anthropic_client) resolve. Fusion does not reliably
+    # keep it on sys.path across command invocations, so insert it explicitly.
+    if here not in sys.path:
+        sys.path.insert(0, here)
     candidates = [
         here,                                   # ./woodworking_ai
         os.path.join(here, "vendor"),           # ./vendor/woodworking_ai
@@ -302,6 +316,192 @@ def _do_design(prompt, *, model, machined, by_subassembly, run_critic,
     _ui.messageBox("\n".join(summary), CMD_AI_NAME)
 
 
+# ---------------------------------------------------------------------------
+# The folder bridge: build a spec/prompt request dropped into a watched folder,
+# so an external script or agent can drive this add-in with no network port.
+# Runs on Fusion's main thread (via a custom event), so adsk calls are safe.
+# ---------------------------------------------------------------------------
+def _log(message):
+    try:
+        _app.log("[WoodworkingAI] " + message)
+    except Exception:
+        pass
+
+
+def _reload_project_modules():
+    """Drop cached project modules so each bridge build picks up on-disk edits.
+
+    Fusion caches imported modules for the whole session, so without this an edit
+    to ``woodworking_ai/`` or ``adapter.py`` would need a full Fusion restart to
+    take effect. Purging them here makes the lazy imports below re-import fresh
+    and self-consistent (spec/validator/geometry/adapter all from the same code).
+    """
+    doomed = [m for m in list(sys.modules)
+              if m == "woodworking_ai" or m.startswith("woodworking_ai.")
+              or m in ("adapter", "bridge_core")]
+    for m in doomed:
+        del sys.modules[m]
+
+
+def _bridge_process(request, name, outbox):
+    """Build one bridge request; return a JSON-able result dict.
+
+    *request* is the parsed request (envelope or bare spec), *name* its file
+    name, *outbox* the directory for any saved spec / CSV reports.
+    """
+    _reload_project_modules()   # hot-reload so edits apply without a Fusion restart
+    root_path = _ensure_woodworking_ai_on_path()
+    if not root_path:
+        return {"ok": False, "request": name,
+                "error": "woodworking_ai package not found next to the add-in"}
+
+    from woodworking_ai.dsl import spec_from_dict
+    from woodworking_ai.validator import validate
+    import bridge_core
+
+    req = bridge_core.normalize_request(request)
+    opts = req["options"]
+    result = {"ok": False, "request": name}
+
+    # Optionally build into a clean, isolated document instead of the active one
+    # (so the geometry doesn't land amongst whatever is already open).
+    if opts.get("new_document"):
+        _app.documents.add(adsk.core.DocumentTypes.FusionDesignDocumentType)
+        result["new_document"] = True
+
+    # Fail fast if there is nowhere to build.
+    design = adsk.fusion.Design.cast(_app.activeProduct)
+    if not design:
+        return {"ok": False, "request": name,
+                "error": "no active Fusion Design document — open one first"}
+
+    # 1. Get a spec object — either designed from a prompt, or read from JSON.
+    if req["prompt"]:
+        api_key = _resolve_api_key()
+        if not api_key:
+            return {"ok": False, "request": name, "kind": "design",
+                    "error": "no Anthropic API key (see the add-in README)"}
+        from woodworking_ai.agents import llm
+        from woodworking_ai.agents.designer import design_from_prompt
+        from anthropic_client import AnthropicHTTPClient
+
+        llm.set_client(AnthropicHTTPClient(api_key))
+        try:
+            designed = design_from_prompt(
+                req["prompt"], model=(opts["model"] or None),
+                run_critic=opts["run_critic"],
+            )
+        finally:
+            llm.set_client(None)
+        spec = designed.spec
+        result["kind"] = "design"
+        result["attempts"] = designed.attempts
+        result["critique"] = (None if designed.critique is None
+                              else {"ok": bool(designed.critique.ok)})
+        result["validation"] = bridge_core.validation_dict(designed.validation)
+    else:
+        if req["spec"] is None:
+            return {"ok": False, "request": name,
+                    "error": "request has neither 'spec' nor 'prompt'"}
+        try:
+            spec = spec_from_dict(req["spec"])
+        except Exception as exc:
+            return {"ok": False, "request": name, "kind": "import",
+                    "error": "could not parse spec: %s" % exc}
+        result["kind"] = "import"
+        result["validation"] = bridge_core.validation_dict(validate(spec))
+
+    # 2. Build native geometry.
+    import adapter
+    component, bodies = adapter.import_spec(
+        spec, design, machined=opts["machined"],
+        by_subassembly=opts["by_subassembly"],
+    )
+    _app.activeViewport.fit()
+    result["component"] = component.name
+    result["bodies"] = len(bodies)
+    result["machined"] = opts["machined"]
+    result["by_subassembly"] = opts["by_subassembly"]
+
+    # 3. Save the spec + optional reports beside the result (in the outbox).
+    stem = os.path.splitext(name)[0]
+    if req["prompt"] or opts["write_reports"]:
+        try:
+            spec_out = os.path.join(outbox, stem + ".spec.json")
+            with open(spec_out, "w", encoding="utf-8") as fh:
+                fh.write(spec.to_json())
+            result["saved_spec"] = os.path.basename(spec_out)
+            if opts["write_reports"]:
+                _, notes = _write_reports(spec, spec_out)
+                result["reports"] = notes
+        except Exception as exc:
+            result["reports_error"] = str(exc)
+
+    result["ok"] = True
+    return result
+
+
+def _start_bridge():
+    """Start the folder watcher (idempotent); return the DropWatcher."""
+    global _watcher
+    if _watcher is not None and _watcher.is_running():
+        return _watcher
+    _ensure_woodworking_ai_on_path()   # puts the add-in folder on sys.path first
+    import bridge
+    _watcher = bridge.DropWatcher(_app, _ui, _bridge_process, log=_log)
+    _watcher.start()
+    return _watcher
+
+
+def _stop_bridge():
+    global _watcher
+    if _watcher is not None:
+        try:
+            _watcher.stop()
+        finally:
+            _watcher = None
+
+
+class _BridgeCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
+    def notify(self, args):
+        try:
+            on_execute = _BridgeExecuteHandler()
+            args.command.execute.add(on_execute)
+            _handlers.append(on_execute)
+        except Exception:
+            if _ui:
+                _ui.messageBox(traceback.format_exc(), CMD_BRIDGE_NAME)
+
+
+class _BridgeExecuteHandler(adsk.core.CommandEventHandler):
+    def notify(self, args):
+        try:
+            if _watcher is not None and _watcher.is_running():
+                inbox, outbox = _watcher.inbox, _watcher.outbox
+                _stop_bridge()
+                _ui.messageBox(
+                    "Auto-build bridge STOPPED.\n\nWas watching:\n  %s"
+                    % inbox, CMD_BRIDGE_NAME,
+                )
+            else:
+                watcher = _start_bridge()
+                _ui.messageBox(
+                    "Auto-build bridge STARTED.\n\n"
+                    "Drop a spec (or design request) .json here:\n  %s\n\n"
+                    "Results are written here:\n  %s\n\n"
+                    "Keep a Design document open. Click this button again to "
+                    "stop." % (watcher.inbox, watcher.outbox),
+                    CMD_BRIDGE_NAME,
+                )
+        except Exception:
+            if _ui:
+                _ui.messageBox(
+                    "Woodworking AI bridge toggle failed:\n"
+                    + traceback.format_exc(),
+                    CMD_BRIDGE_NAME,
+                )
+
+
 class _DesignCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
     def notify(self, args):
         try:
@@ -465,12 +665,32 @@ def run(context):
         ai_def.commandCreated.add(ai_handler)
         _handlers.append(ai_handler)
 
+        bridge_def = _ui.commandDefinitions.itemById(CMD_BRIDGE_ID)
+        if not bridge_def:
+            bridge_def = _ui.commandDefinitions.addButtonDefinition(
+                CMD_BRIDGE_ID, CMD_BRIDGE_NAME, CMD_BRIDGE_TOOLTIP
+            )
+        bridge_handler = _BridgeCommandCreatedHandler()
+        bridge_def.commandCreated.add(bridge_handler)
+        _handlers.append(bridge_handler)
+
         panel = _ui.allToolbarPanels.itemById(PANEL_ID)
         if panel:
             if not panel.controls.itemById(CMD_ID):
                 panel.controls.addCommand(cmd_def)
             if not panel.controls.itemById(CMD_AI_ID):
                 panel.controls.addCommand(ai_def)
+            if not panel.controls.itemById(CMD_BRIDGE_ID):
+                panel.controls.addCommand(bridge_def)
+
+        # Auto-start the folder bridge when asked (e.g. so an agent can drive it
+        # without a click): set WOODAI_FUSION_BRIDGE=1 before launching Fusion.
+        flag = os.environ.get("WOODAI_FUSION_BRIDGE", "").strip().lower()
+        if flag in ("1", "true", "yes", "on"):
+            try:
+                _start_bridge()
+            except Exception:
+                _log("bridge auto-start failed:\n" + traceback.format_exc())
     except Exception:
         if _ui:
             _ui.messageBox("Add-in start failed:\n" + traceback.format_exc())
@@ -478,8 +698,9 @@ def run(context):
 
 def stop(context):
     try:
+        _stop_bridge()
         panel = _ui.allToolbarPanels.itemById(PANEL_ID)
-        for cmd_id in (CMD_ID, CMD_AI_ID):
+        for cmd_id in (CMD_ID, CMD_AI_ID, CMD_BRIDGE_ID):
             if panel:
                 ctrl = panel.controls.itemById(cmd_id)
                 if ctrl:

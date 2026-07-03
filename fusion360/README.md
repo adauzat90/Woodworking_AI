@@ -87,7 +87,23 @@ Fusion's embedded interpreter is CPython 3.12, so the pure-Python
 `woodworking_ai` package (it has **zero** third-party dependencies) imports
 directly — nothing to `pip install` into Fusion.
 
-**In-repo (simplest):** the add-in finds `../src/woodworking_ai` automatically.
+**Scripted (Windows, recommended):** [`install.ps1`](install.ps1) wires the
+add-in into Fusion's per-user Add-Ins folder for you and verifies the package
+resolves. By default it creates a directory **junction** (no admin needed) back
+to this `fusion360` folder, so edits in the repo are picked up on the add-in's
+next *Run* — nothing to re-copy.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File fusion360\install.ps1            # live junction to this repo
+powershell -ExecutionPolicy Bypass -File fusion360\install.ps1 -Copy      # self-contained copy (repo not needed after)
+powershell -ExecutionPolicy Bypass -File fusion360\install.ps1 -Uninstall # remove it
+```
+
+Then, in Fusion: **Utilities → Add-Ins → Scripts and Add-Ins** (`Shift+S`),
+select **Woodworking AI** on the **Add-Ins** tab, and click **Run** (tick *Run
+on Startup* to keep it loaded).
+
+**Manual, in-repo:** the add-in finds `../src/woodworking_ai` automatically.
 
 1. **Utilities → Add-Ins → Scripts and Add-Ins** (or press `Shift+S`).
 2. On the **Add-Ins** tab, click the green **+** and select this `fusion360`
@@ -119,6 +135,55 @@ format is the [design language](../README.md#the-design-language-example).
 Projects (multi-cabinet runs), tables, dressers, bookcases, and corner cabinets
 all work, because `panel_layout()` already handles them.
 
+## Remote control — the folder bridge
+
+Normally you drive the add-in by clicking its buttons. The **folder bridge**
+lets an external script or agent drive it instead, **without opening a network
+port**: you drop a request `.json` into a watched *inbox* and the add-in builds
+it in the active Design document, writing a result `.json` to an *outbox*.
+
+**Why a folder, not a socket:** Fusion's API is single-threaded and not
+thread-safe. The bridge's background poller only does file I/O; when it sees a
+new request it fires a Fusion **custom event**, and the build runs on Fusion's
+main thread where `adsk` calls are safe. (See [`bridge.py`](bridge.py).)
+
+**Start it** one of two ways:
+
+- Click **Solid → Create → Woodworking AI: Auto-build bridge** (click again to
+  stop); or
+- set `WOODAI_FUSION_BRIDGE=1` before launching Fusion so it auto-starts when
+  the add-in loads.
+
+The drop directory is `%WOODAI_FUSION_DROP%` or `~/.woodai/fusion_drop`:
+
+```
+<drop>/inbox/      # write requests here (atomic rename)
+<drop>/outbox/     # <name>.result.json (+ saved spec / CSV reports)
+<drop>/processed/  # requests already built
+<drop>/status.json, heartbeat.json   # liveness — refreshed every second
+```
+
+**Request** = an envelope or a bare spec:
+
+```jsonc
+{ "spec": { /* a Woodworking AI spec */ },
+  "options": { "machined": true, "by_subassembly": true, "write_reports": false } }
+// or, to have Claude design it (needs an Anthropic API key):
+{ "prompt": "36 inch sink base, two shaker doors, soft-close, one shelf",
+  "options": { "run_critic": true } }
+```
+
+**Drive it** from any Python with the stdlib-only client
+([`bridge_client.py`](bridge_client.py)) — no Fusion, no `woodworking_ai` needed:
+
+```bash
+python bridge_client.py status                       # is the in-Fusion bridge alive?
+python bridge_client.py import examples/sink_base.json --reports --wait 120
+python bridge_client.py design "small 3-shelf oak bookcase" --wait 180
+```
+
+or in-process: `submit(request)`, `wait_result(name)`, `submit_and_wait(request)`.
+
 ## Scope (Phase 3)
 
 - **In:** natural-language design (Claude → validate → critic → repair) over a
@@ -136,8 +201,12 @@ all work, because `panel_layout()` already handles them.
 
 | File | Role |
 |---|---|
+| `install.ps1` | One-command install/uninstall into Fusion's Add-Ins folder (junction or copy) |
 | `WoodworkingAI.manifest` | Add-in manifest (id, name, entry point) |
 | `WoodworkingAI.py` | Entry point — both commands, dialogs, validate, report writing |
 | `adapter.py` | `PanelBox` layout → native Fusion `BRepBody` solids (the build123d replacement) |
 | `anthropic_client.py` | Pure-`urllib` Claude Messages client (the `anthropic` SDK replacement) |
+| `bridge.py` | Folder-bridge watcher — polls the inbox, builds on Fusion's main thread via a custom event |
+| `bridge_core.py` | Pure (Fusion-free) request parsing + validation flattening — unit-testable |
+| `bridge_client.py` | Stdlib-only shell client: drop a request, wait for the result |
 | `examples/sink_base.json` | A sample spec to import |
