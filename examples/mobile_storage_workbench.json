@@ -1,0 +1,243 @@
+{
+  "kind": "project",
+  "name": "Mobile Storage Workbench",
+  "units": "mm",
+  "countertop": {
+    "material": "solid",
+    "thickness": 40,
+    "overhang": 25,
+    "depth": 1219
+  },
+  "runs": [
+    {
+      "start": [
+        0,
+        0
+      ],
+      "angle": 0,
+      "gap": 0,
+      "items": [
+        {
+          "spec": {
+            "kind": "cabinet",
+            "cabinet_type": "base",
+            "name": "Front-L",
+            "width": 660,
+            "height": 800,
+            "depth": 600,
+            "doors": 0,
+            "shelves": 0,
+            "toe_kick": null,
+            "material_form": "sheet",
+            "species": "birch",
+            "drawers": [
+              {
+                "front_height": 160,
+                "slide_type": "wood",
+                "corner_joint": "dovetail",
+                "dovetail_tails": "sides"
+              },
+              {
+                "front_height": 230,
+                "slide_type": "wood",
+                "corner_joint": "dovetail",
+                "dovetail_tails": "sides"
+              },
+              {
+                "front_height": 300,
+                "slide_type": "wood",
+                "corner_joint": "dovetail",
+                "dovetail_tails": "sides"
+              }
+            ]
+          }
+        },
+        {
+          "spec": {
+            "kind": "cabinet",
+            "cabinet_type": "base",
+            "name": "Front-M",
+            "width": 509,
+            "height": 800,
+            "depth": 600,
+            "doors": 0,
+            "shelves": 0,
+            "toe_kick": null,
+            "material_form": "sheet",
+            "species": "birch",
+            "drawers": [
+              {
+                "front_height": 190,
+                "slide_type": "wood",
+                "corner_joint": "dovetail",
+                "dovetail_tails": "sides"
+              },
+              {
+                "front_height": 250,
+                "slide_type": "wood",
+                "corner_joint": "dovetail",
+                "dovetail_tails": "sides"
+              },
+              {
+                "front_height": 260,
+                "slide_type": "wood",
+                "corner_joint": "dovetail",
+                "dovetail_tails": "sides"
+              }
+            ]
+          }
+        },
+        {
+          "spec": {
+            "kind": "cabinet",
+            "cabinet_type": "base",
+            "name": "Front-R",
+            "width": 660,
+            "height": 800,
+            "depth": 600,
+            "doors": 0,
+            "shelves": 0,
+            "toe_kick": null,
+            "material_form": "sheet",
+            "species": "birch",
+            "drawers": [
+              {
+                "front_height": 150,
+                "slide_type": "wood",
+                "corner_joint": "dovetail",
+                "dovetail_tails": "sides"
+              },
+              {
+                "front_height": 220,
+                "slide_type": "wood",
+                "corner_joint": "dovetail",
+                "dovetail_tails": "sides"
+              },
+              {
+                "front_height": 320,
+                "slide_type": "wood",
+                "corner_joint": "dovetail",
+                "dovetail_tails": "sides"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "start": [
+        1829,
+        1219
+      ],
+      "angle": 180,
+      "gap": 0,
+      "items": [
+        {
+          "spec": {
+            "kind": "cabinet",
+            "cabinet_type": "base",
+            "name": "Back-R",
+            "width": 610,
+            "height": 800,
+            "depth": 600,
+            "doors": 0,
+            "shelves": 0,
+            "toe_kick": null,
+            "material_form": "sheet",
+            "species": "birch",
+            "drawers": [
+              {
+                "front_height": 200,
+                "slide_type": "wood",
+                "corner_joint": "dovetail",
+                "dovetail_tails": "sides"
+              },
+              {
+                "front_height": 240,
+                "slide_type": "wood",
+                "corner_joint": "dovetail",
+                "dovetail_tails": "sides"
+              },
+              {
+                "front_height": 250,
+                "slide_type": "wood",
+                "corner_joint": "dovetail",
+                "dovetail_tails": "sides"
+              }
+            ]
+          }
+        },
+        {
+          "spec": {
+            "kind": "cabinet",
+            "cabinet_type": "base",
+            "name": "Back-M",
+            "width": 609,
+            "height": 800,
+            "depth": 600,
+            "doors": 0,
+            "shelves": 0,
+            "toe_kick": null,
+            "material_form": "sheet",
+            "species": "birch",
+            "drawers": [
+              {
+                "front_height": 150,
+                "slide_type": "wood",
+                "corner_joint": "dovetail",
+                "dovetail_tails": "sides"
+              },
+              {
+                "front_height": 210,
+                "slide_type": "wood",
+                "corner_joint": "dovetail",
+                "dovetail_tails": "sides"
+              },
+              {
+                "front_height": 330,
+                "slide_type": "wood",
+                "corner_joint": "dovetail",
+                "dovetail_tails": "sides"
+              }
+            ]
+          }
+        },
+        {
+          "spec": {
+            "kind": "cabinet",
+            "cabinet_type": "base",
+            "name": "Back-L",
+            "width": 610,
+            "height": 800,
+            "depth": 600,
+            "doors": 0,
+            "shelves": 0,
+            "toe_kick": null,
+            "material_form": "sheet",
+            "species": "birch",
+            "drawers": [
+              {
+                "front_height": 180,
+                "slide_type": "wood",
+                "corner_joint": "dovetail",
+                "dovetail_tails": "sides"
+              },
+              {
+                "front_height": 240,
+                "slide_type": "wood",
+                "corner_joint": "dovetail",
+                "dovetail_tails": "sides"
+              },
+              {
+                "front_height": 270,
+                "slide_type": "wood",
+                "corner_joint": "dovetail",
+                "dovetail_tails": "sides"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

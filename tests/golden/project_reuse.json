@@ -3905,12 +3905,18 @@
   },
   "panels": [
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         9.0,
         280.0,
         360.0
       ],
+      "inner_sign": 1.0,
       "label": "Upper-L \u00b7 Cabinet \u00b7 Side L",
       "openings": [],
       "oversized": false,
@@ -3923,12 +3929,18 @@
       "subassembly": "Upper-L"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         591.0,
         280.0,
         360.0
       ],
+      "inner_sign": -1.0,
       "label": "Upper-L \u00b7 Cabinet \u00b7 Side R",
       "openings": [],
       "oversized": false,
@@ -3941,48 +3953,66 @@
       "subassembly": "Upper-L"
     },
     {
+      "capture_grow": [
+        9.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         300.0,
         277.0,
         9.0
       ],
+      "inner_sign": 1.0,
       "label": "Upper-L \u00b7 Cabinet \u00b7 Bottom",
       "openings": [],
       "oversized": false,
       "rot_z": 0.0,
       "size": [
-        564.0,
+        582.0,
         554.0,
         18.0
       ],
       "subassembly": "Upper-L"
     },
     {
+      "capture_grow": [
+        9.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         300.0,
         277.0,
         711.0
       ],
+      "inner_sign": 1.0,
       "label": "Upper-L \u00b7 Cabinet \u00b7 Top",
       "openings": [],
       "oversized": false,
       "rot_z": 0.0,
       "size": [
-        564.0,
+        582.0,
         554.0,
         18.0
       ],
       "subassembly": "Upper-L"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "back",
       "center": [
         300.0,
         557.0,
         360.0
       ],
+      "inner_sign": 1.0,
       "label": "Upper-L \u00b7 Cabinet \u00b7 Back",
       "openings": [],
       "oversized": false,
@@ -3995,12 +4025,18 @@
       "subassembly": "Upper-L"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "shelf",
       "center": [
         300.0,
         273.0,
         360.0
       ],
+      "inner_sign": 1.0,
       "label": "Upper-L \u00b7 Cabinet \u00b7 Shelf 1",
       "openings": [],
       "oversized": false,
@@ -4013,12 +4049,18 @@
       "subassembly": "Upper-L"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "front",
       "center": [
         150.75,
         -9.0,
         360.0
       ],
+      "inner_sign": 1.0,
       "label": "Upper-L \u00b7 Cabinet \u00b7 Door L",
       "openings": [],
       "oversized": false,
@@ -4031,12 +4073,18 @@
       "subassembly": "Upper-L"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "front",
       "center": [
         449.25,
         -9.0,
         360.0
       ],
+      "inner_sign": 1.0,
       "label": "Upper-L \u00b7 Cabinet \u00b7 Door R",
       "openings": [],
       "oversized": false,
@@ -4049,12 +4097,18 @@
       "subassembly": "Upper-L"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         609.0,
         280.0,
         360.0
       ],
+      "inner_sign": 1.0,
       "label": "Upper-L \u00b7 Cabinet \u00b7 Side L",
       "openings": [],
       "oversized": false,
@@ -4067,12 +4121,18 @@
       "subassembly": "Upper-L"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         1191.0,
         280.0,
         360.0
       ],
+      "inner_sign": -1.0,
       "label": "Upper-L \u00b7 Cabinet \u00b7 Side R",
       "openings": [],
       "oversized": false,
@@ -4085,48 +4145,66 @@
       "subassembly": "Upper-L"
     },
     {
+      "capture_grow": [
+        9.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         900.0,
         277.0,
         9.0
       ],
+      "inner_sign": 1.0,
       "label": "Upper-L \u00b7 Cabinet \u00b7 Bottom",
       "openings": [],
       "oversized": false,
       "rot_z": 0.0,
       "size": [
-        564.0,
+        582.0,
         554.0,
         18.0
       ],
       "subassembly": "Upper-L"
     },
     {
+      "capture_grow": [
+        9.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         900.0,
         277.0,
         711.0
       ],
+      "inner_sign": 1.0,
       "label": "Upper-L \u00b7 Cabinet \u00b7 Top",
       "openings": [],
       "oversized": false,
       "rot_z": 0.0,
       "size": [
-        564.0,
+        582.0,
         554.0,
         18.0
       ],
       "subassembly": "Upper-L"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "back",
       "center": [
         900.0,
         557.0,
         360.0
       ],
+      "inner_sign": 1.0,
       "label": "Upper-L \u00b7 Cabinet \u00b7 Back",
       "openings": [],
       "oversized": false,
@@ -4139,12 +4217,18 @@
       "subassembly": "Upper-L"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "shelf",
       "center": [
         900.0,
         273.0,
         360.0
       ],
+      "inner_sign": 1.0,
       "label": "Upper-L \u00b7 Cabinet \u00b7 Shelf 1",
       "openings": [],
       "oversized": false,
@@ -4157,12 +4241,18 @@
       "subassembly": "Upper-L"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "front",
       "center": [
         750.75,
         -9.0,
         360.0
       ],
+      "inner_sign": 1.0,
       "label": "Upper-L \u00b7 Cabinet \u00b7 Door L",
       "openings": [],
       "oversized": false,
@@ -4175,12 +4265,18 @@
       "subassembly": "Upper-L"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "front",
       "center": [
         1049.25,
         -9.0,
         360.0
       ],
+      "inner_sign": 1.0,
       "label": "Upper-L \u00b7 Cabinet \u00b7 Door R",
       "openings": [],
       "oversized": false,
@@ -4193,12 +4289,18 @@
       "subassembly": "Upper-L"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         9.0,
         2280.0,
         360.0
       ],
+      "inner_sign": 1.0,
       "label": "Upper-R \u00b7 Cabinet \u00b7 Side L",
       "openings": [],
       "oversized": false,
@@ -4211,12 +4313,18 @@
       "subassembly": "Upper-R"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         591.0,
         2280.0,
         360.0
       ],
+      "inner_sign": -1.0,
       "label": "Upper-R \u00b7 Cabinet \u00b7 Side R",
       "openings": [],
       "oversized": false,
@@ -4229,48 +4337,66 @@
       "subassembly": "Upper-R"
     },
     {
+      "capture_grow": [
+        9.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         300.0,
         2277.0,
         9.0
       ],
+      "inner_sign": 1.0,
       "label": "Upper-R \u00b7 Cabinet \u00b7 Bottom",
       "openings": [],
       "oversized": false,
       "rot_z": 0.0,
       "size": [
-        564.0,
+        582.0,
         554.0,
         18.0
       ],
       "subassembly": "Upper-R"
     },
     {
+      "capture_grow": [
+        9.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         300.0,
         2277.0,
         711.0
       ],
+      "inner_sign": 1.0,
       "label": "Upper-R \u00b7 Cabinet \u00b7 Top",
       "openings": [],
       "oversized": false,
       "rot_z": 0.0,
       "size": [
-        564.0,
+        582.0,
         554.0,
         18.0
       ],
       "subassembly": "Upper-R"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "back",
       "center": [
         300.0,
         2557.0,
         360.0
       ],
+      "inner_sign": 1.0,
       "label": "Upper-R \u00b7 Cabinet \u00b7 Back",
       "openings": [],
       "oversized": false,
@@ -4283,12 +4409,18 @@
       "subassembly": "Upper-R"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "shelf",
       "center": [
         300.0,
         2273.0,
         360.0
       ],
+      "inner_sign": 1.0,
       "label": "Upper-R \u00b7 Cabinet \u00b7 Shelf 1",
       "openings": [],
       "oversized": false,
@@ -4301,12 +4433,18 @@
       "subassembly": "Upper-R"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "front",
       "center": [
         150.75,
         1991.0,
         360.0
       ],
+      "inner_sign": 1.0,
       "label": "Upper-R \u00b7 Cabinet \u00b7 Door L",
       "openings": [],
       "oversized": false,
@@ -4319,12 +4457,18 @@
       "subassembly": "Upper-R"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "front",
       "center": [
         449.25,
         1991.0,
         360.0
       ],
+      "inner_sign": 1.0,
       "label": "Upper-R \u00b7 Cabinet \u00b7 Door R",
       "openings": [],
       "oversized": false,
@@ -4337,12 +4481,18 @@
       "subassembly": "Upper-R"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         609.0,
         2280.0,
         360.0
       ],
+      "inner_sign": 1.0,
       "label": "Upper-R \u00b7 Cabinet \u00b7 Side L",
       "openings": [],
       "oversized": false,
@@ -4355,12 +4505,18 @@
       "subassembly": "Upper-R"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         1191.0,
         2280.0,
         360.0
       ],
+      "inner_sign": -1.0,
       "label": "Upper-R \u00b7 Cabinet \u00b7 Side R",
       "openings": [],
       "oversized": false,
@@ -4373,48 +4529,66 @@
       "subassembly": "Upper-R"
     },
     {
+      "capture_grow": [
+        9.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         900.0,
         2277.0,
         9.0
       ],
+      "inner_sign": 1.0,
       "label": "Upper-R \u00b7 Cabinet \u00b7 Bottom",
       "openings": [],
       "oversized": false,
       "rot_z": 0.0,
       "size": [
-        564.0,
+        582.0,
         554.0,
         18.0
       ],
       "subassembly": "Upper-R"
     },
     {
+      "capture_grow": [
+        9.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         900.0,
         2277.0,
         711.0
       ],
+      "inner_sign": 1.0,
       "label": "Upper-R \u00b7 Cabinet \u00b7 Top",
       "openings": [],
       "oversized": false,
       "rot_z": 0.0,
       "size": [
-        564.0,
+        582.0,
         554.0,
         18.0
       ],
       "subassembly": "Upper-R"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "back",
       "center": [
         900.0,
         2557.0,
         360.0
       ],
+      "inner_sign": 1.0,
       "label": "Upper-R \u00b7 Cabinet \u00b7 Back",
       "openings": [],
       "oversized": false,
@@ -4427,12 +4601,18 @@
       "subassembly": "Upper-R"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "shelf",
       "center": [
         900.0,
         2273.0,
         360.0
       ],
+      "inner_sign": 1.0,
       "label": "Upper-R \u00b7 Cabinet \u00b7 Shelf 1",
       "openings": [],
       "oversized": false,
@@ -4445,12 +4625,18 @@
       "subassembly": "Upper-R"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "front",
       "center": [
         750.75,
         1991.0,
         360.0
       ],
+      "inner_sign": 1.0,
       "label": "Upper-R \u00b7 Cabinet \u00b7 Door L",
       "openings": [],
       "oversized": false,
@@ -4463,12 +4649,18 @@
       "subassembly": "Upper-R"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "front",
       "center": [
         1049.25,
         1991.0,
         360.0
       ],
+      "inner_sign": 1.0,
       "label": "Upper-R \u00b7 Cabinet \u00b7 Door R",
       "openings": [],
       "oversized": false,

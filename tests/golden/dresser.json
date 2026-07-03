@@ -740,12 +740,18 @@
   },
   "panels": [
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         -441.0,
         250.0,
         440.0
       ],
+      "inner_sign": 1.0,
       "label": "Side L",
       "openings": [],
       "oversized": false,
@@ -758,12 +764,18 @@
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         441.0,
         250.0,
         440.0
       ],
+      "inner_sign": -1.0,
       "label": "Side R",
       "openings": [],
       "oversized": false,
@@ -776,48 +788,66 @@
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        9.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         0,
         247.0,
         89.0
       ],
+      "inner_sign": 1.0,
       "label": "Bottom",
       "openings": [],
       "oversized": false,
       "rot_z": 0.0,
       "size": [
-        864.0,
+        882.0,
         494.0,
         18.0
       ],
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        9.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         0,
         247.0,
         791.0
       ],
+      "inner_sign": 1.0,
       "label": "Top",
       "openings": [],
       "oversized": false,
       "rot_z": 0.0,
       "size": [
-        864.0,
+        882.0,
         494.0,
         18.0
       ],
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "back",
       "center": [
         0,
         497.0,
         440.0
       ],
+      "inner_sign": 1.0,
       "label": "Back",
       "openings": [],
       "oversized": false,
@@ -830,12 +860,18 @@
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "toe",
       "center": [
         0,
         49.0,
         40.0
       ],
+      "inner_sign": 1.0,
       "label": "Toe kick",
       "openings": [],
       "oversized": false,
@@ -848,12 +884,18 @@
       "subassembly": "Carcass"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "front",
       "center": [
         0.0,
         -9.0,
         707.0
       ],
+      "inner_sign": 1.0,
       "label": "Drawer front 1",
       "openings": [],
       "oversized": false,
@@ -866,12 +908,18 @@
       "subassembly": "Drawer 1"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "drawer_box",
       "center": [
         -431.3,
         242.5,
         707.0
       ],
+      "inner_sign": 1.0,
       "label": "Drawer 1 box side L",
       "openings": [],
       "oversized": false,
@@ -884,12 +932,18 @@
       "subassembly": "Drawer 1"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "drawer_box",
       "center": [
         431.3,
         242.5,
         707.0
       ],
+      "inner_sign": -1.0,
       "label": "Drawer 1 box side R",
       "openings": [],
       "oversized": false,
@@ -902,12 +956,18 @@
       "subassembly": "Drawer 1"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "drawer_box",
       "center": [
         0.0,
         14.0,
         707.0
       ],
+      "inner_sign": 1.0,
       "label": "Drawer 1 box front",
       "openings": [],
       "oversized": false,
@@ -920,12 +980,18 @@
       "subassembly": "Drawer 1"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "drawer_box",
       "center": [
         0.0,
         471.0,
         707.0
       ],
+      "inner_sign": 1.0,
       "label": "Drawer 1 box back",
       "openings": [],
       "oversized": false,
@@ -938,30 +1004,42 @@
       "subassembly": "Drawer 1"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "drawer_box",
       "center": [
         0.0,
         242.5,
         640.0
       ],
+      "inner_sign": 1.0,
       "label": "Drawer 1 box bottom",
       "openings": [],
       "oversized": false,
       "rot_z": 0.0,
       "size": [
-        850.6,
+        862.6,
         445.0,
         6.0
       ],
       "subassembly": "Drawer 1"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "front",
       "center": [
         0.0,
         -9.0,
         524.0
       ],
+      "inner_sign": 1.0,
       "label": "Drawer front 2",
       "openings": [],
       "oversized": false,
@@ -974,12 +1052,18 @@
       "subassembly": "Drawer 2"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "drawer_box",
       "center": [
         -431.3,
         242.5,
         524.0
       ],
+      "inner_sign": 1.0,
       "label": "Drawer 2 box side L",
       "openings": [],
       "oversized": false,
@@ -992,12 +1076,18 @@
       "subassembly": "Drawer 2"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "drawer_box",
       "center": [
         431.3,
         242.5,
         524.0
       ],
+      "inner_sign": -1.0,
       "label": "Drawer 2 box side R",
       "openings": [],
       "oversized": false,
@@ -1010,12 +1100,18 @@
       "subassembly": "Drawer 2"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "drawer_box",
       "center": [
         0.0,
         14.0,
         524.0
       ],
+      "inner_sign": 1.0,
       "label": "Drawer 2 box front",
       "openings": [],
       "oversized": false,
@@ -1028,12 +1124,18 @@
       "subassembly": "Drawer 2"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "drawer_box",
       "center": [
         0.0,
         471.0,
         524.0
       ],
+      "inner_sign": 1.0,
       "label": "Drawer 2 box back",
       "openings": [],
       "oversized": false,
@@ -1046,30 +1148,42 @@
       "subassembly": "Drawer 2"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "drawer_box",
       "center": [
         0.0,
         242.5,
         457.0
       ],
+      "inner_sign": 1.0,
       "label": "Drawer 2 box bottom",
       "openings": [],
       "oversized": false,
       "rot_z": 0.0,
       "size": [
-        850.6,
+        862.6,
         445.0,
         6.0
       ],
       "subassembly": "Drawer 2"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "front",
       "center": [
         0.0,
         -9.0,
         341.0
       ],
+      "inner_sign": 1.0,
       "label": "Drawer front 3",
       "openings": [],
       "oversized": false,
@@ -1082,12 +1196,18 @@
       "subassembly": "Drawer 3"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "drawer_box",
       "center": [
         -431.3,
         242.5,
         341.0
       ],
+      "inner_sign": 1.0,
       "label": "Drawer 3 box side L",
       "openings": [],
       "oversized": false,
@@ -1100,12 +1220,18 @@
       "subassembly": "Drawer 3"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "drawer_box",
       "center": [
         431.3,
         242.5,
         341.0
       ],
+      "inner_sign": -1.0,
       "label": "Drawer 3 box side R",
       "openings": [],
       "oversized": false,
@@ -1118,12 +1244,18 @@
       "subassembly": "Drawer 3"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "drawer_box",
       "center": [
         0.0,
         14.0,
         341.0
       ],
+      "inner_sign": 1.0,
       "label": "Drawer 3 box front",
       "openings": [],
       "oversized": false,
@@ -1136,12 +1268,18 @@
       "subassembly": "Drawer 3"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "drawer_box",
       "center": [
         0.0,
         471.0,
         341.0
       ],
+      "inner_sign": 1.0,
       "label": "Drawer 3 box back",
       "openings": [],
       "oversized": false,
@@ -1154,18 +1292,24 @@
       "subassembly": "Drawer 3"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "drawer_box",
       "center": [
         0.0,
         242.5,
         274.0
       ],
+      "inner_sign": 1.0,
       "label": "Drawer 3 box bottom",
       "openings": [],
       "oversized": false,
       "rot_z": 0.0,
       "size": [
-        850.6,
+        862.6,
         445.0,
         6.0
       ],

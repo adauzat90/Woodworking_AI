@@ -157,12 +157,18 @@
   },
   "panels": [
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "top",
       "center": [
         0,
         0,
         727.5
       ],
+      "inner_sign": 1.0,
       "label": "Top",
       "openings": [],
       "oversized": false,
@@ -175,12 +181,18 @@
       "subassembly": ""
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "leg",
       "center": [
         -725.0,
         -375.0,
         357.5
       ],
+      "inner_sign": 1.0,
       "label": "Leg 1",
       "openings": [],
       "oversized": false,
@@ -193,12 +205,18 @@
       "subassembly": ""
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "leg",
       "center": [
         -725.0,
         375.0,
         357.5
       ],
+      "inner_sign": 1.0,
       "label": "Leg 2",
       "openings": [],
       "oversized": false,
@@ -211,12 +229,18 @@
       "subassembly": ""
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "leg",
       "center": [
         725.0,
         -375.0,
         357.5
       ],
+      "inner_sign": 1.0,
       "label": "Leg 3",
       "openings": [],
       "oversized": false,
@@ -229,12 +253,18 @@
       "subassembly": ""
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "leg",
       "center": [
         725.0,
         375.0,
         357.5
       ],
+      "inner_sign": 1.0,
       "label": "Leg 4",
       "openings": [],
       "oversized": false,
@@ -247,12 +277,18 @@
       "subassembly": ""
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "apron",
       "center": [
         0,
         -375.0,
         665.0
       ],
+      "inner_sign": 1.0,
       "label": "Apron long",
       "openings": [],
       "oversized": false,
@@ -265,12 +301,18 @@
       "subassembly": ""
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "apron",
       "center": [
         0,
         375.0,
         665.0
       ],
+      "inner_sign": 1.0,
       "label": "Apron long",
       "openings": [],
       "oversized": false,
@@ -283,12 +325,18 @@
       "subassembly": ""
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "apron",
       "center": [
         -725.0,
         0,
         665.0
       ],
+      "inner_sign": 1.0,
       "label": "Apron short",
       "openings": [],
       "oversized": false,
@@ -301,12 +349,18 @@
       "subassembly": ""
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "apron",
       "center": [
         725.0,
         0,
         665.0
       ],
+      "inner_sign": 1.0,
       "label": "Apron short",
       "openings": [],
       "oversized": false,

@@ -122,9 +122,21 @@ class CritiqueResult:
         return "\n".join(lines)
 
 
+def _structural_bounds(p: PanelBox) -> tuple[tuple[float, float], ...]:
+    """A panel's bounds with any ``capture_grow`` subtracted back out.
+
+    A captured bottom/top/shelf is modelled WIDER than the clear interior so it
+    seats into its dado; that penetration is a joint, not a collision, so the
+    interference check measures the panel at its structural (clear-interior)
+    size."""
+    b = p.bounds()
+    g = getattr(p, "capture_grow", (0.0, 0.0, 0.0)) or (0.0, 0.0, 0.0)
+    return tuple((b[ax][0] + g[ax], b[ax][1] - g[ax]) for ax in range(3))
+
+
 def _overlap(a: PanelBox, b: PanelBox) -> tuple[float, float, float]:
     """Per-axis interpenetration depth of two boxes (negative => a gap)."""
-    ab, bb = a.bounds(), b.bounds()
+    ab, bb = _structural_bounds(a), _structural_bounds(b)
     return tuple(
         min(ab[ax][1], bb[ax][1]) - max(ab[ax][0], bb[ax][0]) for ax in range(3)
     )

@@ -74,7 +74,7 @@ def _plane_axis(size: tuple[float, float, float], normal: int) -> int:
 
 
 def _apply_joinery(panel_solid: Any, ops, size: tuple[float, float, float],
-                   b3d: Any) -> Any:
+                   b3d: Any, inner_sign: float = 1.0) -> Any:
     """Subtract a dado/rabbet/groove box per housed :class:`JoineryOp`.
 
     Each op carries a ``width`` (cut width), ``depth`` (cut depth) and a textual
@@ -112,7 +112,7 @@ def _apply_joinery(panel_solid: Any, ops, size: tuple[float, float, float],
             dims[normal] = depth * 2.0
             # Park the rear edge: +plane is the back (Y grows to the rear).
             pos[plane] = half[plane] - width / 2.0
-            pos[normal] = half[normal]          # break the inner face
+            pos[normal] = inner_sign * half[normal]   # break the inner face
         else:
             # Horizontal dado across the panel for the bottom/top shelf. A TOP
             # reference houses near the top edge; BOTTOM and any unlocated
@@ -124,14 +124,14 @@ def _apply_joinery(panel_solid: Any, ops, size: tuple[float, float, float],
                 pos[2] = half[2] - width / 2.0
             else:                                # bottom (default housed shelf)
                 pos[2] = -half[2] + width / 2.0
-            pos[normal] = half[normal]           # break the inner face
+            pos[normal] = inner_sign * half[normal]   # break the inner face
         cutter = Pos(*pos) * Box(*dims)
         solid = solid - cutter
     return solid
 
 
 def _apply_bores(panel_solid: Any, holes, size: tuple[float, float, float],
-                 b3d: Any) -> Any:
+                 b3d: Any, inner_sign: float = 1.0) -> Any:
     """Subtract a cylinder per :class:`Hole` (through when as deep as the stock).
 
     ``u`` runs across the in-plane face axis, ``v`` up from the bottom (+Z); the
@@ -164,8 +164,8 @@ def _apply_bores(panel_solid: Any, holes, size: tuple[float, float, float],
         if through:
             pos[normal] = 0.0
         else:
-            # Sink from the inner (+normal) face inward by ``depth``.
-            pos[normal] = half[normal] - depth / 2.0 + 1.0
+            # Sink from the inner face (±normal per ``inner_sign``) inward.
+            pos[normal] = inner_sign * (half[normal] - depth / 2.0 + 1.0)
         solid = solid - (Pos(*pos) * cyl)
     return solid
 
@@ -212,13 +212,14 @@ def _machined_solid(base: Any, panel: Any, cuts: dict, cl: Any, b3d: Any) -> Any
     if not bucket:
         return base
     solid = base
+    sign = float(getattr(panel, "inner_sign", 1.0) or 1.0)
     try:
         ops = bucket.get("joinery") or []
         if ops:
-            solid = _apply_joinery(solid, ops, panel.size, b3d)
+            solid = _apply_joinery(solid, ops, panel.size, b3d, sign)
         holes = bucket.get("holes") or []
         if holes:
-            solid = _apply_bores(solid, holes, panel.size, b3d)
+            solid = _apply_bores(solid, holes, panel.size, b3d, sign)
     except Exception:
         log.warning("machine cut failed for %s; using plain slab", panel.label,
                     exc_info=True)

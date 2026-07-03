@@ -2983,12 +2983,18 @@
   },
   "panels": [
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         9.0,
         280.0,
         410.0
       ],
+      "inner_sign": 1.0,
       "label": "BANK \u00b7 DB1 \u00b7 Side L",
       "openings": [],
       "oversized": false,
@@ -3001,12 +3007,18 @@
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         591.0,
         280.0,
         410.0
       ],
+      "inner_sign": -1.0,
       "label": "BANK \u00b7 DB1 \u00b7 Side R",
       "openings": [],
       "oversized": false,
@@ -3019,30 +3031,42 @@
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        9.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         300.0,
         277.0,
         109.0
       ],
+      "inner_sign": 1.0,
       "label": "BANK \u00b7 DB1 \u00b7 Bottom",
       "openings": [],
       "oversized": false,
       "rot_z": 0.0,
       "size": [
-        564.0,
+        582.0,
         554.0,
         18.0
       ],
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         300.0,
         40.0,
         711.0
       ],
+      "inner_sign": 1.0,
       "label": "BANK \u00b7 DB1 \u00b7 Stretcher front",
       "openings": [],
       "oversized": false,
@@ -3055,12 +3079,18 @@
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         300.0,
         514.0,
         711.0
       ],
+      "inner_sign": 1.0,
       "label": "BANK \u00b7 DB1 \u00b7 Stretcher back",
       "openings": [],
       "oversized": false,
@@ -3073,12 +3103,18 @@
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "back",
       "center": [
         300.0,
         557.0,
         410.0
       ],
+      "inner_sign": 1.0,
       "label": "BANK \u00b7 DB1 \u00b7 Back",
       "openings": [],
       "oversized": false,
@@ -3091,12 +3127,18 @@
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "shelf",
       "center": [
         300.0,
         273.0,
         410.0
       ],
+      "inner_sign": 1.0,
       "label": "BANK \u00b7 DB1 \u00b7 Shelf 1",
       "openings": [],
       "oversized": false,
@@ -3109,12 +3151,18 @@
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "toe",
       "center": [
         300.0,
         59.0,
         50.0
       ],
+      "inner_sign": 1.0,
       "label": "BANK \u00b7 DB1 \u00b7 Toe kick",
       "openings": [],
       "oversized": false,
@@ -3127,12 +3175,18 @@
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "front",
       "center": [
         300.0,
         -9.0,
         627.0
       ],
+      "inner_sign": 1.0,
       "label": "BANK \u00b7 DB1 \u00b7 Drawer front 1",
       "openings": [],
       "oversized": false,
@@ -3145,12 +3199,18 @@
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "drawer_box",
       "center": [
         18.7,
         272.5,
         627.0
       ],
+      "inner_sign": 1.0,
       "label": "BANK \u00b7 DB1 \u00b7 Drawer 1 box side L",
       "openings": [],
       "oversized": false,
@@ -3163,12 +3223,18 @@
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "drawer_box",
       "center": [
         581.3,
         272.5,
         627.0
       ],
+      "inner_sign": -1.0,
       "label": "BANK \u00b7 DB1 \u00b7 Drawer 1 box side R",
       "openings": [],
       "oversized": false,
@@ -3181,12 +3247,18 @@
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "drawer_box",
       "center": [
         300.0,
         14.0,
         627.0
       ],
+      "inner_sign": 1.0,
       "label": "BANK \u00b7 DB1 \u00b7 Drawer 1 box front",
       "openings": [],
       "oversized": false,
@@ -3199,12 +3271,18 @@
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "drawer_box",
       "center": [
         300.0,
         531.0,
         627.0
       ],
+      "inner_sign": 1.0,
       "label": "BANK \u00b7 DB1 \u00b7 Drawer 1 box back",
       "openings": [],
       "oversized": false,
@@ -3217,30 +3295,42 @@
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "drawer_box",
       "center": [
         300.0,
         272.5,
         560.0
       ],
+      "inner_sign": 1.0,
       "label": "BANK \u00b7 DB1 \u00b7 Drawer 1 box bottom",
       "openings": [],
       "oversized": false,
       "rot_z": 0.0,
       "size": [
-        550.6,
+        562.6,
         505.0,
         6.0
       ],
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "front",
       "center": [
         300.0,
         -9.0,
         444.0
       ],
+      "inner_sign": 1.0,
       "label": "BANK \u00b7 DB1 \u00b7 Drawer front 2",
       "openings": [],
       "oversized": false,
@@ -3253,12 +3343,18 @@
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "drawer_box",
       "center": [
         18.7,
         272.5,
         444.0
       ],
+      "inner_sign": 1.0,
       "label": "BANK \u00b7 DB1 \u00b7 Drawer 2 box side L",
       "openings": [],
       "oversized": false,
@@ -3271,12 +3367,18 @@
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "drawer_box",
       "center": [
         581.3,
         272.5,
         444.0
       ],
+      "inner_sign": -1.0,
       "label": "BANK \u00b7 DB1 \u00b7 Drawer 2 box side R",
       "openings": [],
       "oversized": false,
@@ -3289,12 +3391,18 @@
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "drawer_box",
       "center": [
         300.0,
         14.0,
         444.0
       ],
+      "inner_sign": 1.0,
       "label": "BANK \u00b7 DB1 \u00b7 Drawer 2 box front",
       "openings": [],
       "oversized": false,
@@ -3307,12 +3415,18 @@
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "drawer_box",
       "center": [
         300.0,
         531.0,
         444.0
       ],
+      "inner_sign": 1.0,
       "label": "BANK \u00b7 DB1 \u00b7 Drawer 2 box back",
       "openings": [],
       "oversized": false,
@@ -3325,30 +3439,42 @@
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "drawer_box",
       "center": [
         300.0,
         272.5,
         377.0
       ],
+      "inner_sign": 1.0,
       "label": "BANK \u00b7 DB1 \u00b7 Drawer 2 box bottom",
       "openings": [],
       "oversized": false,
       "rot_z": 0.0,
       "size": [
-        550.6,
+        562.6,
         505.0,
         6.0
       ],
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "front",
       "center": [
         150.75,
         -9.0,
         227.0
       ],
+      "inner_sign": 1.0,
       "label": "BANK \u00b7 DB1 \u00b7 Door L",
       "openings": [],
       "oversized": false,
@@ -3361,12 +3487,18 @@
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "front",
       "center": [
         449.25,
         -9.0,
         227.0
       ],
+      "inner_sign": 1.0,
       "label": "BANK \u00b7 DB1 \u00b7 Door R",
       "openings": [],
       "oversized": false,
@@ -3379,12 +3511,18 @@
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         609.0,
         280.0,
         410.0
       ],
+      "inner_sign": 1.0,
       "label": "BANK \u00b7 DB2 \u00b7 Side L",
       "openings": [],
       "oversized": false,
@@ -3397,12 +3535,18 @@
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         1191.0,
         280.0,
         410.0
       ],
+      "inner_sign": -1.0,
       "label": "BANK \u00b7 DB2 \u00b7 Side R",
       "openings": [],
       "oversized": false,
@@ -3415,30 +3559,42 @@
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        9.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         900.0,
         277.0,
         109.0
       ],
+      "inner_sign": 1.0,
       "label": "BANK \u00b7 DB2 \u00b7 Bottom",
       "openings": [],
       "oversized": false,
       "rot_z": 0.0,
       "size": [
-        564.0,
+        582.0,
         554.0,
         18.0
       ],
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         900.0,
         40.0,
         711.0
       ],
+      "inner_sign": 1.0,
       "label": "BANK \u00b7 DB2 \u00b7 Stretcher front",
       "openings": [],
       "oversized": false,
@@ -3451,12 +3607,18 @@
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         900.0,
         514.0,
         711.0
       ],
+      "inner_sign": 1.0,
       "label": "BANK \u00b7 DB2 \u00b7 Stretcher back",
       "openings": [],
       "oversized": false,
@@ -3469,12 +3631,18 @@
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "back",
       "center": [
         900.0,
         557.0,
         410.0
       ],
+      "inner_sign": 1.0,
       "label": "BANK \u00b7 DB2 \u00b7 Back",
       "openings": [],
       "oversized": false,
@@ -3487,12 +3655,18 @@
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "shelf",
       "center": [
         900.0,
         273.0,
         410.0
       ],
+      "inner_sign": 1.0,
       "label": "BANK \u00b7 DB2 \u00b7 Shelf 1",
       "openings": [],
       "oversized": false,
@@ -3505,12 +3679,18 @@
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "toe",
       "center": [
         900.0,
         59.0,
         50.0
       ],
+      "inner_sign": 1.0,
       "label": "BANK \u00b7 DB2 \u00b7 Toe kick",
       "openings": [],
       "oversized": false,
@@ -3523,12 +3703,18 @@
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "front",
       "center": [
         750.75,
         -9.0,
         410.0
       ],
+      "inner_sign": 1.0,
       "label": "BANK \u00b7 DB2 \u00b7 Door L",
       "openings": [],
       "oversized": false,
@@ -3541,12 +3727,18 @@
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "front",
       "center": [
         1049.25,
         -9.0,
         410.0
       ],
+      "inner_sign": 1.0,
       "label": "BANK \u00b7 DB2 \u00b7 Door R",
       "openings": [],
       "oversized": false,
@@ -3559,12 +3751,18 @@
       "subassembly": "BANK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         1209.0,
         280.0,
         410.0
       ],
+      "inner_sign": 1.0,
       "label": "SINK \u00b7 Side L",
       "openings": [],
       "oversized": false,
@@ -3577,12 +3775,18 @@
       "subassembly": "SINK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         2091.0,
         280.0,
         410.0
       ],
+      "inner_sign": -1.0,
       "label": "SINK \u00b7 Side R",
       "openings": [],
       "oversized": false,
@@ -3595,30 +3799,42 @@
       "subassembly": "SINK"
     },
     {
+      "capture_grow": [
+        9.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         1650.0,
         277.0,
         109.0
       ],
+      "inner_sign": 1.0,
       "label": "SINK \u00b7 Bottom",
       "openings": [],
       "oversized": false,
       "rot_z": 0.0,
       "size": [
-        864.0,
+        882.0,
         554.0,
         18.0
       ],
       "subassembly": "SINK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         1650.0,
         40.0,
         711.0
       ],
+      "inner_sign": 1.0,
       "label": "SINK \u00b7 Stretcher front",
       "openings": [],
       "oversized": false,
@@ -3631,12 +3847,18 @@
       "subassembly": "SINK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "carcass",
       "center": [
         1650.0,
         514.0,
         711.0
       ],
+      "inner_sign": 1.0,
       "label": "SINK \u00b7 Stretcher back",
       "openings": [],
       "oversized": false,
@@ -3649,12 +3871,18 @@
       "subassembly": "SINK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "back",
       "center": [
         1650.0,
         557.0,
         410.0
       ],
+      "inner_sign": 1.0,
       "label": "SINK \u00b7 Back",
       "openings": [],
       "oversized": false,
@@ -3667,12 +3895,18 @@
       "subassembly": "SINK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "shelf",
       "center": [
         1650.0,
         273.0,
         410.0
       ],
+      "inner_sign": 1.0,
       "label": "SINK \u00b7 Shelf 1",
       "openings": [],
       "oversized": false,
@@ -3685,12 +3919,18 @@
       "subassembly": "SINK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "toe",
       "center": [
         1650.0,
         59.0,
         50.0
       ],
+      "inner_sign": 1.0,
       "label": "SINK \u00b7 Toe kick",
       "openings": [],
       "oversized": false,
@@ -3703,12 +3943,18 @@
       "subassembly": "SINK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "front",
       "center": [
         1425.75,
         -9.0,
         410.0
       ],
+      "inner_sign": 1.0,
       "label": "SINK \u00b7 Door L",
       "openings": [],
       "oversized": false,
@@ -3721,12 +3967,18 @@
       "subassembly": "SINK"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "front",
       "center": [
         1874.25,
         -9.0,
         410.0
       ],
+      "inner_sign": 1.0,
       "label": "SINK \u00b7 Door R",
       "openings": [],
       "oversized": false,

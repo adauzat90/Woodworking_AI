@@ -218,10 +218,33 @@ def select_hinge(brand: str, overlay: str = "overlay") -> HingeSpec:
     return HingeSpec(**{**h.__dict__, "overlay": overlay})
 
 
+# Slideless drawer runners (no metal hardware). A wooden side runner is a
+# hardwood strip screwed to the carcass side that a grooved drawer side rides on;
+# "none" is a bare drawer riding on a web frame / the case bottom. Neither is
+# brand-specific, so they share one spec regardless of ``hardware_brand``.
+_RUNNER_WOOD = SlideSpec("Wooden side runner", "generic", "", slide_type="wood",
+                         length=0.0, side_clearance=SLIDE_SIDE_CLEARANCE,
+                         soft_close=False)
+_RUNNER_NONE = SlideSpec("No slide (web frame / case bottom)", "generic", "",
+                         slide_type="none", length=0.0, side_clearance=3.0,
+                         soft_close=False)
+
+
+def is_metal_slide(slide_type: str) -> bool:
+    """True for a bought metal slide (side-mount/undermount), False for a
+    wooden runner or a bare web-frame drawer."""
+    return str(slide_type).lower() in ("side_mount", "undermount")
+
+
 def select_slide(brand: str, slide_type: str = "side_mount",
                  length: float = 0.0) -> SlideSpec:
+    st = str(slide_type).lower()
+    if st == "wood":
+        return SlideSpec(**{**_RUNNER_WOOD.__dict__, "length": length})
+    if st == "none":
+        return SlideSpec(**{**_RUNNER_NONE.__dict__, "length": length})
     brand = normalize_brand(brand)
-    table = _SLIDES_UNDER if slide_type == "undermount" else _SLIDES_SIDE
+    table = _SLIDES_UNDER if st == "undermount" else _SLIDES_SIDE
     s = table[brand]
     return SlideSpec(**{**s.__dict__, "length": length or s.length})
 

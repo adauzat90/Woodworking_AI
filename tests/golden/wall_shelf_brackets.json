@@ -77,12 +77,18 @@
   },
   "panels": [
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "shelf",
       "center": [
         0.0,
         125.0,
         1390.0
       ],
+      "inner_sign": 1.0,
       "label": "Shelf",
       "openings": [],
       "oversized": false,
@@ -95,12 +101,18 @@
       "subassembly": "Shelf"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "bracket",
       "center": [
         -300.0,
         125.0,
         1305.0
       ],
+      "inner_sign": 1.0,
       "label": "Bracket 1",
       "openings": [],
       "oversized": false,
@@ -113,12 +125,18 @@
       "subassembly": "Brackets"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "bracket",
       "center": [
         0.0,
         125.0,
         1305.0
       ],
+      "inner_sign": 1.0,
       "label": "Bracket 2",
       "openings": [],
       "oversized": false,
@@ -131,12 +149,18 @@
       "subassembly": "Brackets"
     },
     {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "category": "bracket",
       "center": [
         300.0,
         125.0,
         1305.0
       ],
+      "inner_sign": 1.0,
       "label": "Bracket 3",
       "openings": [],
       "oversized": false,
