@@ -1,0 +1,55 @@
+id,part,operation,tool,width_mm,depth_mm,reference,note
+Front-L-A1,Front-L · Side L,joint for bottom,dado stack / straight bit,18.0,9.0,near the bottom edge,cut to the mating panel thickness for a snug fit
+Front-L-A1,Front-L · Side R,joint for bottom,dado stack / straight bit,18.0,9.0,near the bottom edge,cut to the mating panel thickness for a snug fit
+Front-L-A1,Front-L · Side / top / bottom,rabbet for back,rabbet bit / dado,6.0,6.0,rear edge,back sits flush in the rabbet
+Front-L-E1,Front-L · Drawer 1 box,dovetail corners,dovetail jig / saw,0.0,12.0,tails on the sides,tails on the sides so the front can't pull off
+Front-L-E1,Front-L · Drawer 1 box sides,groove for bottom,straight bit / dado,6.0,6.0,~10mm up from the bottom edge,
+Front-L-E4,Front-L · Drawer 2 box,dovetail corners,dovetail jig / saw,0.0,12.0,tails on the sides,tails on the sides so the front can't pull off
+Front-L-E4,Front-L · Drawer 2 box sides,groove for bottom,straight bit / dado,6.0,6.0,~10mm up from the bottom edge,
+Front-L-E7,Front-L · Drawer 3 box,dovetail corners,dovetail jig / saw,0.0,12.0,tails on the sides,tails on the sides so the front can't pull off
+Front-L-E7,Front-L · Drawer 3 box sides,groove for bottom,straight bit / dado,6.0,6.0,~10mm up from the bottom edge,
+Front-M-A1,Front-M · Side L,joint for bottom,dado stack / straight bit,18.0,9.0,near the bottom edge,cut to the mating panel thickness for a snug fit
+Front-M-A1,Front-M · Side R,joint for bottom,dado stack / straight bit,18.0,9.0,near the bottom edge,cut to the mating panel thickness for a snug fit
+Front-M-A1,Front-M · Side / top / bottom,rabbet for back,rabbet bit / dado,6.0,6.0,rear edge,back sits flush in the rabbet
+Front-M-E1,Front-M · Drawer 1 box,dovetail corners,dovetail jig / saw,0.0,12.0,tails on the sides,tails on the sides so the front can't pull off
+Front-M-E1,Front-M · Drawer 1 box sides,groove for bottom,straight bit / dado,6.0,6.0,~10mm up from the bottom edge,
+Front-M-E4,Front-M · Drawer 2 box,dovetail corners,dovetail jig / saw,0.0,12.0,tails on the sides,tails on the sides so the front can't pull off
+Front-M-E4,Front-M · Drawer 2 box sides,groove for bottom,straight bit / dado,6.0,6.0,~10mm up from the bottom edge,
+Front-M-E7,Front-M · Drawer 3 box,dovetail corners,dovetail jig / saw,0.0,12.0,tails on the sides,tails on the sides so the front can't pull off
+Front-M-E7,Front-M · Drawer 3 box sides,groove for bottom,straight bit / dado,6.0,6.0,~10mm up from the bottom edge,
+Front-R-A1,Front-R · Side L,joint for bottom,dado stack / straight bit,18.0,9.0,near the bottom edge,cut to the mating panel thickness for a snug fit
+Front-R-A1,Front-R · Side R,joint for bottom,dado stack / straight bit,18.0,9.0,near the bottom edge,cut to the mating panel thickness for a snug fit
+Front-R-A1,Front-R · Side / top / bottom,rabbet for back,rabbet bit / dado,6.0,6.0,rear edge,back sits flush in the rabbet
+Front-R-E1,Front-R · Drawer 1 box,dovetail corners,dovetail jig / saw,0.0,12.0,tails on the sides,tails on the sides so the front can't pull off
+Front-R-E1,Front-R · Drawer 1 box sides,groove for bottom,straight bit / dado,6.0,6.0,~10mm up from the bottom edge,
+Front-R-E4,Front-R · Drawer 2 box,dovetail corners,dovetail jig / saw,0.0,12.0,tails on the sides,tails on the sides so the front can't pull off
+Front-R-E4,Front-R · Drawer 2 box sides,groove for bottom,straight bit / dado,6.0,6.0,~10mm up from the bottom edge,
+Front-R-E7,Front-R · Drawer 3 box,dovetail corners,dovetail jig / saw,0.0,12.0,tails on the sides,tails on the sides so the front can't pull off
+Front-R-E7,Front-R · Drawer 3 box sides,groove for bottom,straight bit / dado,6.0,6.0,~10mm up from the bottom edge,
+Back-R-A1,Back-R · Side L,joint for bottom,dado stack / straight bit,18.0,9.0,near the bottom edge,cut to the mating panel thickness for a snug fit
+Back-R-A1,Back-R · Side R,joint for bottom,dado stack / straight bit,18.0,9.0,near the bottom edge,cut to the mating panel thickness for a snug fit
+Back-R-A1,Back-R · Side / top / bottom,rabbet for back,rabbet bit / dado,6.0,6.0,rear edge,back sits flush in the rabbet
+Back-R-E1,Back-R · Drawer 1 box,dovetail corners,dovetail jig / saw,0.0,12.0,tails on the sides,tails on the sides so the front can't pull off
+Back-R-E1,Back-R · Drawer 1 box sides,groove for bottom,straight bit / dado,6.0,6.0,~10mm up from the bottom edge,
+Back-R-E4,Back-R · Drawer 2 box,dovetail corners,dovetail jig / saw,0.0,12.0,tails on the sides,tails on the sides so the front can't pull off
+Back-R-E4,Back-R · Drawer 2 box sides,groove for bottom,straight bit / dado,6.0,6.0,~10mm up from the bottom edge,
+Back-R-E7,Back-R · Drawer 3 box,dovetail corners,dovetail jig / saw,0.0,12.0,tails on the sides,tails on the sides so the front can't pull off
+Back-R-E7,Back-R · Drawer 3 box sides,groove for bottom,straight bit / dado,6.0,6.0,~10mm up from the bottom edge,
+Back-M-A1,Back-M · Side L,joint for bottom,dado stack / straight bit,18.0,9.0,near the bottom edge,cut to the mating panel thickness for a snug fit
+Back-M-A1,Back-M · Side R,joint for bottom,dado stack / straight bit,18.0,9.0,near the bottom edge,cut to the mating panel thickness for a snug fit
+Back-M-A1,Back-M · Side / top / bottom,rabbet for back,rabbet bit / dado,6.0,6.0,rear edge,back sits flush in the rabbet
+Back-M-E1,Back-M · Drawer 1 box,dovetail corners,dovetail jig / saw,0.0,12.0,tails on the sides,tails on the sides so the front can't pull off
+Back-M-E1,Back-M · Drawer 1 box sides,groove for bottom,straight bit / dado,6.0,6.0,~10mm up from the bottom edge,
+Back-M-E4,Back-M · Drawer 2 box,dovetail corners,dovetail jig / saw,0.0,12.0,tails on the sides,tails on the sides so the front can't pull off
+Back-M-E4,Back-M · Drawer 2 box sides,groove for bottom,straight bit / dado,6.0,6.0,~10mm up from the bottom edge,
+Back-M-E7,Back-M · Drawer 3 box,dovetail corners,dovetail jig / saw,0.0,12.0,tails on the sides,tails on the sides so the front can't pull off
+Back-M-E7,Back-M · Drawer 3 box sides,groove for bottom,straight bit / dado,6.0,6.0,~10mm up from the bottom edge,
+Back-L-A1,Back-L · Side L,joint for bottom,dado stack / straight bit,18.0,9.0,near the bottom edge,cut to the mating panel thickness for a snug fit
+Back-L-A1,Back-L · Side R,joint for bottom,dado stack / straight bit,18.0,9.0,near the bottom edge,cut to the mating panel thickness for a snug fit
+Back-L-A1,Back-L · Side / top / bottom,rabbet for back,rabbet bit / dado,6.0,6.0,rear edge,back sits flush in the rabbet
+Back-L-E1,Back-L · Drawer 1 box,dovetail corners,dovetail jig / saw,0.0,12.0,tails on the sides,tails on the sides so the front can't pull off
+Back-L-E1,Back-L · Drawer 1 box sides,groove for bottom,straight bit / dado,6.0,6.0,~10mm up from the bottom edge,
+Back-L-E4,Back-L · Drawer 2 box,dovetail corners,dovetail jig / saw,0.0,12.0,tails on the sides,tails on the sides so the front can't pull off
+Back-L-E4,Back-L · Drawer 2 box sides,groove for bottom,straight bit / dado,6.0,6.0,~10mm up from the bottom edge,
+Back-L-E7,Back-L · Drawer 3 box,dovetail corners,dovetail jig / saw,0.0,12.0,tails on the sides,tails on the sides so the front can't pull off
+Back-L-E7,Back-L · Drawer 3 box sides,groove for bottom,straight bit / dado,6.0,6.0,~10mm up from the bottom edge,
