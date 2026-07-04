@@ -8,6 +8,7 @@ from .dsl import (
     BedSpec, BedSize, BedConnector,
     CuttingBoardSpec, GrainStyle,
     NightstandSpec, DeskSpec, WorkbenchSpec,
+    PieceSpec, PiecePart, PieceJoint,
     ShelfFixing, spec_from_dict, Material, ToeKick,
     Drawer, Construction, BackStyle, Joinery,
     CornerJoint, DovetailTails, SlideType, Grain, TopFixing,
@@ -25,9 +26,12 @@ from .drilling import (
     drilling_schedule, DrillingSchedule, hinge_count, grid_violations,
 )
 from .purchasing import purchase_order, PurchaseOrder, POLine
-# Importing this registers the H1 leaf furniture types (wall_shelf, box) into
-# the furniture registry — must come after the stage modules it builds on.
+# Importing these registers the leaf furniture types into the furniture registry
+# — must come after the stage modules they build on. ``furniture_types`` holds
+# the H1 home-shop leaves (wall_shelf, box, …); ``furniture_piece`` holds the
+# generic ``piece`` escape hatch.
 from . import furniture_types  # noqa: F401  (import for side effects)
+from . import furniture_piece  # noqa: F401  (import for side effects)
 
 __version__ = "0.1.0"
 
@@ -50,6 +54,9 @@ __all__ = [
     "NightstandSpec",
     "DeskSpec",
     "WorkbenchSpec",
+    "PieceSpec",
+    "PiecePart",
+    "PieceJoint",
     "ShelfFixing",
     "furniture",
     "spec_from_dict",

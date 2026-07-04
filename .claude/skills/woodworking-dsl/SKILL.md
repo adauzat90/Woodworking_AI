@@ -60,7 +60,18 @@ Set `"kind"` first; it selects the whole spec shape. Available kinds:
 | `nightstand` | small legged cabinet + drawer | width/depth/height, drawers, shelf |
 | `desk` | writing desk | width/depth/height, drawers, modesty_panel, grommet |
 | `workbench` | heavy bench, dog holes, vise | width/depth/height, top_thickness, vise |
+| `piece` | **escape hatch** — explicit rectangular parts + joints | `parts` (name/at/size/grain), `joints` |
 | `project` | **>1 piece** — a run / built-in | `runs` or `components` |
+
+Reach for `piece` ONLY when nothing above fits (a miter station, a lumber rack,
+garage shelving): list each box by its min corner `at:[x,y,z]` and `size:[sx,sy,sz]`
+(mm; X=width, Y=depth, Z=off floor), name it, set `grain:"x"|"y"|"none"`, and join
+parts by name. Dedicated kinds carry richer checks — prefer them. The validator
+enforces generic physics only: unique names, positive finite sizes, nothing below
+the floor, and joints between two different parts whose faces actually touch (it
+warns on volume overlaps and floating parts). `repeat:{"count":n,"step":[dx,dy,dz]}`
+arrays a part into n copies. Overall `width/depth/height` are optional (0 = derive
+from the bounding box).
 
 `cabinet_type` (for `kind:"cabinet"`): `base` (toe kick, open top, takes a
 counter), `wall` (hung, NO toe kick — set `"toe_kick": null`, enclosed top,
@@ -78,6 +89,9 @@ counter), `wall` (hung, NO toe kick — set `"toe_kick": null`, enclosed top,
 ```
 ```json
 {"kind":"bookcase","cabinet_type":"bookcase","name":"Bookcase","width":800,"height":1800,"depth":300,"doors":0,"shelves":4,"toe_kick":null}
+```
+```json
+{"kind":"piece","name":"Sawhorse","parts":[{"name":"Beam","at":[0,0,700],"size":[900,90,40],"grain":"x"},{"name":"Leg","at":[0,0,0],"size":[40,90,740],"grain":"z","repeat":{"count":2,"step":[860,0,0]}}],"joints":[{"parts":["Leg","Beam"],"joinery":"screw"}]}
 ```
 
 ## Multi-piece projects — PREFER declarative `runs`
