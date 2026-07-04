@@ -18,7 +18,7 @@ from enum import Enum
 
 from .dsl import (
     CabinetSpec, TableSpec, ComponentGroup, Component, BackStyle,
-    Construction, CabinetType,
+    Construction, CabinetType, leg_section,
 )
 from .dispatch import spec_kind, is_group, VOID, GROUP, TABLE, CABINET
 from . import furniture
@@ -902,8 +902,11 @@ def _diagonal_layout(spec: CabinetSpec) -> list[PanelBox]:
 def _table_layout(spec: TableSpec) -> list[PanelBox]:
     """A four-legged table: a top, four legs, and four aprons."""
     W, D, H = spec.width, spec.depth, spec.height
-    tt, leg, ah, at, li = (spec.top_thickness, spec.leg, spec.apron_height,
-                           spec.apron_thickness, spec.leg_inset)
+    tt, ah, at, li = (spec.top_thickness, spec.apron_height,
+                      spec.apron_thickness, spec.leg_inset)
+    # Leg cross-section: leg_x along X, leg_y along Y (wide face along depth when
+    # leg_depth is set). Square legs collapse to leg_x == leg_y == leg.
+    leg_x, leg_y = leg_section(spec)
     panels: list[PanelBox] = []
 
     def add(label, size, center, category):
@@ -912,16 +915,16 @@ def _table_layout(spec: TableSpec) -> list[PanelBox]:
     add("Top", (W, D, tt), (0, 0, H - tt / 2), "top")
 
     leg_h = H - tt
-    lx = W / 2 - li - leg / 2          # leg-centre offsets
-    ly = D / 2 - li - leg / 2
+    lx = W / 2 - li - leg_x / 2        # leg-centre offsets (per-axis section)
+    ly = D / 2 - li - leg_y / 2
     for i, sx in enumerate((-1, 1)):
         for j, sy in enumerate((-1, 1)):
-            add(f"Leg {2 * i + j + 1}", (leg, leg, leg_h),
+            add(f"Leg {2 * i + j + 1}", (leg_x, leg_y, leg_h),
                 (sx * lx, sy * ly, leg_h / 2), "leg")
 
     az = H - tt - ah / 2               # apron centre height
-    apron_x = 2 * lx - leg             # long apron length (between legs, X)
-    apron_y = 2 * ly - leg             # short apron length (between legs, Y)
+    apron_x = 2 * lx - leg_x           # long apron length (between legs, X)
+    apron_y = 2 * ly - leg_y           # short apron length (between legs, Y)
     for sy in (-1, 1):
         add("Apron long", (apron_x, at, ah), (0, sy * ly, az), "apron")
     for sx in (-1, 1):
