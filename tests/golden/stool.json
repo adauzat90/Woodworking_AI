@@ -150,9 +150,13 @@
       }
     ],
     "material_cost": 0.0,
-    "spec_name": "Shop stool"
+    "spec_name": "Shop stool",
+    "stick_cost": 0.0,
+    "stick_groups": []
   },
-  "issues": [],
+  "issues": [
+    "info:Leg cross-section is nearly a 2x2 (38\u00d738mm) \u2014 spec 38\u00d738mm to use off-the-shelf construction lumber with no ripping"
+  ],
   "joinery": {
     "ops": [
       {

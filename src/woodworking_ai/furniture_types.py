@@ -40,7 +40,7 @@ from .dsl import (
     WallShelfSpec, BoxSpec, BenchSpec, FrameSpec, BedSpec, CuttingBoardSpec,
     NightstandSpec, DeskSpec, WorkbenchSpec,
     ShelfFixing, FrameJoint, FrameHanger, FrameContents, BedConnector, GrainStyle,
-    joinery_key, leg_taper_note,
+    joinery_key, leg_section, leg_stock_note,
 )
 from .geometry import PanelBox
 from .partmath import drawer_box_dims
@@ -67,6 +67,21 @@ from . import hardware as hw
 
 def _finite_positive(v) -> bool:
     return isinstance(v, (int, float)) and math.isfinite(v) and v > 0
+
+
+def _leg_depth_issue(spec, issues) -> bool:
+    """Append an error if ``leg_depth`` is set to a non-finite / non-positive value.
+
+    ``leg_depth`` of 0 means "square" and is always valid; any other value must be
+    a finite, positive section. Returns True when the spec is OK to continue.
+    """
+    ld = getattr(spec, "leg_depth", 0.0)
+    if ld and not _finite_positive(ld):
+        issues.append(Issue(
+            "error", "leg_depth",
+            f"must be a positive, finite number when set (0 = square), got {ld!r}"))
+        return False
+    return True
 
 
 # ===========================================================================
@@ -456,9 +471,14 @@ furniture.register(
 # ===========================================================================
 
 def _bench_leg_offsets(spec: BenchSpec) -> tuple[float, float]:
-    """Leg-centre offsets (lx, ly) from the seat centre, like the table."""
-    lx = spec.width / 2 - spec.leg_inset - spec.leg / 2
-    ly = spec.depth / 2 - spec.leg_inset - spec.leg / 2
+    """Leg-centre offsets (lx, ly) from the seat centre, like the table.
+
+    Uses the per-axis leg section so a rectangular (2x4) leg sits with its wide
+    face along the depth; a square leg is unchanged.
+    """
+    leg_x, leg_y = leg_section(spec)
+    lx = spec.width / 2 - spec.leg_inset - leg_x / 2
+    ly = spec.depth / 2 - spec.leg_inset - leg_y / 2
     return lx, ly
 
 
@@ -470,7 +490,8 @@ def _bench_panels(spec: BenchSpec) -> list[PanelBox]:
     sitting load. X = length, Y = depth, Z = height (seat top at ``height``).
     """
     W, D, H = spec.width, spec.depth, spec.height
-    tt, leg = spec.top_thickness, spec.leg
+    tt = spec.top_thickness
+    leg_x, leg_y = leg_section(spec)
     ah, at = spec.apron_height, spec.apron_thickness  # leg inset via _bench_leg_offsets
     panels: list[PanelBox] = []
 
@@ -484,12 +505,12 @@ def _bench_panels(spec: BenchSpec) -> list[PanelBox]:
     lx, ly = _bench_leg_offsets(spec)
     for i, sx in enumerate((-1, 1)):
         for j, sy in enumerate((-1, 1)):
-            add(f"Leg {2 * i + j + 1}", (leg, leg, leg_h),
+            add(f"Leg {2 * i + j + 1}", (leg_x, leg_y, leg_h),
                 (sx * lx, sy * ly, leg_h / 2), "leg")
 
     az = H - tt - ah / 2               # apron centre height
-    apron_x = 2 * lx - leg             # long apron length (between legs, X)
-    apron_y = 2 * ly - leg             # short apron length (between legs, Y)
+    apron_x = 2 * lx - leg_x           # long apron length (between legs, X)
+    apron_y = 2 * ly - leg_y           # short apron length (between legs, Y)
     for sy in (-1, 1):
         add("Apron long", (apron_x, at, ah), (0, sy * ly, az), "apron")
     for sx in (-1, 1):
@@ -509,15 +530,16 @@ def _bench_cutlist(spec: BenchSpec) -> CutList:
     cl = CutList(spec_name=spec.name)
     leg_h = spec.height - spec.top_thickness
     lx, ly = _bench_leg_offsets(spec)
-    apron_x = 2 * lx - spec.leg
-    apron_y = 2 * ly - spec.leg
+    leg_x, leg_y = leg_section(spec)
+    apron_x = 2 * lx - leg_x
+    apron_y = 2 * ly - leg_y
 
     cl.parts.append(Part(
         "Seat", 1, length=spec.width, width=spec.depth,
         thickness=spec.top_thickness, material=MAT_TOP, notes="solid/sheet seat"))
     cl.parts.append(Part(
-        "Leg", 4, length=leg_h, width=spec.leg, thickness=spec.leg,
-        material=MAT_LEG, notes="square stock" + leg_taper_note(spec)))
+        "Leg", 4, length=leg_h, width=max(leg_x, leg_y), thickness=min(leg_x, leg_y),
+        material=MAT_LEG, notes=leg_stock_note(spec)))
     cl.parts.append(Part(
         "Apron (long)", 2, length=apron_x, width=spec.apron_height,
         thickness=spec.apron_thickness, material=MAT_APRON))
@@ -549,12 +571,15 @@ def _bench_validate(spec: BenchSpec) -> list[Issue]:
                  "apron_height", "apron_thickness", "leg_inset"):
         if not _finite_positive(getattr(spec, name)):
             err(name, f"must be a positive, finite number, got {getattr(spec, name)!r}")
+    _leg_depth_issue(spec, issues)
     if any(i.severity == "error" for i in issues):
         return issues
 
     if spec.height <= spec.top_thickness + spec.apron_height:
         err("height", "too short for the seat plus an apron")
-    if 2 * spec.leg_inset + spec.leg >= min(spec.width, spec.depth):
+    leg_x, leg_y = leg_section(spec)
+    if (2 * spec.leg_inset + leg_x >= spec.width
+            or 2 * spec.leg_inset + leg_y >= spec.depth):
         err("leg_inset", "legs do not fit within the seat with this inset")
     if spec.height < SEAT_HEIGHT_MIN or spec.height > SEAT_HEIGHT_MAX:
         # DIM-003: seat height outside the bench/stool range. Covers bench and
@@ -1435,11 +1460,28 @@ furniture.register(
 # ===========================================================================
 
 def _legged_offsets(width: float, depth: float, leg_inset: float,
-                    leg: float) -> tuple[float, float]:
-    """Leg-centre offsets (lx, ly) from the top centre — front is at -Y."""
+                    leg: float, leg_depth: float | None = None) -> tuple[float, float]:
+    """Leg-centre offsets (lx, ly) from the top centre — front is at -Y.
+
+    ``leg`` is the X-face; ``leg_depth`` (when >0) is the Y-face, so a rectangular
+    leg insets by its own face on each axis. ``leg_depth`` None/0 = square.
+    """
+    leg_y = leg_depth if (leg_depth and leg_depth > 0) else leg
     lx = width / 2 - leg_inset - leg / 2
-    ly = depth / 2 - leg_inset - leg / 2
+    ly = depth / 2 - leg_inset - leg_y / 2
     return lx, ly
+
+
+def _leg_offsets_and_aprons(spec):
+    """``(lx, ly, apron_x, apron_y, leg_x, leg_y)`` for a legged piece.
+
+    The one place the per-axis leg section feeds the leg-centre offsets and the
+    apron lengths between the legs, so the nightstand / desk / workbench layouts
+    and cut lists never disagree about a rectangular (2x4) leg.
+    """
+    leg_x, leg_y = leg_section(spec)
+    lx, ly = _legged_offsets(spec.width, spec.depth, spec.leg_inset, leg_x, leg_y)
+    return lx, ly, 2 * lx - leg_x, 2 * ly - leg_y, leg_x, leg_y
 
 
 def _drawer_cut_parts(cl: CutList, heights: list[float], opening_w: float,
@@ -1524,9 +1566,12 @@ def _legged_validate_common(spec, issues, dims) -> bool:
     for name in dims:
         if not _finite_positive(getattr(spec, name)):
             err(name, f"must be a positive, finite number, got {getattr(spec, name)!r}")
+    _leg_depth_issue(spec, issues)
     if any(i.severity == "error" for i in issues):
         return False
-    if 2 * spec.leg_inset + spec.leg >= min(spec.width, spec.depth):
+    leg_x, leg_y = leg_section(spec)
+    if (2 * spec.leg_inset + leg_x >= spec.width
+            or 2 * spec.leg_inset + leg_y >= spec.depth):
         err("leg_inset", "legs do not fit within the top with this inset")
         return False
     return True
@@ -1612,10 +1657,9 @@ def _nightstand_drawer_count(spec: NightstandSpec) -> int:
 
 def _nightstand_panels(spec: NightstandSpec) -> list[PanelBox]:
     W, D, H = spec.width, spec.depth, spec.height
-    tt, leg = spec.top_thickness, spec.leg
+    tt = spec.top_thickness
     ah, at = spec.apron_height, spec.apron_thickness
-    lx, ly = _legged_offsets(W, D, spec.leg_inset, leg)
-    apron_x, apron_y = 2 * lx - leg, 2 * ly - leg
+    lx, ly, apron_x, apron_y, leg_x, leg_y = _leg_offsets_and_aprons(spec)
     az = H - tt - ah / 2
     panels: list[PanelBox] = []
 
@@ -1626,7 +1670,7 @@ def _nightstand_panels(spec: NightstandSpec) -> list[PanelBox]:
     leg_h = H - tt
     for i, sx in enumerate((-1, 1)):
         for j, sy in enumerate((-1, 1)):
-            add(f"Leg {2 * i + j + 1}", (leg, leg, leg_h),
+            add(f"Leg {2 * i + j + 1}", (leg_x, leg_y, leg_h),
                 (sx * lx, sy * ly, leg_h / 2), "leg")
     for sx in (-1, 1):
         add("Apron side", (at, apron_y, ah), (sx * lx, 0, az), "apron")
@@ -1657,16 +1701,15 @@ def _nightstand_panels(spec: NightstandSpec) -> list[PanelBox]:
 def _nightstand_cutlist(spec: NightstandSpec) -> CutList:
     cl = CutList(spec_name=spec.name)
     W, D, H = spec.width, spec.depth, spec.height
-    lx, ly = _legged_offsets(W, D, spec.leg_inset, spec.leg)
-    apron_x, apron_y = 2 * lx - spec.leg, 2 * ly - spec.leg
+    lx, ly, apron_x, apron_y, leg_x, leg_y = _leg_offsets_and_aprons(spec)
     leg_h = H - spec.top_thickness
 
     cl.parts.append(Part(
         "Top", 1, length=W, width=D, thickness=spec.top_thickness,
         material=MAT_TOP, notes="solid or sheet top"))
     cl.parts.append(Part(
-        "Leg", 4, length=leg_h, width=spec.leg, thickness=spec.leg,
-        material=MAT_LEG, notes="square stock" + leg_taper_note(spec)))
+        "Leg", 4, length=leg_h, width=max(leg_x, leg_y), thickness=min(leg_x, leg_y),
+        material=MAT_LEG, notes=leg_stock_note(spec)))
     cl.parts.append(Part(
         "Apron side", 2, length=apron_y, width=spec.apron_height,
         thickness=spec.apron_thickness, material=MAT_APRON))
@@ -1806,10 +1849,9 @@ def _desk_drawer_count(spec: DeskSpec) -> int:
 
 def _desk_panels(spec: DeskSpec) -> list[PanelBox]:
     W, D, H = spec.width, spec.depth, spec.height
-    tt, leg = spec.top_thickness, spec.leg
+    tt = spec.top_thickness
     ah, at = spec.apron_height, spec.apron_thickness
-    lx, ly = _legged_offsets(W, D, spec.leg_inset, leg)
-    apron_x, apron_y = 2 * lx - leg, 2 * ly - leg
+    lx, ly, apron_x, apron_y, leg_x, leg_y = _leg_offsets_and_aprons(spec)
     az = H - tt - ah / 2
     panels: list[PanelBox] = []
 
@@ -1820,7 +1862,7 @@ def _desk_panels(spec: DeskSpec) -> list[PanelBox]:
     leg_h = H - tt
     for i, sx in enumerate((-1, 1)):
         for j, sy in enumerate((-1, 1)):
-            add(f"Leg {2 * i + j + 1}", (leg, leg, leg_h),
+            add(f"Leg {2 * i + j + 1}", (leg_x, leg_y, leg_h),
                 (sx * lx, sy * ly, leg_h / 2), "leg")
     for sx in (-1, 1):
         add("Apron side", (at, apron_y, ah), (sx * lx, 0, az), "apron")
@@ -1852,8 +1894,7 @@ def _desk_panels(spec: DeskSpec) -> list[PanelBox]:
 def _desk_cutlist(spec: DeskSpec) -> CutList:
     cl = CutList(spec_name=spec.name)
     W, D, H = spec.width, spec.depth, spec.height
-    lx, ly = _legged_offsets(W, D, spec.leg_inset, spec.leg)
-    apron_x, apron_y = 2 * lx - spec.leg, 2 * ly - spec.leg
+    lx, ly, apron_x, apron_y, leg_x, leg_y = _leg_offsets_and_aprons(spec)
     leg_h = H - spec.top_thickness
     n = _desk_drawer_count(spec)
 
@@ -1862,8 +1903,8 @@ def _desk_cutlist(spec: DeskSpec) -> CutList:
         material=MAT_TOP, notes="solid or sheet top" +
         ("; bore a cable grommet" if spec.grommet else "")))
     cl.parts.append(Part(
-        "Leg", 4, length=leg_h, width=spec.leg, thickness=spec.leg,
-        material=MAT_LEG, notes="square stock" + leg_taper_note(spec)))
+        "Leg", 4, length=leg_h, width=max(leg_x, leg_y), thickness=min(leg_x, leg_y),
+        material=MAT_LEG, notes=leg_stock_note(spec)))
     cl.parts.append(Part(
         "Apron side", 2, length=apron_y, width=spec.apron_height,
         thickness=spec.apron_thickness, material=MAT_APRON))
@@ -2035,10 +2076,9 @@ furniture.register(
 
 def _workbench_panels(spec: WorkbenchSpec) -> list[PanelBox]:
     W, D, H = spec.width, spec.depth, spec.height
-    tt, leg = spec.top_thickness, spec.leg
+    tt = spec.top_thickness
     ah, at = spec.apron_height, spec.apron_thickness
-    lx, ly = _legged_offsets(W, D, spec.leg_inset, leg)
-    apron_x, apron_y = 2 * lx - leg, 2 * ly - leg
+    lx, ly, apron_x, apron_y, leg_x, leg_y = _leg_offsets_and_aprons(spec)
     az = H - tt - ah / 2
     panels: list[PanelBox] = []
 
@@ -2049,7 +2089,7 @@ def _workbench_panels(spec: WorkbenchSpec) -> list[PanelBox]:
     leg_h = H - tt
     for i, sx in enumerate((-1, 1)):
         for j, sy in enumerate((-1, 1)):
-            add(f"Leg {2 * i + j + 1}", (leg, leg, leg_h),
+            add(f"Leg {2 * i + j + 1}", (leg_x, leg_y, leg_h),
                 (sx * lx, sy * ly, leg_h / 2), "leg")
     for sx in (-1, 1):
         add("Apron side", (at, apron_y, ah), (sx * lx, 0, az), "apron")
@@ -2072,9 +2112,8 @@ def _workbench_panels(spec: WorkbenchSpec) -> list[PanelBox]:
 
 def _workbench_cutlist(spec: WorkbenchSpec) -> CutList:
     cl = CutList(spec_name=spec.name)
-    W, D, H = spec.width, spec.depth, spec.height
-    lx, ly = _legged_offsets(W, D, spec.leg_inset, spec.leg)
-    apron_x, apron_y = 2 * lx - spec.leg, 2 * ly - spec.leg
+    W, H = spec.width, spec.height
+    lx, ly, apron_x, apron_y, leg_x, leg_y = _leg_offsets_and_aprons(spec)
     leg_h = H - spec.top_thickness
 
     cl.parts.append(Part(
@@ -2083,8 +2122,8 @@ def _workbench_cutlist(spec: WorkbenchSpec) -> CutList:
         grain="length",
         notes=f"laminate {spec.lamination_count} strips on edge into the {spec.top_thickness:.0f}mm top"))
     cl.parts.append(Part(
-        "Leg", 4, length=leg_h, width=spec.leg, thickness=spec.leg,
-        material=MAT_LEG, notes="heavy square stock"))
+        "Leg", 4, length=leg_h, width=max(leg_x, leg_y), thickness=min(leg_x, leg_y),
+        material=MAT_LEG, notes="heavy " + leg_stock_note(spec)))
     cl.parts.append(Part(
         "Apron long", 2, length=apron_x, width=spec.apron_height,
         thickness=spec.apron_thickness, material=MAT_APRON))

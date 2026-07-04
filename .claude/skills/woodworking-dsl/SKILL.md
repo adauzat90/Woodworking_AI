@@ -163,6 +163,14 @@ blocks the math.
 - **Run worktop**: a `project` takes a top-level
   `"countertop": {"material","thickness","overhang"}` for ONE continuous slab
   spanning the base run — a per-cabinet countertop can't span multiple cabinets.
+- **Construction lumber** (cheap shop furniture): set `"species": "spf"` (or
+  `"douglas_fir"`) and give legs a dimensional section with `"leg_depth"` — e.g.
+  `"leg": 38, "leg_depth": 89` is a 2x4 (wide face along the depth), `89/89` a
+  4x4. Any solid part whose section is a stock size (2x4, 4x4, 1x4, …) is then
+  priced **by the stick** (whole 8/10/12/16ft lengths, first-fit nested) instead
+  of hardwood board feet — no 15% milling allowance, since it's S4S. The
+  validator also flags a near-miss ("leg 91×91 is nearly a 4x4 — spec 89×89")
+  so you snap onto stock and skip a rip.
 - **Cleaner output**: `woodai build spec.json --quiet` drops the spec JSON echo;
   `--joinery` now also prints for a project/run.
 - Unrecognized fields now print `warning: ignored unknown field '…'` — if you

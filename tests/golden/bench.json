@@ -150,7 +150,9 @@
       }
     ],
     "material_cost": 0.0,
-    "spec_name": "Dining bench"
+    "spec_name": "Dining bench",
+    "stick_cost": 0.0,
+    "stick_groups": []
   },
   "issues": [],
   "joinery": {

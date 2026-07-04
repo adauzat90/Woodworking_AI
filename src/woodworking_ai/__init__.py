@@ -18,7 +18,9 @@ from .dsl import (
 from .validator import validate, ValidationResult
 from . import engineering, stock, proportion, units, species, furniture
 from .cutlist import generate_cutlist, CutList, Part, Hardware
-from .estimator import estimate, Estimate, PriceBook, SheetSize, pack_sheets
+from .estimator import (
+    estimate, Estimate, PriceBook, SheetSize, pack_sheets, StickGroup,
+)
 from .drilling import (
     drilling_schedule, DrillingSchedule, hinge_count, grid_violations,
 )
@@ -91,6 +93,7 @@ __all__ = [
     "PriceBook",
     "SheetSize",
     "pack_sheets",
+    "StickGroup",
     "drilling_schedule",
     "DrillingSchedule",
     "hinge_count",

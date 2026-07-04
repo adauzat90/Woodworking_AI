@@ -16,7 +16,8 @@ import math
 from dataclasses import dataclass, field, replace
 
 from .dsl import (CabinetSpec, TableSpec, ComponentGroup, BackStyle,
-                  Construction, CabinetType, joinery_key, leg_taper_note)
+                  Construction, CabinetType, joinery_key,
+                  leg_section, leg_stock_note)
 from .dispatch import spec_kind, VOID, GROUP, TABLE, CABINET
 from . import furniture
 from .geometry import front_plan, component_tag
@@ -678,9 +679,10 @@ def _table_cutlist(spec: TableSpec) -> CutList:
     """Parts + hardware for a four-legged table."""
     cl = CutList(spec_name=spec.name)
     leg_h = spec.height - spec.top_thickness
-    li, leg = spec.leg_inset, spec.leg
-    apron_x = (spec.width - 2 * li - leg) - leg
-    apron_y = (spec.depth - 2 * li - leg) - leg
+    li = spec.leg_inset
+    leg_x, leg_y = leg_section(spec)   # X-face, Y-face (square legs: equal)
+    apron_x = (spec.width - 2 * li - leg_x) - leg_x
+    apron_y = (spec.depth - 2 * li - leg_y) - leg_y
     if getattr(spec, "solid_top", True) and spec.depth > GLUE_UP_BOARD_WIDTH:
         n, bw = glue_up_boards(spec.depth)
         glue_m = (n - 1) * spec.width / 1000.0
@@ -692,9 +694,9 @@ def _table_cutlist(spec: TableSpec) -> CutList:
         cl.parts.append(Part("Top", 1, length=spec.width, width=spec.depth,
                              thickness=spec.top_thickness, material=MAT_TOP,
                              notes="solid/sheet top"))
-    cl.parts.append(Part("Leg", 4, length=leg_h, width=leg, thickness=leg,
-                         material=MAT_LEG,
-                         notes="square stock" + leg_taper_note(spec)))
+    cl.parts.append(Part("Leg", 4, length=leg_h,
+                         width=max(leg_x, leg_y), thickness=min(leg_x, leg_y),
+                         material=MAT_LEG, notes=leg_stock_note(spec)))
     cl.parts.append(Part("Apron (long)", 2, length=apron_x, width=spec.apron_height,
                          thickness=spec.apron_thickness, material=MAT_APRON))
     cl.parts.append(Part("Apron (short)", 2, length=apron_y, width=spec.apron_height,

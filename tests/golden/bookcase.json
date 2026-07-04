@@ -1799,7 +1799,9 @@
     "lumber_cost": 0.0,
     "lumber_groups": [],
     "material_cost": 170.0,
-    "spec_name": "Bookcase"
+    "spec_name": "Bookcase",
+    "stick_cost": 0.0,
+    "stick_groups": []
   },
   "issues": [
     "info:front face 800\u00d71720mm reads as 2.15:1; the golden ratio (1.62:1) is more balanced \u2014 e.g. shorten the long side to 1063mm or extend the short side to 1294mm",

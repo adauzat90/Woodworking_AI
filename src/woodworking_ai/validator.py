@@ -16,7 +16,7 @@ from .diagnostics import Severity, Diagnostic  # noqa: F401 (re-exported)
 from .dsl import (
     TableSpec, ComponentGroup, CabinetType, Joinery, ApplianceVoid,
     CornerJoint, DovetailTails, SlideType, METAL_SLIDES, APPLIANCE_VOID_TOLERANCE,
-    joinery_key,
+    joinery_key, leg_section,
 )
 from .dispatch import spec_kind, VOID, GROUP, TABLE, BENCH, CABINET
 from . import engineering, stock, proportion, furniture, materials
@@ -75,6 +75,10 @@ MAX_DRAWERS = 20
 # belong in a data table, not code"), the soft-warning limits live here as named
 # constants and are interpolated into their messages so the prose can't drift
 # from the condition it describes.
+# How close (mm) a solid part's section may be to a stock dimensional size before
+# it's worth suggesting the spec snap onto it (avoiding a rip); wider than the
+# exact-match tolerance in stock.dimensional_match, so only genuine near-misses fire.
+DIMENSIONAL_NEAR_TOL = 2.0
 TABLE_HEIGHT_MIN = 350.0          # mm — below this is unusual for a table
 TABLE_HEIGHT_MAX = 1200.0         # mm — above this is unusual for a table
 TOP_MOVEMENT_WARN_MM = 6.0        # seasonal movement worth a floating-gap note
@@ -216,12 +220,19 @@ def _validate_table(spec: TableSpec) -> ValidationResult:
             err(name, f"must be a positive, finite number, got {val!r}")
         elif name in ("width", "depth", "height") and val > MAX_DIMENSION:
             err(name, f"exceeds the practical maximum of {MAX_DIMENSION:.0f}mm")
+    # leg_depth of 0 = square (valid); any other value must be finite & positive.
+    ld = getattr(spec, "leg_depth", 0.0)
+    if ld and not _finite_positive(ld):
+        err("leg_depth",
+            f"must be a positive, finite number when set (0 = square), got {ld!r}")
     if any(i.severity == "error" for i in issues):
         return ValidationResult(issues)
 
     if spec.height <= spec.top_thickness + spec.apron_height:
         err("height", "too short for the top plus an apron")
-    if 2 * spec.leg_inset + spec.leg >= min(spec.width, spec.depth):
+    leg_x, leg_y = leg_section(spec)
+    if (2 * spec.leg_inset + leg_x >= spec.width
+            or 2 * spec.leg_inset + leg_y >= spec.depth):
         err("leg_inset", "legs do not fit within the top with this inset")
     if spec.apron_thickness >= spec.leg:
         warn("apron_thickness", "apron is as thick as the leg; unusual")
@@ -572,11 +583,53 @@ def validate(spec, *, tooling=None) -> ValidationResult:
     # for a broken spec or an aggregate group, whose parts are checked per-component).
     if result.ok and spec_kind(spec) not in (VOID, GROUP):
         result.issues.extend(_mass_advisories(spec))
+        result.issues.extend(_dimensional_advisories(spec))
     if tooling is not None:
         from .tooling import tooling_advisories
         for severity, field_, msg in tooling_advisories(spec, tooling):
             result.issues.append(Issue(severity, field_, msg))
     return result
+
+
+def _dimensional_advisories(spec) -> list[Issue]:
+    """INFO advisories relating a piece's *solid* parts to off-the-shelf
+    construction lumber.
+
+    Fires when a solid part's cross-section is within ~2mm of a stock dimensional
+    section (a 2x4, 4x4, …) but not exactly on it — a small size change would let
+    the shop buy the stick and skip a rip. Repeats are grouped by nominal so four
+    identical legs give one note, not four. Parts already exactly on a dimensional
+    section are silent (they're handled by the estimator's stick pricing).
+    """
+    from .cutlist import generate_cutlist
+    try:
+        cl = generate_cutlist(spec)
+    except Exception:
+        return []
+    near: dict[str, list[str]] = {}
+    for p in cl.parts:
+        if not p.is_solid_lumber:
+            continue
+        if stock.dimensional_match(p.thickness, p.width) is not None:
+            continue                       # already an exact stock section
+        nominal = stock.dimensional_match(
+            p.thickness, p.width, tol=DIMENSIONAL_NEAR_TOL)
+        if nominal is None:
+            continue
+        role = p.name.split("#")[0].strip()
+        near.setdefault(nominal, [])
+        if role not in near[nominal]:
+            near[nominal].append(role)
+    issues: list[Issue] = []
+    for nominal in sorted(near):
+        t, w = stock.DIMENSIONAL_LUMBER[nominal]
+        roles = ", ".join(near[nominal])
+        issues.append(Issue(
+            Severity.INFO, "stock",
+            f"{roles} cross-section is nearly a {nominal} ({t:.0f}×{w:.0f}mm) — "
+            f"spec {t:.0f}×{w:.0f}mm to use off-the-shelf construction lumber "
+            "with no ripping", "MAT-DIM"))
+    return issues
 
 
 def _validate_core(spec) -> ValidationResult:

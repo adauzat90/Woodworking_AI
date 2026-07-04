@@ -633,6 +633,37 @@ def leg_taper_note(spec) -> str:
     return f"; taper inner faces below the apron {leg:.0f}→{tip:.0f}mm"
 
 
+def leg_section(spec) -> tuple[float, float]:
+    """The leg cross-section as ``(x_face, y_face)`` in mm.
+
+    ``leg`` is a square section by default; the optional ``leg_depth`` makes the
+    leg rectangular (e.g. a 38×89 2x4 or a 38×140 2x6). By convention the wider
+    face is oriented along **Y** (the piece's depth), so ``leg`` is the X-face
+    and ``leg_depth`` the Y-face. ``leg_depth`` of 0 means square — both faces
+    equal ``leg`` — so an existing square-leg spec is unchanged (the original
+    ``leg`` value is returned verbatim, not re-typed to float).
+    """
+    leg = getattr(spec, "leg", 0.0) or 0.0
+    depth = getattr(spec, "leg_depth", 0.0) or 0.0
+    return leg, (depth if depth > 0 else leg)
+
+
+def leg_stock_note(spec) -> str:
+    """Cut-list note for the leg stock: ``"square stock"`` when square, else the
+    rectangular section and its orientation, plus any taper suffix.
+
+    A square leg (``leg_depth`` unset) reads exactly ``"square stock"`` as before,
+    so existing cut lists are byte-identical.
+    """
+    lx, ly = leg_section(spec)
+    if abs(lx - ly) < 1e-6:
+        base = "square stock"
+    else:
+        base = (f"{max(lx, ly):.0f}×{min(lx, ly):.0f} stock, "
+                "wide face along the depth")
+    return base + leg_taper_note(spec)
+
+
 def _drawer_front_heights(override, uniform: float, n: int) -> list[float]:
     """Resolve *n* drawer-front heights from an optional per-drawer *override*.
 
@@ -856,7 +887,9 @@ class TableSpec:
     depth: float = 750.0         # width of the top (Y)
     height: float = 740.0        # floor to top surface (Z)
     top_thickness: float = 25.0
-    leg: float = 60.0            # square leg cross-section
+    leg: float = 60.0            # square leg cross-section (X-face)
+    leg_depth: float = 0.0       # 0 = square; else the Y-face (wide face along Y),
+                                 # e.g. leg 38 + leg_depth 89 is a 2x4 leg
     apron_height: float = 90.0
     apron_thickness: float = 20.0
     leg_inset: float = 40.0      # leg outer face set in from the top edge
@@ -899,7 +932,8 @@ class TableSpec:
         data = dict(data)
         if normalize_unit(data.get("units")) == IMPERIAL:
             _to_mm(data, ("width", "depth", "height", "top_thickness", "leg",
-                          "apron_height", "apron_thickness", "leg_inset", "leg_tip"))
+                          "leg_depth", "apron_height", "apron_thickness",
+                          "leg_inset", "leg_tip"))
             data["units"] = "mm"
         known = {f for f in cls.__dataclass_fields__}
         return cls(**{k: v for k, v in data.items() if k in known})
@@ -1076,7 +1110,8 @@ class BenchSpec:
     depth: float = 350.0         # depth of the seat (Y)
     height: float = 450.0        # floor to seat surface (Z); ~450 bench, ~750 stool
     top_thickness: float = 30.0
-    leg: float = 45.0            # square leg cross-section
+    leg: float = 45.0            # square leg cross-section (X-face)
+    leg_depth: float = 0.0       # 0 = square; else the Y-face (e.g. a 38×89 2x4 leg)
     apron_height: float = 70.0
     apron_thickness: float = 20.0
     leg_inset: float = 35.0      # leg outer face set in from the seat edge
@@ -1121,7 +1156,8 @@ class BenchSpec:
         data = dict(data)
         if normalize_unit(data.get("units")) == IMPERIAL:
             _to_mm(data, ("width", "depth", "height", "top_thickness", "leg",
-                          "apron_height", "apron_thickness", "leg_inset", "leg_tip",
+                          "leg_depth", "apron_height", "apron_thickness",
+                          "leg_inset", "leg_tip",
                           "stretcher_height", "stretcher_thickness",
                           "stretcher_setback"))
             data["units"] = "mm"
@@ -1436,7 +1472,8 @@ class NightstandSpec:
     depth: float = 400.0
     height: float = 600.0
     top_thickness: float = 20.0
-    leg: float = 40.0              # square leg cross-section
+    leg: float = 40.0              # square leg cross-section (X-face)
+    leg_depth: float = 0.0         # 0 = square; else the Y-face (wide face along Y)
     leg_inset: float = 25.0        # leg outer face in from the top edge
     leg_taper: bool = False        # taper the inner faces below the apron
     leg_tip: float = 0.0           # tapered foot section (0 = auto ~55% of leg)
@@ -1497,9 +1534,9 @@ class NightstandSpec:
         data = dict(data)
         if normalize_unit(data.get("units")) == IMPERIAL:
             _to_mm(data, ("width", "depth", "height", "top_thickness", "leg",
-                          "leg_inset", "leg_tip", "apron_height", "apron_thickness",
-                          "drawer_front_height", "shelf_thickness",
-                          "shelf_setback"))
+                          "leg_depth", "leg_inset", "leg_tip", "apron_height",
+                          "apron_thickness", "drawer_front_height",
+                          "shelf_thickness", "shelf_setback"))
             _list_to_mm(data, "drawer_front_heights")
             data["units"] = "mm"
         known = {f for f in cls.__dataclass_fields__}
@@ -1526,7 +1563,8 @@ class DeskSpec:
     depth: float = 600.0
     height: float = 740.0
     top_thickness: float = 25.0
-    leg: float = 60.0
+    leg: float = 60.0              # square leg cross-section (X-face)
+    leg_depth: float = 0.0         # 0 = square; else the Y-face (wide face along Y)
     leg_inset: float = 40.0
     leg_taper: bool = False        # taper the inner faces below the apron
     leg_tip: float = 0.0           # tapered foot section (0 = auto ~55% of leg)
@@ -1583,8 +1621,9 @@ class DeskSpec:
         data = dict(data)
         if normalize_unit(data.get("units")) == IMPERIAL:
             _to_mm(data, ("width", "depth", "height", "top_thickness", "leg",
-                          "leg_inset", "leg_tip", "apron_height", "apron_thickness",
-                          "drawer_front_height", "modesty_height", "grommet_dia"))
+                          "leg_depth", "leg_inset", "leg_tip", "apron_height",
+                          "apron_thickness", "drawer_front_height",
+                          "modesty_height", "grommet_dia"))
             _list_to_mm(data, "drawer_front_heights")
             data["units"] = "mm"
         known = {f for f in cls.__dataclass_fields__}
@@ -1612,7 +1651,8 @@ class WorkbenchSpec:
     height: float = 900.0          # working height to the top surface
     top_thickness: float = 75.0    # thick laminated top
     top_laminations: int = 0       # strips in the top glue-up (0 = auto)
-    leg: float = 90.0              # heavy square legs
+    leg: float = 90.0              # heavy square legs (X-face)
+    leg_depth: float = 0.0         # 0 = square; else the Y-face (wide face along Y)
     leg_inset: float = 60.0
     apron_height: float = 120.0
     apron_thickness: float = 30.0
@@ -1672,9 +1712,10 @@ class WorkbenchSpec:
         data = dict(data)
         if normalize_unit(data.get("units")) == IMPERIAL:
             _to_mm(data, ("width", "depth", "height", "top_thickness", "leg",
-                          "leg_inset", "apron_height", "apron_thickness",
-                          "stretcher_height", "stretcher_thickness",
-                          "stretcher_setback", "dog_hole_dia", "shelf_thickness"))
+                          "leg_depth", "leg_inset", "apron_height",
+                          "apron_thickness", "stretcher_height",
+                          "stretcher_thickness", "stretcher_setback",
+                          "dog_hole_dia", "shelf_thickness"))
             data["units"] = "mm"
         known = {f for f in cls.__dataclass_fields__}
         return cls(**{k: v for k, v in data.items() if k in known})
@@ -2181,6 +2222,8 @@ Full field reference for each kind follows.
   "height": <floor to top surface, ~740>,
   "top_thickness": 25,
   "leg": <square leg cross-section, e.g. 60>,
+  "leg_depth": <0 = square; else the Y (depth) face, e.g. leg 38 + leg_depth 89
+                is a 2x4 leg — the wide face runs along the depth>,
   "apron_height": 90,
   "apron_thickness": 20,
   "leg_inset": <leg outer face set in from the top edge, e.g. 40>,
@@ -2399,6 +2442,10 @@ row of bench-dog holes, an optional vise, and a tool shelf.
 }}
 A bench wants hard, tough wood (beech/maple/ash), draw-bored or pinned M&T joints
 that won't rack under planing, and a thick top laminated from strips on edge.
+For a cheap shop bench, use construction lumber instead: set "species" to "spf"
+or "douglas_fir" and give the legs a dimensional section with "leg_depth" (e.g.
+"leg": 89, "leg_depth": 89 for a 4x4, or 38/89 for a 2x4) — parts whose section
+is a stock 2x4/4x4/… are then priced by the STICK, not the hardwood board foot.
 
 == PROJECT / ASSEMBLY (multi-part) ==
 For anything with more than one piece — a kitchen run, a built-in, a wall of

@@ -134,7 +134,7 @@ def main(argv=None):
     p = argparse.ArgumentParser(description="Drive the Woodworking AI Fusion add-in.")
     sub = p.add_subparsers(dest="cmd", required=True)
 
-    ps = sub.add_parser("status", help="show whether the in-Fusion bridge is alive")
+    sub.add_parser("status", help="show whether the in-Fusion bridge is alive")
 
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--no-machined", action="store_true", dest="no_machined")

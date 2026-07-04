@@ -116,7 +116,9 @@
       }
     ],
     "material_cost": 0.0,
-    "spec_name": "Blanket chest"
+    "spec_name": "Blanket chest",
+    "stick_cost": 0.0,
+    "stick_groups": []
   },
   "issues": [],
   "joinery": {

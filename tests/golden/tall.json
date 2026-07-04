@@ -2366,7 +2366,9 @@
     "lumber_cost": 0.0,
     "lumber_groups": [],
     "material_cost": 265.0,
-    "spec_name": "Tall pantry"
+    "spec_name": "Tall pantry",
+    "stick_cost": 0.0,
+    "stick_groups": []
   },
   "issues": [
     "info:front face 600\u00d72000mm reads as 3.33:1; the golden ratio (1.62:1) is more balanced \u2014 e.g. shorten the long side to 1236mm or extend the short side to 971mm",

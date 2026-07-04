@@ -110,6 +110,11 @@ A 600 mm solid panel can move 5–10 mm seasonally.
   avoid open-pore oak; finish with mineral oil / board butter, never film
   finish. End-grain = butcher block (knife-friendly, two-stage glue-up).
 - **Workbench:** hard, heavy, tough (beech, maple, ash); thick laminated top.
+- **Construction lumber (SPF / Douglas fir):** the right pick for cost-driven
+  shop furniture — a garage bench, shelving, a utility table — where price beats
+  looks. It's cheap, S4S, and sold in fixed sections (2x4 = 38×89, 4x4 = 89×89),
+  so size legs/aprons to a stock section and buy it by the stick, no ripping.
+  Douglas fir is notably stiffer than SPF for a spanning bench top or shelf.
 
 ## 6. Hardware & finish (brief)
 
