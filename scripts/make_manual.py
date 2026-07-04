@@ -162,7 +162,7 @@ def runner_boxes():
             s.center, s.size, s.category, s.label = center, size, "runner", label
     interior = W / 2 - m.carcass
     # 3 drawers, put a runner pair at each drawer mid-height (approx)
-    for i, z in enumerate((250, 470, 660)):
+    for _i, z in enumerate((250, 470, 660)):
         for sgn in (-1, 1):
             out.append((B((sgn * (interior - 15), 300, z), (18, 520, 30)),
                         colors.HexColor("#9bbf8a")))

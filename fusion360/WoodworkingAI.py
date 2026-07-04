@@ -477,7 +477,7 @@ class _BridgeExecuteHandler(adsk.core.CommandEventHandler):
     def notify(self, args):
         try:
             if _watcher is not None and _watcher.is_running():
-                inbox, outbox = _watcher.inbox, _watcher.outbox
+                inbox = _watcher.inbox
                 _stop_bridge()
                 _ui.messageBox(
                     "Auto-build bridge STOPPED.\n\nWas watching:\n  %s"

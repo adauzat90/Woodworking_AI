@@ -112,7 +112,7 @@ class PlanView(Flowable):
         c.setFont("Helvetica", 6.2)
         for row, y0, ang in rows:
             x = 0.0
-            for name, bw, grads in row:
+            for name, bw, _grads in row:
                 bx, by, bh = ox + x * s, oy + y0 * s, 600 * s
                 c.setFillColor(LIGHT); c.setStrokeColor(LINE); c.setLineWidth(0.8)
                 c.rect(bx, by, bw * s, bh, fill=1)
@@ -153,7 +153,7 @@ class Elevation(Flowable):
         yb = oy + castor * s
         x = 0.0
         c.setFont("Helvetica", 5.8)
-        for name, bw, grads in BANKS[:3]:
+        for _name, bw, grads in BANKS[:3]:
             bx, bw_s = ox + x * s, bw * s
             c.setFillColor(LIGHT); c.setStrokeColor(LINE); c.setLineWidth(0.9)
             c.rect(bx, yb, bw_s, carcass_h * s, fill=1)
