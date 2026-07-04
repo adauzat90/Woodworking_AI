@@ -1685,6 +1685,297 @@ class WorkbenchSpec:
 
 
 # ---------------------------------------------------------------------------
+# Generic `piece` — the taxonomy escape hatch: explicit rectangular parts +
+# joints. When no dedicated kind fits (a miter station, a lumber rack, garage
+# shelving), an agent lists the boxes and how they join, and still gets the full
+# pipeline (validation, interference critic, cut list, cost, 3D export). The
+# dedicated kinds carry richer, furniture-specific checks, so a piece is only for
+# what the taxonomy can't express.
+# ---------------------------------------------------------------------------
+
+_GRAIN_AXES = ("x", "y", "z")
+
+
+def _as_vec3(v: Any) -> tuple[float, float, float]:
+    """Coerce *v* to a 3-tuple of floats; missing/bad entries become NaN.
+
+    Tolerant on purpose: a malformed ``at``/``size`` (a short list, a string, a
+    null) does not crash the loader — it yields NaN components the piece
+    validator then flags as a repairable error (non-finite position / size),
+    matching the "bad entry -> repairable error, not crash" style used elsewhere.
+    """
+    seq = v if isinstance(v, (list, tuple)) else ()
+    out: list[float] = []
+    for i in range(3):
+        x = seq[i] if i < len(seq) else float("nan")
+        out.append(float(x) if isinstance(x, (int, float))
+                   and not isinstance(x, bool) else float("nan"))
+    return (out[0], out[1], out[2])
+
+
+def _coerce_grain_axis(v: Any) -> str:
+    """Normalise a grain axis to ``"x"`` | ``"y"`` | ``"z"`` | ``"none"``."""
+    s = str(v or "").strip().lower()
+    return s if s in _GRAIN_AXES else "none"
+
+
+def _norm_repeat(v: Any) -> dict | None:
+    """Normalise array sugar to ``{"count": n>=2, "step": (dx, dy, dz)}`` or None.
+
+    Accepts the dict form ``{"count": n, "step": [dx, dy, dz]}`` or a bare int
+    (count with a zero step). A count of 0/1 (or anything uninterpretable) yields
+    ``None`` — i.e. a single placed copy.
+    """
+    if isinstance(v, dict):
+        count = _as_count(v.get("count"), 1) or 1
+        step = _as_vec3(v.get("step", (0.0, 0.0, 0.0)))
+        step = tuple(0.0 if math.isnan(s) else s for s in step)
+        return {"count": count, "step": step} if count > 1 else None
+    if isinstance(v, (int, float)) and not isinstance(v, bool):
+        count = max(1, int(v))
+        return {"count": count, "step": (0.0, 0.0, 0.0)} if count > 1 else None
+    return None
+
+
+@dataclass
+class PiecePart:
+    """One rectangular part of a generic :class:`PieceSpec` — an axis-aligned box.
+
+    ``at`` is the part's minimum corner (x, y, z) and ``size`` its extent, both in
+    mm in the shared frame (X = width, Y = depth, Z = height off the floor).
+    ``grain`` names the axis the wood grain runs along (``"x"`` | ``"y"`` |
+    ``"none"``); it drives the cut-list length/width orientation and nesting
+    rotation. ``material_form`` / ``species`` optionally override the spec globals
+    for this part. ``repeat`` (also accepted as ``qty``) is array sugar —
+    ``{"count": n, "step": [dx, dy, dz]}`` expands to *n* placed copies stepped by
+    ``step`` and named ``#1``..``#n``.
+    """
+
+    name: str = ""
+    at: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    size: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    grain: str = "none"
+    material_form: str = ""
+    species: str = ""
+    repeat: dict | None = None
+
+    def __post_init__(self) -> None:
+        self.name = str(self.name or "").strip()
+        self.at = _as_vec3(self.at)
+        self.size = _as_vec3(self.size)
+        self.grain = _coerce_grain_axis(self.grain)
+        self.material_form = str(self.material_form or "").strip().lower()
+        self.species = str(self.species or "").strip()
+        self.repeat = _norm_repeat(self.repeat)
+
+    @property
+    def count(self) -> int:
+        """How many placed copies this part expands to (1 unless it repeats)."""
+        return int(self.repeat["count"]) if self.repeat else 1
+
+    def placements(self) -> list[tuple[str, tuple, tuple]]:
+        """Expand the array sugar into ``(name, at, size)`` copies.
+
+        A non-repeating part yields one copy under its own name; a repeating part
+        yields ``count`` copies stepped by ``step`` and suffixed ``#1``..``#n``.
+        """
+        if self.count <= 1:
+            return [(self.name, self.at, self.size)]
+        dx, dy, dz = self.repeat["step"]
+        out: list[tuple[str, tuple, tuple]] = []
+        for i in range(self.count):
+            at = (self.at[0] + i * dx, self.at[1] + i * dy, self.at[2] + i * dz)
+            out.append((f"{self.name} #{i + 1}", at, self.size))
+        return out
+
+    def to_dict(self) -> dict[str, Any]:
+        d: dict[str, Any] = {"name": self.name, "at": list(self.at),
+                             "size": list(self.size)}
+        if self.grain != "none":
+            d["grain"] = self.grain
+        if self.material_form:
+            d["material_form"] = self.material_form
+        if self.species:
+            d["species"] = self.species
+        if self.repeat:
+            d["repeat"] = {"count": self.repeat["count"],
+                           "step": list(self.repeat["step"])}
+        return d
+
+    @classmethod
+    def from_dict(cls, data: Any) -> "PiecePart":
+        if isinstance(data, cls):
+            return data
+        if not isinstance(data, dict):
+            return cls()          # tolerant: a bad entry -> an empty, flagged part
+        return cls(
+            name=data.get("name", ""),
+            at=data.get("at", (0.0, 0.0, 0.0)),
+            size=data.get("size", (0.0, 0.0, 0.0)),
+            grain=data.get("grain", "none"),
+            material_form=data.get("material_form", ""),
+            species=data.get("species", ""),
+            repeat=data.get("repeat", data.get("qty")),
+        )
+
+
+@dataclass
+class PieceJoint:
+    """A joint between two named parts of a :class:`PieceSpec`.
+
+    ``parts`` is the ``(nameA, nameB)`` pair; ``joinery`` reuses the existing
+    :class:`Joinery` vocabulary (with the same aliases the rest of the DSL takes).
+    """
+
+    parts: tuple[str, str] = ("", "")
+    joinery: Joinery | str = Joinery.SCREW
+
+    def __post_init__(self) -> None:
+        p = self.parts if isinstance(self.parts, (list, tuple)) else ()
+        a = str(p[0]).strip() if len(p) > 0 else ""
+        b = str(p[1]).strip() if len(p) > 1 else ""
+        self.parts = (a, b)
+        self.joinery = _coerce_enum(Joinery, self.joinery, aliases=JOINERY_ALIASES)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"parts": list(self.parts),
+                "joinery": self.joinery.value if isinstance(self.joinery, Enum)
+                else self.joinery}
+
+    @classmethod
+    def from_dict(cls, data: Any) -> "PieceJoint":
+        if isinstance(data, cls):
+            return data
+        if not isinstance(data, dict):
+            return cls()
+        return cls(parts=data.get("parts", ("", "")),
+                   joinery=data.get("joinery", Joinery.SCREW))
+
+
+@dataclass
+class PieceSpec:
+    """A generic piece: an explicit list of rectangular parts plus joints.
+
+    The taxonomy escape hatch. Coordinates match the shared frame: X = width,
+    Y = depth, Z = height off the floor; each part is placed by its minimum
+    corner (``at``) and extent (``size``). ``width`` / ``depth`` / ``height`` are
+    the overall envelope and are *optional* — a 0 (the default) derives the
+    dimension from the parts' bounding box on load (see :pyattr:`bbox`).
+    """
+
+    kind: str = "piece"
+    units: str = "mm"
+    name: str = "Piece"
+    width: float = 0.0       # 0 => derive from the parts' bounding box
+    depth: float = 0.0
+    height: float = 0.0
+    parts: list[PiecePart] = field(default_factory=list)
+    joints: list[PieceJoint] = field(default_factory=list)
+
+    # --- finishing / material (all optional; feed the BOM, cost, build hints) --
+    finish: str = "none"
+    finish_sheen: str = "satin"
+    material_form: str = ""   # plywood|mdf|particleboard|melamine|hardboard|solid
+    species: str = ""         # wood species, e.g. oak | maple | pine
+    stock: dict[str, Stock] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        self.parts = [PiecePart.from_dict(p) for p in (self.parts or [])]
+        self.joints = [PieceJoint.from_dict(j) for j in (self.joints or [])]
+        if not isinstance(self.stock, dict):
+            self.stock = {}
+        self.material_form = str(self.material_form or "").strip().lower()
+        self.species = str(self.species or "").strip()
+        # Resolve the overall envelope: any 0 dimension derives from the bbox.
+        lo, hi = self._raw_bounds()
+        if lo is not None:
+            if not self.width:
+                self.width = round(hi[0] - lo[0], 3)
+            if not self.depth:
+                self.depth = round(hi[1] - lo[1], 3)
+            if not self.height:
+                self.height = round(hi[2] - lo[2], 3)
+
+    def _raw_bounds(self):
+        """(min_corner, max_corner) over the finite placed parts, or (None, None)."""
+        mins = [math.inf, math.inf, math.inf]
+        maxs = [-math.inf, -math.inf, -math.inf]
+        seen = False
+        for part in self.parts:
+            for _name, at, size in part.placements():
+                if not all(math.isfinite(v) for v in (*at, *size)):
+                    continue
+                seen = True
+                for ax in range(3):
+                    mins[ax] = min(mins[ax], at[ax])
+                    maxs[ax] = max(maxs[ax], at[ax] + size[ax])
+        if not seen:
+            return None, None
+        return tuple(mins), tuple(maxs)
+
+    @property
+    def bbox(self):
+        """Bounding box of the placed parts as ``(min_corner, max_corner)``.
+
+        The derived overall size when ``width`` / ``depth`` / ``height`` are left
+        at 0. ``None`` when no part has finite geometry.
+        """
+        lo, hi = self._raw_bounds()
+        return None if lo is None else (lo, hi)
+
+    def to_dict(self) -> dict[str, Any]:
+        d: dict[str, Any] = {
+            "kind": self.kind, "name": self.name, "units": "mm",
+            "width": self.width, "depth": self.depth, "height": self.height,
+            "parts": [p.to_dict() for p in self.parts],
+            "joints": [j.to_dict() for j in self.joints],
+            "finish": self.finish, "finish_sheen": self.finish_sheen,
+        }
+        if self.material_form:
+            d["material_form"] = self.material_form
+        if self.species:
+            d["species"] = self.species
+        if self.stock:
+            d["stock"] = {a: s.to_dict() for a, s in self.stock.items()}
+        d["schema_version"] = SCHEMA_VERSION
+        return d
+
+    def to_json(self, indent: int = 2) -> str:
+        return json.dumps(self.to_dict(), indent=indent)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "PieceSpec":
+        data = dict(data)
+        if normalize_unit(data.get("units")) == IMPERIAL:
+            _to_mm(data, ("width", "depth", "height"))
+            parts_in = data.get("parts") or []
+            conv: list[Any] = []
+            for p in parts_in:
+                if isinstance(p, dict):
+                    p = dict(p)
+                    _list_to_mm(p, "at")
+                    _list_to_mm(p, "size")
+                    for key in ("repeat", "qty"):
+                        if isinstance(p.get(key), dict):
+                            r = dict(p[key])
+                            _list_to_mm(r, "step")
+                            p[key] = r
+                conv.append(p)
+            data["parts"] = conv
+            data["units"] = "mm"
+        if "stock" in data and not isinstance(data["stock"], dict):
+            data.pop("stock")
+        elif "stock" in data:
+            data["stock"] = _stock_map(data["stock"])
+        known = {f for f in cls.__dataclass_fields__}
+        return cls(**{k: v for k, v in data.items() if k in known})
+
+    @classmethod
+    def from_json(cls, text: str) -> "PieceSpec":
+        return cls.from_dict(json.loads(text))
+
+
+# ---------------------------------------------------------------------------
 # Assemblies. A component group places child specs in one frame:
 #   * Project  — the top-level run / built-in (e.g. a whole kitchen).
 #   * Assembly — a *named, reusable sub-assembly*: a group that nests inside a
@@ -1938,6 +2229,7 @@ LEAF_SPEC_TYPES: tuple[tuple[str, type, tuple[str, ...]], ...] = (
     ("nightstand", NightstandSpec, ()),
     ("desk", DeskSpec, ()),
     ("workbench", WorkbenchSpec, ()),
+    ("piece", PieceSpec, ("custom", "parts")),
     ("cabinet", CabinetSpec, ()),
 )
 
@@ -2072,6 +2364,9 @@ STEP 1 — choose the "kind" first, then fill in that type's fields below:
   "nightstand"  a small legged cabinet with a drawer + lower shelf
   "desk"        a writing desk (legs + apron drawer + modesty panel)
   "workbench"   a heavy bench: thick top, stretchers, dog holes, a vise
+  "piece"       ESCAPE HATCH — explicit rectangular parts + joints. Use ONLY when
+                no dedicated kind above fits (a miter station, a lumber rack,
+                garage shelving); the dedicated kinds carry richer checks.
   "project"     more than one piece — a run / built-in (place components)
 
 STEP 2 — copy the matching MINIMAL example, then adjust. Every field not shown
@@ -2108,6 +2403,12 @@ to override a default.
 -- minimal workbench -----------------------------------------------------------
 {{"kind": "workbench", "name": "Workbench", "width": 1500, "depth": 600,
  "height": 900, "vise": true}}
+-- minimal piece (escape hatch: explicit parts + joints) -----------------------
+{{"kind": "piece", "name": "Sawhorse", "parts": [
+  {{"name": "Beam", "at": [0, 0, 700], "size": [900, 90, 40], "grain": "x"}},
+  {{"name": "Leg", "at": [0, 0, 0], "size": [40, 90, 740], "grain": "z",
+    "repeat": {{"count": 2, "step": [860, 0, 0]}}}}],
+ "joints": [{{"parts": ["Leg", "Beam"], "joinery": "screw"}}]}}
 -- minimal project (a row of two cabinets via a declarative run) ----------------
 {{"kind": "project", "name": "Run", "runs": [
   {{"start": [0, 0], "angle": 0, "gap": 0, "items": [
@@ -2399,6 +2700,47 @@ row of bench-dog holes, an optional vise, and a tool shelf.
 }}
 A bench wants hard, tough wood (beech/maple/ash), draw-bored or pinned M&T joints
 that won't rack under planing, and a thick top laminated from strips on edge.
+
+== PIECE (generic escape hatch) ==
+Use ONLY when no dedicated kind fits — a miter station, a lumber rack, garage
+shelving. A piece is an explicit list of rectangular parts plus joints. Each part
+is an axis-aligned box placed by its MINIMUM corner ("at") and extent ("size") in
+the shared frame: X = width, Y = depth, Z = height off the floor. Prefer a
+dedicated kind whenever one exists — they carry richer, furniture-specific checks
+a generic piece can't.
+{{
+  "kind": "piece",
+  "name": "Garage Shelving",
+  "units": "mm",
+  "width": 0, "depth": 0, "height": 0,   // OPTIONAL overall size; 0 = derive from
+                                         // the parts' bounding box
+  "material_form": "plywood" | "solid" | ...,   // optional whole-piece default
+  "species": "pine" | ...,                      // optional wood species
+  "parts": [
+    {{"name": "<unique name>",
+      "at": [x, y, z],       // MIN corner (mm): X=width, Y=depth, Z=off floor
+      "size": [sx, sy, sz],  // extent (mm) along X, Y, Z
+      "grain": "x" | "y" | "none",   // axis the grain runs along (drives cut
+                                     // length/width + nesting)
+      "material_form": "solid",      // OPTIONAL per-part override of the globals
+      "species": "oak",              // OPTIONAL per-part override
+      "repeat": {{"count": 3, "step": [0, 0, 400]}}   // OPTIONAL array sugar:
+    }}                                                 // n copies stepped by step
+  ],
+  "joints": [
+    {{"parts": ["<nameA>", "<nameB>"], "joinery": {_opts(Joinery)}}}
+  ],
+  "finish": "none" | "oil" | "clear" | "paint" | "stain_clear"
+}}
+Rules the validator enforces (generic physics, no furniture semantics): every
+part needs a unique name and a positive, finite size; a part may not sit below
+the floor (z<0); a joint must reference two DIFFERENT, existing parts whose faces
+actually touch or overlap (a joint between parts that don't meet is a bug). It
+WARNS when two parts overlap in volume (the critic flags it too) or when a part
+floats free (touching neither the floor nor another part), and (when a material
+form is declared) checks each part maps onto real stock (sheet thickness / solid
+quarter). A part's cut thickness is its smallest extent; the length runs along
+the grain axis when given. Keep a piece under 500 parts.
 
 == PROJECT / ASSEMBLY (multi-part) ==
 For anything with more than one piece — a kitchen run, a built-in, a wall of
