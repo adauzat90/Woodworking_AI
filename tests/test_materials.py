@@ -113,7 +113,10 @@ def test_walnut_costs_more_than_pine():
 
 def test_solid_lumber_priced_per_species():
     # The face frame is solid lumber; a pricey species lifts the lumber cost.
-    cheap = estimate(_cab(species="pine")).lumber_cost
+    # (Use hardwoods here: a construction softwood like pine/spf whose face-frame
+    # section is a stock 1x2 is now priced by the stick, not the board foot — see
+    # test_construction_lumber.py.)
+    cheap = estimate(_cab(species="poplar")).lumber_cost
     dear = estimate(_cab(species="walnut")).lumber_cost
     assert dear > cheap > 0
 

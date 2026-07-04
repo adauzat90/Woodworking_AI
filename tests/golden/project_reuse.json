@@ -3686,7 +3686,9 @@
     "lumber_cost": 0.0,
     "lumber_groups": [],
     "material_cost": 780.0,
-    "spec_name": "Wall of Cabinets"
+    "spec_name": "Wall of Cabinets",
+    "stick_cost": 0.0,
+    "stick_groups": []
   },
   "issues": [
     "info:this wall cabinet's ~25kg self-weight (plus contents) hangs on its fixing; screw a mounting rail/cleat into wall studs and use a back stout enough to carry the load (KCMA rates to ~270kg)",

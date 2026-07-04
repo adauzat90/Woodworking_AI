@@ -68,7 +68,9 @@
       }
     ],
     "material_cost": 0.0,
-    "spec_name": "Bracket shelf"
+    "spec_name": "Bracket shelf",
+    "stick_cost": 0.0,
+    "stick_groups": []
   },
   "issues": [],
   "joinery": {

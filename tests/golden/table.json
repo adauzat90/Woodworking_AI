@@ -134,7 +134,9 @@
       }
     ],
     "material_cost": 0.0,
-    "spec_name": "Dining table"
+    "spec_name": "Dining table",
+    "stick_cost": 0.0,
+    "stick_groups": []
   },
   "issues": [
     "info:top 1600\u00d7900mm reads as 1.78:1; a golden-ratio top (\u22481600\u00d7989mm) is more pleasing",

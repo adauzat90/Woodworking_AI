@@ -910,7 +910,9 @@
     "lumber_cost": 0.0,
     "lumber_groups": [],
     "material_cost": 265.0,
-    "spec_name": "Base mullion"
+    "spec_name": "Base mullion",
+    "stick_cost": 0.0,
+    "stick_groups": []
   },
   "issues": [],
   "joinery": {

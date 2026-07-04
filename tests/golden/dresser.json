@@ -617,7 +617,9 @@
     "lumber_cost": 0.0,
     "lumber_groups": [],
     "material_cost": 250.0,
-    "spec_name": "Dresser"
+    "spec_name": "Dresser",
+    "stick_cost": 0.0,
+    "stick_groups": []
   },
   "issues": [
     "warning:tall storage unit is in scope for the ASTM F2057 tip-over standard; provide an anti-tip restraint and a marked wall-attachment point (set anti_tip=true)",

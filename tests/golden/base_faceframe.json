@@ -1091,7 +1091,9 @@
       }
     ],
     "material_cost": 250.0,
-    "spec_name": "Base face frame"
+    "spec_name": "Base face frame",
+    "stick_cost": 0.0,
+    "stick_groups": []
   },
   "issues": [
     "warning:on 'Side L' a drawer-slide screw line (slide line \u2014 Drawer front 1) lands within 6mm of a shelf-pin hole (~509mm up) \u2014 the pilots collide; shift the drawer, skip that pin position, or offset the slide line",
