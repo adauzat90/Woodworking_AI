@@ -212,10 +212,25 @@ def build_hints(spec) -> list[tuple[str, str, str]]:
         if hint:
             out.append(("info", "material", hint))
     if species_used:
-        woods = ", ".join(sorted(species_used))
-        out.append(("info", "species",
-                    f"Buy {woods} stock with consistent colour/figure across the "
-                    "piece; order ~15% extra solid lumber for milling and defects."))
+        from . import species as _species
+        # S4S construction softwood is bought finished (by the stick) and needs no
+        # milling allowance — so it gets an S4S note, not the hardwood 15% hint.
+        construction = {w for w in species_used
+                        if _species.normalize(w) in ("spf", "douglas_fir")}
+        hardwood = species_used - construction
+        if hardwood:
+            woods = ", ".join(sorted(hardwood))
+            out.append(("info", "species",
+                        f"Buy {woods} stock with consistent colour/figure across "
+                        "the piece; order ~15% extra solid lumber for milling and "
+                        "defects."))
+        if construction:
+            woods = ", ".join(sorted(construction))
+            out.append(("info", "species",
+                        f"{woods} is S4S construction lumber — no milling "
+                        "allowance needed; buy it by the stick and cull "
+                        "twisted/wet boards, letting it acclimatise and dry "
+                        "before final cuts."))
     out.extend(species_finishing_hints(species_used))
     return out
 
