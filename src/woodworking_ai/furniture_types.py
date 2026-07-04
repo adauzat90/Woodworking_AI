@@ -59,6 +59,7 @@ from .assembly_steps import SubAssembly, step
 from . import engineering
 from . import species
 from . import hardware as hw
+from .components import LeggedBase, _LeggedNaming
 
 
 # ---------------------------------------------------------------------------
@@ -470,87 +471,51 @@ furniture.register(
 # Bench / stool
 # ===========================================================================
 
-def _bench_leg_offsets(spec: BenchSpec) -> tuple[float, float]:
-    """Leg-centre offsets (lx, ly) from the seat centre, like the table.
+# Cosmetic labels/notes that keep the bench's cut list & panels byte-identical
+# while the leg/apron/stretcher layout + rules come from the shared component.
+_BENCH_NAMING = _LeggedNaming(
+    piece_noun="bench", surface_noun="seat",
+    long_apron_panel="Apron long", long_apron_cut="Apron (long)",
+    side_apron_panel="Apron short", side_apron_cut="Apron (short)",
+    stretcher_note="lower rail, resists racking")
 
-    Uses the per-axis leg section so a rectangular (2x4) leg sits with its wide
-    face along the depth; a square leg is unchanged.
-    """
-    leg_x, leg_y = leg_section(spec)
-    lx = spec.width / 2 - spec.leg_inset - leg_x / 2
-    ly = spec.depth / 2 - spec.leg_inset - leg_y / 2
-    return lx, ly
+
+def _bench_base(spec: BenchSpec) -> LeggedBase:
+    """The shared four-leg base carrying the bench's legs, aprons, stretchers."""
+    return LeggedBase(
+        name=spec.name, at=(-spec.width / 2, -spec.depth / 2, 0.0),
+        width=spec.width, depth=spec.depth, height=spec.height,
+        top_thickness=spec.top_thickness, leg=spec.leg, leg_depth=spec.leg_depth,
+        leg_inset=spec.leg_inset, apron_height=spec.apron_height,
+        apron_thickness=spec.apron_thickness, leg_taper=spec.leg_taper,
+        leg_tip=spec.leg_tip, stretchers=spec.stretchers,
+        stretcher_height=spec.stretcher_height,
+        stretcher_thickness=spec.stretcher_thickness,
+        stretcher_setback=spec.stretcher_setback,
+        joinery=joinery_key(spec), naming=_BENCH_NAMING)
 
 
 def _bench_panels(spec: BenchSpec) -> list[PanelBox]:
-    """A seat, four legs, four aprons, and (optionally) lower stretchers.
+    """A seat over the shared legged base (legs + aprons + optional stretchers).
 
-    Mirrors the table layout (top + legs + aprons) and adds a stretcher along
-    each long side between the leg pairs, set low for a seat that takes a
-    sitting load. X = length, Y = depth, Z = height (seat top at ``height``).
+    The seat is the bench's own; the leg/apron/stretcher layout is the
+    :class:`~components.LeggedBase` component. X = length, Y = depth, Z = height
+    (seat top at ``height``).
     """
     W, D, H = spec.width, spec.depth, spec.height
     tt = spec.top_thickness
-    leg_x, leg_y = leg_section(spec)
-    ah, at = spec.apron_height, spec.apron_thickness  # leg inset via _bench_leg_offsets
-    panels: list[PanelBox] = []
-
-    def add(label, size, center, category, unit=""):
-        panels.append(PanelBox(label, size, center, category,
-                               subassembly=unit or "Base"))
-
-    add("Seat", (W, D, tt), (0, 0, H - tt / 2), "top", "Seat")
-
-    leg_h = H - tt
-    lx, ly = _bench_leg_offsets(spec)
-    for i, sx in enumerate((-1, 1)):
-        for j, sy in enumerate((-1, 1)):
-            add(f"Leg {2 * i + j + 1}", (leg_x, leg_y, leg_h),
-                (sx * lx, sy * ly, leg_h / 2), "leg")
-
-    az = H - tt - ah / 2               # apron centre height
-    apron_x = 2 * lx - leg_x           # long apron length (between legs, X)
-    apron_y = 2 * ly - leg_y           # short apron length (between legs, Y)
-    for sy in (-1, 1):
-        add("Apron long", (apron_x, at, ah), (0, sy * ly, az), "apron")
-    for sx in (-1, 1):
-        add("Apron short", (at, apron_y, ah), (sx * lx, 0, az), "apron")
-
-    if spec.stretchers:
-        sh, st = spec.stretcher_height, spec.stretcher_thickness
-        sz = spec.stretcher_setback
-        # One stretcher along each long side, between the front/back legs.
-        for sy in (-1, 1):
-            add("Stretcher", (apron_x, st, sh), (0, sy * ly, sz), "stretcher",
-                "Stretchers")
+    panels = [PanelBox("Seat", (W, D, tt), (0, 0, H - tt / 2), "top",
+                       subassembly="Seat")]
+    panels.extend(_bench_base(spec).panels())
     return panels
 
 
 def _bench_cutlist(spec: BenchSpec) -> CutList:
     cl = CutList(spec_name=spec.name)
-    leg_h = spec.height - spec.top_thickness
-    lx, ly = _bench_leg_offsets(spec)
-    leg_x, leg_y = leg_section(spec)
-    apron_x = 2 * lx - leg_x
-    apron_y = 2 * ly - leg_y
-
     cl.parts.append(Part(
         "Seat", 1, length=spec.width, width=spec.depth,
         thickness=spec.top_thickness, material=MAT_TOP, notes="solid/sheet seat"))
-    cl.parts.append(Part(
-        "Leg", 4, length=leg_h, width=max(leg_x, leg_y), thickness=min(leg_x, leg_y),
-        material=MAT_LEG, notes=leg_stock_note(spec)))
-    cl.parts.append(Part(
-        "Apron (long)", 2, length=apron_x, width=spec.apron_height,
-        thickness=spec.apron_thickness, material=MAT_APRON))
-    cl.parts.append(Part(
-        "Apron (short)", 2, length=apron_y, width=spec.apron_height,
-        thickness=spec.apron_thickness, material=MAT_APRON))
-    if spec.stretchers:
-        cl.parts.append(Part(
-            "Stretcher", 2, length=apron_x, width=spec.stretcher_height,
-            thickness=spec.stretcher_thickness, material=MAT_APRON,
-            notes="lower rail, resists racking"))
+    cl.parts.extend(_bench_base(spec).cut_parts())
     cl.hardware.append(Hardware("Corner bracket", 4, "leg-to-apron"))
     cl.hardware.append(Hardware("Seat fastener", 6, "expansion clip"))
     resolve_part_stock(cl.parts, spec)
@@ -559,28 +524,16 @@ def _bench_cutlist(spec: BenchSpec) -> CutList:
 
 
 def _bench_validate(spec: BenchSpec) -> list[Issue]:
-    issues: list[Issue] = []
-
-    def err(f, m):
-        issues.append(Issue("error", f, m))
+    # The legged base owns the structural feasibility + geometry/proportion rules
+    # (positive sections, leg fit, slenderness, apron-vs-leg, stretcher setback);
+    # a base error means the spec is unusable, so stop before the seat rules.
+    issues = _bench_base(spec).validate()
+    if any(i.severity == "error" for i in issues):
+        return issues
 
     def warn(f, m, rule="", **kw):
         issues.append(Issue("warning", f, m, rule, **kw))
 
-    for name in ("width", "depth", "height", "top_thickness", "leg",
-                 "apron_height", "apron_thickness", "leg_inset"):
-        if not _finite_positive(getattr(spec, name)):
-            err(name, f"must be a positive, finite number, got {getattr(spec, name)!r}")
-    _leg_depth_issue(spec, issues)
-    if any(i.severity == "error" for i in issues):
-        return issues
-
-    if spec.height <= spec.top_thickness + spec.apron_height:
-        err("height", "too short for the seat plus an apron")
-    leg_x, leg_y = leg_section(spec)
-    if (2 * spec.leg_inset + leg_x >= spec.width
-            or 2 * spec.leg_inset + leg_y >= spec.depth):
-        err("leg_inset", "legs do not fit within the seat with this inset")
     if spec.height < SEAT_HEIGHT_MIN or spec.height > SEAT_HEIGHT_MAX:
         # DIM-003: seat height outside the bench/stool range. Covers bench and
         # stool by range (the DSL has no seating sub-type); a chair-vs-stool
@@ -610,30 +563,8 @@ def _bench_validate(spec: BenchSpec) -> list[Issue]:
 
 
 def _bench_joinery(spec: BenchSpec, cl) -> list[JoineryOp]:
-    pid = cl.part_id_for_label
-    j = joinery_key(spec)
-    if j == "mortise_tenon":
-        tool, w, d, note = ("mortiser / saw", round(spec.apron_thickness / 3, 1),
-                            round(spec.leg * 0.6, 1), "haunched M&T into the leg")
-    elif j == "domino":
-        tool, w, d, note = ("Festool Domino (10mm)", 10.0, 28.0,
-                            "two 10×50 Dominoes per leg-apron joint")
-    elif j == "dowel":
-        tool, w, d, note = ("doweling jig (10mm)", 10.0, 30.0,
-                            "two 10mm dowels per joint + corner block")
-    else:
-        tool, w, d, note = ("pocket-hole jig", 0.0, 0.0,
-                            "pocket screws + glue blocks (racks more than M&T)")
-    ops = [JoineryOp(
-        part="Leg / apron", operation="leg-to-apron joint", tool=tool,
-        width=w, depth=d, reference="apron into leg", part_id=pid("Leg"),
-        note=note)]
-    if spec.stretchers:
-        ops.append(JoineryOp(
-            part="Leg / stretcher", operation="leg-to-stretcher joint",
-            tool=tool, width=w, depth=d, reference="stretcher into leg",
-            part_id=pid("Stretcher"), note="lower rail tenons into the leg"))
-    return ops
+    # The leg-to-apron (+ leg-to-stretcher) joints come from the shared base.
+    return _bench_base(spec).joinery_ops(cl)
 
 
 def _bench_assembly(spec: BenchSpec, cl) -> list[SubAssembly]:
@@ -2074,37 +2005,41 @@ furniture.register(
 # Workbench
 # ===========================================================================
 
+# A workbench is a heavy legged base with a laminated top; the base geometry &
+# the legged compiler rules come from the shared component (labels kept stable).
+_WORKBENCH_NAMING = _LeggedNaming(
+    piece_noun="bench", surface_noun="top", leg_note_prefix="heavy ",
+    long_apron_panel="Apron long", long_apron_cut="Apron long",
+    side_apron_panel="Apron side", side_apron_cut="Apron side",
+    stretcher_note="lower rail, draw-bored")
+
+
+def _workbench_base(spec: WorkbenchSpec) -> LeggedBase:
+    return LeggedBase(
+        name=spec.name, at=(-spec.width / 2, -spec.depth / 2, 0.0),
+        width=spec.width, depth=spec.depth, height=spec.height,
+        top_thickness=spec.top_thickness, leg=spec.leg, leg_depth=spec.leg_depth,
+        leg_inset=spec.leg_inset, apron_height=spec.apron_height,
+        apron_thickness=spec.apron_thickness, stretchers=spec.stretchers,
+        stretcher_height=spec.stretcher_height,
+        stretcher_thickness=spec.stretcher_thickness,
+        stretcher_setback=spec.stretcher_setback,
+        joinery=joinery_key(spec), naming=_WORKBENCH_NAMING)
+
+
 def _workbench_panels(spec: WorkbenchSpec) -> list[PanelBox]:
     W, D, H = spec.width, spec.depth, spec.height
     tt = spec.top_thickness
-    ah, at = spec.apron_height, spec.apron_thickness
-    lx, ly, apron_x, apron_y, leg_x, leg_y = _leg_offsets_and_aprons(spec)
-    az = H - tt - ah / 2
-    panels: list[PanelBox] = []
-
-    def add(label, size, center, cat, unit="Base"):
-        panels.append(PanelBox(label, size, center, cat, subassembly=unit))
-
-    add("Top", (W, D, tt), (0, 0, H - tt / 2), "top", "Top")
-    leg_h = H - tt
-    for i, sx in enumerate((-1, 1)):
-        for j, sy in enumerate((-1, 1)):
-            add(f"Leg {2 * i + j + 1}", (leg_x, leg_y, leg_h),
-                (sx * lx, sy * ly, leg_h / 2), "leg")
-    for sx in (-1, 1):
-        add("Apron side", (at, apron_y, ah), (sx * lx, 0, az), "apron")
-    for sy in (-1, 1):
-        add("Apron long", (apron_x, at, ah), (0, sy * ly, az), "apron")
-
-    if spec.stretchers:
-        sh, st = spec.stretcher_height, spec.stretcher_thickness
-        sz = spec.stretcher_setback
-        for sy in (-1, 1):
-            add("Stretcher", (apron_x, st, sh), (0, sy * ly, sz), "stretcher",
-                "Stretchers")
-        if spec.shelf:
-            add("Shelf", (apron_x, apron_y, spec.shelf_thickness),
-                (0, 0, sz + sh / 2 + spec.shelf_thickness / 2), "shelf", "Shelf")
+    panels = [PanelBox("Top", (W, D, tt), (0, 0, H - tt / 2), "top",
+                       subassembly="Top")]
+    panels.extend(_workbench_base(spec).panels())
+    if spec.stretchers and spec.shelf:
+        sh, sz = spec.stretcher_height, spec.stretcher_setback
+        _lx, _ly, apron_x, apron_y, _leg_x, _leg_y = _leg_offsets_and_aprons(spec)
+        panels.append(PanelBox(
+            "Shelf", (apron_x, apron_y, spec.shelf_thickness),
+            (0, 0, sz + sh / 2 + spec.shelf_thickness / 2), "shelf",
+            subassembly="Shelf"))
     # The vise jaw is a small bolt-on part — kept in the cut list + joinery, not
     # the geometry, so it never distorts the bench envelope or clashes an apron.
     return panels
@@ -2112,34 +2047,20 @@ def _workbench_panels(spec: WorkbenchSpec) -> list[PanelBox]:
 
 def _workbench_cutlist(spec: WorkbenchSpec) -> CutList:
     cl = CutList(spec_name=spec.name)
-    W, H = spec.width, spec.height
-    lx, ly, apron_x, apron_y, leg_x, leg_y = _leg_offsets_and_aprons(spec)
-    leg_h = H - spec.top_thickness
+    W = spec.width
+    _lx, _ly, apron_x, apron_y, _leg_x, _leg_y = _leg_offsets_and_aprons(spec)
 
     cl.parts.append(Part(
         "Top lamination", spec.lamination_count, length=W, width=spec.top_thickness,
         thickness=max(spec.depth / spec.lamination_count, 25.0), material=MAT_SOLID,
         grain="length",
         notes=f"laminate {spec.lamination_count} strips on edge into the {spec.top_thickness:.0f}mm top"))
-    cl.parts.append(Part(
-        "Leg", 4, length=leg_h, width=max(leg_x, leg_y), thickness=min(leg_x, leg_y),
-        material=MAT_LEG, notes="heavy " + leg_stock_note(spec)))
-    cl.parts.append(Part(
-        "Apron long", 2, length=apron_x, width=spec.apron_height,
-        thickness=spec.apron_thickness, material=MAT_APRON))
-    cl.parts.append(Part(
-        "Apron side", 2, length=apron_y, width=spec.apron_height,
-        thickness=spec.apron_thickness, material=MAT_APRON))
-    if spec.stretchers:
+    cl.parts.extend(_workbench_base(spec).cut_parts())
+    if spec.stretchers and spec.shelf:
         cl.parts.append(Part(
-            "Stretcher", 2, length=apron_x, width=spec.stretcher_height,
-            thickness=spec.stretcher_thickness, material=MAT_APRON,
-            notes="lower rail, draw-bored"))
-        if spec.shelf:
-            cl.parts.append(Part(
-                "Shelf", 1, length=apron_x, width=apron_y,
-                thickness=spec.shelf_thickness, material=MAT_SOLID,
-                notes="tool shelf on the stretchers"))
+            "Shelf", 1, length=apron_x, width=apron_y,
+            thickness=spec.shelf_thickness, material=MAT_SOLID,
+            notes="tool shelf on the stretchers"))
     if str(spec.vise_side).strip().lower() in ("left", "right", "front"):
         cl.parts.append(Part(
             "Vise jaw", 1, length=min(250.0, W * 0.3), width=spec.apron_height,
@@ -2162,10 +2083,9 @@ def _workbench_cutlist(spec: WorkbenchSpec) -> CutList:
 
 
 def _workbench_validate(spec: WorkbenchSpec) -> list[Issue]:
-    issues: list[Issue] = []
-    if not _legged_validate_common(
-            spec, issues, ("width", "depth", "height", "top_thickness", "leg",
-                           "apron_height", "apron_thickness", "leg_inset")):
+    # Legs/aprons/stretchers feasibility + geometry rules come from the base.
+    issues = _workbench_base(spec).validate()
+    if any(i.severity == "error" for i in issues):
         return issues
 
     def warn(f, m):
