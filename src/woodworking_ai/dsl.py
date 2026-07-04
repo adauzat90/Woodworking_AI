@@ -2559,6 +2559,20 @@ to override a default.
   {{"name": "Leg", "at": [0, 0, 0], "size": [40, 90, 740], "grain": "z",
     "repeat": {{"count": 2, "step": [860, 0, 0]}}}}],
  "joints": [{{"parts": ["Leg", "Beam"], "joinery": "screw"}}]}}
+-- piece with a shared, self-checking sub-component (prefer this to raw parts) --
+{{"kind": "piece", "name": "Assembly Table", "material_form": "solid",
+  "species": "spf",
+  "parts": [{{"name": "Top", "at": [0, 0, 882], "size": [1200, 600, 18],
+             "grain": "x", "material_form": "plywood", "species": "birch"}}],
+  "components": [
+    {{"component": "legged_base", "name": "Base", "at": [0, 0, 0],
+      "width": 1200, "depth": 600, "height": 900, "top_thickness": 18,
+      "leg": 89, "leg_depth": 38, "leg_inset": 40, "apron_height": 89,
+      "apron_thickness": 38, "joinery": "mortise_tenon"}},
+    {{"component": "shelf_bank", "name": "Lower shelf", "at": [150, 100, 0],
+      "width": 900, "depth": 400, "height": 320, "shelf_thickness": 18,
+      "upright_thickness": 18, "shelves": 1, "material_form": "plywood",
+      "species": "birch"}}]}}
 -- minimal project (a row of two cabinets via a declarative run) ----------------
 {{"kind": "project", "name": "Run", "runs": [
   {{"start": [0, 0], "angle": 0, "gap": 0, "items": [
@@ -2886,8 +2900,30 @@ a generic piece can't.
   "joints": [
     {{"parts": ["<nameA>", "<nameB>"], "joinery": {_opts(Joinery)}}}
   ],
+  "components": [                 // OPTIONAL shared, self-checking sub-components
+    {{"component": "legged_base" | "shelf_bank",
+      "name": "<unique instance name>",   // namespaces its expanded parts
+      "at": [x, y, z],                     // the block's MIN corner (mm)
+      "...": "<the block's own parameters — see below>"}}
+  ],
   "finish": "none" | "oil" | "clear" | "paint" | "stain_clear"
 }}
+PREFER A COMPONENT OVER RAW PARTS whenever a checked building block fits the
+substructure: a component owns its geometry AND its own compiler rules, so you
+get real leg-fit / slenderness / shelf-sag checks that free-form parts don't.
+Reach for raw "parts" only for the bits no component covers (a one-off top, a
+bracket). Component parameters:
+  legged_base — four legs + aprons + optional stretchers:
+    width, depth, height, top_thickness (the space the surface above reserves),
+    leg (X-face), leg_depth (Y-face, 0 = square; e.g. 89/38 for a 2x4 leg),
+    leg_inset, apron_height, apron_thickness, joinery, and (optional) stretchers
+    true|false with stretcher_height / stretcher_thickness / stretcher_setback.
+  shelf_bank — evenly spaced shelves between two uprights:
+    width, depth, height, shelf_thickness, upright_thickness, shelves (count) OR
+    spacing (mm gap, wins over count), load_kg_per_m, species, material_form.
+An unknown "component" name is a repairable error. Component-expanded parts join
+the same overlap/floating physics as free-form parts, so place a block's "at" so
+it doesn't collide with the rest.
 Rules the validator enforces (generic physics, no furniture semantics): every
 part needs a unique name and a positive, finite size; a part may not sit below
 the floor (z<0); a joint must reference two DIFFERENT, existing parts whose faces
@@ -2896,7 +2932,8 @@ WARNS when two parts overlap in volume (the critic flags it too) or when a part
 floats free (touching neither the floor nor another part), and (when a material
 form is declared) checks each part maps onto real stock (sheet thickness / solid
 quarter). A part's cut thickness is its smallest extent; the length runs along
-the grain axis when given. Keep a piece under 500 parts.
+the grain axis when given. Keep a piece under 500 parts. Each placed component
+also contributes its OWN rules, labelled with the instance name.
 
 == PROJECT / ASSEMBLY (multi-part) ==
 For anything with more than one piece — a kitchen run, a built-in, a wall of

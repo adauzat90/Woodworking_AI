@@ -98,6 +98,26 @@ def golden_specs() -> dict:
                  "grain": "x", "repeat": {"count": 3, "step": [0, 0, 380]}},
             ],
             joints=[{"parts": ["Leg", "Shelf"], "joinery": "screw"}]),
+        # A piece that composes shared components: a 2x4-SPF legged base + a
+        # plywood top + a plywood lower shelf bank. Exercises the components-in-
+        # piece expansion (namespaced parts/panels/joinery, merged physics) and
+        # by-the-stick dimensional pricing end to end.
+        "assembly_table_piece": PieceSpec(
+            name="Workshop Assembly Table", material_form="solid", species="spf",
+            parts=[
+                {"name": "Top", "at": [0, 0, 882], "size": [1200, 600, 18],
+                 "grain": "x", "material_form": "plywood", "species": "birch"},
+            ],
+            components=[
+                {"component": "legged_base", "name": "Base", "at": [0, 0, 0],
+                 "width": 1200, "depth": 600, "height": 900, "top_thickness": 18,
+                 "leg": 89, "leg_depth": 38, "leg_inset": 40, "apron_height": 89,
+                 "apron_thickness": 38, "joinery": "mortise_tenon"},
+                {"component": "shelf_bank", "name": "Lower shelf",
+                 "at": [150, 100, 0], "width": 900, "depth": 400, "height": 320,
+                 "shelf_thickness": 18, "upright_thickness": 18, "shelves": 1,
+                 "load_kg_per_m": 40, "species": "birch", "material_form": "plywood"},
+            ]),
         "project_nested": kitchen,
         "project_reuse": reuse,
     }

@@ -309,7 +309,7 @@
       ],
       "category": "apron",
       "center": [
-        0,
+        0.0,
         -117.5,
         385.0
       ],
@@ -333,7 +333,7 @@
       ],
       "category": "apron",
       "center": [
-        0,
+        0.0,
         117.5,
         385.0
       ],
@@ -358,7 +358,7 @@
       "category": "apron",
       "center": [
         -542.5,
-        0,
+        0.0,
         385.0
       ],
       "inner_sign": 1.0,
@@ -382,7 +382,7 @@
       "category": "apron",
       "center": [
         542.5,
-        0,
+        0.0,
         385.0
       ],
       "inner_sign": 1.0,
@@ -405,7 +405,7 @@
       ],
       "category": "stretcher",
       "center": [
-        0,
+        0.0,
         -117.5,
         120.0
       ],
@@ -429,7 +429,7 @@
       ],
       "category": "stretcher",
       "center": [
-        0,
+        0.0,
         117.5,
         120.0
       ],

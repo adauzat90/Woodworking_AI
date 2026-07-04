@@ -73,6 +73,22 @@ warns on volume overlaps and floating parts). `repeat:{"count":n,"step":[dx,dy,d
 arrays a part into n copies. Overall `width/depth/height` are optional (0 = derive
 from the bounding box).
 
+**Prefer a `components` block over raw parts for any recurring substructure.** A
+piece may place shared, self-checking building blocks alongside `parts`:
+`"components":[{"component":"legged_base"|"shelf_bank","name":"Base","at":[x,y,z], …params}]`.
+A component owns its geometry AND its own compiler rules (leg-fit / slenderness
+for `legged_base`; shelf-sag / spacing for `shelf_bank`), so a checked block
+gives you checks free-form parts can't — reach for raw parts only for the bits no
+component covers. Its `at` is the block's min corner; its expanded parts, panels,
+joinery, and Issues are namespaced with the instance `name`. Component parts join
+the same overlap/floating physics, so place `at` clear of the rest; an unknown
+`component` name is a repairable error. `legged_base` params: width, depth,
+height, top_thickness, leg (X-face), leg_depth (Y-face, 0=square; 89/38 = a 2x4
+leg), leg_inset, apron_height, apron_thickness, joinery, optional stretchers +
+stretcher_height/thickness/setback. `shelf_bank` params: width, depth, height,
+shelf_thickness, upright_thickness, shelves (count) or spacing, load_kg_per_m,
+species, material_form.
+
 `cabinet_type` (for `kind:"cabinet"`): `base` (toe kick, open top, takes a
 counter), `wall` (hung, NO toe kick — set `"toe_kick": null`, enclosed top,
 300–350 deep), `tall` (pantry, floor-to-ceiling, toe kick, many shelves),
@@ -92,6 +108,9 @@ counter), `wall` (hung, NO toe kick — set `"toe_kick": null`, enclosed top,
 ```
 ```json
 {"kind":"piece","name":"Sawhorse","parts":[{"name":"Beam","at":[0,0,700],"size":[900,90,40],"grain":"x"},{"name":"Leg","at":[0,0,0],"size":[40,90,740],"grain":"z","repeat":{"count":2,"step":[860,0,0]}}],"joints":[{"parts":["Leg","Beam"],"joinery":"screw"}]}
+```
+```json
+{"kind":"piece","name":"Assembly Table","material_form":"solid","species":"spf","parts":[{"name":"Top","at":[0,0,882],"size":[1200,600,18],"grain":"x","material_form":"plywood","species":"birch"}],"components":[{"component":"legged_base","name":"Base","at":[0,0,0],"width":1200,"depth":600,"height":900,"top_thickness":18,"leg":89,"leg_depth":38,"leg_inset":40,"apron_height":89,"apron_thickness":38,"joinery":"mortise_tenon"},{"component":"shelf_bank","name":"Lower shelf","at":[150,100,0],"width":900,"depth":400,"height":320,"shelf_thickness":18,"upright_thickness":18,"shelves":1,"material_form":"plywood","species":"birch"}]}
 ```
 
 ## Multi-piece projects — PREFER declarative `runs`
