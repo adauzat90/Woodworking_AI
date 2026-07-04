@@ -94,6 +94,18 @@ _TABLE: list[Species] = [
     Species("mahogany", 800, 9700.0, 540, 0.012,
             "machines easily and stays put; classic, very stable",
             "open-pore — grain-fill for a glass finish (oily, wipe first)", 14.0),
+    # --- construction / dimensional softwoods (cheap, shop-furniture stock) ----
+    # SPF ("spruce-pine-fir") is the generic stud/whitewood a lumberyard sells by
+    # the stick; Douglas fir is the stiffer, pricier structural softwood.
+    Species("spf", 510, 9500.0, 420, 0.017,
+            "knotty stud stock — soft, dents and fuzzes; knots gum blades and "
+            "tear out, so back up cuts and keep irons sharp",
+            "paint or leave bare; seal the knots (shellac/BIN) before paint or "
+            "they bleed through", 0.75),
+    Species("douglas_fir", 660, 13400.0, 530, 0.019,
+            "stiff and strong for a softwood (good for a bench/shelf span); "
+            "splintery, and the hard latewood bands dull blades and can ridge",
+            "blotch-prone — condition before stain; ambers with age", 1.2),
     # Generic fallback: middle-of-the-road hardwood numbers for an unknown wood.
     Species("generic", 1000, 11000.0, 600, 0.020,
             "treat as a generic hardwood; verify against the real stock",
@@ -117,10 +129,16 @@ _ALIASES: dict[str, str] = {
     "hardmaple": "hard_maple",
     "redoak": "red_oak",
     "whiteoak": "white_oak",
-    "fir": "pine",
-    "douglas_fir": "pine",
-    "spruce": "pine",
-    "softwood": "pine",
+    # Construction softwoods: point the loose names at the real records above.
+    "doug_fir": "douglas_fir",
+    "douglas": "douglas_fir",
+    "fir": "douglas_fir",
+    "df": "douglas_fir",
+    "spruce": "spf",
+    "whitewood": "spf",
+    "stud": "spf",
+    "spruce_pine_fir": "spf",
+    "softwood": "spf",
     "black_walnut": "walnut",
     "american_walnut": "walnut",
     "honduran_mahogany": "mahogany",

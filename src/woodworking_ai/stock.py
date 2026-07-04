@@ -9,6 +9,8 @@ All lengths in mm.
 
 from __future__ import annotations
 
+import math
+
 from .materials import (
     MAT_SHEET, MAT_BACK, MAT_DOOR_FRONT, MAT_DOOR_PANEL, MAT_DRAWER_BOX,
     MAT_COUNTERTOP, MAT_MOLDING, MAT_FRAME, MAT_SOLID_PANEL, MAT_TOP, MAT_LEG,
@@ -115,3 +117,70 @@ def required_quarter(finished_thickness: float) -> tuple[str, float] | None:
         if surfaced + 0.5 >= finished_thickness:
             return name, surfaced
     return None
+
+
+# --- construction / dimensional lumber -------------------------------------
+# North-American softwood dimensional lumber, sold S4S (surfaced four sides) at
+# fixed nominal names whose *actual* section is smaller than the nominal inches
+# (a "2x4" is really 1-1/2 x 3-1/2 in = 38 x 89 mm). Unlike the hardwood quarter
+# system there is no surfacing/milling loss to plan for — you buy the finished
+# section off the shelf and cut to length. nominal name -> (thickness, width) mm.
+DIMENSIONAL_LUMBER: dict[str, tuple[float, float]] = {
+    "1x2": (19.0, 38.0), "1x3": (19.0, 64.0), "1x4": (19.0, 89.0),
+    "1x6": (19.0, 140.0), "1x8": (19.0, 184.0), "1x10": (19.0, 235.0),
+    "1x12": (19.0, 286.0),
+    "2x2": (38.0, 38.0), "2x3": (38.0, 64.0), "2x4": (38.0, 89.0),
+    "2x6": (38.0, 140.0), "2x8": (38.0, 184.0), "2x10": (38.0, 235.0),
+    "2x12": (38.0, 286.0),
+    "4x4": (89.0, 89.0), "6x6": (140.0, 140.0),
+}
+
+# Standard purchasable stick lengths (mm): the 92-5/8in pre-cut wall stud, then
+# 8 / 10 / 12 / 16 ft. A shop buys one of these and crosscuts parts from it.
+DIMENSIONAL_LENGTHS_MM: tuple[float, ...] = (
+    2353.0, 2438.0, 3048.0, 3658.0, 4877.0)
+
+# Buyer-facing label for each standard stick length above.
+DIMENSIONAL_LENGTH_LABELS: dict[float, str] = {
+    2353.0: "92-5/8in stud", 2438.0: "8ft", 3048.0: "10ft",
+    3658.0: "12ft", 4877.0: "16ft",
+}
+
+# How close a part's section must be (mm) to count as an exact dimensional match;
+# a whisker of tolerance covers rounding between the metric actuals and a spec.
+DIMENSIONAL_TOL = 1.5
+
+
+def dimensional_match(thickness: float, width: float,
+                      tol: float = DIMENSIONAL_TOL) -> str | None:
+    """Nominal name (e.g. ``"2x4"``) when a cross-section matches a dimensional
+    section within *tol*, else ``None``.
+
+    Orientation-agnostic: an 89x38 part is the same 2x4 as a 38x89 one, so both
+    axis orders are tried against each catalogue section. When several sections
+    are within tolerance the closest (smallest worst-axis error) wins, so a near-
+    square section can't be mis-called.
+    """
+    best: tuple[float, str] | None = None
+    for name, (t, w) in DIMENSIONAL_LUMBER.items():
+        for a, b in ((thickness, width), (width, thickness)):
+            dt, dw = abs(a - t), abs(b - w)
+            if dt <= tol and dw <= tol:
+                score = max(dt, dw)
+                if best is None or score < best[0]:
+                    best = (score, name)
+    return best[1] if best else None
+
+
+def nearest_dimensional(thickness: float, width: float) -> str:
+    """The dimensional name whose section is closest to (thickness, width).
+
+    For an advisory suggestion ("this is nearly a 2x4"); orientation-agnostic and
+    never ``None`` (the catalogue is non-empty). Distance is the Euclidean gap
+    between the two sections in the better of the two axis orientations.
+    """
+    def dist(sec: tuple[float, float]) -> float:
+        t, w = sec
+        return min(math.hypot(thickness - t, width - w),
+                   math.hypot(width - t, thickness - w))
+    return min(DIMENSIONAL_LUMBER, key=lambda n: dist(DIMENSIONAL_LUMBER[n]))
