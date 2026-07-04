@@ -24,6 +24,15 @@ from .materials import (
     MAT_FRAME, MAT_COUNTERTOP, MAT_MOLDING, MAT_TOP, MAT_LEG, MAT_APRON,
 )
 from .packing import pack
+from . import stock as _stock
+from . import species as _species
+
+# One board foot is 144 in³ (mirrors cutlist.BOARD_FOOT_MM3); used to derive a
+# fallback stick price from a $/board-foot when a size isn't in the price table.
+_BOARD_FOOT_MM3 = 144.0 * (25.4 ** 3)
+# Canonical species that are bought as construction lumber (priced by the stick)
+# rather than hardwood-yard board feet, when their section is a stock dimension.
+_CONSTRUCTION_SPECIES = frozenset({"spf", "douglas_fir", "pine"})
 
 
 @dataclass
@@ -75,6 +84,25 @@ class PriceBook:
     species_multiplier_default: float = 1.0
     # Milling/defect allowance billed on solid stock (rough lumber yields less).
     lumber_waste_factor: float = 1.15
+    # Construction ("dimensional") lumber is bought by the STICK, not the board
+    # foot, and is already S4S so it carries NO milling allowance. Price per
+    # nominal name, per standard length label. Typical big-box prices; override
+    # per shop. A (nominal, length) not listed falls back to the $/bd-ft below.
+    stick_prices: dict[str, dict[str, float]] = field(default_factory=lambda: {
+        "2x2": {"8ft": 2.60},
+        "2x3": {"92-5/8in stud": 2.70, "8ft": 2.80},
+        "2x4": {"92-5/8in stud": 3.30, "8ft": 3.50, "10ft": 4.80,
+                "12ft": 6.20, "16ft": 9.80},
+        "2x6": {"8ft": 5.50, "10ft": 7.20, "12ft": 9.20, "16ft": 13.50},
+        "2x8": {"8ft": 8.90, "10ft": 11.50, "12ft": 14.50},
+        "2x10": {"8ft": 12.50, "12ft": 18.50},
+        "1x2": {"8ft": 1.60}, "1x3": {"8ft": 2.40}, "1x4": {"8ft": 3.20},
+        "1x6": {"8ft": 5.00},
+        "4x4": {"8ft": 12.00, "10ft": 16.50, "12ft": 22.00},
+        "6x6": {"8ft": 33.00},
+    })
+    # Fallback $/board-foot for a dimensional size/length not in stick_prices.
+    dimensional_price_per_bdft: float = 0.75
     # Per-unit hardware prices keyed by the hardware item name. Defaults you can
     # override; representative shop prices, not a live feed.
     hardware_price: dict[str, float] = field(default_factory=lambda: {
@@ -138,6 +166,135 @@ class LumberGroup:
     species: str = ""         # wood species, when declared
 
 
+@dataclass
+class StickGroup:
+    """Construction lumber bought by the stick (a whole 2x4/4x4/… length).
+
+    A group of same-nominal, same-species parts 1D-nested into whole sticks of one
+    standard length — the buyable unit for cheap shop furniture, with no milling
+    allowance (the stock is already S4S)."""
+    nominal: str              # dimensional name, e.g. "2x4"
+    length_label: str         # stick length bought, e.g. "8ft"
+    length_mm: float
+    species: str              # construction species (spf / douglas_fir / pine)
+    sticks: int               # whole sticks to buy
+    part_count: int           # pieces crosscut from them
+    unit_price: float         # per-stick price charged
+    cost: float               # sticks × unit_price
+
+
+def _stick_length_label(length_mm: float) -> str:
+    return _stock.DIMENSIONAL_LENGTH_LABELS.get(length_mm, f"{length_mm:.0f}mm")
+
+
+def _stick_unit_price(prices: "PriceBook", nominal: str, length_mm: float,
+                      label: str) -> float:
+    """Per-stick price: the price book's (nominal, length) entry, else derived
+    from the dimensional $/board-foot fallback and the stick's own volume."""
+    table = prices.stick_prices.get(nominal, {})
+    if label in table:
+        return table[label]
+    sec = _stock.DIMENSIONAL_LUMBER.get(nominal)
+    if sec is None:
+        return 0.0
+    t, w = sec
+    bd_ft = (t * w * length_mm) / _BOARD_FOOT_MM3
+    return bd_ft * prices.dimensional_price_per_bdft
+
+
+def _ffd_stick_count(lengths: list[float], capacity: float, kerf: float) -> int:
+    """First-fit-decreasing stick count to cut *lengths* from sticks of usable
+    run *capacity*. Each piece also consumes one saw kerf (the cut that frees it),
+    so the effective demand is length + kerf. Deterministic (sorted descending)."""
+    bins: list[float] = []            # remaining usable run in each open stick
+    for L in sorted(lengths, reverse=True):
+        need = L + kerf
+        for i, rem in enumerate(bins):
+            if rem + 1e-9 >= need:
+                bins[i] = rem - need
+                break
+        else:
+            bins.append(capacity - need)
+    return len(bins)
+
+
+def _stick_lengths_for(prices: "PriceBook", nominal: str) -> list[float]:
+    """Standard lengths a nominal is sold in: exactly the lengths the price book
+    stocks for it, or — when the nominal isn't in the table at all — every
+    standard length (priced via the $/board-foot fallback). Keeping to stocked
+    lengths stops the optimiser choosing a length it can only *derive* a (cheaper,
+    inconsistent) fallback price for."""
+    table = prices.stick_prices.get(nominal)
+    if not table:
+        return list(_stock.DIMENSIONAL_LENGTHS_MM)
+    return [length_mm for length_mm in _stock.DIMENSIONAL_LENGTHS_MM
+            if _stick_length_label(length_mm) in table]
+
+
+def _nest_sticks(nominal: str, species: str, lengths: list[float],
+                 prices: "PriceBook", kerf: float) -> "StickGroup | None":
+    """Cheapest stocked stick length to cut *lengths* of one nominal from.
+
+    Tries each stocked length that can hold the longest piece (plus a kerf),
+    FFD-packs the pieces into it, and keeps the (length, count) with the lowest
+    total cost. Returns None when no stocked stick is long enough for the longest
+    piece (the caller then prices that group by the board foot)."""
+    if not lengths:
+        return None
+    longest = max(lengths)
+    best: StickGroup | None = None
+    for length_mm in _stick_lengths_for(prices, nominal):
+        if length_mm + 1e-6 < longest + kerf:
+            continue
+        label = _stick_length_label(length_mm)
+        count = _ffd_stick_count(lengths, length_mm, kerf)
+        unit = _stick_unit_price(prices, nominal, length_mm, label)
+        cost = count * unit
+        if best is None or cost < best.cost - 1e-9:
+            best = StickGroup(
+                nominal=nominal, length_label=label, length_mm=length_mm,
+                species=species, sticks=count, part_count=len(lengths),
+                unit_price=unit, cost=cost)
+    return best
+
+
+def _price_sticks(parts, prices: "PriceBook", kerf: float
+                  ) -> tuple[list["StickGroup"], float, list]:
+    """Split solid-lumber *parts* into stick-priced dimensional groups and the
+    remaining board-foot parts.
+
+    A part is stick-priced when its declared species is a construction softwood
+    (spf / douglas_fir / pine) *and* its cross-section is an off-the-shelf
+    dimensional section (a 2x4, 4x4, …). Such parts group by (nominal, species)
+    and 1D-nest into whole sticks; everything else stays hardwood-yard board feet.
+    Returns ``(stick_groups, stick_cost, board_parts)``.
+    """
+    buckets: dict[tuple[str, str, str], list] = {}
+    board_parts: list = []
+    for p in parts:
+        if not p.is_solid_lumber:
+            continue
+        nominal = _stock.dimensional_match(p.thickness, p.width)
+        canon = _species.normalize(p.species) if p.species else ""
+        if nominal and canon in _CONSTRUCTION_SPECIES:
+            buckets.setdefault((nominal, canon, p.species), []).append(p)
+        else:
+            board_parts.append(p)
+
+    stick_groups: list[StickGroup] = []
+    stick_cost = 0.0
+    for (nominal, _canon, disp_species) in sorted(buckets, key=lambda k: k[:2]):
+        bparts = buckets[(nominal, _canon, disp_species)]
+        lengths = [p.length for p in bparts for _ in range(p.qty)]
+        sg = _nest_sticks(nominal, disp_species, lengths, prices, kerf)
+        if sg is None:
+            board_parts.extend(bparts)   # too long for any stick — board-foot it
+        else:
+            stick_groups.append(sg)
+            stick_cost += sg.cost
+    return stick_groups, stick_cost, board_parts
+
+
 def sheet_price(prices: "PriceBook", label: str, form: str,
                  species: str) -> float:
     """Full-sheet price for a group: form base (or label) × species premium."""
@@ -182,13 +339,16 @@ class Estimate:
     banding_groups: list[BandingGroup] = field(default_factory=list)
     finish_cost: float = 0.0
     finish_m2: float = 0.0
+    stick_groups: list[StickGroup] = field(default_factory=list)
+    stick_cost: float = 0.0
     currency: str = "$"
     _rate: float = 65.0       # shop_rate_per_hour, echoed for report_text()
 
     @property
     def total(self) -> float:
-        return (self.material_cost + self.lumber_cost + self.hardware_cost
-                + self.edge_banding_cost + self.labour_cost + self.finish_cost)
+        return (self.material_cost + self.lumber_cost + self.stick_cost
+                + self.hardware_cost + self.edge_banding_cost + self.labour_cost
+                + self.finish_cost)
 
     @property
     def total_sheets(self) -> int:
@@ -197,6 +357,10 @@ class Estimate:
     @property
     def total_board_feet(self) -> float:
         return sum(g.board_feet for g in self.lumber_groups)
+
+    @property
+    def total_sticks(self) -> int:
+        return sum(g.sticks for g in self.stick_groups)
 
     def report_text(self, unit: str = "metric") -> str:
         from .units import format_length, format_run_mm
@@ -219,12 +383,26 @@ class Estimate:
                     f"{g.part_count:>2} parts -> {g.board_feet:6.2f} bd ft "
                     f"({c}{g.cost:.2f})"
                 )
+        if self.stick_groups:
+            lines.append("  dimensional lumber (sticks):")
+            for sg in self.stick_groups:
+                lines.append(
+                    f"    {sg.species:<10} {sg.nominal:<5} {sg.length_label:<12} "
+                    f"{sg.part_count:>2} parts -> {sg.sticks} stick(s) "
+                    f"({c}{sg.cost:.2f})"
+                )
         banding = format_run_mm(self.edge_banding_m * 1000.0, unit)
         lines += [
             f"  material:        {c}{self.material_cost:8.2f} "
             f"({self.total_sheets} sheets)",
             f"  lumber:          {c}{self.lumber_cost:8.2f} "
             f"({self.total_board_feet:.1f} bd ft)",
+        ]
+        if self.stick_cost:
+            lines.append(
+                f"  dimensional:     {c}{self.stick_cost:8.2f} "
+                f"({self.total_sticks} sticks)")
+        lines += [
             f"  hardware:        {c}{self.hardware_cost:8.2f}",
             f"  edge banding:    {c}{self.edge_banding_cost:8.2f} "
             f"({banding})",
@@ -331,9 +509,10 @@ def _estimate_project(project: ComponentGroup, prices: PriceBook,
     """
     groups: dict[tuple[str, float], SheetGroup] = {}
     lumber: dict[tuple[str, float], LumberGroup] = {}
+    sticks: dict[tuple[str, str, str], StickGroup] = {}
     banding: dict[str, float] = {}
     material_cost = hardware_cost = banding_cost = banding_m = 0.0
-    labour_hours = labour_cost = lumber_cost = 0.0
+    labour_hours = labour_cost = lumber_cost = stick_cost = 0.0
     finish_cost = finish_m2 = 0.0
     for comp in project.components:
         e = estimate(comp.spec, prices=prices, sheet=sheet,
@@ -347,8 +526,20 @@ def _estimate_project(project: ComponentGroup, prices: PriceBook,
         labour_hours += e.labour_hours
         labour_cost += e.labour_cost
         lumber_cost += e.lumber_cost
+        stick_cost += e.stick_cost
         finish_cost += e.finish_cost
         finish_m2 += e.finish_m2
+        for sg in e.stick_groups:
+            key = (sg.nominal, sg.length_label, sg.species)
+            if key in sticks:
+                acc = sticks[key]
+                acc.sticks += sg.sticks
+                acc.part_count += sg.part_count
+                acc.cost += sg.cost
+            else:
+                sticks[key] = StickGroup(
+                    sg.nominal, sg.length_label, sg.length_mm, sg.species,
+                    sg.sticks, sg.part_count, sg.unit_price, sg.cost)
         for g in e.groups:
             key = (g.material, g.form, g.species, g.thickness)
             if key in groups:
@@ -393,6 +584,9 @@ def _estimate_project(project: ComponentGroup, prices: PriceBook,
         lumber_cost=lumber_cost,
         banding_groups=[BandingGroup(k, banding[k]) for k in sorted(banding)],
         finish_cost=finish_cost, finish_m2=finish_m2,
+        stick_groups=sorted(sticks.values(),
+                            key=lambda g: (g.nominal, g.length_label, g.species)),
+        stick_cost=stick_cost,
     )
     est._rate = prices.shop_rate_per_hour
     return est
@@ -430,10 +624,18 @@ def estimate(spec, *, cutlist: CutList | None = None,
     sheet_groups, material_cost = pack_sheet_groups(
         cl.parts, prices, sheet, combine_sheet_stock)
 
-    # Solid lumber, priced by the board foot (with a milling-waste allowance).
+    # Solid lumber. Construction-softwood parts whose cross-section is an
+    # off-the-shelf dimensional section (a 2x4, 4x4, …) are bought as STICKS and
+    # 1D-nested — no 15% milling allowance, since S4S stock is already surfaced.
+    # Everything else is hardwood-yard stock priced by the board foot WITH the
+    # milling allowance. Stick parts are removed from the board-foot breakdown so
+    # the two never double-count.
+    stick_groups, stick_cost, board_parts = _price_sticks(
+        cl.parts, prices, sheet.kerf)
+    board_cl = CutList(spec_name="", parts=board_parts)
     lumber_groups: list[LumberGroup] = []
     lumber_cost = 0.0
-    for g in cl.lumber_breakdown():
+    for g in board_cl.lumber_breakdown():
         price = _board_foot_price(prices, g["material"], g.get("species", ""))
         cost = g["board_feet"] * prices.lumber_waste_factor * price
         lumber_cost += cost
@@ -484,6 +686,7 @@ def estimate(spec, *, cutlist: CutList | None = None,
         lumber_groups=lumber_groups, lumber_cost=lumber_cost,
         banding_groups=banding_groups,
         finish_cost=fin_cost, finish_m2=fin_m2,
+        stick_groups=stick_groups, stick_cost=stick_cost,
     )
     est._rate = prices.shop_rate_per_hour
     return est
@@ -499,7 +702,7 @@ _PRICE_SCALARS = (
     "sheet_price_default", "board_foot_price_default", "lumber_waste_factor",
     "edge_banding_per_m", "shop_rate_per_hour", "labour_base_h",
     "labour_per_part_h", "labour_per_door_h", "labour_per_drawer_h",
-    "species_multiplier_default",
+    "species_multiplier_default", "dimensional_price_per_bdft",
 )
 # Per-label price maps (material/form/species/hardware -> price/multiplier).
 _PRICE_MAPS = ("sheet_price", "form_sheet_price", "board_foot_price",
@@ -541,6 +744,17 @@ def pricebook_from_dict(data) -> PriceBook:
                 x = _num(v, lo=0.0)
                 if x is not None:
                     getattr(pb, f)[str(k)] = x
+    # stick_prices is a NESTED {nominal: {length_label: price}} map; merge it a
+    # level deeper than the flat price maps above.
+    sp = data.get("stick_prices")
+    if isinstance(sp, dict):
+        for nominal, lengths in sp.items():
+            if isinstance(lengths, dict):
+                dst = pb.stick_prices.setdefault(str(nominal), {})
+                for lab, v in lengths.items():
+                    x = _num(v, lo=0.0)
+                    if x is not None:
+                        dst[str(lab)] = x
     return pb
 
 

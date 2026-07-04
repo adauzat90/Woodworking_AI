@@ -9,6 +9,8 @@ shop raises the order against:
 
 * **sheet goods** by species/grade/nominal size (from the estimate's sheet groups),
 * **solid lumber** by the board foot (from the cut list's lumber breakdown),
+* **construction lumber** by the stick (a whole 2x4/4x4/… length) for cheap
+  dimensional stock — priced per piece, not the board foot,
 * **hardware** by SKU + brand (resolved from :mod:`woodworking_ai.hardware`),
 * **edge banding** by the metre (from the cut list's banding breakdown),
 * **finish** by the litre (from :mod:`woodworking_ai.finishing`),
@@ -192,6 +194,32 @@ def _lumber_lines(est: Estimate) -> list[POLine]:
             supplier=SUPPLIER_LUMBER, category="lumber", item=name,
             spec=f"{g.thickness:.0f}mm S4S", qty=round(g.board_feet, 2),
             unit="bd ft", unit_price=unit_price, line_total=g.cost))
+    return lines
+
+
+def _species_display(sp: str) -> str:
+    """Buyer-facing species label for a dimensional-lumber line ("SPF", "Pine")."""
+    s = str(sp or "").strip()
+    if s.lower() == "spf":
+        return "SPF"
+    return s.replace("_", " ").title() if s else "Construction"
+
+
+def _stick_lines(est: Estimate) -> list[POLine]:
+    """Dimensional-lumber lines by the stick (piece), priced exactly as the quote.
+
+    e.g. item "SPF 2x4", spec "8ft stick", qty 7, unit "ea" — so the buyer orders
+    whole sticks, and the line totals reconcile with the quote's ``stick_cost``.
+    """
+    lines: list[POLine] = []
+    for g in est.stick_groups:
+        if g.sticks <= 0:
+            continue
+        lines.append(POLine(
+            supplier=SUPPLIER_LUMBER, category="lumber",
+            item=f"{_species_display(g.species)} {g.nominal}".strip(),
+            spec=f"{g.length_label} stick", qty=g.sticks, unit="ea",
+            unit_price=g.unit_price, line_total=g.cost))
     return lines
 
 
@@ -398,6 +426,7 @@ def purchase_order(spec, *, prices: PriceBook | None = None,
     lines: list[POLine] = []
     lines += _sheet_lines(est, prices)
     lines += _lumber_lines(est)
+    lines += _stick_lines(est)
     lines += _hardware_lines(cl, prices)
     lines += _banding_lines(est, prices)
     lines += _finish_lines(spec, est)
