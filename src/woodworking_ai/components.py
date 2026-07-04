@@ -568,6 +568,20 @@ def length_fields(name: str) -> tuple[str, ...]:
     return cls._LENGTH_FIELDS if cls is not None else ()
 
 
+def component_params(name: str) -> frozenset[str] | None:
+    """Every key a ``components`` entry for *name* may carry, or None if unknown.
+
+    Derived from the component dataclass (the exact set ``from_dict`` accepts,
+    minus the cosmetic ``naming``) plus the ``component`` discriminator, so the
+    spec lint can't drift from what the loader actually keeps.
+    """
+    cls = _COMPONENTS.get(str(name or "").strip().lower())
+    if cls is None:
+        return None
+    return frozenset(f.name for f in fields(cls)
+                     if f.name != "naming") | {"component"}
+
+
 def component_from_dict(data: dict):
     """Build a component instance from a ``piece`` ``components`` entry.
 

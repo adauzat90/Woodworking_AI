@@ -21,9 +21,11 @@ import dataclasses
 from dataclasses import dataclass
 from difflib import get_close_matches
 
+from . import components as _components
 from .diagnostics import Severity
 from .dsl import (
     ApplianceVoid, Material, ToeKick, Drawer, KNOWN_KINDS, LEAF_SPEC_TYPES,
+    PiecePart, PieceJoint,
 )
 
 # Re-exported so callers (and Item 2's router) share one definition.
@@ -50,6 +52,17 @@ for _kind, _cls, _aliases in LEAF_SPEC_TYPES:
     for _k in (_kind, *_aliases):
         _SPEC_FIELDS[_k] = _allowed
 _SPEC_FIELDS["void"] = _fields(ApplianceVoid)
+
+# kind-or-alias -> canonical kind, so nested lint dispatches the same for an
+# alias ("custom" lints its parts/joints/components exactly like "piece").
+_CANON_KIND: dict[str, str] = {
+    k: _kind for _kind, _cls, _aliases in LEAF_SPEC_TYPES for k in (_kind, *_aliases)
+}
+
+# A piece part also accepts "qty" (the loader's alias for "repeat").
+_PIECE_PART_FIELDS = _fields(PiecePart) | frozenset({"qty"})
+_PIECE_JOINT_FIELDS = _fields(PieceJoint)
+_REPEAT_FIELDS = frozenset({"count", "step"})
 
 _MATERIAL_FIELDS = _fields(Material)
 _TOEKICK_FIELDS = _fields(ToeKick)
@@ -108,10 +121,13 @@ def _route(node: dict) -> str:
     kind = str(node.get("kind", "")).strip().lower()
     if kind == "appliance_void":
         return "void"
-    if kind in ("assembly", "project") or "components" in node or "runs" in node:
-        return "group"
+    # An explicit leaf kind wins over shape inference — a `piece` carries its
+    # own `components` (placed sub-components), so it must not be mistaken for
+    # a project just because that key is present (mirrors dsl._spec_from_dict).
     if kind in _SPEC_FIELDS:
         return kind
+    if kind in ("assembly", "project") or "components" in node or "runs" in node:
+        return "group"
     # kind-less legacy spec — route by shape (legged table vs cabinet).
     if "leg" in node or "top_thickness" in node:
         return "table"
@@ -146,8 +162,46 @@ def _spec_allowed(kind: str) -> frozenset[str]:
     return _SPEC_FIELDS.get(kind, _SPEC_FIELDS["cabinet"])
 
 
+def _lint_piece(node: dict, path: str, issues: list[LintIssue]) -> None:
+    """Lint a piece's ``parts`` / ``joints`` / placed-``components`` entries.
+
+    Component parameter sets come from the components registry (the same
+    dataclasses the loader builds from), so an unknown parameter — or an
+    unknown component name — is reported instead of silently dropped.
+    """
+    for i, p in enumerate(node.get("parts", []) or []):
+        if not isinstance(p, dict):
+            continue
+        ploc = _join(path, f"parts[{i}]")
+        _check_keys(p, _PIECE_PART_FIELDS, ploc, issues)
+        rep = p.get("repeat")
+        if isinstance(rep, dict):
+            _check_keys(rep, _REPEAT_FIELDS, _join(ploc, "repeat"), issues)
+    for i, j in enumerate(node.get("joints", []) or []):
+        if isinstance(j, dict):
+            _check_keys(j, _PIECE_JOINT_FIELDS, _join(path, f"joints[{i}]"),
+                        issues)
+    for i, c in enumerate(node.get("components", []) or []):
+        if not isinstance(c, dict):
+            continue
+        cloc = _join(path, f"components[{i}]")
+        cname = str(c.get("component", "")).strip().lower()
+        allowed = _components.component_params(cname)
+        if allowed is None:
+            issues.append(LintIssue(
+                _join(cloc, "component"), "component",
+                f"unknown component {cname!r}{_loc(cloc)}"
+                f"{_suggest(cname, _components.available_components())}"))
+            continue
+        _check_keys(c, allowed, cloc, issues, label="component parameter")
+
+
 def _lint_nested(node: dict, kind: str, path: str, issues: list[LintIssue]) -> None:
-    """Lint the sub-dicts of a cabinet (material, toe-kick, drawers, stock, accs)."""
+    """Lint the sub-dicts of a cabinet (material, toe-kick, drawers, stock,
+    accessories) or of a piece (parts, joints, placed components)."""
+    if _CANON_KIND.get(kind, kind) == "piece":
+        _lint_piece(node, path, issues)
+        return
     if kind != "cabinet":
         return
     mat = node.get("material")
