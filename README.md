@@ -236,6 +236,13 @@ plan.
   shelving), `dresser` (drawer bank).
 - **Tables:** a `table` furniture type — top, four legs, and aprons, with the
   same critique / cut list / cost / render / STEP-export pipeline.
+- **Standalone furniture:** `wall_shelf`, `box`/`chest`, `bench`/`stool`,
+  `frame`, `bed`, `cutting_board`, `nightstand`, `desk`, and `workbench` — each a
+  self-contained leaf that plugs into the whole pipeline.
+- **Generic `piece` (escape hatch):** when no dedicated kind fits (a miter
+  station, a lumber rack, garage shelving), describe the furniture as an explicit
+  list of rectangular `parts` (min corner + size + grain) and `joints`, and still
+  get validation, the interference critic, a cut list, cost, and 3D export.
 - **Construction:** `frameless` (Euro, overlay doors) and `face_frame`
   (hardwood stiles/rails + inset doors); sheet-good or **solid-wood glue-up**
   carcasses (panels broken into edge-glued boards, priced by the board foot).
