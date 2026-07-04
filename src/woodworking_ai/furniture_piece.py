@@ -35,6 +35,7 @@ from enum import Enum
 
 from . import furniture
 from . import stock
+from . import components as _components
 from . import hardware as hw
 from .dispatch import PIECE
 from .dsl import PieceSpec
@@ -49,6 +50,28 @@ from .joinery import JoineryOp
 _PIECE_MAX_PARTS = 500
 # Faces within this gap (mm) count as touching/abutting — a joint, not a gap.
 _TOUCH_TOL = 1.0
+
+
+def _built_components(spec: PieceSpec):
+    """``(inst, component)`` for every placed component that builds.
+
+    Unknown or malformed component entries are skipped here (the validator turns
+    them into a repairable error) so the panels / cut-list / joinery stages never
+    crash on a typo. A component's expanded parts and panels are namespaced with
+    ``"{inst.name} "`` so they read distinctly and their IDs don't collide.
+    """
+    out = []
+    for inst in getattr(spec, "components", None) or []:
+        try:
+            comp = _components.component_from_dict(inst.as_component_dict())
+        except Exception:
+            continue
+        out.append((inst, comp))
+    return out
+
+
+def _prefix(inst) -> str:
+    return f"{inst.name} " if inst.name else ""
 
 
 # ===========================================================================
@@ -116,6 +139,13 @@ def _piece_panels(spec: PieceSpec) -> list[PanelBox]:
             panels.append(PanelBox(
                 name, (size[0], size[1], size[2]), center,
                 "carcass", subassembly="Parts"))
+    # Each placed component expands into its own panels, namespaced by instance.
+    for inst, comp in _built_components(spec):
+        pfx = _prefix(inst)
+        for p in comp.panels():
+            p.label = f"{pfx}{p.label}"
+            p.subassembly = inst.name or p.subassembly
+            panels.append(p)
     return panels
 
 
@@ -139,6 +169,17 @@ def _piece_cutlist(spec: PieceSpec) -> CutList:
                      grain=pgrain, notes=note)
             cl.parts.append(p)
             overrides.append((p, part.material_form, part.species))
+
+    # Each placed component contributes its raw cut parts, namespaced by instance;
+    # a component that declares its own material_form/species overrides its parts.
+    for inst, comp in _built_components(spec):
+        pfx = _prefix(inst)
+        c_form = str(getattr(comp, "material_form", "") or "")
+        c_species = str(getattr(comp, "species", "") or "")
+        for cp in comp.cut_parts():
+            cp.name = f"{pfx}{cp.name}"
+            cl.parts.append(cp)
+            overrides.append((cp, c_form, c_species))
 
     # Resolve each part's physical stock from the spec globals + any `stock`
     # override (the shared convention), then let a PER-PART form/species win.
@@ -191,9 +232,32 @@ def _piece_validate(spec: PieceSpec) -> list[Issue]:
     def info(f, m, rule=""):
         issues.append(Issue("info", f, m, rule))
 
+    # --- placed components: unknown names + each block's own compiler rules ---
+    # A component instance carries its OWN validate(); its issues are re-labelled
+    # with the instance name so the repair loop can target them. An unknown
+    # component name is a repairable load error here, not a crash downstream.
+    built = []
+    for inst in getattr(spec, "components", None) or []:
+        label = inst.name or inst.component or "?"
+        if not _components.is_component(inst.component):
+            err("components",
+                f"component {label!r} names unknown building block "
+                f"{inst.component!r}; available: "
+                f"{', '.join(_components.available_components())}")
+            continue
+        try:
+            comp = _components.component_from_dict(inst.as_component_dict())
+        except Exception as exc:                       # pragma: no cover - defensive
+            err("components", f"component {label!r} failed to build: {exc}")
+            continue
+        built.append((inst, comp))
+        for iss in comp.validate():
+            issues.append(Issue(iss.severity, f"{label}.{iss.field}",
+                                f"{label}: {iss.message}", iss.rule_id))
+
     declared = spec.parts
-    if not declared:
-        err("parts", "a piece needs at least one part")
+    if not declared and not built:
+        err("parts", "a piece needs at least one part or component")
         return issues
 
     # --- unique, non-empty declared names --------------------------------
@@ -220,6 +284,16 @@ def _piece_validate(spec: PieceSpec) -> list[Issue]:
             f"{len(placed)} parts exceeds the {_PIECE_MAX_PARTS}-part cap for a "
             "single piece; split it into sub-assemblies")
         return issues
+
+    # Component-expanded parts join the free-form parts in the shared physics:
+    # they must not overlap or float relative to each other or the free parts.
+    for inst, comp in built:
+        pfx = _prefix(inst)
+        for p in comp.panels():
+            sx, sy, sz = p.size
+            cx, cy, cz = p.center
+            at = (cx - sx / 2, cy - sy / 2, cz - sz / 2)
+            placed.append((f"{pfx}{p.label}", inst.name, at, (sx, sy, sz)))
 
     # --- per-part geometry: finite, positive, on or above the floor ------
     for name, _base, at, size in placed:
@@ -339,6 +413,10 @@ def _piece_joinery(spec: PieceSpec, cl: CutList) -> list[JoineryOp]:
             part=f"{a} / {b}", operation=f"{jk.replace('_', ' ')} joint",
             tool=tool, width=width, depth=depth, reference=f"{a} to {b}",
             part_id=pid(a), note=note))
+    # Each component contributes its own internal joinery, resolved against its
+    # namespaced part names in the merged cut list.
+    for inst, comp in _built_components(spec):
+        ops.extend(comp.joinery_ops(cl, prefix=_prefix(inst)))
     return ops
 
 

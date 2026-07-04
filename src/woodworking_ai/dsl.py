@@ -1894,6 +1894,51 @@ class PieceJoint:
 
 
 @dataclass
+class ComponentInstance:
+    """One shared sub-component placed inside a :class:`PieceSpec`.
+
+    A piece may compose *checked building blocks* alongside free-form parts:
+    ``{"component": "legged_base"|"shelf_bank", "name": …, "at": [x,y,z], …}``.
+    ``component`` names a registered component (see :mod:`components`), ``name``
+    namespaces its expanded parts, ``at`` is its **min corner** in the piece
+    frame (pieces are min-corner, unlike the X-centred leaves), and every other
+    key is a component parameter. The instance is deliberately generic — the
+    component registry (not this dataclass) knows each block's parameters — so an
+    unknown ``component`` is a repairable load/validate error, never a crash.
+    """
+
+    component: str = ""
+    name: str = ""
+    at: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    params: dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        self.component = str(self.component or "").strip().lower()
+        self.name = str(self.name or "").strip()
+        self.at = _as_vec3(self.at)
+        self.params = dict(self.params or {})
+
+    def as_component_dict(self) -> dict[str, Any]:
+        """The flat dict the :mod:`components` loader builds an instance from."""
+        return {"component": self.component, "name": self.name,
+                "at": list(self.at), **self.params}
+
+    def to_dict(self) -> dict[str, Any]:
+        return self.as_component_dict()
+
+    @classmethod
+    def from_dict(cls, data: Any) -> "ComponentInstance":
+        if isinstance(data, cls):
+            return data
+        if not isinstance(data, dict):
+            return cls()
+        reserved = {"component", "name", "at"}
+        params = {k: v for k, v in data.items() if k not in reserved}
+        return cls(component=data.get("component", ""), name=data.get("name", ""),
+                   at=data.get("at", (0.0, 0.0, 0.0)), params=params)
+
+
+@dataclass
 class PieceSpec:
     """A generic piece: an explicit list of rectangular parts plus joints.
 
@@ -1902,6 +1947,11 @@ class PieceSpec:
     corner (``at``) and extent (``size``). ``width`` / ``depth`` / ``height`` are
     the overall envelope and are *optional* — a 0 (the default) derives the
     dimension from the parts' bounding box on load (see :pyattr:`bbox`).
+
+    Beyond free-form ``parts``, a piece may place ``components`` — shared checked
+    building blocks (a legged base, a shelf bank) that carry their own
+    compiler rules — so even furniture the taxonomy doesn't cover gets
+    component-level checks wherever it reuses a checked block.
     """
 
     kind: str = "piece"
@@ -1912,6 +1962,7 @@ class PieceSpec:
     height: float = 0.0
     parts: list[PiecePart] = field(default_factory=list)
     joints: list[PieceJoint] = field(default_factory=list)
+    components: list[ComponentInstance] = field(default_factory=list)
 
     # --- finishing / material (all optional; feed the BOM, cost, build hints) --
     finish: str = "none"
@@ -1923,6 +1974,8 @@ class PieceSpec:
     def __post_init__(self) -> None:
         self.parts = [PiecePart.from_dict(p) for p in (self.parts or [])]
         self.joints = [PieceJoint.from_dict(j) for j in (self.joints or [])]
+        self.components = [ComponentInstance.from_dict(c)
+                           for c in (self.components or [])]
         if not isinstance(self.stock, dict):
             self.stock = {}
         self.material_form = str(self.material_form or "").strip().lower()
@@ -1938,7 +1991,12 @@ class PieceSpec:
                 self.height = round(hi[2] - lo[2], 3)
 
     def _raw_bounds(self):
-        """(min_corner, max_corner) over the finite placed parts, or (None, None)."""
+        """(min_corner, max_corner) over the finite placed parts, or (None, None).
+
+        Folds in any placed :attr:`components` (via their panel boxes) so a piece
+        made only of building blocks still derives a correct envelope; an unknown
+        or malformed component is skipped here and surfaced by the validator.
+        """
         mins = [math.inf, math.inf, math.inf]
         maxs = [-math.inf, -math.inf, -math.inf]
         seen = False
@@ -1950,9 +2008,42 @@ class PieceSpec:
                 for ax in range(3):
                     mins[ax] = min(mins[ax], at[ax])
                     maxs[ax] = max(maxs[ax], at[ax] + size[ax])
+        for box in self._component_boxes():
+            _name, _base, lo, hi = box
+            if not all(math.isfinite(v) for v in (*lo, *hi)):
+                continue
+            seen = True
+            for ax in range(3):
+                mins[ax] = min(mins[ax], lo[ax])
+                maxs[ax] = max(maxs[ax], hi[ax])
         if not seen:
             return None, None
         return tuple(mins), tuple(maxs)
+
+    def _component_boxes(self):
+        """Best-effort ``(name, base, min, max)`` AABBs of every placed component.
+
+        Tolerant: an unknown component name or a build error yields no boxes (the
+        validator reports it), so envelope derivation never crashes on a typo.
+        """
+        try:
+            from . import components as _components
+        except Exception:
+            return []
+        out = []
+        for inst in self.components:
+            try:
+                comp = _components.component_from_dict(inst.as_component_dict())
+                panels = comp.panels()
+            except Exception:
+                continue
+            for p in panels:
+                sx, sy, sz = p.size
+                cx, cy, cz = p.center
+                lo = (cx - sx / 2, cy - sy / 2, cz - sz / 2)
+                hi = (cx + sx / 2, cy + sy / 2, cz + sz / 2)
+                out.append((f"{inst.name} {p.label}", inst.name, lo, hi))
+        return out
 
     @property
     def bbox(self):
@@ -1972,6 +2063,8 @@ class PieceSpec:
             "joints": [j.to_dict() for j in self.joints],
             "finish": self.finish, "finish_sheen": self.finish_sheen,
         }
+        if self.components:
+            d["components"] = [c.to_dict() for c in self.components]
         if self.material_form:
             d["material_form"] = self.material_form
         if self.species:
@@ -2003,6 +2096,17 @@ class PieceSpec:
                             p[key] = r
                 conv.append(p)
             data["parts"] = conv
+            comps_in = data.get("components") or []
+            conv_c: list[Any] = []
+            for c in comps_in:
+                if isinstance(c, dict):
+                    c = dict(c)
+                    _list_to_mm(c, "at")
+                    from . import components as _components
+                    for f in _components.length_fields(c.get("component", "")):
+                        _to_mm(c, (f,))
+                conv_c.append(c)
+            data["components"] = conv_c
             data["units"] = "mm"
         if "stock" in data and not isinstance(data["stock"], dict):
             data.pop("stock")
@@ -2343,13 +2447,18 @@ def _spec_from_dict(data: dict[str, Any], defs: "_Defs | None", stack: frozenset
         return ApplianceVoid.from_dict(data)
     if kind == "assembly":
         return Assembly.from_dict(data, parent_defs=defs, _stack=stack)
-    if kind == "project" or "components" in data or "runs" in data:
+    if kind == "project":
         return Project.from_dict(data, parent_defs=defs, _stack=stack)
-    # Every plain leaf type (and its aliases) routes through the one taxonomy.
+    # An explicit leaf kind wins over shape inference — a `piece` carries its own
+    # ``components`` (placed sub-components), so it must not be mistaken for a
+    # project just because that key is present.
     leaf = _LEAF_BY_KIND.get(kind)
     if leaf is not None:
         return leaf.from_dict(data)
-    # No explicit kind: infer a table from its tell-tale fields, else a cabinet.
+    # No explicit kind: infer by shape (backward compatibility). A `components` /
+    # `runs` list reads as a project; leg/top fields as a table; else a cabinet.
+    if "components" in data or "runs" in data:
+        return Project.from_dict(data, parent_defs=defs, _stack=stack)
     if "leg" in data or "top_thickness" in data:
         return TableSpec.from_dict(data)
     return CabinetSpec.from_dict(data)
