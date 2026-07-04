@@ -1,0 +1,29 @@
+{
+  "kind": "piece",
+  "name": "Garage Shelving",
+  "units": "mm",
+  "material_form": "plywood",
+  "species": "birch",
+  "parts": [
+    {
+      "name": "Leg",
+      "at": [0, 0, 0],
+      "size": [38, 400, 1000],
+      "grain": "z",
+      "material_form": "solid",
+      "species": "pine",
+      "repeat": {"count": 2, "step": [1162, 0, 0]}
+    },
+    {
+      "name": "Shelf",
+      "at": [38, 0, 200],
+      "size": [1124, 400, 18],
+      "grain": "x",
+      "repeat": {"count": 3, "step": [0, 0, 380]}
+    }
+  ],
+  "joints": [
+    {"parts": ["Leg", "Shelf"], "joinery": "screw"}
+  ],
+  "finish": "none"
+}

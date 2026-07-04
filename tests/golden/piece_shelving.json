@@ -1,0 +1,393 @@
+{
+  "cutlist": {
+    "hardware": [
+      {
+        "brand": "",
+        "category": "fastener",
+        "name": "Assembly screw 4\u00d735",
+        "notes": "~4 per screwed / pocket-hole joint",
+        "qty": 4,
+        "sku": "SCR-4x35"
+      }
+    ],
+    "parts": [
+      {
+        "banded_edges": "",
+        "category": "carcass",
+        "form": "solid",
+        "grain": "length",
+        "id": "A1",
+        "length": 1000.0,
+        "material": "solid",
+        "name": "Leg #1",
+        "notes": "grain along Z",
+        "openings": [],
+        "qty": 1,
+        "species": "pine",
+        "thickness": 38.0,
+        "width": 400.0
+      },
+      {
+        "banded_edges": "",
+        "category": "carcass",
+        "form": "solid",
+        "grain": "length",
+        "id": "A2",
+        "length": 1000.0,
+        "material": "solid",
+        "name": "Leg #2",
+        "notes": "grain along Z",
+        "openings": [],
+        "qty": 1,
+        "species": "pine",
+        "thickness": 38.0,
+        "width": 400.0
+      },
+      {
+        "banded_edges": "",
+        "category": "shelf",
+        "form": "plywood",
+        "grain": "length",
+        "id": "C1",
+        "length": 1124.0,
+        "material": "sheet",
+        "name": "Shelf #1",
+        "notes": "grain along X",
+        "openings": [],
+        "qty": 1,
+        "species": "birch",
+        "thickness": 18.0,
+        "width": 400.0
+      },
+      {
+        "banded_edges": "",
+        "category": "shelf",
+        "form": "plywood",
+        "grain": "length",
+        "id": "C2",
+        "length": 1124.0,
+        "material": "sheet",
+        "name": "Shelf #2",
+        "notes": "grain along X",
+        "openings": [],
+        "qty": 1,
+        "species": "birch",
+        "thickness": 18.0,
+        "width": 400.0
+      },
+      {
+        "banded_edges": "",
+        "category": "shelf",
+        "form": "plywood",
+        "grain": "length",
+        "id": "C3",
+        "length": 1124.0,
+        "material": "sheet",
+        "name": "Shelf #3",
+        "notes": "grain along X",
+        "openings": [],
+        "qty": 1,
+        "species": "birch",
+        "thickness": 18.0,
+        "width": 400.0
+      }
+    ],
+    "spec_name": "Garage Shelving"
+  },
+  "drilling": {
+    "ops": [],
+    "spec_name": "Garage Shelving"
+  },
+  "dxf": "0\nSECTION\n2\nTABLES\n0\nTABLE\n2\nLAYER\n70\n8\n0\nLAYER\n2\nPANEL\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nSHEET\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nLABEL\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nWARN\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nBORE\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nDADO\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nRABBET\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nCUTOUT\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nENDTAB\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n0\nLINE\n8\nSHEET\n10\n0.00\n20\n0.00\n30\n0.0\n11\n2440.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n2440.00\n20\n0.00\n30\n0.0\n11\n2440.00\n21\n1220.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n2440.00\n20\n1220.00\n30\n0.0\n11\n0.00\n21\n1220.00\n31\n0.0\n0\nLINE\n8\nSHEET\n10\n0.00\n20\n1220.00\n30\n0.0\n11\n0.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nSHEET\n10\n5.00\n20\n1250.00\n30\n0.0\n40\n40.0\n1\nSheet 1\n0\nLINE\n8\nPANEL\n10\n0.00\n20\n0.00\n30\n0.0\n11\n1000.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1000.00\n20\n0.00\n30\n0.0\n11\n1000.00\n21\n400.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1000.00\n20\n400.00\n30\n0.0\n11\n0.00\n21\n400.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n0.00\n20\n400.00\n30\n0.0\n11\n0.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n8.00\n20\n192.00\n30\n0.0\n40\n16.0\n1\nA1 Leg #1 1000x400\n0\nLINE\n8\nPANEL\n10\n1003.00\n20\n0.00\n30\n0.0\n11\n2003.00\n21\n0.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n2003.00\n20\n0.00\n30\n0.0\n11\n2003.00\n21\n400.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n2003.00\n20\n400.00\n30\n0.0\n11\n1003.00\n21\n400.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1003.00\n20\n400.00\n30\n0.0\n11\n1003.00\n21\n0.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n1011.00\n20\n192.00\n30\n0.0\n40\n16.0\n1\nA2 Leg #2 1000x400\n0\nLINE\n8\nPANEL\n10\n0.00\n20\n403.00\n30\n0.0\n11\n1124.00\n21\n403.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1124.00\n20\n403.00\n30\n0.0\n11\n1124.00\n21\n803.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1124.00\n20\n803.00\n30\n0.0\n11\n0.00\n21\n803.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n0.00\n20\n803.00\n30\n0.0\n11\n0.00\n21\n403.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n8.00\n20\n595.00\n30\n0.0\n40\n16.0\n1\nC1 Shelf #1 1124x400\n0\nLINE\n8\nPANEL\n10\n1127.00\n20\n403.00\n30\n0.0\n11\n2251.00\n21\n403.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n2251.00\n20\n403.00\n30\n0.0\n11\n2251.00\n21\n803.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n2251.00\n20\n803.00\n30\n0.0\n11\n1127.00\n21\n803.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1127.00\n20\n803.00\n30\n0.0\n11\n1127.00\n21\n403.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n1135.00\n20\n595.00\n30\n0.0\n40\n16.0\n1\nC2 Shelf #2 1124x400\n0\nLINE\n8\nPANEL\n10\n0.00\n20\n806.00\n30\n0.0\n11\n1124.00\n21\n806.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1124.00\n20\n806.00\n30\n0.0\n11\n1124.00\n21\n1206.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n1124.00\n20\n1206.00\n30\n0.0\n11\n0.00\n21\n1206.00\n31\n0.0\n0\nLINE\n8\nPANEL\n10\n0.00\n20\n1206.00\n30\n0.0\n11\n0.00\n21\n806.00\n31\n0.0\n0\nTEXT\n8\nLABEL\n10\n8.00\n20\n998.00\n30\n0.0\n40\n16.0\n1\nC3 Shelf #3 1124x400\n0\nENDSEC\n0\nEOF\n",
+  "estimate": {
+    "_rate": 65.0,
+    "banding_groups": [],
+    "currency": "$",
+    "edge_banding_cost": 0.0,
+    "edge_banding_m": 0.0,
+    "finish_cost": 0.0,
+    "finish_m2": 0.0,
+    "groups": [
+      {
+        "form": "plywood",
+        "material": "plywood",
+        "oversize": 0,
+        "part_count": 3,
+        "sheets": 1,
+        "species": "birch",
+        "thickness": 18.0,
+        "unit_price": 70.0,
+        "utilization": 0.4531
+      }
+    ],
+    "hardware_cost": 0.4,
+    "labour_cost": 48.75,
+    "labour_hours": 0.75,
+    "lumber_cost": 59.2608,
+    "lumber_groups": [
+      {
+        "board_feet": 12.8828,
+        "cost": 59.2608,
+        "form": "solid",
+        "material": "solid",
+        "part_count": 2,
+        "species": "pine",
+        "thickness": 38.0
+      }
+    ],
+    "material_cost": 70.0,
+    "spec_name": "Garage Shelving"
+  },
+  "issues": [],
+  "joinery": {
+    "ops": [
+      {
+        "depth": 0.0,
+        "note": "pilot + countersink; glue optional",
+        "operation": "screw joint",
+        "part": "Leg / Shelf",
+        "part_id": "A1",
+        "reference": "Leg to Shelf",
+        "tool": "drill / driver",
+        "width": 0.0
+      }
+    ],
+    "spec_name": "Garage Shelving"
+  },
+  "panels": [
+    {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "category": "carcass",
+      "center": [
+        19.0,
+        200.0,
+        500.0
+      ],
+      "inner_sign": 1.0,
+      "label": "Leg #1",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        38.0,
+        400.0,
+        1000.0
+      ],
+      "subassembly": "Parts"
+    },
+    {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "category": "carcass",
+      "center": [
+        1181.0,
+        200.0,
+        500.0
+      ],
+      "inner_sign": 1.0,
+      "label": "Leg #2",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        38.0,
+        400.0,
+        1000.0
+      ],
+      "subassembly": "Parts"
+    },
+    {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "category": "carcass",
+      "center": [
+        600.0,
+        200.0,
+        209.0
+      ],
+      "inner_sign": 1.0,
+      "label": "Shelf #1",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        1124.0,
+        400.0,
+        18.0
+      ],
+      "subassembly": "Parts"
+    },
+    {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "category": "carcass",
+      "center": [
+        600.0,
+        200.0,
+        589.0
+      ],
+      "inner_sign": 1.0,
+      "label": "Shelf #2",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        1124.0,
+        400.0,
+        18.0
+      ],
+      "subassembly": "Parts"
+    },
+    {
+      "capture_grow": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "category": "carcass",
+      "center": [
+        600.0,
+        200.0,
+        969.0
+      ],
+      "inner_sign": 1.0,
+      "label": "Shelf #3",
+      "openings": [],
+      "oversized": false,
+      "rot_z": 0.0,
+      "size": [
+        1124.0,
+        400.0,
+        18.0
+      ],
+      "subassembly": "Parts"
+    }
+  ],
+  "purchasing": {
+    "consumables": [
+      {
+        "alt": "",
+        "brand": "",
+        "category": "consumable",
+        "item": "Wood glue (PVA)",
+        "line_total": 8.0,
+        "qty": 1,
+        "sku": "",
+        "source": "Home center",
+        "spec": "~250ml bottle",
+        "supplier": "Shop consumables",
+        "unit": "ea",
+        "unit_price": 8.0,
+        "url": "https://duckduckgo.com/?q=Wood+glue+%28PVA%29"
+      },
+      {
+        "alt": "",
+        "brand": "",
+        "category": "abrasive",
+        "item": "Sandpaper (assorted grits)",
+        "line_total": 5.4,
+        "qty": 6,
+        "sku": "",
+        "source": "Home center",
+        "spec": "120/150/180 grit",
+        "supplier": "Shop consumables",
+        "unit": "sheet",
+        "unit_price": 0.9,
+        "url": "https://duckduckgo.com/?q=Sandpaper+%28assorted+grits%29"
+      },
+      {
+        "alt": "",
+        "brand": "",
+        "category": "clamp",
+        "item": "Bar / parallel clamps",
+        "line_total": 96.0,
+        "qty": 6,
+        "sku": "",
+        "source": "Woodworking store (Rockler / Lee Valley / Woodcraft)",
+        "spec": "own these? skip \u2014 ~1 per 200mm",
+        "supplier": "Shop consumables",
+        "unit": "ea",
+        "unit_price": 16.0,
+        "url": "https://duckduckgo.com/?q=Bar+%2F+parallel+clamps"
+      }
+    ],
+    "currency": "$",
+    "lines": [
+      {
+        "alt": "",
+        "brand": "",
+        "category": "sheet",
+        "item": "Birch plywood",
+        "line_total": 70.0,
+        "qty": 1,
+        "sku": "",
+        "source": "Home center / sheet-goods yard",
+        "spec": "plywood sheet 18mm",
+        "supplier": "Sheet goods supplier",
+        "unit": "sheet",
+        "unit_price": 70.0,
+        "url": "https://duckduckgo.com/?q=Birch+plywood"
+      },
+      {
+        "alt": "",
+        "brand": "",
+        "category": "lumber",
+        "item": "Pine solid lumber",
+        "line_total": 59.2608,
+        "qty": 12.88,
+        "sku": "",
+        "source": "Hardwood dealer / lumberyard",
+        "spec": "38mm S4S",
+        "supplier": "Lumber yard",
+        "unit": "bd ft",
+        "unit_price": 4.6,
+        "url": "https://duckduckgo.com/?q=Pine+solid+lumber"
+      },
+      {
+        "alt": "",
+        "brand": "generic",
+        "category": "hardware",
+        "item": "Assembly screw 4\u00d735",
+        "line_total": 0.4,
+        "qty": 4,
+        "sku": "SCR-4x35",
+        "source": "Woodworking store (Rockler / Lee Valley / Woodcraft)",
+        "spec": "SCR-4x35",
+        "supplier": "Generic (hardware)",
+        "unit": "ea",
+        "unit_price": 0.1,
+        "url": "https://duckduckgo.com/?q=Assembly+screw+4%C3%9735+SCR-4x35"
+      },
+      {
+        "alt": "",
+        "brand": "",
+        "category": "labour",
+        "item": "Shop labour",
+        "line_total": 48.75,
+        "qty": 0.75,
+        "sku": "",
+        "source": "",
+        "spec": "cut, process, assemble, finish",
+        "supplier": "Shop labour (in-house)",
+        "unit": "h",
+        "unit_price": 65.0,
+        "url": ""
+      }
+    ],
+    "name": "Garage Shelving"
+  },
+  "valid": true
+}
